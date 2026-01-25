@@ -21,11 +21,11 @@
         "noUnusedExpressions": "off",
         "noUnresolvedImports": "off",
         "noUnnecessaryConditions": "off",
-        "noShadow": "off",
+        "noShadow": "error",
         "noParametersOnlyUsedInRecursion": "off",
-        "noMisusedPromises": "off",
+        "noMisusedPromises": "error",
         "noImportCycles": "off",
-        "noFloatingPromises": "off"
+        "noFloatingPromises": "error"
       },
       "complexity": {
         "noBannedTypes": "off",
@@ -51,7 +51,7 @@
       "suspicious": {
         "noConsole": "off",
         "noExplicitAny": "off",
-        "noDoubleEquals": "off",
+        "noDoubleEquals": "error",
         "noImplicitAnyLet": "off",
         "noConfusingVoidType": "off",
         "noDebugger": "error",

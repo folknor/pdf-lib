@@ -1,5 +1,5 @@
 class Cache<T> {
-  static readonly populatedBy = <T>(populate: () => T) => new Cache(populate);
+  static readonly populatedBy = <V>(populate: () => V) => new Cache(populate);
 
   private readonly populate: () => T;
   private value: T | undefined;

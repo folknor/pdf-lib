@@ -332,7 +332,6 @@ export const drawEllipse = (options: {
   const x = asNumber(options.x);
   const y = asNumber(options.y);
 
-  const KAPPA = 4.0 * ((Math.sqrt(2) - 1.0) / 3.0);
   const ox = xScale * KAPPA;
   const oy = yScale * KAPPA;
 
