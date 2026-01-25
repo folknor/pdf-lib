@@ -44,8 +44,7 @@ const getApRefs = (widget: PDFWidgetAnnotation) => {
   ].filter(Boolean);
 };
 
-const flatten = <T>(arr: T[][]): T[] =>
-  arr.reduce((curr, acc) => [...acc, ...curr], []);
+const flatten = <T>(arr: T[][]): T[] => arr.flat();
 
 const fancyFieldsPdfBytes = fs.readFileSync('assets/pdfs/fancy_fields.pdf');
 // const sampleFormPdfBytes = fs.readFileSync('assets/pdfs/sample_form.pdf');

@@ -82,7 +82,7 @@ export const getType = (val: any) => {
   if (typeof val === 'boolean') return 'boolean';
   if (typeof val === 'symbol') return 'symbol';
   if (typeof val === 'bigint') return 'bigint';
-  if (val.constructor && val.constructor.name) return val.constructor.name;
+  if (val.constructor?.name) return val.constructor.name;
   if (val.name) return val.name;
   if (val.constructor) return String(val.constructor);
   return String(val);
@@ -107,12 +107,13 @@ export const isType = (value: any, type: TypeDescriptor) => {
   if (type === 'null') return value === null;
   if (type === 'undefined') return value === undefined;
   if (type === 'string') return typeof value === 'string';
-  if (type === 'number') return typeof value === 'number' && !isNaN(value);
+  if (type === 'number')
+    return typeof value === 'number' && !Number.isNaN(value);
   if (type === 'boolean') return typeof value === 'boolean';
   if (type === 'symbol') return typeof value === 'symbol';
   if (type === 'bigint') return typeof value === 'bigint';
   if (type === Date) return value instanceof Date;
-  if (type === Array) return value instanceof Array;
+  if (type === Array) return Array.isArray(value);
   if (type === Uint8Array) return value instanceof Uint8Array;
   if (type === ArrayBuffer) return value instanceof ArrayBuffer;
   if (type === Function) return value instanceof Function;

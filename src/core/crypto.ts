@@ -1307,7 +1307,7 @@ class AES256Cipher extends AESBaseCipher {
       t2 = 0,
       t3 = 0,
       t4 = 0;
-    for (let j = 32, i = 1; j < b; ++i) {
+    for (let j = 32; j < b; ) {
       if (j % 32 === 16) {
         t1 = s[t1];
         t2 = s[t2];
@@ -1644,7 +1644,7 @@ class CipherTransformFactory {
           if (handlerDict) {
             keyLen = handlerDict.get(PDFName.of('Length')) as PDFNumber;
           }
-          keyLength = (keyLen && keyLen.asNumber()) || 128;
+          keyLength = keyLen?.asNumber() || 128;
           if (keyLength < 40) {
             // Sometimes it's incorrect value of bits, generators specify
             // bytes.

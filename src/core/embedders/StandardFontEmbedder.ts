@@ -61,7 +61,7 @@ class StandardFontEmbedder {
 
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
       const left = glyphs[idx].name;
-      const right = (glyphs[idx + 1] || {}).name;
+      const right = glyphs[idx + 1]?.name;
       const kernAmount = this.font.getXAxisKerningForPair(left, right) || 0;
       totalWidth += this.widthOfGlyph(left) + kernAmount;
     }

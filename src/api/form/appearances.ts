@@ -127,7 +127,7 @@ const getDefaultFontSize = (field: {
   const da = field.getDefaultAppearance() ?? '';
   const daMatch = findLastMatch(da, tfRegex).match ?? [];
   const defaultFontSize = Number(daMatch[2]);
-  return isFinite(defaultFontSize) ? defaultFontSize : undefined;
+  return Number.isFinite(defaultFontSize) ? defaultFontSize : undefined;
 };
 
 // Examples:

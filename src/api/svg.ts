@@ -919,7 +919,7 @@ const parseGroupNode = (
 const parseFloatValue = (value?: string, reference = 1) => {
   if (!value) return undefined;
   const v = parseFloat(value);
-  if (isNaN(v)) return undefined;
+  if (Number.isNaN(v)) return undefined;
   if (value.endsWith('%')) return (v * reference) / 100;
   return v;
 };
@@ -1026,9 +1026,9 @@ export const drawSvg = (
 
   if (options.width || options.height) {
     if (width !== undefined)
-      style['width'] = width + (isNaN(width) ? '' : 'px');
+      style['width'] = width + (Number.isNaN(width) ? '' : 'px');
     if (height !== undefined) {
-      style['height'] = height + (isNaN(height) ? '' : 'px');
+      style['height'] = height + (Number.isNaN(height) ? '' : 'px');
     }
     svgNode.setAttribute(
       'style',
