@@ -83,7 +83,43 @@ Can't pass `{ prop: undefined }` to `{ prop?: T }`.
 
 | Rule | Status | Description |
 |------|--------|-------------|
-| `noBannedTypes` | off | Disallow `Function`, `Object`, etc. |
+| `noBannedTypes` | off | Disallow `Function`, `Object`, etc. (see 4a) |
+
+### 4a. Fixing `noBannedTypes` - The Constructor Problem
+
+**Problem:** `src/utils/validators.ts` uses `[Function, string]` tuples for runtime type validation. This allows code like:
+
+```typescript
+assertIs(value, 'pages', [[PDFPage, 'PDFPage']]);
+```
+
+The `Function` type is banned because it's too loose, but replacing it with a proper constructor type like `new (...args: any[]) => any` fails because many classes (`PDFDocument`, `PDFPage`, `PDFRef`, etc.) have **private or protected constructors**.
+
+**Root cause:** TypeScript's constructor types require public constructors, but private constructors are used throughout the codebase for factory patterns.
+
+**Solution options:**
+
+1. **Use `typeof` pattern** (Recommended)
+   ```typescript
+   type ClassType<T> = { prototype: T };
+   type TypeDescriptor = ... | [ClassType<unknown>, string];
+   ```
+   This matches any class by its prototype, not its constructor signature.
+
+2. **Use branded type with `Function`**
+   ```typescript
+   type AnyClass = Function & { prototype: unknown };
+   ```
+   Still uses `Function` but more constrained.
+
+3. **Refactor to avoid runtime type checking**
+   Replace `assertIs()` calls with TypeScript type guards. More work but cleaner.
+
+**Files to modify:**
+- `src/utils/validators.ts` - Core type definitions
+- All files using `assertIs()` with class tuples (~50+ call sites)
+
+**Testing:** Run `pnpm build` after changes - TypeScript will catch any mismatches.
 | `noForEach` | off | Prefer `for...of` over `.forEach()` |
 | `noImplicitCoercions` | off | Disallow implicit type coercions |
 | `noUselessStringConcat` | off | Disallow useless string concatenation |
