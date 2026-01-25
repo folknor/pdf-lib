@@ -1,8 +1,8 @@
-import type PDFDict from '../objects/PDFDict';
-import PDFAcroButton from './PDFAcroButton';
-import type PDFContext from '../PDFContext';
-import type PDFRef from '../objects/PDFRef';
-import { AcroButtonFlags } from './flags';
+import type PDFDict from '../objects/PDFDict.js';
+import PDFAcroButton from './PDFAcroButton.js';
+import type PDFContext from '../PDFContext.js';
+import type PDFRef from '../objects/PDFRef.js';
+import { AcroButtonFlags } from './flags.js';
 
 class PDFAcroPushButton extends PDFAcroButton {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

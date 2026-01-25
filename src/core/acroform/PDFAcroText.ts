@@ -1,11 +1,11 @@
-import type PDFContext from '../PDFContext';
-import type PDFDict from '../objects/PDFDict';
-import PDFNumber from '../objects/PDFNumber';
-import PDFString from '../objects/PDFString';
-import PDFHexString from '../objects/PDFHexString';
-import PDFName from '../objects/PDFName';
-import type PDFRef from '../objects/PDFRef';
-import PDFAcroTerminal from './PDFAcroTerminal';
+import type PDFContext from '../PDFContext.js';
+import type PDFDict from '../objects/PDFDict.js';
+import PDFNumber from '../objects/PDFNumber.js';
+import PDFString from '../objects/PDFString.js';
+import PDFHexString from '../objects/PDFHexString.js';
+import PDFName from '../objects/PDFName.js';
+import type PDFRef from '../objects/PDFRef.js';
+import PDFAcroTerminal from './PDFAcroTerminal.js';
 
 class PDFAcroText extends PDFAcroTerminal {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

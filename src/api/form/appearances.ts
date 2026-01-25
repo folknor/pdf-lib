@@ -1,13 +1,13 @@
-import type { PDFOperator, PDFWidgetAnnotation } from '../../core';
-import type PDFFont from '../PDFFont';
-import type PDFButton from '../form/PDFButton';
-import type PDFCheckBox from '../form/PDFCheckBox';
-import type PDFDropdown from '../form/PDFDropdown';
-import type PDFField from '../form/PDFField';
-import type PDFOptionList from '../form/PDFOptionList';
-import type PDFRadioGroup from '../form/PDFRadioGroup';
-import type PDFSignature from '../form/PDFSignature';
-import type PDFTextField from '../form/PDFTextField';
+import type { PDFOperator, PDFWidgetAnnotation } from '../../core/index.js';
+import type PDFFont from '../PDFFont.js';
+import type PDFButton from '../form/PDFButton.js';
+import type PDFCheckBox from '../form/PDFCheckBox.js';
+import type PDFDropdown from '../form/PDFDropdown.js';
+import type PDFField from '../form/PDFField.js';
+import type PDFOptionList from '../form/PDFOptionList.js';
+import type PDFRadioGroup from '../form/PDFRadioGroup.js';
+import type PDFSignature from '../form/PDFSignature.js';
+import type PDFTextField from '../form/PDFTextField.js';
 import {
   drawCheckBox,
   rotateInPlace,
@@ -15,7 +15,7 @@ import {
   drawButton,
   drawTextField,
   drawOptionList,
-} from '../operations';
+} from '../operations.js';
 import {
   rgb,
   componentsToColor,
@@ -23,17 +23,17 @@ import {
   grayscale,
   cmyk,
   type Color,
-} from '../colors';
-import { reduceRotation, adjustDimsForRotation } from '../rotations';
+} from '../colors.js';
+import { reduceRotation, adjustDimsForRotation } from '../rotations.js';
 import {
   layoutMultilineText,
   layoutCombedText,
   type TextPosition,
   layoutSinglelineText,
-} from '../text/layout';
-import { TextAlignment } from '../text/alignment';
-import { setFontAndSize } from '../operators';
-import { findLastMatch } from '../../utils';
+} from '../text/layout.js';
+import { TextAlignment } from '../text/alignment.js';
+import { setFontAndSize } from '../operators.js';
+import { findLastMatch } from '../../utils/index.js';
 
 /*********************** Appearance Provider Types ****************************/
 

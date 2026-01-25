@@ -3,20 +3,20 @@ import {
   type HTMLElement,
   NodeType,
 } from 'node-html-better-parser';
-import type Embeddable from './Embeddable';
+import type Embeddable from './Embeddable.js';
 import {
   EncryptedPDFError,
   FontkitNotRegisteredError,
   ForeignPageError,
   RemovePageFromEmptyDocumentError,
-} from './errors';
-import PDFEmbeddedPage from './PDFEmbeddedPage';
-import PDFFont from './PDFFont';
-import PDFImage from './PDFImage';
-import PDFPage from './PDFPage';
-import PDFForm from './form/PDFForm';
-import { PageSizes } from './sizes';
-import type { StandardFonts } from './StandardFonts';
+} from './errors.js';
+import PDFEmbeddedPage from './PDFEmbeddedPage.js';
+import PDFFont from './PDFFont.js';
+import PDFImage from './PDFImage.js';
+import PDFPage from './PDFPage.js';
+import PDFForm from './form/PDFForm.js';
+import { PageSizes } from './sizes.js';
+import type { StandardFonts } from './StandardFonts.js';
 import {
   CustomFontEmbedder,
   CustomFontSubsetEmbedder,
@@ -43,7 +43,7 @@ import {
   PngEmbedder,
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
-} from '../core';
+} from '../core/index.js';
 import {
   ParseSpeeds,
   type AttachmentOptions,
@@ -53,11 +53,11 @@ import {
   type CreateOptions,
   type EmbedFontOptions,
   type SetTitleOptions,
-} from './PDFDocumentOptions';
-import type PDFObject from '../core/objects/PDFObject';
-import type PDFRef from '../core/objects/PDFRef';
-import type { Fontkit } from '../types/fontkit';
-import type { TransformationMatrix } from '../types/matrix';
+} from './PDFDocumentOptions.js';
+import type PDFObject from '../core/objects/PDFObject.js';
+import type PDFRef from '../core/objects/PDFRef.js';
+import type { Fontkit } from '../types/fontkit.js';
+import type { TransformationMatrix } from '../types/matrix.js';
 import {
   assertIs,
   assertIsOneOfOrUndefined,
@@ -70,16 +70,16 @@ import {
   pluckIndices,
   range,
   toUint8Array,
-} from '../utils';
-import FileEmbedder, { AFRelationship } from '../core/embedders/FileEmbedder';
-import PDFEmbeddedFile from './PDFEmbeddedFile';
-import PDFJavaScript from './PDFJavaScript';
-import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder';
-import { CipherTransformFactory } from '../core/crypto';
-import PDFSvg from './PDFSvg';
+} from '../utils/index.js';
+import FileEmbedder, { AFRelationship } from '../core/embedders/FileEmbedder.js';
+import PDFEmbeddedFile from './PDFEmbeddedFile.js';
+import PDFJavaScript from './PDFJavaScript.js';
+import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
+import { CipherTransformFactory } from '../core/crypto.js';
+import PDFSvg from './PDFSvg.js';
 import PDFSecurity, {
   type SecurityOptions,
-} from '../core/security/PDFSecurity';
+} from '../core/security/PDFSecurity.js';
 
 export type BasePDFAttachment = {
   name: string;

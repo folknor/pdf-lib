@@ -1,4 +1,4 @@
-import type { Font } from '../../types/fontkit';
+import type { Font } from '../../types/fontkit.js';
 
 export interface FontFlagOptions {
   fixedPitch?: boolean;

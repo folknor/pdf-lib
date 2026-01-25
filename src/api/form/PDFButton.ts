@@ -1,27 +1,27 @@
-import type PDFDocument from '../PDFDocument';
-import PDFPage from '../PDFPage';
-import PDFFont from '../PDFFont';
-import type PDFImage from '../PDFImage';
-import { ImageAlignment } from '../image/alignment';
+import type PDFDocument from '../PDFDocument.js';
+import PDFPage from '../PDFPage.js';
+import PDFFont from '../PDFFont.js';
+import type PDFImage from '../PDFImage.js';
+import { ImageAlignment } from '../image/alignment.js';
 import {
   type AppearanceProviderFor,
   normalizeAppearance,
   defaultButtonAppearanceProvider,
-} from './appearances';
+} from './appearances.js';
 import PDFField, {
   type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
-} from './PDFField';
-import { rgb } from '../colors';
-import { degrees } from '../rotations';
+} from './PDFField.js';
+import { rgb } from '../colors.js';
+import { degrees } from '../rotations.js';
 
 import {
   type PDFRef,
   PDFStream,
   PDFAcroPushButton,
   type PDFWidgetAnnotation,
-} from '../../core';
-import { assertIs, assertOrUndefined, assertPositive } from '../../utils';
+} from '../../core/index.js';
+import { assertIs, assertOrUndefined, assertPositive } from '../../utils/index.js';
 
 /**
  * Represents a button field of a [[PDFForm]].

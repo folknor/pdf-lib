@@ -1,8 +1,8 @@
-import type PDFDict from './PDFDict';
-import PDFStream from './PDFStream';
-import type PDFContext from '../PDFContext';
-import { arrayAsString } from '../../utils';
-import type { CipherTransform } from '../crypto';
+import type PDFDict from './PDFDict.js';
+import PDFStream from './PDFStream.js';
+import type PDFContext from '../PDFContext.js';
+import { arrayAsString } from '../../utils/index.js';
+import type { CipherTransform } from '../crypto.js';
 
 class PDFRawStream extends PDFStream {
   static of = (

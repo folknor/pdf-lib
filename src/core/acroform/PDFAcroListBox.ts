@@ -1,7 +1,7 @@
-import type PDFDict from '../objects/PDFDict';
-import PDFAcroChoice from './PDFAcroChoice';
-import type PDFContext from '../PDFContext';
-import type PDFRef from '../objects/PDFRef';
+import type PDFDict from '../objects/PDFDict.js';
+import PDFAcroChoice from './PDFAcroChoice.js';
+import type PDFContext from '../PDFContext.js';
+import type PDFRef from '../objects/PDFRef.js';
 
 class PDFAcroListBox extends PDFAcroChoice {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

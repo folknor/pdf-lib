@@ -1,17 +1,17 @@
-import type { Font, Fontkit, Glyph, TypeFeatures } from '../../types/fontkit';
+import type { Font, Fontkit, Glyph, TypeFeatures } from '../../types/fontkit.js';
 
-import { createCmap } from './CMap';
-import { deriveFontFlags } from './FontFlags';
-import PDFHexString from '../objects/PDFHexString';
-import type PDFRef from '../objects/PDFRef';
-import PDFString from '../objects/PDFString';
-import type PDFContext from '../PDFContext';
+import { createCmap } from './CMap.js';
+import { deriveFontFlags } from './FontFlags.js';
+import PDFHexString from '../objects/PDFHexString.js';
+import type PDFRef from '../objects/PDFRef.js';
+import PDFString from '../objects/PDFString.js';
+import type PDFContext from '../PDFContext.js';
 import {
   byAscendingId,
   Cache,
   sortedUniq,
   toHexStringOfMinLength,
-} from '../../utils';
+} from '../../utils/index.js';
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as

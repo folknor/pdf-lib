@@ -1,10 +1,10 @@
 import pako from 'pako';
 
-import { MethodNotImplementedError } from '../errors';
-import type PDFDict from '../objects/PDFDict';
-import PDFName from '../objects/PDFName';
-import PDFStream from '../objects/PDFStream';
-import { Cache } from '../../utils';
+import { MethodNotImplementedError } from '../errors.js';
+import type PDFDict from '../objects/PDFDict.js';
+import PDFName from '../objects/PDFName.js';
+import PDFStream from '../objects/PDFStream.js';
+import { Cache } from '../../utils/index.js';
 
 class PDFFlateStream extends PDFStream {
   protected contentsCache: Cache<Uint8Array>;

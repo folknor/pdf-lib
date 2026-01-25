@@ -1,15 +1,15 @@
-import type PDFFont from '../PDFFont';
-import { CombedTextLayoutError } from '../errors';
-import { TextAlignment } from './alignment';
+import type PDFFont from '../PDFFont.js';
+import { CombedTextLayoutError } from '../errors.js';
+import { TextAlignment } from './alignment.js';
 
-import type { PDFHexString } from '../../core';
+import type { PDFHexString } from '../../core/index.js';
 import {
   cleanText,
   lineSplit,
   mergeLines,
   charAtIndex,
   charSplit,
-} from '../../utils';
+} from '../../utils/index.js';
 
 export interface TextPosition {
   text: string;

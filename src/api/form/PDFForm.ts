@@ -1,28 +1,28 @@
-import PDFDocument from '../PDFDocument';
-import type PDFPage from '../PDFPage';
-import type PDFField from './PDFField';
-import PDFButton from './PDFButton';
-import PDFCheckBox from './PDFCheckBox';
-import PDFDropdown from './PDFDropdown';
-import PDFOptionList from './PDFOptionList';
-import PDFRadioGroup from './PDFRadioGroup';
-import PDFSignature from './PDFSignature';
-import PDFTextField from './PDFTextField';
+import PDFDocument from '../PDFDocument.js';
+import type PDFPage from '../PDFPage.js';
+import type PDFField from './PDFField.js';
+import PDFButton from './PDFButton.js';
+import PDFCheckBox from './PDFCheckBox.js';
+import PDFDropdown from './PDFDropdown.js';
+import PDFOptionList from './PDFOptionList.js';
+import PDFRadioGroup from './PDFRadioGroup.js';
+import PDFSignature from './PDFSignature.js';
+import PDFTextField from './PDFTextField.js';
 import {
   NoSuchFieldError,
   UnexpectedFieldTypeError,
   FieldAlreadyExistsError,
   InvalidFieldNamePartError,
-} from '../errors';
-import PDFFont from '../PDFFont';
-import { StandardFonts } from '../StandardFonts';
-import { rotateInPlace } from '../operations';
+} from '../errors.js';
+import PDFFont from '../PDFFont.js';
+import { StandardFonts } from '../StandardFonts.js';
+import { rotateInPlace } from '../operations.js';
 import {
   drawObject,
   popGraphicsState,
   pushGraphicsState,
   translate,
-} from '../operators';
+} from '../operators.js';
 import {
   PDFAcroForm,
   type PDFAcroField,
@@ -40,8 +40,8 @@ import {
   createPDFAcroFields,
   PDFName,
   type PDFWidgetAnnotation,
-} from '../../core';
-import { assertIs, Cache, assertOrUndefined } from '../../utils';
+} from '../../core/index.js';
+import { assertIs, Cache, assertOrUndefined } from '../../utils/index.js';
 
 export interface FlattenOptions {
   updateFieldAppearances: boolean;

@@ -5,15 +5,15 @@ import {
   type Node,
   NodeType,
 } from 'node-html-better-parser';
-import { type Color, colorString } from './colors';
-import { type Degrees, degreesToRadians } from './rotations';
-import type PDFFont from './PDFFont';
-import type PDFPage from './PDFPage';
-import PDFSvg from './PDFSvg';
-import { BlendMode, type PDFPageDrawSVGElementOptions } from './PDFPageOptions';
-import { LineCapStyle, LineJoinStyle, FillRule } from './operators';
-import { type TransformationMatrix, identityMatrix } from '../types/matrix';
-import type { Coordinates, Space } from '../types';
+import { type Color, colorString } from './colors.js';
+import { type Degrees, degreesToRadians } from './rotations.js';
+import type PDFFont from './PDFFont.js';
+import type PDFPage from './PDFPage.js';
+import PDFSvg from './PDFSvg.js';
+import { BlendMode, type PDFPageDrawSVGElementOptions } from './PDFPageOptions.js';
+import { LineCapStyle, LineJoinStyle, FillRule } from './operators.js';
+import { type TransformationMatrix, identityMatrix } from '../types/matrix.js';
+import type { Coordinates, Space } from '../types/index.js';
 
 interface Position {
   x: number;

@@ -1,12 +1,12 @@
-import type Embeddable from './Embeddable';
-import PDFDocument from './PDFDocument';
+import type Embeddable from './Embeddable.js';
+import PDFDocument from './PDFDocument.js';
 import {
   CustomFontEmbedder,
   type PDFHexString,
   PDFRef,
   StandardFontEmbedder,
-} from '../core';
-import { assertIs, assertOrUndefined } from '../utils';
+} from '../core/index.js';
+import { assertIs, assertOrUndefined } from '../utils/index.js';
 
 export type FontEmbedder = CustomFontEmbedder | StandardFontEmbedder;
 

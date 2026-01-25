@@ -9,8 +9,8 @@ import {
   closePath,
   lineTo,
   moveTo,
-} from './operators';
-import type { PDFOperator } from '../core';
+} from './operators.js';
+import type { PDFOperator } from '../core/index.js';
 
 let cx: number = 0;
 let cy: number = 0;

@@ -1,9 +1,9 @@
-import type PDFContext from '../PDFContext';
-import type PDFRef from '../objects/PDFRef';
-import type PDFDict from '../objects/PDFDict';
-import PDFName from '../objects/PDFName';
-import PDFAcroButton from './PDFAcroButton';
-import { InvalidAcroFieldValueError } from '../errors';
+import type PDFContext from '../PDFContext.js';
+import type PDFRef from '../objects/PDFRef.js';
+import type PDFDict from '../objects/PDFDict.js';
+import PDFName from '../objects/PDFName.js';
+import PDFAcroButton from './PDFAcroButton.js';
+import { InvalidAcroFieldValueError } from '../errors.js';
 
 class PDFAcroCheckBox extends PDFAcroButton {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

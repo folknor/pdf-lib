@@ -1,16 +1,16 @@
-import type PDFDocument from '../PDFDocument';
-import PDFPage from '../PDFPage';
+import type PDFDocument from '../PDFDocument.js';
+import PDFPage from '../PDFPage.js';
 import {
   type AppearanceProviderFor,
   normalizeAppearance,
   defaultCheckBoxAppearanceProvider,
-} from './appearances';
-import { rgb } from '../colors';
-import { degrees } from '../rotations';
+} from './appearances.js';
+import { rgb } from '../colors.js';
+import { degrees } from '../rotations.js';
 import PDFField, {
   type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
-} from './PDFField';
+} from './PDFField.js';
 
 import {
   PDFName,
@@ -18,8 +18,8 @@ import {
   PDFDict,
   PDFAcroCheckBox,
   type PDFWidgetAnnotation,
-} from '../../core';
-import { assertIs, assertOrUndefined } from '../../utils';
+} from '../../core/index.js';
+import { assertIs, assertOrUndefined } from '../../utils/index.js';
 
 /**
  * Represents a check box field of a [[PDFForm]].

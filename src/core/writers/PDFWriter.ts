@@ -1,16 +1,16 @@
-import PDFCrossRefSection from '../document/PDFCrossRefSection';
-import PDFHeader from '../document/PDFHeader';
-import PDFTrailer from '../document/PDFTrailer';
-import PDFTrailerDict from '../document/PDFTrailerDict';
-import type PDFDict from '../objects/PDFDict';
-import type PDFObject from '../objects/PDFObject';
-import type PDFRef from '../objects/PDFRef';
-import PDFStream from '../objects/PDFStream';
-import type PDFContext from '../PDFContext';
-import PDFObjectStream from '../structures/PDFObjectStream';
-import type PDFSecurity from '../security/PDFSecurity';
-import CharCodes from '../syntax/CharCodes';
-import { copyStringIntoBuffer, waitForTick } from '../../utils';
+import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
+import PDFHeader from '../document/PDFHeader.js';
+import PDFTrailer from '../document/PDFTrailer.js';
+import PDFTrailerDict from '../document/PDFTrailerDict.js';
+import type PDFDict from '../objects/PDFDict.js';
+import type PDFObject from '../objects/PDFObject.js';
+import type PDFRef from '../objects/PDFRef.js';
+import PDFStream from '../objects/PDFStream.js';
+import type PDFContext from '../PDFContext.js';
+import PDFObjectStream from '../structures/PDFObjectStream.js';
+import type PDFSecurity from '../security/PDFSecurity.js';
+import CharCodes from '../syntax/CharCodes.js';
+import { copyStringIntoBuffer, waitForTick } from '../../utils/index.js';
 
 export interface SerializationInfo {
   size: number;

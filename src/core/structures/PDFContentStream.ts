@@ -1,8 +1,8 @@
-import type PDFDict from '../objects/PDFDict';
-import type PDFOperator from '../operators/PDFOperator';
-import type PDFContext from '../PDFContext';
-import PDFFlateStream from './PDFFlateStream';
-import CharCodes from '../syntax/CharCodes';
+import type PDFDict from '../objects/PDFDict.js';
+import type PDFOperator from '../operators/PDFOperator.js';
+import type PDFContext from '../PDFContext.js';
+import PDFFlateStream from './PDFFlateStream.js';
+import CharCodes from '../syntax/CharCodes.js';
 
 class PDFContentStream extends PDFFlateStream {
   static of = (dict: PDFDict, operators: PDFOperator[], encode = true) =>

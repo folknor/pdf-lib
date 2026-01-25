@@ -1,19 +1,19 @@
-import PDFHeader from '../document/PDFHeader';
-import PDFTrailer from '../document/PDFTrailer';
-import PDFInvalidObject from '../objects/PDFInvalidObject';
-import PDFName from '../objects/PDFName';
-import PDFNumber from '../objects/PDFNumber';
-import type PDFObject from '../objects/PDFObject';
-import PDFRef from '../objects/PDFRef';
-import PDFStream from '../objects/PDFStream';
-import PDFCatalog from '../structures/PDFCatalog';
-import PDFPageTree from '../structures/PDFPageTree';
-import PDFPageLeaf from '../structures/PDFPageLeaf';
-import type PDFContext from '../PDFContext';
-import PDFCrossRefStream from '../structures/PDFCrossRefStream';
-import PDFObjectStream from '../structures/PDFObjectStream';
-import PDFWriter from './PDFWriter';
-import { last, waitForTick } from '../../utils';
+import PDFHeader from '../document/PDFHeader.js';
+import PDFTrailer from '../document/PDFTrailer.js';
+import PDFInvalidObject from '../objects/PDFInvalidObject.js';
+import PDFName from '../objects/PDFName.js';
+import PDFNumber from '../objects/PDFNumber.js';
+import type PDFObject from '../objects/PDFObject.js';
+import PDFRef from '../objects/PDFRef.js';
+import PDFStream from '../objects/PDFStream.js';
+import PDFCatalog from '../structures/PDFCatalog.js';
+import PDFPageTree from '../structures/PDFPageTree.js';
+import PDFPageLeaf from '../structures/PDFPageLeaf.js';
+import type PDFContext from '../PDFContext.js';
+import PDFCrossRefStream from '../structures/PDFCrossRefStream.js';
+import PDFObjectStream from '../structures/PDFObjectStream.js';
+import PDFWriter from './PDFWriter.js';
+import { last, waitForTick } from '../../utils/index.js';
 
 class PDFStreamWriter extends PDFWriter {
   static override forContext = (

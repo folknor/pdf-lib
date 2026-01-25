@@ -1,12 +1,12 @@
-import PDFArray from '../objects/PDFArray';
-import PDFDict, { type DictMap } from '../objects/PDFDict';
-import PDFName from '../objects/PDFName';
-import PDFNumber from '../objects/PDFNumber';
-import type PDFObject from '../objects/PDFObject';
-import type PDFRef from '../objects/PDFRef';
-import PDFStream from '../objects/PDFStream';
-import type PDFContext from '../PDFContext';
-import type PDFPageTree from './PDFPageTree';
+import PDFArray from '../objects/PDFArray.js';
+import PDFDict, { type DictMap } from '../objects/PDFDict.js';
+import PDFName from '../objects/PDFName.js';
+import PDFNumber from '../objects/PDFNumber.js';
+import type PDFObject from '../objects/PDFObject.js';
+import type PDFRef from '../objects/PDFRef.js';
+import PDFStream from '../objects/PDFStream.js';
+import type PDFContext from '../PDFContext.js';
+import type PDFPageTree from './PDFPageTree.js';
 
 class PDFPageLeaf extends PDFDict {
   static readonly InheritableEntries = [
