@@ -111,7 +111,8 @@ class LZWStream extends DecodeStream {
 
       if (hasPrev) {
         dictionaryPrevCodes[nextCode] = prevCode as number;
-        dictionaryLengths[nextCode] = dictionaryLengths[prevCode as number]! + 1;
+        dictionaryLengths[nextCode] =
+          dictionaryLengths[prevCode as number]! + 1;
         dictionaryValues[nextCode] = currentSequence[0]!;
         nextCode++;
         codeLength =

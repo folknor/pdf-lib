@@ -25,7 +25,8 @@ export const encodeToBase64 = (bytes: Uint8Array): string => {
   for (let i = 0; i < len; i += 3) {
     base64 += chars[bytes[i]! >> 2];
     base64 += chars[((bytes[i]! & 3) << 4) | ((bytes[i + 1] ?? 0) >> 4)];
-    base64 += chars[(((bytes[i + 1] ?? 0) & 15) << 2) | ((bytes[i + 2] ?? 0) >> 6)];
+    base64 +=
+      chars[(((bytes[i + 1] ?? 0) & 15) << 2) | ((bytes[i + 2] ?? 0) >> 6)];
     base64 += chars[(bytes[i + 2] ?? 0) & 63];
   }
 

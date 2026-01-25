@@ -150,7 +150,7 @@ export const transformationToMatrix = (
         name === 'scaleY' ? 1 : sx,
         0,
         0,
-        name === 'scaleX' ? 1 : sy ?? sx,
+        name === 'scaleX' ? 1 : (sy ?? sx),
         0,
         0,
       ];
@@ -200,7 +200,14 @@ export const transformationToMatrix = (
       return [1, skewY, skewX, 1, 0, 0];
     }
     case 'matrix': {
-      const [a, b, c, d, e, f] = args as [number, number, number, number, number, number];
+      const [a, b, c, d, e, f] = args as [
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+      ];
       const r = transformationToMatrix('scale', [1, -1]);
       const m: TransformationMatrix = [a, b, c, d, e, f];
       return combineMatrix(combineMatrix(r, m), r);
@@ -835,9 +842,7 @@ const parseSvgNode = (
   const viewBox = node.attributes['viewBox']
     ? parseViewBox(node.attributes['viewBox'])!
     : nodeWidth && nodeHeight
-      ? parseViewBox(
-          `0 0 ${nodeWidth} ${nodeHeight}`,
-        )!
+      ? parseViewBox(`0 0 ${nodeWidth} ${nodeHeight}`)!
       : inherited.viewBox;
   const x = parseFloat(node.attributes['x']!) || 0;
   const y = parseFloat(node.attributes['y']!) || 0;

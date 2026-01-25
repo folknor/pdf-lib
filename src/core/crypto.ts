@@ -1531,9 +1531,7 @@ class CipherTransform {
     const cipher = this.StreamCipherConstructor();
     return new DecryptStream(
       stream,
-      (data, finalize) => {
-        return cipher.decryptBlock(data as Uint8Array, finalize);
-      },
+      (data, finalize) => cipher.decryptBlock(data as Uint8Array, finalize),
       length,
     );
   }

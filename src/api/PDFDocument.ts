@@ -1120,10 +1120,8 @@ export default class PDFDocument {
       if (file.name !== name) continue;
       // the file wasn't embedded into context yet
       if ('pdfEmbeddedFile' in file) {
-        const i = this.embeddedFiles.findIndex(
-          (f) => file.pdfEmbeddedFile === f,
-        );
-        if (i !== undefined) this.embeddedFiles.splice(i, 1);
+        const i = this.embeddedFiles.indexOf(file.pdfEmbeddedFile);
+        if (i !== -1) this.embeddedFiles.splice(i, 1);
       } else {
         // remove references from catalog
         const namesArr = this.catalog

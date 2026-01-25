@@ -363,7 +363,15 @@ const runners: CmdToOperatorsMap = {
 };
 
 const solveArc = (x: number, y: number, coords: number[]) => {
-  const [rx, ry, rot, large, sweep, ex, ey] = coords as [number, number, number, number, number, number, number];
+  const [rx, ry, rot, large, sweep, ex, ey] = coords as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   const segs = arcToSegments(ex, ey, rx, ry, large, sweep, rot, x, y);
 
   const cmds: PDFOperator[] = [];
