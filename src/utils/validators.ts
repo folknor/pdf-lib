@@ -1,5 +1,3 @@
-/* tslint:disable:ban-types */
-
 import { values as objectValues } from './objects.js';
 
 export const backtick = (val: any) => `\`${val}\``;
@@ -96,12 +94,15 @@ export type TypeDescriptor =
   | 'boolean'
   | 'symbol'
   | 'bigint'
+  | 'function'
   | DateConstructor
   | ArrayConstructor
   | Uint8ArrayConstructor
   | ArrayBufferConstructor
-  | FunctionConstructor
-  | [Function, string];
+  | [
+      { prototype: unknown; [Symbol.hasInstance](obj: unknown): boolean },
+      string,
+    ];
 
 export const isType = (value: any, type: TypeDescriptor) => {
   if (type === 'null') return value === null;
@@ -112,12 +113,20 @@ export const isType = (value: any, type: TypeDescriptor) => {
   if (type === 'boolean') return typeof value === 'boolean';
   if (type === 'symbol') return typeof value === 'symbol';
   if (type === 'bigint') return typeof value === 'bigint';
+  if (type === 'function') return typeof value === 'function';
   if (type === Date) return value instanceof Date;
   if (type === Array) return Array.isArray(value);
   if (type === Uint8Array) return value instanceof Uint8Array;
   if (type === ArrayBuffer) return value instanceof ArrayBuffer;
-  if (type === Function) return value instanceof Function;
-  return value instanceof (type as [Function, string])[0];
+  return (
+    value instanceof
+    (
+      type as [
+        { prototype: unknown; [Symbol.hasInstance](obj: unknown): boolean },
+        string,
+      ]
+    )[0]
+  );
 };
 
 export const createTypeErrorMsg = (
@@ -130,16 +139,28 @@ export const createTypeErrorMsg = (
   for (let idx = 0, len = types.length; idx < len; idx++) {
     const type = types[idx];
     if (type === 'null') allowedTypes[idx] = backtick('null');
-    if (type === 'undefined') allowedTypes[idx] = backtick('undefined');
-    if (type === 'string') allowedTypes[idx] = backtick('string');
+    else if (type === 'undefined') allowedTypes[idx] = backtick('undefined');
+    else if (type === 'string') allowedTypes[idx] = backtick('string');
     else if (type === 'number') allowedTypes[idx] = backtick('number');
     else if (type === 'boolean') allowedTypes[idx] = backtick('boolean');
     else if (type === 'symbol') allowedTypes[idx] = backtick('symbol');
     else if (type === 'bigint') allowedTypes[idx] = backtick('bigint');
+    else if (type === 'function') allowedTypes[idx] = backtick('function');
     else if (type === Array) allowedTypes[idx] = backtick('Array');
     else if (type === Uint8Array) allowedTypes[idx] = backtick('Uint8Array');
     else if (type === ArrayBuffer) allowedTypes[idx] = backtick('ArrayBuffer');
-    else allowedTypes[idx] = backtick((type as [Function, string])[1]);
+    else
+      allowedTypes[idx] = backtick(
+        (
+          type as [
+            {
+              prototype: unknown;
+              [Symbol.hasInstance](obj: unknown): boolean;
+            },
+            string,
+          ]
+        )[1],
+      );
   }
 
   const joinedTypes = allowedTypes.join(' or ');

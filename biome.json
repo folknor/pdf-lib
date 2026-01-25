@@ -28,7 +28,7 @@
         "noFloatingPromises": "error"
       },
       "complexity": {
-        "noBannedTypes": "off",
+        "noBannedTypes": "error",
         "useSimplifiedLogicExpression": "off",
         "noUselessStringConcat": "off",
         "noImplicitCoercions": "off",

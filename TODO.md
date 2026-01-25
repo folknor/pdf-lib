@@ -15,6 +15,15 @@ This document tracks remaining work to fully modernize the codebase.
 - [x] Enable `noImplicitOverride` (~110 methods updated)
 - [x] Enable `noPropertyAccessFromIndexSignature` (~55 bracket notations)
 - [x] Remove husky/lint-staged
+- [x] Enable `noBannedTypes` rule (replaced `Function` type with `{ prototype: unknown; [Symbol.hasInstance](obj: unknown): boolean }`)
+- [x] Enable `noForEach` rule
+- [x] Enable `noDoubleEquals` rule
+- [x] Enable `noFloatingPromises` rule
+- [x] Enable `noMisusedPromises` rule
+- [x] Enable `noShadow` rule
+- [x] Add `"sideEffects": false` for tree-shaking
+- [x] Remove unused devDependencies (eslint packages)
+- [x] Delete apps/, docs/, scratchpad/, .circleci/, .github/, .vscode/
 
 ---
 
@@ -46,7 +55,7 @@ Can't pass `{ prop: undefined }` to `{ prop?: T }`.
 | `noExplicitAny` | off | Disallow `any` type |
 | `noImplicitAnyLet` | off | Disallow `let` without type when inferred as `any` |
 | `noEvolvingTypes` | off | Disallow variables that evolve types |
-| `noDoubleEquals` | off | Require `===` and `!==` |
+| `noDoubleEquals` | **enabled** | Require `===` and `!==` |
 | `noConfusingVoidType` | off | Disallow confusing `void` type usage |
 | `noTsIgnore` | off | Disallow `@ts-ignore` |
 | `noConsole` | off | Disallow `console.*` |
@@ -63,10 +72,10 @@ Can't pass `{ prop: undefined }` to `{ prop?: T }`.
 
 | Rule | Status | Description |
 |------|--------|-------------|
-| `noFloatingPromises` | off | Require handling of promises |
-| `noMisusedPromises` | off | Disallow promises in wrong contexts |
+| `noFloatingPromises` | **enabled** | Require handling of promises |
+| `noMisusedPromises` | **enabled** | Disallow promises in wrong contexts |
 | `noUnnecessaryConditions` | off | Disallow always-true/false conditions |
-| `noShadow` | off | Disallow variable shadowing |
+| `noShadow` | **enabled** | Disallow variable shadowing |
 | `noImportCycles` | off | Disallow circular imports |
 | `noUnusedExpressions` | off | Disallow expressions with no effect |
 | `noUselessUndefined` | off | Disallow useless `undefined` |
@@ -83,44 +92,8 @@ Can't pass `{ prop: undefined }` to `{ prop?: T }`.
 
 | Rule | Status | Description |
 |------|--------|-------------|
-| `noBannedTypes` | off | Disallow `Function`, `Object`, etc. (see 4a) |
-
-### 4a. Fixing `noBannedTypes` - The Constructor Problem
-
-**Problem:** `src/utils/validators.ts` uses `[Function, string]` tuples for runtime type validation. This allows code like:
-
-```typescript
-assertIs(value, 'pages', [[PDFPage, 'PDFPage']]);
-```
-
-The `Function` type is banned because it's too loose, but replacing it with a proper constructor type like `new (...args: any[]) => any` fails because many classes (`PDFDocument`, `PDFPage`, `PDFRef`, etc.) have **private or protected constructors**.
-
-**Root cause:** TypeScript's constructor types require public constructors, but private constructors are used throughout the codebase for factory patterns.
-
-**Solution options:**
-
-1. **Use `typeof` pattern** (Recommended)
-   ```typescript
-   type ClassType<T> = { prototype: T };
-   type TypeDescriptor = ... | [ClassType<unknown>, string];
-   ```
-   This matches any class by its prototype, not its constructor signature.
-
-2. **Use branded type with `Function`**
-   ```typescript
-   type AnyClass = Function & { prototype: unknown };
-   ```
-   Still uses `Function` but more constrained.
-
-3. **Refactor to avoid runtime type checking**
-   Replace `assertIs()` calls with TypeScript type guards. More work but cleaner.
-
-**Files to modify:**
-- `src/utils/validators.ts` - Core type definitions
-- All files using `assertIs()` with class tuples (~50+ call sites)
-
-**Testing:** Run `pnpm build` after changes - TypeScript will catch any mismatches.
-| `noForEach` | off | Prefer `for...of` over `.forEach()` |
+| `noBannedTypes` | **enabled** | Disallow `Function`, `Object`, etc. |
+| `noForEach` | **enabled** | Prefer `for...of` over `.forEach()` |
 | `noImplicitCoercions` | off | Disallow implicit type coercions |
 | `noUselessStringConcat` | off | Disallow useless string concatenation |
 | `useSimplifiedLogicExpression` | off | Simplify boolean expressions |

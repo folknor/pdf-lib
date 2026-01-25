@@ -237,7 +237,7 @@ export default class PDFCheckBox extends PDFField {
    *                 generating the contents of the appearance streams.
    */
   updateAppearances(provider?: AppearanceProviderFor<PDFCheckBox>) {
-    assertOrUndefined(provider, 'provider', [Function]);
+    assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {

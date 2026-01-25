@@ -249,7 +249,7 @@ export default class PDFButton extends PDFField {
     provider?: AppearanceProviderFor<PDFButton>,
   ) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', [Function]);
+    assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {

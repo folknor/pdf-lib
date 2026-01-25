@@ -541,7 +541,7 @@ export default class PDFOptionList extends PDFField {
     provider?: AppearanceProviderFor<PDFOptionList>,
   ) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', [Function]);
+    assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {

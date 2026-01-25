@@ -806,7 +806,7 @@ export default class PDFTextField extends PDFField {
     provider?: AppearanceProviderFor<PDFTextField>,
   ) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', [Function]);
+    assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
