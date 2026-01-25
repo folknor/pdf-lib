@@ -1,15 +1,14 @@
-import type PDFFont from '../PDFFont.js';
-import { CombedTextLayoutError } from '../errors.js';
-import { TextAlignment } from './alignment.js';
-
 import type { PDFHexString } from '../../core/index.js';
 import {
+  charAtIndex,
+  charSplit,
   cleanText,
   lineSplit,
   mergeLines,
-  charAtIndex,
-  charSplit,
 } from '../../utils/index.js';
+import { CombedTextLayoutError } from '../errors.js';
+import type PDFFont from '../PDFFont.js';
+import { TextAlignment } from './alignment.js';
 
 export interface TextPosition {
   text: string;
@@ -190,12 +189,14 @@ export const layoutMultilineText = (
       );
 
       // prettier-ignore
-      const x = (
-          alignment === TextAlignment.Left   ? bounds.x
-        : alignment === TextAlignment.Center ? bounds.x + (bounds.width / 2) - (width / 2)
-        : alignment === TextAlignment.Right  ? bounds.x + bounds.width - width
-        : bounds.x
-      );
+      const x =
+        alignment === TextAlignment.Left
+          ? bounds.x
+          : alignment === TextAlignment.Center
+            ? bounds.x + bounds.width / 2 - width / 2
+            : alignment === TextAlignment.Right
+              ? bounds.x + bounds.width - width
+              : bounds.x;
 
       y -= lineHeight;
 
@@ -326,12 +327,14 @@ export const layoutSinglelineText = (
   const height = font.heightAtSize(fontSize, { descender: false });
 
   // prettier-ignore
-  const x = (
-      alignment === TextAlignment.Left   ? bounds.x
-    : alignment === TextAlignment.Center ? bounds.x + (bounds.width / 2) - (width / 2)
-    : alignment === TextAlignment.Right  ? bounds.x + bounds.width - width
-    : bounds.x
-  );
+  const x =
+    alignment === TextAlignment.Left
+      ? bounds.x
+      : alignment === TextAlignment.Center
+        ? bounds.x + bounds.width / 2 - width / 2
+        : alignment === TextAlignment.Right
+          ? bounds.x + bounds.width - width
+          : bounds.x;
 
   const y = bounds.y + (bounds.height / 2 - height / 2);
 

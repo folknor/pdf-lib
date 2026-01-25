@@ -1,7 +1,7 @@
-import type Embeddable from './Embeddable.js';
-import PDFDocument from './PDFDocument.js';
 import { JpegEmbedder, PDFRef, PngEmbedder } from '../core/index.js';
 import { assertIs } from '../utils/index.js';
+import type Embeddable from './Embeddable.js';
+import PDFDocument from './PDFDocument.js';
 
 export type ImageEmbedder = JpegEmbedder | PngEmbedder;
 

@@ -1,7 +1,7 @@
 import {
+  PDFOperatorNames as Ops,
   PDFNumber,
   PDFOperator,
-  PDFOperatorNames as Ops,
   PDFString,
   toCharCode,
   typedArrayFor,

@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import PDFPageLeaf from '../../../src/core/structures/PDFPageLeaf';
 import {
   mergeIntoTypedArray,
+  numberToString,
   PDFArray,
   PDFBool,
   PDFCatalog,
@@ -17,7 +18,6 @@ import {
   PDFRef,
   PDFString,
   typedArrayFor,
-  numberToString,
 } from '../../../src/index';
 
 type ParseOptions = { capNumbers?: boolean };

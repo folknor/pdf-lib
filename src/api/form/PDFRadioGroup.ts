@@ -1,27 +1,30 @@
-import type PDFDocument from '../PDFDocument.js';
-import PDFPage from '../PDFPage.js';
-import PDFField, {
-  type FieldAppearanceOptions,
-  assertFieldAppearanceOptions,
-} from './PDFField.js';
 import {
-  type AppearanceProviderFor,
-  normalizeAppearance,
-  defaultRadioGroupAppearanceProvider,
-} from './appearances.js';
-import { rgb } from '../colors.js';
-import { degrees } from '../rotations.js';
-
-import {
+  AcroButtonFlags,
+  PDFAcroRadioButton,
+  PDFDict,
+  PDFHexString,
   PDFName,
   type PDFRef,
-  PDFHexString,
-  PDFDict,
   type PDFWidgetAnnotation,
-  PDFAcroRadioButton,
-  AcroButtonFlags,
 } from '../../core/index.js';
-import { assertIs, assertOrUndefined, assertIsOneOf } from '../../utils/index.js';
+import {
+  assertIs,
+  assertIsOneOf,
+  assertOrUndefined,
+} from '../../utils/index.js';
+import { rgb } from '../colors.js';
+import type PDFDocument from '../PDFDocument.js';
+import PDFPage from '../PDFPage.js';
+import { degrees } from '../rotations.js';
+import {
+  type AppearanceProviderFor,
+  defaultRadioGroupAppearanceProvider,
+  normalizeAppearance,
+} from './appearances.js';
+import PDFField, {
+  assertFieldAppearanceOptions,
+  type FieldAppearanceOptions,
+} from './PDFField.js';
 
 /**
  * Represents a radio group field of a [[PDFForm]].
@@ -359,13 +362,18 @@ export default class PDFRadioGroup extends PDFField {
     assertFieldAppearanceOptions(options);
 
     // Create a widget for this radio button
+    // Only set backgroundColor if explicitly provided (undefined = transparent)
+    const backgroundColor =
+      options && 'backgroundColor' in options
+        ? options.backgroundColor
+        : rgb(1, 1, 1);
     const widget = this.createWidget({
       x: options?.x ?? 0,
       y: options?.y ?? 0,
       width: options?.width ?? 50,
       height: options?.height ?? 50,
       textColor: options?.textColor ?? rgb(0, 0, 0),
-      backgroundColor: options?.backgroundColor ?? rgb(1, 1, 1),
+      backgroundColor,
       borderColor: options?.borderColor ?? rgb(0, 0, 0),
       borderWidth: options?.borderWidth ?? 1,
       rotate: options?.rotate ?? degrees(0),

@@ -5,10 +5,13 @@ import type {
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
-
-import CustomFontEmbedder from './CustomFontEmbedder.js';
+import {
+  Cache,
+  mergeUint8Arrays,
+  toHexStringOfMinLength,
+} from '../../utils/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
-import { Cache, mergeUint8Arrays, toHexStringOfMinLength } from '../../utils/index.js';
+import CustomFontEmbedder from './CustomFontEmbedder.js';
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as

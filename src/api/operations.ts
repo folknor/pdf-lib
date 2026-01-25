@@ -1,48 +1,53 @@
+import type {
+  PDFHexString,
+  PDFName,
+  PDFNumber,
+  PDFOperator,
+} from '../core/index.js';
+import type { Space, TransformationMatrix } from '../types/index.js';
+import { identityMatrix } from '../types/matrix.js';
 import { type Color, setFillingColor, setStrokingColor } from './colors.js';
+import { asNumber } from './objects.js';
 import {
+  beginMarkedContent,
   beginText,
+  clip,
   closePath,
+  concatTransformationMatrix,
   drawObject,
+  endMarkedContent,
+  endPath,
   endText,
+  FillRule,
   fill,
   fillAndStroke,
+  fillEvenOdd,
+  type LineCapStyle,
   lineTo,
   moveTo,
   nextLine,
   popGraphicsState,
   pushGraphicsState,
   rotateAndSkewTextRadiansAndTranslate,
+  rotateDegrees,
   rotateRadians,
   scale,
+  setDashPattern,
   setFontAndSize,
+  setGraphicsState,
+  setLineCap,
   setLineHeight,
   setLineWidth,
+  setTextRenderingMode,
   showText,
   skewRadians,
   stroke,
-  translate,
-  type LineCapStyle,
-  setLineCap,
-  rotateDegrees,
-  setGraphicsState,
-  setDashPattern,
-  beginMarkedContent,
-  endMarkedContent,
-  clip,
-  endPath,
-  FillRule,
-  fillEvenOdd,
-  concatTransformationMatrix,
   type TextRenderingMode,
-  setTextRenderingMode,
+  translate,
 } from './operators.js';
-import { type Rotation, degrees, toDegrees, toRadians } from './rotations.js';
+import { degrees, type Rotation, toDegrees, toRadians } from './rotations.js';
+import { combineMatrix, transformationToMatrix } from './svg.js';
 import { svgPathToOperators } from './svgPath.js';
-import type { PDFHexString, PDFName, PDFNumber, PDFOperator } from '../core/index.js';
-import { asNumber } from './objects.js';
-import type { Space, TransformationMatrix } from '../types/index.js';
-import { transformationToMatrix, combineMatrix } from './svg.js';
-import { identityMatrix } from '../types/matrix.js';
 
 export interface DrawTextOptions {
   color: Color;
@@ -477,23 +482,15 @@ export const rotateInPlace = (options: {
   height: number | PDFNumber;
   rotation: 0 | 90 | 180 | 270;
 }) =>
-    options.rotation === 0 ? [
-      translate(0, 0),
-      rotateDegrees(0)
-    ]
-  : options.rotation === 90 ? [
-      translate(options.width, 0),
-      rotateDegrees(90)
-    ]
-  : options.rotation === 180 ? [
-      translate(options.width, options.height),
-      rotateDegrees(180)
-    ]
-  : options.rotation === 270 ? [
-      translate(0, options.height),
-      rotateDegrees(270)
-    ]
-  : []; // Invalid rotation - noop
+  options.rotation === 0
+    ? [translate(0, 0), rotateDegrees(0)]
+    : options.rotation === 90
+      ? [translate(options.width, 0), rotateDegrees(90)]
+      : options.rotation === 180
+        ? [translate(options.width, options.height), rotateDegrees(180)]
+        : options.rotation === 270
+          ? [translate(0, options.height), rotateDegrees(270)]
+          : []; // Invalid rotation - noop
 
 export const drawCheckBox = (options: {
   x: number | PDFNumber;

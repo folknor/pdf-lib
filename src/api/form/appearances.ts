@@ -1,5 +1,13 @@
 import type { PDFOperator, PDFWidgetAnnotation } from '../../core/index.js';
-import type PDFFont from '../PDFFont.js';
+import { findLastMatch } from '../../utils/index.js';
+import {
+  type Color,
+  cmyk,
+  componentsToColor,
+  grayscale,
+  rgb,
+  setFillingColor,
+} from '../colors.js';
 import type PDFButton from '../form/PDFButton.js';
 import type PDFCheckBox from '../form/PDFCheckBox.js';
 import type PDFDropdown from '../form/PDFDropdown.js';
@@ -9,31 +17,23 @@ import type PDFRadioGroup from '../form/PDFRadioGroup.js';
 import type PDFSignature from '../form/PDFSignature.js';
 import type PDFTextField from '../form/PDFTextField.js';
 import {
-  drawCheckBox,
-  rotateInPlace,
-  drawRadioButton,
   drawButton,
-  drawTextField,
+  drawCheckBox,
   drawOptionList,
+  drawRadioButton,
+  drawTextField,
+  rotateInPlace,
 } from '../operations.js';
-import {
-  rgb,
-  componentsToColor,
-  setFillingColor,
-  grayscale,
-  cmyk,
-  type Color,
-} from '../colors.js';
-import { reduceRotation, adjustDimsForRotation } from '../rotations.js';
-import {
-  layoutMultilineText,
-  layoutCombedText,
-  type TextPosition,
-  layoutSinglelineText,
-} from '../text/layout.js';
-import { TextAlignment } from '../text/alignment.js';
 import { setFontAndSize } from '../operators.js';
-import { findLastMatch } from '../../utils/index.js';
+import type PDFFont from '../PDFFont.js';
+import { adjustDimsForRotation, reduceRotation } from '../rotations.js';
+import { TextAlignment } from '../text/alignment.js';
+import {
+  layoutCombedText,
+  layoutMultilineText,
+  layoutSinglelineText,
+  type TextPosition,
+} from '../text/layout.js';
 
 /*********************** Appearance Provider Types ****************************/
 
@@ -90,15 +90,21 @@ export type AppearanceMapping<T> = { normal: T; rollover?: T; down?: T };
 type AppearanceOrMapping<T> = T | AppearanceMapping<T>;
 
 // prettier-ignore
-export type AppearanceProviderFor<T extends PDFField> =
-  T extends PDFCheckBox   ? CheckBoxAppearanceProvider
-: T extends PDFRadioGroup ? RadioGroupAppearanceProvider
-: T extends PDFButton     ? ButtonAppearanceProvider
-: T extends PDFDropdown   ? DropdownAppearanceProvider
-: T extends PDFOptionList ? OptionListAppearanceProvider
-: T extends PDFTextField  ? TextFieldAppearanceProvider
-: T extends PDFSignature  ? SignatureAppearanceProvider
-: never;
+export type AppearanceProviderFor<T extends PDFField> = T extends PDFCheckBox
+  ? CheckBoxAppearanceProvider
+  : T extends PDFRadioGroup
+    ? RadioGroupAppearanceProvider
+    : T extends PDFButton
+      ? ButtonAppearanceProvider
+      : T extends PDFDropdown
+        ? DropdownAppearanceProvider
+        : T extends PDFOptionList
+          ? OptionListAppearanceProvider
+          : T extends PDFTextField
+            ? TextFieldAppearanceProvider
+            : T extends PDFSignature
+              ? SignatureAppearanceProvider
+              : never;
 
 /********************* Appearance Provider Functions **************************/
 

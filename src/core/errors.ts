@@ -1,6 +1,7 @@
 // tslint:disable: max-classes-per-file
-import type PDFObject from './objects/PDFObject.js';
+
 import { arrayAsString } from '../utils/index.js';
+import type PDFObject from './objects/PDFObject.js';
 
 export class MethodNotImplementedError extends Error {
   constructor(className: string, methodName: string) {

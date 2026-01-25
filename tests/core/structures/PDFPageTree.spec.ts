@@ -3,12 +3,12 @@ import type { TreeNode } from '../../../src/core/structures/PDFPageTree';
 import {
   PDFArray,
   PDFContext,
+  PDFDocument,
   PDFName,
   PDFNumber,
   PDFPageLeaf,
   PDFPageTree,
   type PDFRef,
-  PDFDocument,
 } from '../../../src/index';
 
 const withNullEntryPdfBytes = fs.readFileSync(

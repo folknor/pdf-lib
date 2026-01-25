@@ -1,28 +1,31 @@
-import type PDFDocument from '../PDFDocument.js';
-import PDFPage from '../PDFPage.js';
-import PDFFont from '../PDFFont.js';
-import PDFField, {
-  type FieldAppearanceOptions,
-  assertFieldAppearanceOptions,
-} from './PDFField.js';
 import {
-  type AppearanceProviderFor,
-  normalizeAppearance,
-  defaultDropdownAppearanceProvider,
-} from './appearances.js';
-import { rgb } from '../colors.js';
-import { degrees } from '../rotations.js';
-
-import {
+  AcroChoiceFlags,
+  PDFAcroComboBox,
   PDFHexString,
   type PDFRef,
-  type PDFString,
   PDFStream,
+  type PDFString,
   type PDFWidgetAnnotation,
-  PDFAcroComboBox,
-  AcroChoiceFlags,
 } from '../../core/index.js';
-import { assertIs, assertOrUndefined, assertPositive } from '../../utils/index.js';
+import {
+  assertIs,
+  assertOrUndefined,
+  assertPositive,
+} from '../../utils/index.js';
+import { rgb } from '../colors.js';
+import type PDFDocument from '../PDFDocument.js';
+import PDFFont from '../PDFFont.js';
+import PDFPage from '../PDFPage.js';
+import { degrees } from '../rotations.js';
+import {
+  type AppearanceProviderFor,
+  defaultDropdownAppearanceProvider,
+  normalizeAppearance,
+} from './appearances.js';
+import PDFField, {
+  assertFieldAppearanceOptions,
+  type FieldAppearanceOptions,
+} from './PDFField.js';
 
 /**
  * Represents a dropdown field of a [[PDFForm]].

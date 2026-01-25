@@ -1,0 +1,82 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.12/schema.json",
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "nursery": {
+        "useMaxParams": "off",
+        "useExplicitType": "off",
+        "useConsistentArrowReturn": "off",
+        "useAwaitThenable": "off",
+        "useArraySortCompare": "off",
+        "noUselessUndefined": "off",
+        "noUselessCatchBinding": "off",
+        "noUnusedExpressions": "off",
+        "noUnresolvedImports": "off",
+        "noUnnecessaryConditions": "off",
+        "noShadow": "off",
+        "noParametersOnlyUsedInRecursion": "off",
+        "noMisusedPromises": "off",
+        "noImportCycles": "off",
+        "noFloatingPromises": "off"
+      },
+      "complexity": {
+        "noBannedTypes": "off",
+        "useSimplifiedLogicExpression": "off",
+        "noUselessStringConcat": "off",
+        "noImplicitCoercions": "off",
+        "noForEach": "off"
+      },
+      "correctness": {
+        "noUndeclaredVariables": "off",
+        "noProcessGlobal": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useImportType": "error",
+        "useLiteralEnumMembers": "off"
+      },
+      "performance": {
+        "noNamespaceImport": "off",
+        "noReExportAll": "off",
+        "noBarrelFile": "off"
+      },
+      "suspicious": {
+        "noConsole": "off",
+        "noExplicitAny": "off",
+        "noDoubleEquals": "off",
+        "noImplicitAnyLet": "off",
+        "noConfusingVoidType": "off",
+        "noDebugger": "error",
+        "noTsIgnore": "off",
+        "useErrorMessage": "off",
+        "noVar": "error",
+        "noUnassignedVariables": "off",
+        "noMisplacedAssertion": "off",
+        "noEvolvingTypes": "off",
+        "useIterableCallbackReturn": "off",
+        "noControlCharactersInRegex": "off",
+        "noAssignInExpressions": "off"
+      }
+    }
+  },
+  "assist": {
+    "enabled": true
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "all"
+    }
+  },
+  "files": {
+    "includes": ["src/**", "tests/**"]
+  }
+}

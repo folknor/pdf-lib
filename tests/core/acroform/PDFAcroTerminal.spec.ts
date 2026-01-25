@@ -1,8 +1,8 @@
 import {
   PDFAcroTerminal,
+  PDFArray,
   PDFContext,
   PDFRef,
-  PDFArray,
 } from '../../../src/index';
 
 describe('PDFAcroTerminal', () => {

@@ -1,31 +1,34 @@
-import PDFDocument from '../PDFDocument.js';
-import type PDFFont from '../PDFFont.js';
-import type { AppearanceMapping } from './appearances.js';
-import { type Color, colorToComponents, setFillingColor } from '../colors.js';
 import {
-  type Rotation,
-  toDegrees,
-  rotateRectangle,
-  reduceRotation,
-  adjustDimsForRotation,
-  degrees,
-} from '../rotations.js';
-
-import {
+  AcroFieldFlags,
+  AnnotationFlags,
+  MethodNotImplementedError,
+  PDFAcroTerminal,
+  type PDFDict,
+  PDFName,
+  type PDFOperator,
   PDFRef,
   PDFWidgetAnnotation,
-  type PDFOperator,
-  PDFName,
-  type PDFDict,
-  MethodNotImplementedError,
-  AcroFieldFlags,
-  PDFAcroTerminal,
-  AnnotationFlags,
 } from '../../core/index.js';
-import { assertIs, assertMultiple, assertOrUndefined } from '../../utils/index.js';
+import {
+  assertIs,
+  assertMultiple,
+  assertOrUndefined,
+} from '../../utils/index.js';
+import { type Color, colorToComponents, setFillingColor } from '../colors.js';
 import { ImageAlignment } from '../image/index.js';
-import type PDFImage from '../PDFImage.js';
 import { drawImage, rotateInPlace } from '../operations.js';
+import PDFDocument from '../PDFDocument.js';
+import type PDFFont from '../PDFFont.js';
+import type PDFImage from '../PDFImage.js';
+import {
+  adjustDimsForRotation,
+  degrees,
+  type Rotation,
+  reduceRotation,
+  rotateRectangle,
+  toDegrees,
+} from '../rotations.js';
+import type { AppearanceMapping } from './appearances.js';
 
 export interface FieldAppearanceOptions {
   x?: number;

@@ -5,8 +5,8 @@ import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
-import ByteStream from './ByteStream.js';
 import type PDFContext from '../PDFContext.js';
+import ByteStream from './ByteStream.js';
 
 export interface Entry {
   ref: PDFRef;

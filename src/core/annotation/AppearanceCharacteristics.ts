@@ -1,8 +1,8 @@
+import PDFArray from '../objects/PDFArray.js';
 import type PDFDict from '../objects/PDFDict.js';
+import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFHexString from '../objects/PDFHexString.js';
 import PDFString from '../objects/PDFString.js';
 
 class AppearanceCharacteristics {

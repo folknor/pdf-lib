@@ -1,6 +1,6 @@
 import type PDFDict from '../objects/PDFDict.js';
-import type PDFRef from '../objects/PDFRef.js';
 import PDFName from '../objects/PDFName.js';
+import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import PDFAcroField from './PDFAcroField.js';
 

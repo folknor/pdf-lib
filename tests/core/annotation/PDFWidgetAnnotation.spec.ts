@@ -1,10 +1,10 @@
 import {
-  PDFWidgetAnnotation,
   PDFContext,
-  PDFString,
   PDFHexString,
   PDFName,
   PDFNull,
+  PDFString,
+  PDFWidgetAnnotation,
 } from '../../../src/index';
 
 describe('PDFWidgetAnnotation', () => {

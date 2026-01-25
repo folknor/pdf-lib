@@ -1,4 +1,4 @@
-import { range, pdfDocEncodingDecode } from '../../src/utils';
+import { pdfDocEncodingDecode, range } from '../../src/utils';
 
 type Mapping = [number, string];
 

@@ -1,3 +1,5 @@
+import { waitForTick } from '../../utils/index.js';
+import type { CipherTransformFactory } from '../crypto.js';
 import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
 import PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
@@ -14,16 +16,14 @@ import PDFName from '../objects/PDFName.js';
 import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
-import ByteStream from './ByteStream.js';
-import PDFObjectParser from './PDFObjectParser.js';
-import PDFObjectStreamParser from './PDFObjectStreamParser.js';
-import PDFXRefStreamParser from './PDFXRefStreamParser.js';
 import PDFContext from '../PDFContext.js';
 import CharCodes from '../syntax/CharCodes.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit } from '../syntax/Numeric.js';
-import { waitForTick } from '../../utils/index.js';
-import type { CipherTransformFactory } from '../crypto.js';
+import ByteStream from './ByteStream.js';
+import PDFObjectParser from './PDFObjectParser.js';
+import PDFObjectStreamParser from './PDFObjectStreamParser.js';
+import PDFXRefStreamParser from './PDFXRefStreamParser.js';
 
 class PDFParser extends PDFObjectParser {
   static forBytesWithOptions = (

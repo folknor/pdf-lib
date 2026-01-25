@@ -1,3 +1,5 @@
+import { charFromCode } from '../../utils/index.js';
+import type { CipherTransformFactory } from '../crypto.js';
 import {
   PDFObjectParsingError,
   PDFStreamParsingError,
@@ -16,8 +18,6 @@ import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFStream from '../objects/PDFStream.js';
 import PDFString from '../objects/PDFString.js';
-import BaseParser from './BaseParser.js';
-import ByteStream from './ByteStream.js';
 import type PDFContext from '../PDFContext.js';
 import PDFCatalog from '../structures/PDFCatalog.js';
 import PDFPageLeaf from '../structures/PDFPageLeaf.js';
@@ -27,8 +27,8 @@ import { IsDelimiter } from '../syntax/Delimiters.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit, IsNumeric } from '../syntax/Numeric.js';
 import { IsWhitespace } from '../syntax/Whitespace.js';
-import { charFromCode } from '../../utils/index.js';
-import type { CipherTransformFactory } from '../crypto.js';
+import BaseParser from './BaseParser.js';
+import ByteStream from './ByteStream.js';
 
 // TODO: Throw error if eof is reached before finishing object parse...
 class PDFObjectParser extends BaseParser {

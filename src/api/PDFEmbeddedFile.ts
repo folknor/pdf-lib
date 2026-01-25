@@ -1,7 +1,13 @@
+import type FileEmbedder from '../core/embedders/FileEmbedder.js';
+import {
+  PDFArray,
+  PDFDict,
+  PDFHexString,
+  PDFName,
+  type PDFRef,
+} from '../core/index.js';
 import type Embeddable from './Embeddable.js';
 import type PDFDocument from './PDFDocument.js';
-import type FileEmbedder from '../core/embedders/FileEmbedder.js';
-import { PDFName, PDFArray, PDFDict, PDFHexString, type PDFRef } from '../core/index.js';
 
 /**
  * Represents a file that has been embedded in a [[PDFDocument]].

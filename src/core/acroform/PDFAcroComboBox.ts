@@ -1,8 +1,8 @@
 import type PDFDict from '../objects/PDFDict.js';
-import PDFAcroChoice from './PDFAcroChoice.js';
-import type PDFContext from '../PDFContext.js';
 import type PDFRef from '../objects/PDFRef.js';
+import type PDFContext from '../PDFContext.js';
 import { AcroChoiceFlags } from './flags.js';
+import PDFAcroChoice from './PDFAcroChoice.js';
 
 class PDFAcroComboBox extends PDFAcroChoice {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

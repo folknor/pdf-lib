@@ -100,14 +100,10 @@ export default class Ellipse extends GraphElement {
     const { x: cx, y: cy } = this.center().toCoords();
     const teta = this.rotation();
     return isEqual(
-      Math.pow(
-        ((x - cx) * Math.cos(teta) + (y - cy) * Math.sin(teta)) / this.a(),
-        2,
-      ) +
-        Math.pow(
-          ((x - cx) * Math.sin(teta) - (y - cy) * Math.cos(teta)) / this.b(),
+      (((x - cx) * Math.cos(teta) + (y - cy) * Math.sin(teta)) / this.a()) **
+        2 +
+        (((x - cx) * Math.sin(teta) - (y - cy) * Math.cos(teta)) / this.b()) **
           2,
-        ),
       1,
     );
   }
@@ -128,8 +124,6 @@ export default class Ellipse extends GraphElement {
     const a = this.a();
     const b = this.b();
     const excentricity = Math.sqrt(Math.abs(a * a - b * b)) / Math.max(a, b);
-    return (
-      Math.min(a, b) / Math.sqrt(1 - Math.pow(excentricity * Math.cos(teta), 2))
-    );
+    return Math.min(a, b) / Math.sqrt(1 - (excentricity * Math.cos(teta)) ** 2);
   }
 }

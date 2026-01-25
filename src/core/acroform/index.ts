@@ -1,3 +1,4 @@
+export * from './flags.js';
 export { default as PDFAcroButton } from './PDFAcroButton.js';
 export { default as PDFAcroCheckBox } from './PDFAcroCheckBox.js';
 export { default as PDFAcroChoice } from './PDFAcroChoice.js';
@@ -11,5 +12,4 @@ export { default as PDFAcroRadioButton } from './PDFAcroRadioButton.js';
 export { default as PDFAcroSignature } from './PDFAcroSignature.js';
 export { default as PDFAcroTerminal } from './PDFAcroTerminal.js';
 export { default as PDFAcroText } from './PDFAcroText.js';
-export * from './flags.js';
 export * from './utils.js';

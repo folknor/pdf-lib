@@ -1,19 +1,19 @@
-import { vi } from 'vitest';
 import fs from 'fs';
+import { vi } from 'vitest';
 import {
-  PDFDocument,
-  PDFTextField,
-  PDFCheckBox,
-  PDFButton,
-  PDFRadioGroup,
-  PDFOptionList,
-  PDFDropdown,
-  type PDFWidgetAnnotation,
-  PDFDict,
-  PDFName,
-  PDFForm,
   PDFAcroForm,
+  PDFButton,
+  PDFCheckBox,
+  PDFDict,
+  PDFDocument,
+  PDFDropdown,
+  PDFForm,
+  PDFName,
+  PDFOptionList,
+  PDFRadioGroup,
   type PDFRef,
+  PDFTextField,
+  type PDFWidgetAnnotation,
 } from '../../../src/index';
 
 const getWidgets = (pdfDoc: PDFDocument) =>
@@ -88,18 +88,28 @@ describe('PDFForm', () => {
     expect(form.getField('MiddleInitial 🎳')).toBeInstanceOf(PDFTextField);
     expect(form.getField('LastName 🛩')).toBeInstanceOf(PDFTextField);
     expect(form.getField('Are You A Fairy? 🌿')).toBeInstanceOf(PDFCheckBox);
-    expect(form.getField('Is Your Power Level Over 9000? 💪')).toBeInstanceOf(PDFCheckBox);
-    expect(form.getField('Can You Defeat Enemies In One Punch? 👊')).toBeInstanceOf(PDFCheckBox);
-    expect(form.getField('Will You Ever Let Me Down? ☕️')).toBeInstanceOf(PDFCheckBox);
+    expect(form.getField('Is Your Power Level Over 9000? 💪')).toBeInstanceOf(
+      PDFCheckBox,
+    );
+    expect(
+      form.getField('Can You Defeat Enemies In One Punch? 👊'),
+    ).toBeInstanceOf(PDFCheckBox);
+    expect(form.getField('Will You Ever Let Me Down? ☕️')).toBeInstanceOf(
+      PDFCheckBox,
+    );
     expect(form.getField('Eject 📼')).toBeInstanceOf(PDFButton);
     expect(form.getField('Submit 📝')).toBeInstanceOf(PDFButton);
     expect(form.getField('Play ▶️')).toBeInstanceOf(PDFButton);
     expect(form.getField('Launch 🚀')).toBeInstanceOf(PDFButton);
-    expect(form.getField('Historical Figures 🐺')).toBeInstanceOf(PDFRadioGroup);
-    expect(form.getField('Which Are Planets? 🌎')).toBeInstanceOf(PDFOptionList);
+    expect(form.getField('Historical Figures 🐺')).toBeInstanceOf(
+      PDFRadioGroup,
+    );
+    expect(form.getField('Which Are Planets? 🌎')).toBeInstanceOf(
+      PDFOptionList,
+    );
     expect(form.getField('Choose A Gundam 🤖')).toBeInstanceOf(PDFDropdown);
 
-    const fieldDicts = fields.map(f => f.acroField.dict);
+    const fieldDicts = fields.map((f) => f.acroField.dict);
     const getFieldDict = (name: string) => form.getField(name)?.acroField.dict;
 
     expect(fieldDicts).toContain(getFieldDict('Prefix ⚽️'));
@@ -107,8 +117,12 @@ describe('PDFForm', () => {
     expect(fieldDicts).toContain(getFieldDict('MiddleInitial 🎳'));
     expect(fieldDicts).toContain(getFieldDict('LastName 🛩'));
     expect(fieldDicts).toContain(getFieldDict('Are You A Fairy? 🌿'));
-    expect(fieldDicts).toContain(getFieldDict('Is Your Power Level Over 9000? 💪'));
-    expect(fieldDicts).toContain(getFieldDict('Can You Defeat Enemies In One Punch? 👊'));
+    expect(fieldDicts).toContain(
+      getFieldDict('Is Your Power Level Over 9000? 💪'),
+    );
+    expect(fieldDicts).toContain(
+      getFieldDict('Can You Defeat Enemies In One Punch? 👊'),
+    );
     expect(fieldDicts).toContain(getFieldDict('Will You Ever Let Me Down? ☕️'));
     expect(fieldDicts).toContain(getFieldDict('Eject 📼'));
     expect(fieldDicts).toContain(getFieldDict('Submit 📝'));

@@ -1,21 +1,28 @@
-import PDFDocument from '../PDFDocument.js';
-import type PDFPage from '../PDFPage.js';
-import type PDFField from './PDFField.js';
-import PDFButton from './PDFButton.js';
-import PDFCheckBox from './PDFCheckBox.js';
-import PDFDropdown from './PDFDropdown.js';
-import PDFOptionList from './PDFOptionList.js';
-import PDFRadioGroup from './PDFRadioGroup.js';
-import PDFSignature from './PDFSignature.js';
-import PDFTextField from './PDFTextField.js';
 import {
-  NoSuchFieldError,
-  UnexpectedFieldTypeError,
+  createPDFAcroFields,
+  PDFAcroCheckBox,
+  PDFAcroComboBox,
+  type PDFAcroField,
+  PDFAcroForm,
+  PDFAcroListBox,
+  PDFAcroNonTerminal,
+  PDFAcroPushButton,
+  PDFAcroRadioButton,
+  PDFAcroSignature,
+  PDFAcroText,
+  PDFDict,
+  PDFName,
+  type PDFOperator,
+  PDFRef,
+  type PDFWidgetAnnotation,
+} from '../../core/index.js';
+import { assertIs, assertOrUndefined, Cache } from '../../utils/index.js';
+import {
   FieldAlreadyExistsError,
   InvalidFieldNamePartError,
+  NoSuchFieldError,
+  UnexpectedFieldTypeError,
 } from '../errors.js';
-import PDFFont from '../PDFFont.js';
-import { StandardFonts } from '../StandardFonts.js';
 import { rotateInPlace } from '../operations.js';
 import {
   drawObject,
@@ -23,25 +30,18 @@ import {
   pushGraphicsState,
   translate,
 } from '../operators.js';
-import {
-  PDFAcroForm,
-  type PDFAcroField,
-  PDFAcroCheckBox,
-  PDFAcroComboBox,
-  PDFAcroListBox,
-  PDFAcroRadioButton,
-  PDFAcroSignature,
-  PDFAcroText,
-  PDFAcroPushButton,
-  PDFAcroNonTerminal,
-  PDFDict,
-  type PDFOperator,
-  PDFRef,
-  createPDFAcroFields,
-  PDFName,
-  type PDFWidgetAnnotation,
-} from '../../core/index.js';
-import { assertIs, Cache, assertOrUndefined } from '../../utils/index.js';
+import PDFDocument from '../PDFDocument.js';
+import PDFFont from '../PDFFont.js';
+import type PDFPage from '../PDFPage.js';
+import { StandardFonts } from '../StandardFonts.js';
+import PDFButton from './PDFButton.js';
+import PDFCheckBox from './PDFCheckBox.js';
+import PDFDropdown from './PDFDropdown.js';
+import type PDFField from './PDFField.js';
+import PDFOptionList from './PDFOptionList.js';
+import PDFRadioGroup from './PDFRadioGroup.js';
+import PDFSignature from './PDFSignature.js';
+import PDFTextField from './PDFTextField.js';
 
 export interface FlattenOptions {
   updateFieldAppearances: boolean;

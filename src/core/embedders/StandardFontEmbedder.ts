@@ -1,14 +1,13 @@
 import {
   Encodings,
+  type EncodingType,
   Font,
   FontNames,
-  type EncodingType,
 } from '@pdf-lib/standard-fonts';
-
+import { toCodePoint, toHexString } from '../../utils/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
-import { toCodePoint, toHexString } from '../../utils/index.js';
 
 export interface Glyph {
   code: number;
@@ -31,11 +30,12 @@ class StandardFontEmbedder {
 
   private constructor(fontName: FontNames, customName?: string) {
     // prettier-ignore
-    this.encoding = (
-        fontName === FontNames.ZapfDingbats ? Encodings.ZapfDingbats
-      : fontName === FontNames.Symbol       ? Encodings.Symbol
-      : Encodings.WinAnsi
-    );
+    this.encoding =
+      fontName === FontNames.ZapfDingbats
+        ? Encodings.ZapfDingbats
+        : fontName === FontNames.Symbol
+          ? Encodings.Symbol
+          : Encodings.WinAnsi;
     this.font = Font.load(fontName);
     this.fontName = this.font.FontName;
     this.customName = customName;

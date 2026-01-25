@@ -1,10 +1,10 @@
-import type PDFContext from '../PDFContext.js';
 import type PDFDict from '../objects/PDFDict.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import PDFString from '../objects/PDFString.js';
 import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
+import PDFNumber from '../objects/PDFNumber.js';
 import type PDFRef from '../objects/PDFRef.js';
+import PDFString from '../objects/PDFString.js';
+import type PDFContext from '../PDFContext.js';
 import PDFAcroTerminal from './PDFAcroTerminal.js';
 
 class PDFAcroText extends PDFAcroTerminal {

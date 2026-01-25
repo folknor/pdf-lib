@@ -1,12 +1,12 @@
 import PDFDict from '../objects/PDFDict.js';
+import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
 import PDFRef from '../objects/PDFRef.js';
 import PDFString from '../objects/PDFString.js';
-import PDFHexString from '../objects/PDFHexString.js';
 import type PDFContext from '../PDFContext.js';
+import AppearanceCharacteristics from './AppearanceCharacteristics.js';
 import BorderStyle from './BorderStyle.js';
 import PDFAnnotation from './PDFAnnotation.js';
-import AppearanceCharacteristics from './AppearanceCharacteristics.js';
 
 class PDFWidgetAnnotation extends PDFAnnotation {
   static override fromDict = (dict: PDFDict): PDFWidgetAnnotation =>

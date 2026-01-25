@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
 import fs from 'fs';
+import { vi } from 'vitest';
 
 import {
   CharCodes,

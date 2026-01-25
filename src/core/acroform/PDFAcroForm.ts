@@ -1,8 +1,8 @@
-import type PDFContext from '../PDFContext.js';
-import PDFDict from '../objects/PDFDict.js';
 import PDFArray from '../objects/PDFArray.js';
+import PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import type PDFRef from '../objects/PDFRef.js';
+import type PDFContext from '../PDFContext.js';
 import type PDFAcroField from './PDFAcroField.js';
 import PDFAcroNonTerminal from './PDFAcroNonTerminal.js';
 import { createPDFAcroField, createPDFAcroFields } from './utils.js';

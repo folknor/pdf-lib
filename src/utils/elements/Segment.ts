@@ -2,10 +2,10 @@ import {
   distance,
   isColinear,
   norm,
-  scalar,
-  vector,
   plus,
+  scalar,
   times,
+  vector,
 } from '../maths.js';
 
 import GraphElement from './GraphElement.js';

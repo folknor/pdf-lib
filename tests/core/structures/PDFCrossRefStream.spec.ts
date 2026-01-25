@@ -69,10 +69,7 @@ describe('PDFCrossRefStream', () => {
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
-      0,  0, 255, 255,
-      0, 11,   0,   2,
-      1, 30,   0,  40,
-      2,  5,   2, 179,
+      0, 0, 255, 255, 0, 11, 0, 2, 1, 30, 0, 40, 2, 5, 2, 179,
     ]);
 
     expect(stream1.copyBytesInto(buffer, 2)).toBe(95);
@@ -93,11 +90,8 @@ describe('PDFCrossRefStream', () => {
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
-      0,  0,   0,  255,  255,
-      1,  1,  44,    0,    0,
-      2,  0,  10,    0,    0,
-      1,  2,  88,    0,    0,
-      2,  0,  10,    0,    1,
+      0, 0, 0, 255, 255, 1, 1, 44, 0, 0, 2, 0, 10, 0, 0, 1, 2, 88, 0, 0, 2, 0,
+      10, 0, 1,
     ]);
 
     expect(stream2.copyBytesInto(buffer, 2)).toBe(110);
@@ -124,11 +118,8 @@ describe('PDFCrossRefStream', () => {
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
-      0,  0,   0,  255,  255,
-      1,  1,  44,    0,    0,
-      2,  0,  10,    0,    0,
-      1,  2,  88,    0,    0,
-      2,  0,  10,    0,    1,
+      0, 0, 0, 255, 255, 1, 1, 44, 0, 0, 2, 0, 10, 0, 0, 1, 2, 88, 0, 0, 2, 0,
+      10, 0, 1,
     ]);
     const encodedEntries = pako.deflate(expectedEntries);
 

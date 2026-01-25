@@ -1,11 +1,11 @@
+import { copyStringIntoBuffer, last } from '../../utils/index.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
-import PDFFlateStream from './PDFFlateStream.js';
 import CharCodes from '../syntax/CharCodes.js';
-import { copyStringIntoBuffer, last } from '../../utils/index.js';
+import PDFFlateStream from './PDFFlateStream.js';
 
 export type IndirectObject = [PDFRef, PDFObject];
 

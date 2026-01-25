@@ -1,27 +1,49 @@
+import {
+  PDFArray,
+  PDFContentStream,
+  PDFDict,
+  type PDFHexString,
+  PDFName,
+  PDFOperator,
+  PDFPageLeaf,
+  PDFRef,
+} from '../core/index.js';
+import {
+  assertEachIs,
+  assertIs,
+  assertIsOneOfOrUndefined,
+  assertMultiple,
+  assertOrUndefined,
+  assertRangeOrUndefined,
+  breakTextIntoLines,
+  cleanText,
+  lineSplit,
+  rectanglesAreEqual,
+} from '../utils/index.js';
 import { type Color, rgb } from './colors.js';
 import {
+  drawEllipse,
   drawImage,
   drawLine,
   drawLinesOfText,
   drawPage,
   drawRectangle,
   drawSvgPath,
-  drawEllipse,
 } from './operations.js';
 import {
+  FillRule,
+  LineCapStyle,
   popGraphicsState,
   pushGraphicsState,
-  translate,
-  LineCapStyle,
   scale,
-  FillRule,
+  translate,
 } from './operators.js';
 import PDFDocument from './PDFDocument.js';
 import PDFEmbeddedPage from './PDFEmbeddedPage.js';
 import PDFFont from './PDFFont.js';
 import PDFImage from './PDFImage.js';
-import PDFSvg from './PDFSvg.js';
 import {
+  BlendMode,
   type PDFPageDrawCircleOptions,
   type PDFPageDrawEllipseOptions,
   type PDFPageDrawImageOptions,
@@ -29,35 +51,13 @@ import {
   type PDFPageDrawPageOptions,
   type PDFPageDrawRectangleOptions,
   type PDFPageDrawSquareOptions,
+  type PDFPageDrawSVGElementOptions,
   type PDFPageDrawSVGOptions,
   type PDFPageDrawTextOptions,
-  BlendMode,
-  type PDFPageDrawSVGElementOptions,
 } from './PDFPageOptions.js';
+import PDFSvg from './PDFSvg.js';
 import { degrees, type Rotation, toDegrees } from './rotations.js';
 import { StandardFonts } from './StandardFonts.js';
-import {
-  PDFContentStream,
-  type PDFHexString,
-  PDFName,
-  PDFOperator,
-  PDFPageLeaf,
-  PDFRef,
-  PDFDict,
-  PDFArray,
-} from '../core/index.js';
-import {
-  assertEachIs,
-  assertIs,
-  assertMultiple,
-  assertOrUndefined,
-  breakTextIntoLines,
-  cleanText,
-  rectanglesAreEqual,
-  lineSplit,
-  assertRangeOrUndefined,
-  assertIsOneOfOrUndefined,
-} from '../utils/index.js';
 import { drawSvg } from './svg.js';
 
 /**
@@ -1159,18 +1159,20 @@ export default class PDFPage {
     });
 
     // prettier-ignore
-    const xScale = (
-      options.width !== undefined ? options.width / embeddedPage.width
-        : options.xScale !== undefined ? options.xScale
-          : 1
-    );
+    const xScale =
+      options.width !== undefined
+        ? options.width / embeddedPage.width
+        : options.xScale !== undefined
+          ? options.xScale
+          : 1;
 
     // prettier-ignore
-    const yScale = (
-      options.height !== undefined ? options.height / embeddedPage.height
-        : options.yScale !== undefined ? options.yScale
-          : 1
-    );
+    const yScale =
+      options.height !== undefined
+        ? options.height / embeddedPage.height
+        : options.yScale !== undefined
+          ? options.yScale
+          : 1;
 
     const contentStream = this.getContentStream();
     contentStream.push(

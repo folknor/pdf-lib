@@ -1,11 +1,11 @@
+import { PDFAcroForm } from '../acroform/index.js';
+import ViewerPreferences from '../interactive/ViewerPreferences.js';
+import PDFArray from '../objects/PDFArray.js';
 import PDFDict, { type DictMap } from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import type PDFPageTree from './PDFPageTree.js';
-import { PDFAcroForm } from '../acroform/index.js';
-import ViewerPreferences from '../interactive/ViewerPreferences.js';
-import PDFArray from '../objects/PDFArray.js';
 
 class PDFCatalog extends PDFDict {
   static withContextAndPages = (

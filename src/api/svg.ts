@@ -1,19 +1,22 @@
 import {
-  parse as parseHtml,
-  type HTMLElement,
   type Attributes,
+  type HTMLElement,
   type Node,
   NodeType,
+  parse as parseHtml,
 } from 'node-html-better-parser';
+import type { Coordinates, Space } from '../types/index.js';
+import { identityMatrix, type TransformationMatrix } from '../types/matrix.js';
 import { type Color, colorString } from './colors.js';
-import { type Degrees, degreesToRadians } from './rotations.js';
+import { FillRule, LineCapStyle, LineJoinStyle } from './operators.js';
 import type PDFFont from './PDFFont.js';
 import type PDFPage from './PDFPage.js';
+import {
+  BlendMode,
+  type PDFPageDrawSVGElementOptions,
+} from './PDFPageOptions.js';
 import PDFSvg from './PDFSvg.js';
-import { BlendMode, type PDFPageDrawSVGElementOptions } from './PDFPageOptions.js';
-import { LineCapStyle, LineJoinStyle, FillRule } from './operators.js';
-import { type TransformationMatrix, identityMatrix } from '../types/matrix.js';
-import type { Coordinates, Space } from '../types/index.js';
+import { type Degrees, degreesToRadians } from './rotations.js';
 
 interface Position {
   x: number;
@@ -523,8 +526,14 @@ const parseAttributes = (
   const y2 = parseFloatValue(attributes['y2'], inherited.height);
   const cx = parseFloatValue(attributes['cx'], inherited.width);
   const cy = parseFloatValue(attributes['cy'], inherited.height);
-  const rx = parseFloatValue(attributes['rx'] || attributes['r'], inherited.width);
-  const ry = parseFloatValue(attributes['ry'] || attributes['r'], inherited.height);
+  const rx = parseFloatValue(
+    attributes['rx'] || attributes['r'],
+    inherited.width,
+  );
+  const ry = parseFloatValue(
+    attributes['ry'] || attributes['r'],
+    inherited.height,
+  );
 
   const newInherited: InheritedAttributes = {
     fontFamily: fontFamilyRaw || inherited.fontFamily,
@@ -823,7 +832,9 @@ const parseSvgNode = (
   const viewBox = node.attributes['viewBox']
     ? parseViewBox(node.attributes['viewBox'])!
     : node.attributes['width'] && node.attributes['height']
-      ? parseViewBox(`0 0 ${node.attributes['width']} ${node.attributes['height']}`)!
+      ? parseViewBox(
+          `0 0 ${node.attributes['width']} ${node.attributes['height']}`,
+        )!
       : inherited.viewBox;
   const x = parseFloat(node.attributes['x']) || 0;
   const y = parseFloat(node.attributes['y']) || 0;
@@ -1014,7 +1025,8 @@ export const drawSvg = (
   }
 
   if (options.width || options.height) {
-    if (width !== undefined) style['width'] = width + (isNaN(width) ? '' : 'px');
+    if (width !== undefined)
+      style['width'] = width + (isNaN(width) ? '' : 'px');
     if (height !== undefined) {
       style['height'] = height + (isNaN(height) ? '' : 'px');
     }

@@ -1,9 +1,15 @@
+import {
+  bytesFor,
+  Cache,
+  reverseArray,
+  sizeInBytes,
+  sum,
+} from '../../utils/index.js';
 import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import PDFFlateStream from './PDFFlateStream.js';
-import { bytesFor, Cache, reverseArray, sizeInBytes, sum } from '../../utils/index.js';
 
 export enum EntryType {
   Deleted = 0,

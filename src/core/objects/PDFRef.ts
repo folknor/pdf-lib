@@ -1,6 +1,6 @@
+import { copyStringIntoBuffer } from '../../utils/index.js';
 import { PrivateConstructorError } from '../errors.js';
 import PDFObject from '../objects/PDFObject.js';
-import { copyStringIntoBuffer } from '../../utils/index.js';
 
 const ENFORCER = {};
 const pool = new Map<string, PDFRef>();

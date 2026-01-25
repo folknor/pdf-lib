@@ -1,7 +1,13 @@
+import type JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
+import {
+  PDFArray,
+  PDFDict,
+  PDFHexString,
+  PDFName,
+  type PDFRef,
+} from '../core/index.js';
 import type Embeddable from './Embeddable.js';
 import type PDFDocument from './PDFDocument.js';
-import type JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
-import { PDFName, PDFArray, PDFDict, PDFHexString, type PDFRef } from '../core/index.js';
 
 /**
  * Represents JavaScript that has been embedded in a [[PDFDocument]].

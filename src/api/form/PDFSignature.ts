@@ -1,8 +1,7 @@
+import { PDFAcroSignature, type PDFRef } from '../../core/index.js';
+import { assertIs } from '../../utils/index.js';
 import type PDFDocument from '../PDFDocument.js';
 import PDFField from './PDFField.js';
-
-import { type PDFRef, PDFAcroSignature } from '../../core/index.js';
-import { assertIs } from '../../utils/index.js';
 
 /**
  * Represents a signature field of a [[PDFForm]].

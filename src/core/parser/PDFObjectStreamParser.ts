@@ -1,3 +1,4 @@
+import { waitForTick } from '../../utils/index.js';
 import { ReparseError } from '../errors.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
@@ -5,7 +6,6 @@ import type PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import ByteStream from './ByteStream.js';
 import PDFObjectParser from './PDFObjectParser.js';
-import { waitForTick } from '../../utils/index.js';
 
 class PDFObjectStreamParser extends PDFObjectParser {
   static forStream = (

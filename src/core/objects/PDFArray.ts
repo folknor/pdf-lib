@@ -1,3 +1,6 @@
+import { PDFArrayIsNotRectangleError } from '../errors.js';
+import type PDFContext from '../PDFContext.js';
+import CharCodes from '../syntax/CharCodes.js';
 import type PDFBool from './PDFBool.js';
 import type PDFDict from './PDFDict.js';
 import type PDFHexString from './PDFHexString.js';
@@ -5,13 +8,10 @@ import type PDFName from './PDFName.js';
 import type PDFNull from './PDFNull.js';
 import PDFNumber from './PDFNumber.js';
 import PDFObject from './PDFObject.js';
+import type PDFRawStream from './PDFRawStream.js';
 import type PDFRef from './PDFRef.js';
 import type PDFStream from './PDFStream.js';
 import type PDFString from './PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import { PDFArrayIsNotRectangleError } from '../errors.js';
-import type PDFRawStream from './PDFRawStream.js';
 
 class PDFArray extends PDFObject {
   static withContext = (context: PDFContext) => new PDFArray(context);
@@ -80,7 +80,7 @@ class PDFArray extends PDFObject {
   lookupMaybe(index: number, ...types: any[]) {
     return this.context.lookupMaybe(
       this.get(index),
-      // @ts-ignore
+      // @ts-expect-error
       ...types,
     ) as any;
   }
@@ -106,7 +106,7 @@ class PDFArray extends PDFObject {
   lookup(index: number, ...types: any[]) {
     return this.context.lookup(
       this.get(index),
-      // @ts-ignore
+      // @ts-expect-error
       ...types,
     ) as any;
   }

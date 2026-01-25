@@ -1,8 +1,8 @@
 import {
   PDFAcroTerminal,
   PDFContext,
-  PDFString,
   PDFHexString,
+  PDFString,
 } from '../../../src/index';
 
 describe('PDFAcroField', () => {

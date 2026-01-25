@@ -42,14 +42,18 @@ class PDFObjectCopier {
   }
 
   // prettier-ignore
-  copy = <T extends PDFObject>(object: T): T => (
-      object instanceof PDFPageLeaf ? this.copyPDFPage(object)
-    : object instanceof PDFDict     ? this.copyPDFDict(object)
-    : object instanceof PDFArray    ? this.copyPDFArray(object)
-    : object instanceof PDFStream   ? this.copyPDFStream(object)
-    : object instanceof PDFRef      ? this.copyPDFIndirectObject(object)
-    : object.clone()
-  ) as T;
+  copy = <T extends PDFObject>(object: T): T =>
+    (object instanceof PDFPageLeaf
+      ? this.copyPDFPage(object)
+      : object instanceof PDFDict
+        ? this.copyPDFDict(object)
+        : object instanceof PDFArray
+          ? this.copyPDFArray(object)
+          : object instanceof PDFStream
+            ? this.copyPDFStream(object)
+            : object instanceof PDFRef
+              ? this.copyPDFIndirectObject(object)
+              : object.clone()) as T;
 
   private copyPDFPage = (originalPage: PDFPageLeaf): PDFPageLeaf => {
     const clonedPage = originalPage.clone();

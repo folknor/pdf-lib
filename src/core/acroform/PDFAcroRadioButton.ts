@@ -1,10 +1,10 @@
-import type PDFRef from '../objects/PDFRef.js';
+import { InvalidAcroFieldValueError } from '../errors.js';
 import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
-import PDFAcroButton from './PDFAcroButton.js';
+import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import { AcroButtonFlags } from './flags.js';
-import { InvalidAcroFieldValueError } from '../errors.js';
+import PDFAcroButton from './PDFAcroButton.js';
 
 class PDFAcroRadioButton extends PDFAcroButton {
   static override fromDict = (dict: PDFDict, ref: PDFRef) =>

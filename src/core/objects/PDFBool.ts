@@ -1,6 +1,6 @@
 import { PrivateConstructorError } from '../errors.js';
-import PDFObject from './PDFObject.js';
 import CharCodes from '../syntax/CharCodes.js';
+import PDFObject from './PDFObject.js';
 
 const ENFORCER = {};
 

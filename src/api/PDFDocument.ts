@@ -1,25 +1,17 @@
 import {
-  parse as parseHtml,
   type HTMLElement,
   NodeType,
+  parse as parseHtml,
 } from 'node-html-better-parser';
-import type Embeddable from './Embeddable.js';
-import {
-  EncryptedPDFError,
-  FontkitNotRegisteredError,
-  ForeignPageError,
-  RemovePageFromEmptyDocumentError,
-} from './errors.js';
-import PDFEmbeddedPage from './PDFEmbeddedPage.js';
-import PDFFont from './PDFFont.js';
-import PDFImage from './PDFImage.js';
-import PDFPage from './PDFPage.js';
-import PDFForm from './form/PDFForm.js';
-import { PageSizes } from './sizes.js';
-import type { StandardFonts } from './StandardFonts.js';
+import { CipherTransformFactory } from '../core/crypto.js';
+import FileEmbedder, {
+  AFRelationship,
+} from '../core/embedders/FileEmbedder.js';
+import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
 import {
   CustomFontEmbedder,
   CustomFontSubsetEmbedder,
+  decodePDFRawStream,
   JpegEmbedder,
   type PageBoundingBox,
   PageEmbeddingMismatchedContextError,
@@ -27,9 +19,6 @@ import {
   PDFCatalog,
   PDFContext,
   PDFDict,
-  decodePDFRawStream,
-  PDFStream,
-  type PDFRawStream,
   PDFHexString,
   PDFName,
   PDFObjectCopier,
@@ -37,6 +26,8 @@ import {
   PDFPageLeaf,
   PDFPageTree,
   PDFParser,
+  type PDFRawStream,
+  PDFStream,
   PDFStreamWriter,
   PDFString,
   PDFWriter,
@@ -44,18 +35,11 @@ import {
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
 } from '../core/index.js';
-import {
-  ParseSpeeds,
-  type AttachmentOptions,
-  type SaveOptions,
-  type Base64SaveOptions,
-  type LoadOptions,
-  type CreateOptions,
-  type EmbedFontOptions,
-  type SetTitleOptions,
-} from './PDFDocumentOptions.js';
 import type PDFObject from '../core/objects/PDFObject.js';
 import type PDFRef from '../core/objects/PDFRef.js';
+import PDFSecurity, {
+  type SecurityOptions,
+} from '../core/security/PDFSecurity.js';
 import type { Fontkit } from '../types/fontkit.js';
 import type { TransformationMatrix } from '../types/matrix.js';
 import {
@@ -71,15 +55,33 @@ import {
   range,
   toUint8Array,
 } from '../utils/index.js';
-import FileEmbedder, { AFRelationship } from '../core/embedders/FileEmbedder.js';
+import type Embeddable from './Embeddable.js';
+import {
+  EncryptedPDFError,
+  FontkitNotRegisteredError,
+  ForeignPageError,
+  RemovePageFromEmptyDocumentError,
+} from './errors.js';
+import PDFForm from './form/PDFForm.js';
+import {
+  type AttachmentOptions,
+  type Base64SaveOptions,
+  type CreateOptions,
+  type EmbedFontOptions,
+  type LoadOptions,
+  ParseSpeeds,
+  type SaveOptions,
+  type SetTitleOptions,
+} from './PDFDocumentOptions.js';
 import PDFEmbeddedFile from './PDFEmbeddedFile.js';
+import PDFEmbeddedPage from './PDFEmbeddedPage.js';
+import PDFFont from './PDFFont.js';
+import PDFImage from './PDFImage.js';
 import PDFJavaScript from './PDFJavaScript.js';
-import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
-import { CipherTransformFactory } from '../core/crypto.js';
+import PDFPage from './PDFPage.js';
 import PDFSvg from './PDFSvg.js';
-import PDFSecurity, {
-  type SecurityOptions,
-} from '../core/security/PDFSecurity.js';
+import type { StandardFonts } from './StandardFonts.js';
+import { PageSizes } from './sizes.js';
 
 export type BasePDFAttachment = {
   name: string;
@@ -1021,7 +1023,9 @@ export default class PDFDocument {
       const afr = fileSpec.lookup(PDFName.of('AFRelationship'));
       const afRelationship =
         afr instanceof PDFName
-          ? afr.toString().slice(1) // Remove leading slash
+          ? afr
+              .toString()
+              .slice(1) // Remove leading slash
           : afr instanceof PDFString
             ? afr.decodeText()
             : undefined;
@@ -1332,11 +1336,9 @@ export default class PDFDocument {
     const findImages = (element: HTMLElement): HTMLElement[] => {
       if (element.tagName === 'image') return [element];
       else {
-        return element.childNodes
-          .map((child) =>
-            child.nodeType === NodeType.ELEMENT_NODE ? findImages(child) : [],
-          )
-          .flat();
+        return element.childNodes.flatMap((child) =>
+          child.nodeType === NodeType.ELEMENT_NODE ? findImages(child) : [],
+        );
       }
     };
     const images = findImages(parsedSvg);

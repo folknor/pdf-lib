@@ -1,3 +1,5 @@
+import type PDFContext from '../PDFContext.js';
+import CharCodes from '../syntax/CharCodes.js';
 import type PDFArray from './PDFArray.js';
 import type PDFBool from './PDFBool.js';
 import type PDFHexString from './PDFHexString.js';
@@ -8,8 +10,6 @@ import PDFObject from './PDFObject.js';
 import type PDFRef from './PDFRef.js';
 import type PDFStream from './PDFStream.js';
 import type PDFString from './PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
 
 export type DictMap = Map<PDFName, PDFObject>;
 
@@ -100,7 +100,7 @@ class PDFDict extends PDFObject {
 
     const value = this.context.lookupMaybe(
       this.get(key, preservePDFNull),
-      // @ts-ignore
+      // @ts-expect-error
       ...types,
     ) as any;
 
@@ -144,7 +144,7 @@ class PDFDict extends PDFObject {
 
     const value = this.context.lookup(
       this.get(key, preservePDFNull),
-      // @ts-ignore
+      // @ts-expect-error
       ...types,
     ) as any;
 

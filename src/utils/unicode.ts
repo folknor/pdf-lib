@@ -370,11 +370,12 @@ const decodeValues = (first: number, second: number, byteOrder: ByteOrder) => {
  * @param bytes The byte array to be evaluated.
  */
 // prettier-ignore
-const readBOM = (bytes: Uint8Array): ByteOrder => (
-    hasUtf16BigEndianBOM(bytes) ? ByteOrder.BigEndian
-  : hasUtf16LittleEndianBOM(bytes) ? ByteOrder.LittleEndian
-  : ByteOrder.BigEndian
-);
+const readBOM = (bytes: Uint8Array): ByteOrder =>
+  hasUtf16BigEndianBOM(bytes)
+    ? ByteOrder.BigEndian
+    : hasUtf16LittleEndianBOM(bytes)
+      ? ByteOrder.LittleEndian
+      : ByteOrder.BigEndian;
 
 const hasUtf16BigEndianBOM = (bytes: Uint8Array) =>
   bytes[0] === 0xfe && bytes[1] === 0xff;

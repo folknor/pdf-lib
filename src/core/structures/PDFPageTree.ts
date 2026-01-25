@@ -1,3 +1,4 @@
+import { CorruptPageTreeError, InvalidTargetIndexError } from '../errors.js';
 import PDFArray from '../objects/PDFArray.js';
 import PDFDict, { type DictMap } from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
@@ -5,7 +6,6 @@ import PDFNumber from '../objects/PDFNumber.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import PDFPageLeaf from './PDFPageLeaf.js';
-import { InvalidTargetIndexError, CorruptPageTreeError } from '../errors.js';
 
 export type TreeNode = PDFPageTree | PDFPageLeaf;
 

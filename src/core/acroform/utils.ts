@@ -1,23 +1,22 @@
-import type PDFObject from '../objects/PDFObject.js';
-import PDFNumber from '../objects/PDFNumber.js';
+import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
-import PDFArray from '../objects/PDFArray.js';
+import PDFNumber from '../objects/PDFNumber.js';
+import type PDFObject from '../objects/PDFObject.js';
 import PDFRef from '../objects/PDFRef.js';
-
-import type PDFAcroField from './PDFAcroField.js';
-import PDFAcroTerminal from './PDFAcroTerminal.js';
-import PDFAcroNonTerminal from './PDFAcroNonTerminal.js';
+import { AcroButtonFlags, AcroChoiceFlags } from './flags.js';
 import type PDFAcroButton from './PDFAcroButton.js';
-import PDFAcroSignature from './PDFAcroSignature.js';
+import PDFAcroCheckBox from './PDFAcroCheckBox.js';
 import type PDFAcroChoice from './PDFAcroChoice.js';
-import PDFAcroText from './PDFAcroText.js';
+import PDFAcroComboBox from './PDFAcroComboBox.js';
+import type PDFAcroField from './PDFAcroField.js';
+import PDFAcroListBox from './PDFAcroListBox.js';
+import PDFAcroNonTerminal from './PDFAcroNonTerminal.js';
 import PDFAcroPushButton from './PDFAcroPushButton.js';
 import PDFAcroRadioButton from './PDFAcroRadioButton.js';
-import PDFAcroCheckBox from './PDFAcroCheckBox.js';
-import PDFAcroComboBox from './PDFAcroComboBox.js';
-import PDFAcroListBox from './PDFAcroListBox.js';
-import { AcroButtonFlags, AcroChoiceFlags } from './flags.js';
+import PDFAcroSignature from './PDFAcroSignature.js';
+import PDFAcroTerminal from './PDFAcroTerminal.js';
+import PDFAcroText from './PDFAcroText.js';
 
 export const createPDFAcroFields = (
   kidDicts?: PDFArray,

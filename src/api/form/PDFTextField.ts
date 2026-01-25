@@ -1,32 +1,9 @@
-import type PDFDocument from '../PDFDocument.js';
-import PDFPage from '../PDFPage.js';
-import PDFFont from '../PDFFont.js';
-import type PDFImage from '../PDFImage.js';
-import PDFField, {
-  type FieldAppearanceOptions,
-  assertFieldAppearanceOptions,
-} from './PDFField.js';
 import {
-  type AppearanceProviderFor,
-  normalizeAppearance,
-  defaultTextFieldAppearanceProvider,
-} from './appearances.js';
-import { rgb } from '../colors.js';
-import { degrees } from '../rotations.js';
-import {
-  RichTextFieldReadError,
-  ExceededMaxLengthError,
-  InvalidMaxLengthError,
-} from '../errors.js';
-import { ImageAlignment } from '../image/alignment.js';
-import { TextAlignment } from '../text/alignment.js';
-
-import {
+  AcroTextFlags,
+  PDFAcroText,
   PDFHexString,
   type PDFRef,
   PDFStream,
-  PDFAcroText,
-  AcroTextFlags,
   type PDFWidgetAnnotation,
 } from '../../core/index.js';
 import {
@@ -36,6 +13,28 @@ import {
   assertPositive,
   assertRangeOrUndefined,
 } from '../../utils/index.js';
+import { rgb } from '../colors.js';
+import {
+  ExceededMaxLengthError,
+  InvalidMaxLengthError,
+  RichTextFieldReadError,
+} from '../errors.js';
+import { ImageAlignment } from '../image/alignment.js';
+import type PDFDocument from '../PDFDocument.js';
+import PDFFont from '../PDFFont.js';
+import type PDFImage from '../PDFImage.js';
+import PDFPage from '../PDFPage.js';
+import { degrees } from '../rotations.js';
+import { TextAlignment } from '../text/alignment.js';
+import {
+  type AppearanceProviderFor,
+  defaultTextFieldAppearanceProvider,
+  normalizeAppearance,
+} from './appearances.js';
+import PDFField, {
+  assertFieldAppearanceOptions,
+  type FieldAppearanceOptions,
+} from './PDFField.js';
 
 /**
  * Represents a text field of a [[PDFForm]].
@@ -181,12 +180,13 @@ export default class PDFTextField extends PDFField {
     const quadding = this.acroField.getQuadding();
 
     // prettier-ignore
-    return (
-        quadding === 0 ? TextAlignment.Left
-      : quadding === 1 ? TextAlignment.Center
-      : quadding === 2 ? TextAlignment.Right
-      : TextAlignment.Left
-    );
+    return quadding === 0
+      ? TextAlignment.Left
+      : quadding === 1
+        ? TextAlignment.Center
+        : quadding === 2
+          ? TextAlignment.Right
+          : TextAlignment.Left;
   }
 
   /**
@@ -298,9 +298,11 @@ export default class PDFTextField extends PDFField {
 
     // prettier-ignore
     const alignment =
-        fieldAlignment === TextAlignment.Center ? ImageAlignment.Center
-      : fieldAlignment === TextAlignment.Right ? ImageAlignment.Right
-      : ImageAlignment.Left;
+      fieldAlignment === TextAlignment.Center
+        ? ImageAlignment.Center
+        : fieldAlignment === TextAlignment.Right
+          ? ImageAlignment.Right
+          : ImageAlignment.Left;
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {

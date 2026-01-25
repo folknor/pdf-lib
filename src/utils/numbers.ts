@@ -16,7 +16,7 @@ export const numberToString = (num: number) => {
     if (e) {
       const negative = num < 0;
       if (negative) num *= -1;
-      num *= Math.pow(10, e - 1);
+      num *= 10 ** (e - 1);
       numStr = `0.${new Array(e).join('0')}${num.toString().substring(2)}`;
       if (negative) numStr = `-${numStr}`;
     }
@@ -24,7 +24,7 @@ export const numberToString = (num: number) => {
     let e = parseInt(num.toString().split('+')[1]);
     if (e > 20) {
       e -= 20;
-      num /= Math.pow(10, e);
+      num /= 10 ** e;
       numStr = num.toString() + new Array(e + 1).join('0');
     }
   }

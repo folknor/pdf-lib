@@ -1,3 +1,4 @@
+import type { Coordinates, GraphicElement } from '../types/index.js';
 import Arc from './elements/Arc.js';
 import Circle from './elements/Circle.js';
 import Ellipse from './elements/Ellipse.js';
@@ -6,17 +7,16 @@ import Plot from './elements/Plot.js';
 import Point from './elements/Point.js';
 import Rectangle from './elements/Rectangle.js';
 import Segment from './elements/Segment.js';
-import type { Coordinates, GraphicElement } from '../types/index.js';
 import {
   distance,
   isColinear,
   isEqual,
   norm,
   orthogonal,
+  rotate,
   times,
   unitVector,
   vector,
-  rotate,
 } from './maths.js';
 
 export const intersections = (
@@ -194,8 +194,7 @@ const intersectionsPlot = (A: Plot, B: GraphicElement): Coordinates[] => {
   const segments = points.map(
     (pt, i) => new Segment(pt, points[i + 1] || head),
   );
-  // @ts-ignore
-  const inters = segments.map((s) => intersections(s, B)).flat();
+  const inters = segments.flatMap((s) => intersections(s, B));
   return inters;
 };
 

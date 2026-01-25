@@ -1,9 +1,9 @@
+import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
-import PDFStream from '../objects/PDFStream.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFRef from '../objects/PDFRef.js';
 import PDFNumber from '../objects/PDFNumber.js';
+import PDFRef from '../objects/PDFRef.js';
+import PDFStream from '../objects/PDFStream.js';
 
 class PDFAnnotation {
   readonly dict: PDFDict;

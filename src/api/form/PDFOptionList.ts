@@ -1,25 +1,10 @@
-import type PDFDocument from '../PDFDocument.js';
-import PDFPage from '../PDFPage.js';
-import PDFFont from '../PDFFont.js';
-import PDFField, {
-  type FieldAppearanceOptions,
-  assertFieldAppearanceOptions,
-} from './PDFField.js';
 import {
-  type AppearanceProviderFor,
-  normalizeAppearance,
-  defaultOptionListAppearanceProvider,
-} from './appearances.js';
-import { rgb } from '../colors.js';
-import { degrees } from '../rotations.js';
-
-import {
-  type PDFRef,
-  PDFHexString,
-  type PDFString,
-  PDFStream,
-  PDFAcroListBox,
   AcroChoiceFlags,
+  PDFAcroListBox,
+  PDFHexString,
+  type PDFRef,
+  PDFStream,
+  type PDFString,
   type PDFWidgetAnnotation,
 } from '../../core/index.js';
 import {
@@ -28,6 +13,20 @@ import {
   assertOrUndefined,
   assertPositive,
 } from '../../utils/index.js';
+import { rgb } from '../colors.js';
+import type PDFDocument from '../PDFDocument.js';
+import PDFFont from '../PDFFont.js';
+import PDFPage from '../PDFPage.js';
+import { degrees } from '../rotations.js';
+import {
+  type AppearanceProviderFor,
+  defaultOptionListAppearanceProvider,
+  normalizeAppearance,
+} from './appearances.js';
+import PDFField, {
+  assertFieldAppearanceOptions,
+  type FieldAppearanceOptions,
+} from './PDFField.js';
 
 /**
  * Represents an option list field of a [[PDFForm]].

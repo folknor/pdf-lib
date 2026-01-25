@@ -1,5 +1,6 @@
 import pako from 'pako';
-
+import { typedArrayFor } from '../utils/index.js';
+import { SimpleRNG } from '../utils/rng.js';
 import PDFHeader from './document/PDFHeader.js';
 import { UnexpectedObjectTypeError } from './errors.js';
 import PDFArray from './objects/PDFArray.js';
@@ -16,10 +17,8 @@ import PDFStream from './objects/PDFStream.js';
 import PDFString from './objects/PDFString.js';
 import PDFOperator from './operators/PDFOperator.js';
 import Ops from './operators/PDFOperatorNames.js';
-import PDFContentStream from './structures/PDFContentStream.js';
 import type PDFSecurity from './security/PDFSecurity.js';
-import { typedArrayFor } from '../utils/index.js';
-import { SimpleRNG } from '../utils/rng.js';
+import PDFContentStream from './structures/PDFContentStream.js';
 
 type LookupKey = PDFRef | PDFObject | undefined;
 
