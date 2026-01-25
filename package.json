@@ -1,6 +1,6 @@
 {
-  "name": "@cantoo/pdf-lib",
-  "version": "2.5.3",
+  "name": "@folknor/pdf-lib",
+  "version": "2.6.0",
   "description": "Create and modify PDF files with JavaScript",
   "author": "Andrew Dillon <andrew.dillon.j@gmail.com>",
   "packageManager": "pnpm@10.28.1",
@@ -85,8 +85,6 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.1.0",
-    "husky": "9",
-    "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "release-it": "^19.2.4",
     "rimraf": "^6.1.2",
@@ -114,16 +112,5 @@
     "typescript",
     "javascript",
     "library"
-  ],
-  "lint-staged": {
-    "{src,tests}/**/*.{ts,js,json,html,css}": [
-      "prettier --check",
-      "eslint --fix"
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  }
+  ]
 }
