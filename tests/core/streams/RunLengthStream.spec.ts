@@ -7,7 +7,7 @@ const DIR = 'tests/core/streams/data/runlength';
 const FILES = ['1', '2', '3', '4', '5'];
 
 describe('RunLengthStream', () => {
-  FILES.forEach((file) => {
+  for (const file of FILES) {
     it(`can decode run length encoded data (${file})`, () => {
       const encoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.encoded`));
       const decoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.decoded`));
@@ -16,5 +16,5 @@ describe('RunLengthStream', () => {
 
       expect(stream.decode()).toEqual(decoded);
     });
-  });
+  }
 });

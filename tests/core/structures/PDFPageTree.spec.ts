@@ -34,11 +34,11 @@ const pageUtils = () => {
 };
 
 const pushTreeNodes = (tree: PDFPageTree, ...nodes: PDFRef[]) => {
-  nodes.forEach((n) => tree.pushTreeNode(n));
+  for (const n of nodes) tree.pushTreeNode(n);
 };
 
 const pushLeafNodes = (tree: PDFPageTree, ...nodes: PDFRef[]) => {
-  nodes.forEach((n) => tree.pushLeafNode(n));
+  for (const n of nodes) tree.pushLeafNode(n);
 };
 
 describe('PDFPageTree', () => {

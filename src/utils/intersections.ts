@@ -269,9 +269,9 @@ const intersectionsCircle = (
 export const getIntersections = (elements: GraphicElement[]) => {
   const checked: GraphicElement[] = [];
   const inters: Coordinates[] = [];
-  elements.forEach((elt) => {
-    checked.forEach((e) => inters.push(...intersections(e, elt)));
+  for (const elt of elements) {
+    for (const e of checked) inters.push(...intersections(e, elt));
     checked.push(elt);
-  });
+  }
   return inters;
 };

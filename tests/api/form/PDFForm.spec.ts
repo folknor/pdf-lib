@@ -216,7 +216,7 @@ describe('PDFForm', () => {
 
     expect(aps()).toBe(5);
 
-    widgets.forEach((w) => w.delete(PDFName.of('AP')));
+    for (const w of widgets) w.delete(PDFName.of('AP'));
 
     expect(aps()).toBe(0);
 
@@ -249,7 +249,7 @@ describe('PDFForm', () => {
     const aps = () => widgets.filter((w) => w.has(PDFName.of('AP'))).length;
     expect(aps()).toBe(24);
 
-    widgets.forEach((w) => w.delete(PDFName.of('AP')));
+    for (const w of widgets) w.delete(PDFName.of('AP'));
     expect(aps()).toBe(0);
 
     await pdfDoc.save({ updateFieldAppearances: true });
@@ -265,7 +265,7 @@ describe('PDFForm', () => {
     const aps = () => widgets.filter((w) => w.has(PDFName.of('AP'))).length;
     expect(aps()).toBe(24);
 
-    widgets.forEach((w) => w.delete(PDFName.of('AP')));
+    for (const w of widgets) w.delete(PDFName.of('AP'));
     expect(aps()).toBe(0);
 
     const form = pdfDoc.getForm();
@@ -284,7 +284,7 @@ describe('PDFForm', () => {
     const aps = () => widgets.filter((w) => w.has(PDFName.of('AP'))).length;
     expect(aps()).toBe(24);
 
-    widgets.forEach((w) => w.delete(PDFName.of('AP')));
+    for (const w of widgets) w.delete(PDFName.of('AP'));
     expect(aps()).toBe(0);
 
     const form = pdfDoc.getForm();

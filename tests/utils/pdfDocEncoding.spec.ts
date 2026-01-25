@@ -68,10 +68,10 @@ describe('pdfDocEncodingDecode', () => {
     );
 
     // Now make sure that `pdfDocEncodingDecode` decodes everything correctly
-    mappings.forEach(([input1, expected1]) => {
+    for (const [input1, expected1] of mappings) {
       const actual1 = pdfDocEncodingDecode(Uint8Array.of(input1));
       expect(actual1).toBe(expected1);
-    });
+    }
 
     // Let's do it again but all at once instead of passing each code separately
     const input2 = Uint8Array.from(mappings.map(([code]) => code));

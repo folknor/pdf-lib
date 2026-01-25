@@ -1116,8 +1116,8 @@ export default class PDFDocument {
 
   detach(name: string) {
     const attachedFiles = this.getAttachments();
-    attachedFiles.forEach((file) => {
-      if (file.name !== name) return;
+    for (const file of attachedFiles) {
+      if (file.name !== name) continue;
       // the file wasn't embedded into context yet
       if ('pdfEmbeddedFile' in file) {
         const i = this.embeddedFiles.findIndex(
@@ -1150,7 +1150,7 @@ export default class PDFDocument {
         if (streamRef) this.context.delete(streamRef);
         this.context.delete(file.specRef);
       }
-    });
+    }
   }
 
   /**

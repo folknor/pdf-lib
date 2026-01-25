@@ -575,7 +575,7 @@ const parseAttributes = (
 
   let transformList = attributes['transform'] || '';
   // Handle transformations set as direct attributes
-  [
+  for (const name of [
     'translate',
     'translateX',
     'translateY',
@@ -586,11 +586,11 @@ const parseAttributes = (
     'scaleX',
     'scaleY',
     'matrix',
-  ].forEach((name) => {
+  ]) {
     if (attributes[name]) {
       transformList = `${attributes[name]} ${transformList}`;
     }
-  });
+  }
 
   // Convert x/y as if it was a translation
   if (x || y) {
@@ -883,7 +883,7 @@ const parseSvgNode = (
     -viewBox.y,
   ]);
 
-  node.childNodes.forEach((child) => {
+  for (const child of node.childNodes) {
     const parsedNodes = parseHTMLNode(
       child,
       { ...attributes.inherited, viewBox },
@@ -891,7 +891,7 @@ const parseSvgNode = (
       [...clipSpaces, baseClipSpace],
     );
     result.push(...parsedNodes);
-  });
+  }
   return result;
 };
 
@@ -903,7 +903,7 @@ const parseGroupNode = (
 ): SVGElement[] => {
   const attributes = parseAttributes(node, inherited, matrix);
   const result: SVGElement[] = [];
-  node.childNodes.forEach((child) => {
+  for (const child of node.childNodes) {
     result.push(
       ...parseHTMLNode(
         child,
@@ -912,7 +912,7 @@ const parseGroupNode = (
         clipSpaces,
       ),
     );
-  });
+  }
   return result;
 };
 
@@ -1050,37 +1050,7 @@ export const drawSvg = (
   const elements = parse(svgNode.outerHTML, options, size, baseTransformation);
 
   const runners = runnersToPage(page, { ...options, images: pdfSvg.images });
-  elements.forEach((elt) => {
-    // uncomment these lines to draw the clipSpaces
-    // elt.svgAttributes.clipSpaces.forEach(space => {
-    //   page.drawLine({
-    //     start: space.topLeft,
-    //     end: space.topRight,
-    //     color: parseColor('#000000')?.rgb,
-    //     thickness: 1
-    //   })
-
-    //   page.drawLine({
-    //     start: space.topRight,
-    //     end: space.bottomRight,
-    //     color: parseColor('#000000')?.rgb,
-    //     thickness: 1
-    //   })
-
-    //   page.drawLine({
-    //     start: space.bottomRight,
-    //     end: space.bottomLeft,
-    //     color: parseColor('#000000')?.rgb,
-    //     thickness: 1
-    //   })
-
-    //   page.drawLine({
-    //     start: space.bottomLeft,
-    //     end: space.topLeft,
-    //     color: parseColor('#000000')?.rgb,
-    //     thickness: 1
-    //   })
-    // })
+  for (const elt of elements) {
     runners[elt.tagName]?.(elt);
-  });
+  }
 };

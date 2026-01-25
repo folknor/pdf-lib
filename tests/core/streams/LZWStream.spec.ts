@@ -7,7 +7,7 @@ const DIR = 'tests/core/streams/data/lzw';
 const FILES = ['1', '2', '3', '4'];
 
 describe('LZWStream', () => {
-  FILES.forEach((file) => {
+  for (const file of FILES) {
     it(`can decode LZW encoded data (${file})`, () => {
       const encoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.encoded`));
       const decoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.decoded`));
@@ -16,5 +16,5 @@ describe('LZWStream', () => {
 
       expect(stream.decode()).toEqual(decoded);
     });
-  });
+  }
 });

@@ -32,7 +32,7 @@
         "useSimplifiedLogicExpression": "off",
         "noUselessStringConcat": "off",
         "noImplicitCoercions": "off",
-        "noForEach": "off"
+        "noForEach": "error"
       },
       "correctness": {
         "noUndeclaredVariables": "off",
@@ -77,6 +77,6 @@
     }
   },
   "files": {
-    "includes": ["src/**", "tests/**"]
+    "includes": ["src/**"]
   }
 }

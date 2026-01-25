@@ -96,7 +96,7 @@ describe('PDFObjectParser', () => {
   });
 
   describe('when parsing numbers', () => {
-    [
+    for (const [input, output] of [
       ['123', '123'],
       ['43445', '43445'],
       ['+17', '17'],
@@ -108,12 +108,12 @@ describe('PDFObjectParser', () => {
       ['4.', '4'],
       ['-.002', '-0.002'],
       ['0.', '0'],
-    ].forEach(([input, output]) => {
+    ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFNumber);
         expectParseStr(input).toBe(output);
       });
-    });
+    }
 
     it('handles whitespace before and after the number', () => {
       expectParse('\0\t\n\f\r -.5\0\t\n\f\r ').toBeInstanceOf(PDFNumber);
@@ -198,7 +198,7 @@ describe('PDFObjectParser', () => {
   });
 
   describe('when parsing literal strings', () => {
-    [
+    for (const [input] of [
       ['(This is a string)'],
       ['(Strings may contain newlines\nand such.)'],
       [
@@ -207,12 +207,12 @@ describe('PDFObjectParser', () => {
       ['(The following is an empty string.)'],
       ['()'],
       ['(It has zero (0) length.)'],
-    ].forEach(([input]) => {
+    ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFString);
         expectParseStr(input).toBe(input);
       });
-    });
+    }
 
     it('handles whitespace before and after the string', () => {
       expectParse('\0\t\n\f\r (testing)\0\t\n\f\r ').toBeInstanceOf(PDFString);
@@ -267,17 +267,17 @@ describe('PDFObjectParser', () => {
   });
 
   describe('when parsing hex strings', () => {
-    [
+    for (const [input] of [
       ['<4E6F762073686D6F7A206B6120706F702E>'],
       ['<901FA3>'],
       ['<901FA>'],
       ['<01\n23\r45\f67\t89\0ab cdefABCDEF>'],
-    ].forEach(([input]) => {
+    ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFHexString);
         expectParseStr(input).toBe(input);
       });
-    });
+    }
 
     it('handles whitespace before and after the hex string', () => {
       expectParse('\0\t\n\f\r <ABC123>\0\t\n\f\r ').toBeInstanceOf(
@@ -304,7 +304,7 @@ describe('PDFObjectParser', () => {
   });
 
   describe('when parsing names', () => {
-    [
+    for (const [input, output] of [
       ['/Name1', 'Name1'],
       ['/ASomewhatLongerName', 'ASomewhatLongerName'],
       [
@@ -319,11 +319,11 @@ describe('PDFObjectParser', () => {
       ['/paired#28#29parentheses', 'paired()parentheses'],
       ['/The_Key_of_F#23_Minor', 'The_Key_of_F#_Minor'],
       ['/A#42', 'AB'],
-    ].forEach(([input, output]) => {
+    ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBe(PDFName.of(output));
       });
-    });
+    }
 
     it("handles names consisting of a single '/'", () => {
       expectParse('/').toBe(PDFName.of(''));
@@ -556,7 +556,7 @@ describe('PDFObjectParser', () => {
   });
 
   describe('when parsing streams', () => {
-    [
+    for (const [input, output] of [
       [
         '<< >>\nstream\nstream foobar endstream\nendstream',
         '<<\n/Length 23\n>>\nstream\nstream foobar endstream\nendstream',
@@ -577,7 +577,7 @@ describe('PDFObjectParser', () => {
         '<<>>\n\rstream\n\rthingz\n\rendstream',
         '<<\n/Length 8\n>>\nstream\n\rthingz\n\nendstream',
       ],
-    ].forEach(([input, output]) => {
+    ]) {
       it(`can parse ${JSON.stringify(input)}`, () => {
         const object = parse(typedArrayFor(input));
         expect(object).toBeInstanceOf(PDFRawStream);
@@ -586,7 +586,7 @@ describe('PDFObjectParser', () => {
         object.copyBytesInto(buffer, 0);
         expect(buffer).toEqual(typedArrayFor(output));
       });
-    });
+    }
 
     // Note that the ' \r\n' sequence following the 'stream' keyword is
     // technically invalid (per the specification). But some PDFs have it, so

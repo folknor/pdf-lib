@@ -38,13 +38,13 @@ export default class Plot extends GraphElement {
       .map((seg) => seg.orthoProjection(P));
     let min = Number.POSITIVE_INFINITY;
     let closest: Point = new Point(points[0]);
-    orthos.forEach((ortho) => {
+    for (const ortho of orthos) {
       const d = ortho.distance(P);
       if (d < min) {
         min = d;
         closest = ortho;
       }
-    });
+    }
     return closest;
   }
 }

@@ -7,7 +7,7 @@ const DIR = 'tests/core/streams/data/asciihex';
 const FILES = ['1', '2'];
 
 describe('AsciiHexStream', () => {
-  FILES.forEach((file) => {
+  for (const file of FILES) {
     it(`can decode ascii hex encoded data (${file})`, () => {
       const encoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.encoded`));
       const decoded = new Uint8Array(fs.readFileSync(`${DIR}/${file}.decoded`));
@@ -16,5 +16,5 @@ describe('AsciiHexStream', () => {
 
       expect(stream.decode()).toEqual(decoded);
     });
-  });
+  }
 });

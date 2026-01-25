@@ -602,7 +602,7 @@ export default class PDFForm {
       }
     }
 
-    pages.forEach((page) => page.node.removeAnnot(field.ref));
+    for (const page of pages) page.node.removeAnnot(field.ref);
     this.acroForm.removeField(field.acroField);
     const fieldKids = field.acroField.normalizedEntries().Kids;
     const kidsCount = fieldKids.size();
