@@ -132,7 +132,7 @@ export const drawLinesOfText = (
   ].filter(Boolean) as PDFOperator[];
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
-    operators.push(showText(lines[idx]), nextLine());
+    operators.push(showText(lines[idx]!), nextLine());
   }
 
   operators.push(endText(), popGraphicsState());
@@ -638,7 +638,7 @@ export const drawTextLines = (
   ];
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
-    const { encoded, x, y } = lines[idx];
+    const { encoded, x, y } = lines[idx]!;
     operators.push(
       rotateAndSkewTextRadiansAndTranslate(
         toRadians(options.rotate),
@@ -786,7 +786,7 @@ export const drawOptionList = (options: {
 
   const highlights: PDFOperator[] = [];
   for (let idx = 0, len = options.selectedLines.length; idx < len; idx++) {
-    const line = options.textLines[options.selectedLines[idx]];
+    const line = options.textLines[options.selectedLines[idx]!]!;
     highlights.push(
       ...drawRectangle({
         x: line.x - padding,

@@ -87,7 +87,7 @@ export default class PDFDropdown extends PDFField {
 
     const options = new Array<string>(rawOptions.length);
     for (let idx = 0, len = options.length; idx < len; idx++) {
-      const { display, value } = rawOptions[idx];
+      const { display, value } = rawOptions[idx]!;
       options[idx] = (display ?? value).decodeText();
     }
 
@@ -116,7 +116,7 @@ export default class PDFDropdown extends PDFField {
 
     const selected = new Array<string>(values.length);
     for (let idx = 0, len = values.length; idx < len; idx++) {
-      selected[idx] = values[idx].decodeText();
+      selected[idx] = values[idx]!.decodeText();
     }
 
     return selected;
@@ -140,7 +140,7 @@ export default class PDFDropdown extends PDFField {
 
     const optionObjects = new Array<{ value: PDFHexString }>(options.length);
     for (let idx = 0, len = options.length; idx < len; idx++) {
-      optionObjects[idx] = { value: PDFHexString.fromText(options[idx]) };
+      optionObjects[idx] = { value: PDFHexString.fromText(options[idx]!) };
     }
     this.acroField.setOptions(optionObjects);
   }
@@ -169,7 +169,7 @@ export default class PDFDropdown extends PDFField {
 
     const newOptions = new Array<{ value: PDFHexString }>(optionsArr.length);
     for (let idx = 0, len = optionsArr.length; idx < len; idx++) {
-      newOptions[idx] = { value: PDFHexString.fromText(optionsArr[idx]) };
+      newOptions[idx] = { value: PDFHexString.fromText(optionsArr[idx]!) };
     }
 
     this.acroField.setOptions(existingOptions.concat(newOptions));
@@ -238,7 +238,7 @@ export default class PDFDropdown extends PDFField {
 
     const values = new Array<PDFHexString>(optionsArr.length);
     for (let idx = 0, len = optionsArr.length; idx < len; idx++) {
-      values[idx] = PDFHexString.fromText(optionsArr[idx]);
+      values[idx] = PDFHexString.fromText(optionsArr[idx]!);
     }
 
     if (merge) {
@@ -581,7 +581,7 @@ export default class PDFDropdown extends PDFField {
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const hasAppearances =
         widget.getAppearances()?.normal instanceof PDFStream;
       if (!hasAppearances) return true;
@@ -630,7 +630,7 @@ export default class PDFDropdown extends PDFField {
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       this.updateWidgetAppearance(widget, font, provider);
     }
     this.markAsClean();

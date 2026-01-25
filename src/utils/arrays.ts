@@ -1,7 +1,7 @@
 import { decodeFromBase64DataUri } from './base64.js';
 import { charFromCode } from './strings.js';
 
-export const last = <T>(array: T[]): T => array[array.length - 1];
+export const last = <T>(array: T[]): T | undefined => array[array.length - 1];
 
 // export const dropLast = <T>(array: T[]): T[] =>
 // array.slice(0, array.length - 1);
@@ -21,22 +21,22 @@ export const mergeIntoTypedArray = (...arrays: (string | Uint8Array)[]) => {
 
   const typedArrays: Uint8Array[] = [];
   for (let idx = 0; idx < arrayCount; idx++) {
-    const element = arrays[idx];
+    const element = arrays[idx]!;
     typedArrays[idx] =
       element instanceof Uint8Array ? element : typedArrayFor(element);
   }
 
   let totalSize = 0;
   for (let idx = 0; idx < arrayCount; idx++) {
-    totalSize += arrays[idx].length;
+    totalSize += arrays[idx]!.length;
   }
 
   const merged = new Uint8Array(totalSize);
   let offset = 0;
   for (let arrIdx = 0; arrIdx < arrayCount; arrIdx++) {
-    const arr = typedArrays[arrIdx];
+    const arr = typedArrays[arrIdx]!;
     for (let byteIdx = 0, arrLen = arr.length; byteIdx < arrLen; byteIdx++) {
-      merged[offset++] = arr[byteIdx];
+      merged[offset++] = arr[byteIdx]!;
     }
   }
 
@@ -46,13 +46,13 @@ export const mergeIntoTypedArray = (...arrays: (string | Uint8Array)[]) => {
 export const mergeUint8Arrays = (arrays: Uint8Array[]): Uint8Array => {
   let totalSize = 0;
   for (let idx = 0, len = arrays.length; idx < len; idx++) {
-    totalSize += arrays[idx].length;
+    totalSize += arrays[idx]!.length;
   }
 
   const mergedBuffer = new Uint8Array(totalSize);
   let offset = 0;
   for (let idx = 0, len = arrays.length; idx < len; idx++) {
-    const array = arrays[idx];
+    const array = arrays[idx]!;
     mergedBuffer.set(array, offset);
     offset += array.length;
   }
@@ -63,7 +63,7 @@ export const mergeUint8Arrays = (arrays: Uint8Array[]): Uint8Array => {
 export const arrayAsString = (array: Uint8Array | number[]): string => {
   let str = '';
   for (let idx = 0, len = array.length; idx < len; idx++) {
-    str += charFromCode(array[idx]);
+    str += charFromCode(array[idx]!);
   }
   return str;
 };
@@ -74,9 +74,9 @@ export const sortedUniq = <T>(array: T[], indexer: (elem: T) => any): T[] => {
   const uniq: T[] = [];
 
   for (let idx = 0, len = array.length; idx < len; idx++) {
-    const curr = array[idx];
+    const curr = array[idx]!;
     const prev = array[idx - 1];
-    if (idx === 0 || indexer(curr) !== indexer(prev)) {
+    if (idx === 0 || indexer(curr) !== indexer(prev!)) {
       uniq.push(curr);
     }
   }
@@ -104,9 +104,9 @@ export const reverseArray = (array: Uint8Array) => {
   for (let idx = 0, len = Math.floor(arrayLen / 2); idx < len; idx++) {
     const leftIdx = idx;
     const rightIdx = arrayLen - idx - 1;
-    const temp = array[idx];
+    const temp = array[idx]!;
 
-    array[leftIdx] = array[rightIdx];
+    array[leftIdx] = array[rightIdx]!;
     array[rightIdx] = temp;
   }
   return array;
@@ -115,7 +115,7 @@ export const reverseArray = (array: Uint8Array) => {
 export const sum = (array: number[] | Uint8Array): number => {
   let total = 0;
   for (let idx = 0, len = array.length; idx < len; idx++) {
-    total += array[idx];
+    total += array[idx]!;
   }
   return total;
 };
@@ -131,7 +131,7 @@ export const range = (start: number, end: number): number[] => {
 export const pluckIndices = <T>(arr: T[], indices: number[]) => {
   const plucked = new Array<T>(indices.length);
   for (let idx = 0, len = indices.length; idx < len; idx++) {
-    plucked[idx] = arr[indices[idx]];
+    plucked[idx] = arr[indices[idx]!]!;
   }
   return plucked;
 };
@@ -170,7 +170,7 @@ export const byteArrayToHexString = (array: Uint8Array) => {
   const hexOctets = new Array(array.length);
 
   for (let idx = 0; idx < array.length; ++idx) {
-    hexOctets[idx] = byteToHex[array[idx]];
+    hexOctets[idx] = byteToHex[array[idx]!];
   }
 
   return hexOctets.join('');

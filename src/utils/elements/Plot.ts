@@ -25,8 +25,8 @@ export default class Plot extends GraphElement {
     const points = this.getPoints().map((coord) => new Point(coord));
     const points2 = element.getPoints().map((coord) => new Point(coord));
     return (
-      points.every((point, i) => point.isEqual(points2[i])) ||
-      points.reverse().every((point, i) => point.isEqual(points2[i]))
+      points.every((point, i) => point.isEqual(points2[i]!)) ||
+      points.reverse().every((point, i) => point.isEqual(points2[i]!))
     );
   }
 

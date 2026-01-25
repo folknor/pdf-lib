@@ -57,7 +57,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     const hexCodes = new Array(glyphs.length);
 
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const glyph = glyphs[idx];
+      const glyph = glyphs[idx]!;
       const subsetGlyphId = this.subset.includeGlyph(glyph);
 
       this.glyphs[subsetGlyphId - 1] = glyph;

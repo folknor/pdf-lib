@@ -68,7 +68,7 @@ class CustomFontEmbedder {
     const { glyphs } = this.font.layout(text, this.fontFeatures);
     const hexCodes = new Array(glyphs.length);
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      hexCodes[idx] = toHexStringOfMinLength(glyphs[idx].id, 4);
+      hexCodes[idx] = toHexStringOfMinLength(glyphs[idx]!.id, 4);
     }
     return PDFHexString.of(hexCodes.join(''));
   }
@@ -79,7 +79,7 @@ class CustomFontEmbedder {
     const { glyphs } = this.font.layout(text, this.fontFeatures);
     let totalWidth = 0;
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      totalWidth += glyphs[idx].advanceWidth * this.scale;
+      totalWidth += glyphs[idx]!.advanceWidth * this.scale;
     }
     const scale = size / 1000;
     return totalWidth * scale;
@@ -218,7 +218,7 @@ class CustomFontEmbedder {
     let currSection: number[] = [];
 
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const currGlyph = glyphs[idx];
+      const currGlyph = glyphs[idx]!;
       const prevGlyph = glyphs[idx - 1];
 
       const currGlyphId = this.glyphId(currGlyph);
@@ -243,7 +243,7 @@ class CustomFontEmbedder {
   private allGlyphsInFontSortedById = (): Glyph[] => {
     const glyphs: Glyph[] = new Array(this.font.characterSet.length);
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const codePoint = this.font.characterSet[idx];
+      const codePoint = this.font.characterSet[idx]!;
       glyphs[idx] = this.font.glyphForCodePoint(codePoint);
     }
     return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);

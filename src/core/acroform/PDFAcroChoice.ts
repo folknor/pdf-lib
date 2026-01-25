@@ -23,7 +23,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
       this.dict.delete(PDFName.of('V'));
     }
     if (values.length === 1) {
-      this.dict.set(PDFName.of('V'), values[0]);
+      this.dict.set(PDFName.of('V'), values[0]!);
     }
     if (values.length > 1) {
       if (!this.hasFlag(AcroChoiceFlags.MultiSelect)) {
@@ -38,7 +38,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
   valuesAreValid(values: (PDFString | PDFHexString)[]): boolean {
     const options = this.getOptions();
     for (let idx = 0, len = values.length; idx < len; idx++) {
-      const val = values[idx].decodeText();
+      const val = values[idx]!.decodeText();
       if (!options.find((o) => val === (o.display || o.value).decodeText())) {
         return false;
       }
@@ -51,7 +51,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
       const indices = new Array<number>(values.length);
       const options = this.getOptions();
       for (let idx = 0, len = values.length; idx < len; idx++) {
-        const val = values[idx].decodeText();
+        const val = values[idx]!.decodeText();
         indices[idx] = options.findIndex(
           (o) => val === (o.display || o.value).decodeText(),
         );
@@ -100,7 +100,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
   ) {
     const newOpt = new Array<PDFArray>(options.length);
     for (let idx = 0, len = options.length; idx < len; idx++) {
-      const { value, display } = options[idx];
+      const { value, display } = options[idx]!;
       newOpt[idx] = this.dict.context.obj([value, display || value]);
     }
     this.dict.set(PDFName.of('Opt'), this.dict.context.obj(newOpt));

@@ -46,7 +46,7 @@ class PDFAcroForm {
     const pushFields = (fields?: [PDFAcroField, PDFRef][]) => {
       if (!fields) return;
       for (let idx = 0, len = fields.length; idx < len; idx++) {
-        const field = fields[idx];
+        const field = fields[idx]!;
         allFields.push(field);
         const [fieldModel] = field;
         if (fieldModel instanceof PDFAcroNonTerminal) {

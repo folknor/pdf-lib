@@ -653,7 +653,7 @@ export default class PDFDocument {
   getPage(index: number): PDFPage {
     const pages = this.getPages();
     assertRange(index, 'index', 0, pages.length - 1);
-    return pages[index];
+    return pages[index]!;
   }
 
   /**
@@ -811,7 +811,7 @@ export default class PDFDocument {
     const srcPages = srcDoc.getPages();
     // Copy each page in a separate thread
     const copiedPages = indices
-      .map((i) => srcPages[i])
+      .map((i) => srcPages[i]!)
       .map(async (page) => copier.copy(page.node))
       .map((p) =>
         p.then((copy) => PDFPage.of(copy, this.context.register(copy), this)),
@@ -1436,11 +1436,11 @@ export default class PDFDocument {
     transformationMatrix?: TransformationMatrix,
   ): Promise<PDFEmbeddedPage> {
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
-    const [embeddedPage] = await this.embedPages(
+    const [embeddedPage] = (await this.embedPages(
       [page],
       [boundingBox],
       [transformationMatrix],
-    );
+    )) as [PDFEmbeddedPage];
     return embeddedPage;
   }
 
@@ -1481,14 +1481,14 @@ export default class PDFDocument {
 
     // Assert all pages have the same context
     for (let idx = 0, len = pages.length - 1; idx < len; idx++) {
-      const currPage = pages[idx];
-      const nextPage = pages[idx + 1];
+      const currPage = pages[idx]!;
+      const nextPage = pages[idx + 1]!;
       if (currPage.node.context !== nextPage.node.context) {
         throw new PageEmbeddingMismatchedContextError();
       }
     }
 
-    const context = pages[0].node.context;
+    const context = pages[0]!.node.context;
     const maybeCopyPage =
       context === this.context
         ? (p: PDFPageLeaf) => p
@@ -1496,7 +1496,7 @@ export default class PDFDocument {
 
     const embeddedPages = new Array<PDFEmbeddedPage>(pages.length);
     for (let idx = 0, len = pages.length; idx < len; idx++) {
-      const page = maybeCopyPage(pages[idx].node);
+      const page = maybeCopyPage(pages[idx]!.node);
       const box = boundingBoxes[idx];
       const matrix = transformationMatrices[idx];
 
@@ -1601,7 +1601,7 @@ export default class PDFDocument {
   findPageForAnnotationRef(ref: PDFRef): PDFPage | undefined {
     const pages = this.getPages();
     for (let idx = 0, len = pages.length; idx < len; idx++) {
-      const page = pages[idx];
+      const page = pages[idx]!;
       const annotations = page.node.Annots();
 
       if (annotations?.indexOf(ref) !== undefined) {
@@ -1614,7 +1614,7 @@ export default class PDFDocument {
 
   private async embedAll(embeddables: Embeddable[]): Promise<void> {
     for (let idx = 0, len = embeddables.length; idx < len; idx++) {
-      await embeddables[idx].embed();
+      await embeddables[idx]!.embed();
     }
   }
 

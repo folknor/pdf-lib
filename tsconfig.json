@@ -41,7 +41,7 @@
 
     // These are valuable but need codebase refactoring:
     "noImplicitOverride": true,
-    // "noUncheckedIndexedAccess": true,  // TODO: 582 errors to fix
+    "noUncheckedIndexedAccess": true,
     // "exactOptionalPropertyTypes": true,
     "noPropertyAccessFromIndexSignature": true,
 

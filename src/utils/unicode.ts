@@ -295,14 +295,14 @@ export const utf16Decode = (
   const codePoints: number[] = [];
 
   while (input.length - idx >= 2) {
-    const first = decodeValues(input[idx++], input[idx++], byteOrder);
+    const first = decodeValues(input[idx++]!, input[idx++]!, byteOrder);
 
     if (isHighSurrogate(first)) {
       if (input.length - idx < 2) {
         // Need at least 2 bytes left for the low surrogate that is required
         codePoints.push(REPLACEMENT);
       } else {
-        const second = decodeValues(input[idx++], input[idx++], byteOrder);
+        const second = decodeValues(input[idx++]!, input[idx++]!, byteOrder);
         if (isLowSurrogate(second)) {
           codePoints.push(first, second);
         } else {

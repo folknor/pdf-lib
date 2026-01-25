@@ -175,7 +175,7 @@ export const assertIs = (
   types: TypeDescriptor[],
 ) => {
   for (let idx = 0, len = types.length; idx < len; idx++) {
-    if (isType(value, types[idx])) return;
+    if (isType(value, types[idx]!)) return;
   }
   throw new TypeError(createTypeErrorMsg(value, valueName, types));
 };

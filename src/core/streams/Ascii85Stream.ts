@@ -84,7 +84,7 @@ class Ascii85Stream extends DecodeStream {
       }
       let t = 0;
       for (i = 0; i < 5; ++i) {
-        t = t * 85 + (input[i] - 0x21);
+        t = t * 85 + (input[i]! - 0x21);
       }
 
       for (i = 3; i >= 0; --i) {

@@ -30,11 +30,11 @@ class RunLengthStream extends DecodeStream {
 
     let buffer;
     let bufferLength = this.bufferLength;
-    let n = repeatHeader[0];
+    let n = repeatHeader[0]!;
     if (n < 128) {
       // copy n bytes
       buffer = this.ensureBuffer(bufferLength + n + 1);
-      buffer[bufferLength++] = repeatHeader[1];
+      buffer[bufferLength++] = repeatHeader[1]!;
       if (n > 0) {
         const source = this.stream.getBytes(n);
         buffer.set(source, bufferLength);
@@ -42,7 +42,7 @@ class RunLengthStream extends DecodeStream {
       }
     } else {
       n = 257 - n;
-      const b = repeatHeader[1];
+      const b = repeatHeader[1]!;
       buffer = this.ensureBuffer(bufferLength + n + 1);
       for (let i = 0; i < n; i++) {
         buffer[bufferLength++] = b;

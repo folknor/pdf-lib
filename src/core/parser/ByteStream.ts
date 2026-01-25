@@ -27,7 +27,7 @@ class ByteStream {
   }
 
   next(): number {
-    const byte = this.bytes[this.idx++];
+    const byte = this.bytes[this.idx++]!;
     if (byte === CharCodes.Newline) {
       this.line += 1;
       this.column = 0;
@@ -45,7 +45,7 @@ class ByteStream {
   }
 
   peek(): number {
-    return this.bytes[this.idx];
+    return this.bytes[this.idx]!;
   }
 
   peekAhead(steps: number) {

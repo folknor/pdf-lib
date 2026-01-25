@@ -98,7 +98,7 @@ export default class PDFRadioGroup extends PDFField {
     if (exportValues) {
       const exportOptions = new Array<string>(exportValues.length);
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
-        exportOptions[idx] = exportValues[idx].decodeText();
+        exportOptions[idx] = exportValues[idx]!.decodeText();
       }
       return exportOptions;
     }
@@ -106,7 +106,7 @@ export default class PDFRadioGroup extends PDFField {
     const onValues = this.acroField.getOnValues();
     const onOptions = new Array<string>(onValues.length);
     for (let idx = 0, len = onOptions.length; idx < len; idx++) {
-      onOptions[idx] = onValues[idx].decodeText();
+      onOptions[idx] = onValues[idx]!.decodeText();
     }
     return onOptions;
   }
@@ -131,7 +131,7 @@ export default class PDFRadioGroup extends PDFField {
     if (exportValues) {
       const onValues = this.acroField.getOnValues();
       for (let idx = 0, len = onValues.length; idx < len; idx++) {
-        if (onValues[idx] === value) return exportValues[idx].decodeText();
+        if (onValues[idx] === value) return exportValues[idx]!.decodeText();
       }
     }
     return value.decodeText();
@@ -197,13 +197,13 @@ export default class PDFRadioGroup extends PDFField {
     const exportValues = this.acroField.getExportValues();
     if (exportValues) {
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
-        if (exportValues[idx].decodeText() === option) {
-          this.acroField.setValue(onValues[idx]);
+        if (exportValues[idx]!.decodeText() === option) {
+          this.acroField.setValue(onValues[idx]!);
         }
       }
     } else {
       for (let idx = 0, len = onValues.length; idx < len; idx++) {
-        const value = onValues[idx];
+        const value = onValues[idx]!;
         if (value.decodeText() === option) this.acroField.setValue(value);
       }
     }
@@ -409,7 +409,7 @@ export default class PDFRadioGroup extends PDFField {
   override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const state = widget.getAppearanceState();
       const normal = widget.getAppearances()?.normal;
 
@@ -460,7 +460,7 @@ export default class PDFRadioGroup extends PDFField {
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const onValue = widget.getOnValue();
       if (!onValue) continue;
       this.updateWidgetAppearance(widget, onValue, provider);

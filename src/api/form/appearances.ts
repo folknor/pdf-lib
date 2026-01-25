@@ -626,7 +626,7 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
 
   const selectedLines: number[] = [];
   for (let idx = 0, len = lines.length; idx < len; idx++) {
-    const line = lines[idx];
+    const line = lines[idx]!;
     if (selected.includes(line.text)) selectedLines.push(idx);
   }
 

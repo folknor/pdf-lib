@@ -48,14 +48,14 @@ class PDFCrossRefSection {
       rangeIdx < rangeLen;
       rangeIdx++
     ) {
-      const range = this.subsections[rangeIdx];
-      section += `${range[0].ref.objectNumber} ${range.length}\n`;
+      const range = this.subsections[rangeIdx]!;
+      section += `${range[0]!.ref.objectNumber} ${range.length}\n`;
       for (
         let entryIdx = 0, entryLen = range.length;
         entryIdx < entryLen;
         entryIdx++
       ) {
-        const entry = range[entryIdx];
+        const entry = range[entryIdx]!;
         section += padStart(String(entry.offset), 10, '0');
         section += ' ';
         section += padStart(String(entry.ref.generationNumber), 5, '0');
@@ -71,9 +71,9 @@ class PDFCrossRefSection {
   sizeInBytes(): number {
     let size = 5;
     for (let idx = 0, len = this.subsections.length; idx < len; idx++) {
-      const subsection = this.subsections[idx];
+      const subsection = this.subsections[idx]!;
       const subsectionLength = subsection.length;
-      const [firstEntry] = subsection;
+      const [firstEntry] = subsection as [Entry];
       size += 2;
       size += String(firstEntry.ref.objectNumber).length;
       size += String(subsectionLength).length;
@@ -105,9 +105,9 @@ class PDFCrossRefSection {
     const length = subsections.length;
 
     for (let idx = 0; idx < length; idx++) {
-      const subsection = this.subsections[idx];
+      const subsection = this.subsections[idx]!;
 
-      const firstObjectNumber = String(subsection[0].ref.objectNumber);
+      const firstObjectNumber = String(subsection[0]!.ref.objectNumber);
       offset += copyStringIntoBuffer(firstObjectNumber, buffer, offset);
       buffer[offset++] = CharCodes.Space;
 
@@ -129,7 +129,7 @@ class PDFCrossRefSection {
     const length = entries.length;
 
     for (let idx = 0; idx < length; idx++) {
-      const entry = entries[idx];
+      const entry = entries[idx]!;
 
       const entryOffset = padStart(String(entry.offset), 10, '0');
       offset += copyStringIntoBuffer(entryOffset, buffer, offset);
@@ -156,8 +156,8 @@ class PDFCrossRefSection {
       return;
     }
 
-    const chunk = this.subsections[this.chunkIdx];
-    const prevEntry = chunk[this.chunkLength - 1];
+    const chunk = this.subsections[this.chunkIdx]!;
+    const prevEntry = chunk[this.chunkLength - 1]!;
 
     if (currEntry.ref.objectNumber - prevEntry.ref.objectNumber > 1) {
       this.subsections.push([currEntry]);

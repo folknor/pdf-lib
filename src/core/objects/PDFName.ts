@@ -69,7 +69,7 @@ class PDFName extends PDFObject {
 
     let encodedName = '/';
     for (let idx = 0, len = name.length; idx < len; idx++) {
-      const character = name[idx];
+      const character = name[idx]!;
       const code = toCharCode(character);
       encodedName += isRegularChar(code) ? character : `#${toHexString(code)}`;
     }
@@ -89,7 +89,7 @@ class PDFName extends PDFObject {
     };
 
     for (let idx = 1, len = this.encodedName.length; idx < len; idx++) {
-      const char = this.encodedName[idx];
+      const char = this.encodedName[idx]!;
       const byte = toCharCode(char);
       const nextChar = this.encodedName[idx + 1];
       if (!escaped) {
@@ -105,9 +105,9 @@ class PDFName extends PDFObject {
           if (
             hex.length === 2 ||
             !(
-              (nextChar >= '0' && nextChar <= '9') ||
-              (nextChar >= 'a' && nextChar <= 'f') ||
-              (nextChar >= 'A' && nextChar <= 'F')
+              (nextChar !== undefined && nextChar >= '0' && nextChar <= '9') ||
+              (nextChar !== undefined && nextChar >= 'a' && nextChar <= 'f') ||
+              (nextChar !== undefined && nextChar >= 'A' && nextChar <= 'F')
             )
           ) {
             pushByte(parseInt(hex, 16));

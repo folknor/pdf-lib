@@ -20,10 +20,10 @@ const splitAlphaChannel = (rgbaChannel: Uint8Array) => {
   let alphaOffset = 0;
 
   while (rgbaOffset < rgbaChannel.length) {
-    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++];
-    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++];
-    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++];
-    alphaChannel[alphaOffset++] = rgbaChannel[rgbaOffset++];
+    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++]!;
+    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++]!;
+    rgbChannel[rgbOffset++] = rgbaChannel[rgbaOffset++]!;
+    alphaChannel[alphaOffset++] = rgbaChannel[rgbaOffset++]!;
   }
 
   return { rgbChannel, alphaChannel };
@@ -57,7 +57,7 @@ export class PNG {
 
     if (frames.length > 1) throw new Error('Animated PNGs are not supported');
 
-    const frame = new Uint8Array(frames[0]);
+    const frame = new Uint8Array(frames[0]!);
     const { rgbChannel, alphaChannel } = splitAlphaChannel(frame);
 
     this.rgbChannel = rgbChannel;

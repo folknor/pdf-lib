@@ -24,6 +24,7 @@ This document tracks remaining work to fully modernize the codebase.
 - [x] Add `"sideEffects": false` for tree-shaking
 - [x] Remove unused devDependencies (eslint packages)
 - [x] Delete apps/, docs/, scratchpad/, .circleci/, .github/, .vscode/
+- [x] Enable `noUncheckedIndexedAccess` (582 errors fixed)
 
 ---
 
@@ -31,7 +32,7 @@ This document tracks remaining work to fully modernize the codebase.
 
 ### 1a. `noUncheckedIndexedAccess` (582 errors)
 
-**Status:** Pending
+**Status:** Complete
 
 Every array/object index access returns `T | undefined`.
 

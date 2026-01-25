@@ -41,7 +41,7 @@ class AsciiHexStream extends DecodeStream {
 
     let firstDigit = this.firstDigit;
     for (let i = 0, ii = bytes.length; i < ii; i++) {
-      const ch = bytes[i];
+      const ch = bytes[i]!;
       let digit;
       if (ch >= 0x30 && ch <= 0x39) {
         // '0'-'9'

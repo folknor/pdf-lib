@@ -999,7 +999,7 @@ export default class PDFPage {
 
     const encodedLines = new Array(lines.length) as PDFHexString[];
     for (let idx = 0, len = lines.length; idx < len; idx++) {
-      encodedLines[idx] = newFont.encodeText(lines[idx]);
+      encodedLines[idx] = newFont.encodeText(lines[idx]!);
     }
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
@@ -1681,7 +1681,7 @@ export default class PDFPage {
   private scaleAnnot(annot: PDFDict, x: number, y: number) {
     const selectors = ['RD', 'CL', 'Vertices', 'QuadPoints', 'L', 'Rect'];
     for (let idx = 0, len = selectors.length; idx < len; idx++) {
-      const list = annot.lookup(PDFName.of(selectors[idx]));
+      const list = annot.lookup(PDFName.of(selectors[idx]!));
       if (list instanceof PDFArray) list.scalePDFNumbers(x, y);
     }
 

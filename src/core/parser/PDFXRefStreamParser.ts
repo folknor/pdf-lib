@@ -90,7 +90,7 @@ class PDFXRefStreamParser {
       subsectionIdx < subsectionLen;
       subsectionIdx++
     ) {
-      const { firstObjectNumber, length } = this.subsections[subsectionIdx];
+      const { firstObjectNumber, length } = this.subsections[subsectionIdx]!;
 
       for (let objIdx = 0; objIdx < length; objIdx++) {
         let type = 0;

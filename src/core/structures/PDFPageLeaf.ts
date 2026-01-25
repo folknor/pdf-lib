@@ -51,7 +51,7 @@ class PDFPageLeaf extends PDFDict {
     );
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       clone.set(key, value);
     }
     return clone;

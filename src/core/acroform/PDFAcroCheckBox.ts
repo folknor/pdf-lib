@@ -28,7 +28,7 @@ class PDFAcroCheckBox extends PDFAcroButton {
 
     const widgets = this.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const state = widget.getOnValue() === value ? value : PDFName.of('Off');
       widget.setAppearanceState(state);
     }

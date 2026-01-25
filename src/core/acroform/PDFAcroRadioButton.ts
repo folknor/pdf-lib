@@ -30,7 +30,7 @@ class PDFAcroRadioButton extends PDFAcroButton {
 
     const widgets = this.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const state = widget.getOnValue() === value ? value : PDFName.of('Off');
       widget.setAppearanceState(state);
     }
@@ -47,7 +47,7 @@ class PDFAcroRadioButton extends PDFAcroButton {
 
     const onValues: PDFName[] = [];
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const onValue = widgets[idx].getOnValue();
+      const onValue = widgets[idx]!.getOnValue();
       if (onValue) onValues.push(onValue);
     }
 

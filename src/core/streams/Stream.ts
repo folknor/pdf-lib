@@ -47,11 +47,11 @@ class Stream implements StreamType {
     return this.length === 0;
   }
 
-  getByte() {
+  getByte(): number {
     if (this.pos >= this.end) {
       return -1;
     }
-    return this.bytes[this.pos++];
+    return this.bytes[this.pos++]!;
   }
 
   getUint16() {
@@ -63,7 +63,7 @@ class Stream implements StreamType {
     return (b0 << 8) + b1;
   }
 
-  getInt32() {
+  getInt32(): number {
     const b0 = this.getByte();
     const b1 = this.getByte();
     const b2 = this.getByte();
@@ -93,7 +93,7 @@ class Stream implements StreamType {
     }
   }
 
-  peekByte() {
+  peekByte(): number {
     const peekedByte = this.getByte();
     this.pos--;
     return peekedByte;
@@ -120,7 +120,7 @@ class Stream implements StreamType {
     this.start = this.pos;
   }
 
-  makeSubStream(start: number, length: number) {
+  makeSubStream(start: number, length: number): StreamType {
     return new Stream(this.bytes, start, length);
   }
 

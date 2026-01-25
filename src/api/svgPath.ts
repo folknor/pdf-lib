@@ -139,9 +139,9 @@ const apply = (commands: Cmd[]) => {
   // run the commands
   let cmds: PDFOperator[] = [];
   for (let i = 0; i < commands.length; i++) {
-    const c = commands[i];
+    const c = commands[i]!;
     if (c.cmd && typeof runners[c.cmd] === 'function') {
-      const cmd = runners[c.cmd](c.args);
+      const cmd = runners[c.cmd]!(c.args);
       if (Array.isArray(cmd)) {
         cmds = cmds.concat(cmd);
       } else {
@@ -158,8 +158,8 @@ interface CmdToOperatorsMap {
 
 const runners: CmdToOperatorsMap = {
   M(a) {
-    cx = a[0];
-    cy = a[1];
+    cx = a[0]!;
+    cy = a[1]!;
     px = py = null;
     sx = cx;
     sy = cy;
@@ -167,8 +167,8 @@ const runners: CmdToOperatorsMap = {
   },
 
   m(a) {
-    cx += a[0];
-    cy += a[1];
+    cx += a[0]!;
+    cy += a[1]!;
     px = py = null;
     sx = cx;
     sy = cy;
@@ -176,26 +176,26 @@ const runners: CmdToOperatorsMap = {
   },
 
   C(a) {
-    cx = a[4];
-    cy = a[5];
-    px = a[2];
-    py = a[3];
-    return appendBezierCurve(a[0], a[1], a[2], a[3], a[4], a[5]);
+    cx = a[4]!;
+    cy = a[5]!;
+    px = a[2]!;
+    py = a[3]!;
+    return appendBezierCurve(a[0]!, a[1]!, a[2]!, a[3]!, a[4]!, a[5]!);
   },
 
   c(a) {
     const cmd = appendBezierCurve(
-      a[0] + cx,
-      a[1] + cy,
-      a[2] + cx,
-      a[3] + cy,
-      a[4] + cx,
-      a[5] + cy,
+      a[0]! + cx,
+      a[1]! + cy,
+      a[2]! + cx,
+      a[3]! + cy,
+      a[4]! + cx,
+      a[5]! + cy,
     );
-    px = cx + a[2];
-    py = cy + a[3];
-    cx += a[4];
-    cy += a[5];
+    px = cx + a[2]!;
+    py = cy + a[3]!;
+    cx += a[4]!;
+    cy += a[5]!;
     return cmd;
   },
 
@@ -208,15 +208,15 @@ const runners: CmdToOperatorsMap = {
     const cmd = appendBezierCurve(
       cx - (px - cx),
       cy - (py - cy),
-      a[0],
-      a[1],
-      a[2],
-      a[3],
+      a[0]!,
+      a[1]!,
+      a[2]!,
+      a[3]!,
     );
-    px = a[0];
-    py = a[1];
-    cx = a[2];
-    cy = a[3];
+    px = a[0]!;
+    py = a[1]!;
+    cx = a[2]!;
+    cy = a[3]!;
     return cmd;
   },
 
@@ -229,37 +229,37 @@ const runners: CmdToOperatorsMap = {
     const cmd = appendBezierCurve(
       cx - (px - cx),
       cy - (py - cy),
-      cx + a[0],
-      cy + a[1],
-      cx + a[2],
-      cy + a[3],
+      cx + a[0]!,
+      cy + a[1]!,
+      cx + a[2]!,
+      cy + a[3]!,
     );
-    px = cx + a[0];
-    py = cy + a[1];
-    cx += a[2];
-    cy += a[3];
+    px = cx + a[0]!;
+    py = cy + a[1]!;
+    cx += a[2]!;
+    cy += a[3]!;
     return cmd;
   },
 
   Q(a) {
-    px = a[0];
-    py = a[1];
-    cx = a[2];
-    cy = a[3];
-    return appendQuadraticCurve(a[0], a[1], cx, cy);
+    px = a[0]!;
+    py = a[1]!;
+    cx = a[2]!;
+    cy = a[3]!;
+    return appendQuadraticCurve(a[0]!, a[1]!, cx, cy);
   },
 
   q(a) {
     const cmd = appendQuadraticCurve(
-      a[0] + cx,
-      a[1] + cy,
-      a[2] + cx,
-      a[3] + cy,
+      a[0]! + cx,
+      a[1]! + cy,
+      a[2]! + cx,
+      a[3]! + cy,
     );
-    px = cx + a[0];
-    py = cy + a[1];
-    cx += a[2];
-    cy += a[3];
+    px = cx + a[0]!;
+    py = cy + a[1]!;
+    cx += a[2]!;
+    cy += a[3]!;
     return cmd;
   },
 
@@ -272,9 +272,9 @@ const runners: CmdToOperatorsMap = {
       py = cy - (py - cy);
     }
 
-    const cmd = appendQuadraticCurve(px, py, a[0], a[1]);
-    cx = a[0];
-    cy = a[1];
+    const cmd = appendQuadraticCurve(px, py, a[0]!, a[1]!);
+    cx = a[0]!;
+    cy = a[1]!;
     return cmd;
   },
 
@@ -287,62 +287,62 @@ const runners: CmdToOperatorsMap = {
       py = cy - (py - cy);
     }
 
-    const cmd = appendQuadraticCurve(px, py, cx + a[0], cy + a[1]);
-    cx += a[0];
-    cy += a[1];
+    const cmd = appendQuadraticCurve(px, py, cx + a[0]!, cy + a[1]!);
+    cx += a[0]!;
+    cy += a[1]!;
     return cmd;
   },
 
   A(a) {
     const cmds = solveArc(cx, cy, a);
-    cx = a[5];
-    cy = a[6];
+    cx = a[5]!;
+    cy = a[6]!;
     return cmds;
   },
 
   a(a) {
-    a[5] += cx;
-    a[6] += cy;
+    a[5]! += cx;
+    a[6]! += cy;
     const cmds = solveArc(cx, cy, a);
-    cx = a[5];
-    cy = a[6];
+    cx = a[5]!;
+    cy = a[6]!;
     return cmds;
   },
 
   L(a) {
-    cx = a[0];
-    cy = a[1];
+    cx = a[0]!;
+    cy = a[1]!;
     px = py = null;
     return lineTo(cx, cy);
   },
 
   l(a) {
-    cx += a[0];
-    cy += a[1];
+    cx += a[0]!;
+    cy += a[1]!;
     px = py = null;
     return lineTo(cx, cy);
   },
 
   H(a) {
-    cx = a[0];
+    cx = a[0]!;
     px = py = null;
     return lineTo(cx, cy);
   },
 
   h(a) {
-    cx += a[0];
+    cx += a[0]!;
     px = py = null;
     return lineTo(cx, cy);
   },
 
   V(a) {
-    cy = a[0];
+    cy = a[0]!;
     px = py = null;
     return lineTo(cx, cy);
   },
 
   v(a) {
-    cy += a[0];
+    cy += a[0]!;
     px = py = null;
     return lineTo(cx, cy);
   },
@@ -363,7 +363,7 @@ const runners: CmdToOperatorsMap = {
 };
 
 const solveArc = (x: number, y: number, coords: number[]) => {
-  const [rx, ry, rot, large, sweep, ex, ey] = coords;
+  const [rx, ry, rot, large, sweep, ex, ey] = coords as [number, number, number, number, number, number, number];
   const segs = arcToSegments(ex, ey, rx, ry, large, sweep, rot, x, y);
 
   const cmds: PDFOperator[] = [];

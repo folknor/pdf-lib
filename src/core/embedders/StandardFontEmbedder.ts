@@ -50,7 +50,7 @@ class StandardFontEmbedder {
     const glyphs = this.encodeTextAsGlyphs(text);
     const hexCodes = new Array(glyphs.length);
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      hexCodes[idx] = toHexString(glyphs[idx].code);
+      hexCodes[idx] = toHexString(glyphs[idx]!.code);
     }
     return PDFHexString.of(hexCodes.join(''));
   }
@@ -60,9 +60,9 @@ class StandardFontEmbedder {
     let totalWidth = 0;
 
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const left = glyphs[idx].name;
+      const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
-      const kernAmount = this.font.getXAxisKerningForPair(left, right) || 0;
+      const kernAmount = this.font.getXAxisKerningForPair(left, right!) || 0;
       totalWidth += this.widthOfGlyph(left) + kernAmount;
     }
 
@@ -120,7 +120,7 @@ class StandardFontEmbedder {
     const codePoints = Array.from(text);
     const glyphs: Glyph[] = new Array(codePoints.length);
     for (let idx = 0, len = codePoints.length; idx < len; idx++) {
-      const codePoint = toCodePoint(codePoints[idx])!;
+      const codePoint = toCodePoint(codePoints[idx]!)!;
       try {
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(codePoint);
       } catch {

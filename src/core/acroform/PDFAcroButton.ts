@@ -65,7 +65,7 @@ class PDFAcroButton extends PDFAcroTerminal {
 
     const widgets = this.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const exportVal =
         exportValues[idx] ??
         PDFHexString.fromText(widget.getOnValue()?.decodeText() ?? '');
@@ -88,7 +88,7 @@ class PDFAcroButton extends PDFAcroTerminal {
     if (useExistingOptIdx) {
       const exportValues = this.getExportValues() ?? [];
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
-        const exportVal = exportValues[idx];
+        const exportVal = exportValues[idx]!;
         if (exportVal.decodeText() === optText) existingIdx = idx;
       }
     }

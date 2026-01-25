@@ -32,7 +32,7 @@ class PDFOperator {
   clone(context?: PDFContext): PDFOperator {
     const args = new Array(this.args.length);
     for (let idx = 0, len = args.length; idx < len; idx++) {
-      const arg = this.args[idx];
+      const arg = this.args[idx]!;
       args[idx] = arg instanceof PDFObject ? arg.clone(context) : arg;
     }
     return PDFOperator.of(this.name, args);
@@ -50,7 +50,7 @@ class PDFOperator {
   sizeInBytes(): number {
     let size = 0;
     for (let idx = 0, len = this.args.length; idx < len; idx++) {
-      const arg = this.args[idx];
+      const arg = this.args[idx]!;
       size += (arg instanceof PDFObject ? arg.sizeInBytes() : arg.length) + 1;
     }
     size += this.name.length;
@@ -61,7 +61,7 @@ class PDFOperator {
     const initialOffset = offset;
 
     for (let idx = 0, len = this.args.length; idx < len; idx++) {
-      const arg = this.args[idx];
+      const arg = this.args[idx]!;
       if (arg instanceof PDFObject) {
         offset += arg.copyBytesInto(buffer, offset);
       } else {

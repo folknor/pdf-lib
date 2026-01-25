@@ -145,12 +145,12 @@ export const transformationToMatrix = (
     case 'scaleX':
     case 'scaleY': {
       // [sx 0 0 sy 0 0]
-      const [sx, sy = sx] = args;
+      const [sx, sy = sx] = args as [number, number?];
       return [
         name === 'scaleY' ? 1 : sx,
         0,
         0,
-        name === 'scaleX' ? 1 : sy,
+        name === 'scaleX' ? 1 : sy ?? sx,
         0,
         0,
       ];
@@ -159,7 +159,7 @@ export const transformationToMatrix = (
     case 'translateX':
     case 'translateY': {
       // [1 0 0 1 tx ty]
-      const [tx, ty = tx] = args;
+      const [tx, ty = tx] = args as [number, number?];
       // -ty is necessary because the pdf's y axis is inverted
       return [
         1,
@@ -167,16 +167,16 @@ export const transformationToMatrix = (
         0,
         1,
         name === 'translateY' ? 0 : tx,
-        name === 'translateX' ? 0 : -ty,
+        name === 'translateX' ? 0 : -(ty ?? tx),
       ];
     }
     case 'rotate': {
       // [cos(a) sin(a) -sin(a) cos(a) 0 0]
-      const [a, x = 0, y = 0] = args;
+      const [a, x = 0, y = 0] = args as [number, number?, number?];
       const t1 = transformationToMatrix('translate', [x, y]);
       const t2 = transformationToMatrix('translate', [-x, -y]);
       // -args[0] -> the '-' operator is necessary because the pdf rotation system is inverted
-      const aRadians = degreesToRadians(-a);
+      const aRadians = degreesToRadians(-a!);
       const r: TransformationMatrix = [
         Math.cos(aRadians),
         Math.sin(aRadians),
@@ -193,14 +193,14 @@ export const transformationToMatrix = (
       // [1 tan(a) 0 1 0 0]
       // [1 0 tan(a) 1 0 0]
       // -args[0] -> the '-' operator is necessary because the pdf rotation system is inverted
-      const a = degreesToRadians(-args[0]);
+      const a = degreesToRadians(-args[0]!);
       const skew = Math.tan(a);
       const skewX = name === 'skewX' ? skew : 0;
       const skewY = name === 'skewY' ? skew : 0;
       return [1, skewY, skewX, 1, 0, 0];
     }
     case 'matrix': {
-      const [a, b, c, d, e, f] = args;
+      const [a, b, c, d, e, f] = args as [number, number, number, number, number, number];
       const r = transformationToMatrix('scale', [1, -1]);
       const m: TransformationMatrix = [a, b, c, d, e, f];
       return combineMatrix(combineMatrix(r, m), r);
@@ -433,7 +433,7 @@ const runnersToPage = (
     });
   },
   circle(element) {
-    return runnersToPage(page, options)['ellipse'](element);
+    return runnersToPage(page, options)['ellipse']!(element);
   },
 });
 
@@ -445,7 +445,7 @@ const styleOrAttribute = (
 ): string => {
   const value = style[attribute] || attributes[attribute];
   if (!value && typeof def !== 'undefined') return def;
-  return value;
+  return value as string;
 };
 
 const parseStyles = (style: string): SVGStyle => {
@@ -453,7 +453,7 @@ const parseStyles = (style: string): SVGStyle => {
   const css: SVGStyle = {};
   let match = cssRegex.exec(style);
   while (match !== null) {
-    css[match[1]] = match[2];
+    css[match[1]!] = match[2]!;
     match = cssRegex.exec(style);
   }
   return css;
@@ -486,7 +486,7 @@ const parseAttributes = (
   matrix: TransformationMatrix,
 ): ParsedAttributes => {
   const attributes = element.attributes;
-  const style = parseStyles(attributes['style']);
+  const style = parseStyles(attributes['style'] ?? '');
   const widthRaw = styleOrAttribute(attributes, style, 'width', '');
   const heightRaw = styleOrAttribute(attributes, style, 'height', '');
   const fillRaw = parseColor(styleOrAttribute(attributes, style, 'fill'));
@@ -827,17 +827,20 @@ const parseSvgNode = (
   if (!node.attributes['height']) {
     node.setAttribute('height', `${inherited.viewBox.height}`);
   }
+  // At this point the attributes are guaranteed to be set
+  const nodeWidth = node.attributes['width']!;
+  const nodeHeight = node.attributes['height']!;
   const attributes = parseAttributes(node, inherited, matrix);
   const result: SVGElement[] = [];
   const viewBox = node.attributes['viewBox']
     ? parseViewBox(node.attributes['viewBox'])!
-    : node.attributes['width'] && node.attributes['height']
+    : nodeWidth && nodeHeight
       ? parseViewBox(
-          `0 0 ${node.attributes['width']} ${node.attributes['height']}`,
+          `0 0 ${nodeWidth} ${nodeHeight}`,
         )!
       : inherited.viewBox;
-  const x = parseFloat(node.attributes['x']) || 0;
-  const y = parseFloat(node.attributes['y']) || 0;
+  const x = parseFloat(node.attributes['x']!) || 0;
+  const y = parseFloat(node.attributes['y']!) || 0;
 
   let newMatrix = combineTransformation(matrix, 'translate', [x, y]);
 
@@ -846,8 +849,8 @@ const parseSvgNode = (
       newMatrix,
       viewBox.width,
       viewBox.height,
-      parseFloat(node.attributes['width']),
-      parseFloat(node.attributes['height']),
+      parseFloat(nodeWidth),
+      parseFloat(nodeHeight),
       node.attributes['preserveAspectRatio'],
     );
 
@@ -1006,7 +1009,7 @@ export const drawSvg = (
   }
 
   const attributes = svgNode.attributes;
-  const style = parseStyles(attributes['style']);
+  const style = parseStyles(attributes['style'] ?? '');
 
   const widthRaw = styleOrAttribute(attributes, style, 'width', '');
   const heightRaw = styleOrAttribute(attributes, style, 'height', '');

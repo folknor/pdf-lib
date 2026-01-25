@@ -39,9 +39,9 @@ class ARCFourCipher {
       s[i] = i;
     }
     for (let i = 0, j = 0; i < 256; ++i) {
-      const tmp = s[i];
-      j = (j + tmp + key[i % keyLength]) & 0xff;
-      s[i] = s[j];
+      const tmp = s[i]!;
+      j = (j + tmp + key[i % keyLength]!) & 0xff;
+      s[i] = s[j]!;
       s[j] = tmp;
     }
     this.s = s;
@@ -55,12 +55,12 @@ class ARCFourCipher {
     const output = new Uint8Array(n);
     for (let i = 0; i < n; ++i) {
       a = (a + 1) & 0xff;
-      const tmp = s[a];
+      const tmp = s[a]!;
       b = (b + tmp) & 0xff;
-      const tmp2 = s[b];
+      const tmp2 = s[b]!;
       s[a] = tmp2;
       s[b] = tmp;
-      output[i] = data[i] ^ s[(tmp + tmp2) & 0xff];
+      output[i] = data[i]! ^ s[(tmp + tmp2) & 0xff]!;
     }
     this.a = a;
     this.b = b;
@@ -108,7 +108,7 @@ const calculateMD5 = (function calculateMD5Closure() {
     const padded = new Uint8Array(paddedLength);
     let i, j;
     for (i = 0; i < length; ++i) {
-      padded[i] = data[offset++];
+      padded[i] = data[offset++]!;
     }
     padded[i++] = 0x80;
     const n = paddedLength - 8;
@@ -127,10 +127,10 @@ const calculateMD5 = (function calculateMD5Closure() {
     for (i = 0; i < paddedLength; ) {
       for (j = 0; j < 16; ++j, i += 4) {
         w[j] =
-          padded[i] |
-          (padded[i + 1] << 8) |
-          (padded[i + 2] << 16) |
-          (padded[i + 3] << 24);
+          padded[i]! |
+          (padded[i + 1]! << 8) |
+          (padded[i + 2]! << 16) |
+          (padded[i + 3]! << 24);
       }
       let a = h0,
         b = h1,
@@ -153,8 +153,8 @@ const calculateMD5 = (function calculateMD5Closure() {
           g = (7 * j) & 15;
         }
         const tmp = d,
-          rotateArg = (a + f + k[j] + w[g]) | 0,
-          rotate = r[j];
+          rotateArg = (a + f + k[j]! + w[g]!) | 0,
+          rotate = r[j]!;
         d = c;
         c = b;
         b = (b + ((rotateArg << rotate) | (rotateArg >>> (32 - rotate)))) | 0;
@@ -337,7 +337,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
     const padded = new Uint8Array(paddedLength);
     let i, j;
     for (i = 0; i < length; ++i) {
-      padded[i] = data[offset++];
+      padded[i] = data[offset++]!;
     }
     padded[i++] = 0x80;
     const n = paddedLength - 8;
@@ -357,19 +357,19 @@ const calculateSHA256 = (function calculateSHA256Closure() {
     for (i = 0; i < paddedLength; ) {
       for (j = 0; j < 16; ++j) {
         w[j] =
-          (padded[i] << 24) |
-          (padded[i + 1] << 16) |
-          (padded[i + 2] << 8) |
-          padded[i + 3];
+          (padded[i]! << 24) |
+          (padded[i + 1]! << 16) |
+          (padded[i + 2]! << 8) |
+          padded[i + 3]!;
         i += 4;
       }
 
       for (j = 16; j < 64; ++j) {
         w[j] =
-          (littleSigmaPrime(w[j - 2]) +
-            w[j - 7] +
-            littleSigma(w[j - 15]) +
-            w[j - 16]) |
+          (littleSigmaPrime(w[j - 2]!) +
+            w[j - 7]! +
+            littleSigma(w[j - 15]!) +
+            w[j - 16]!) |
           0;
       }
       let a = h0,
@@ -383,7 +383,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
         t1,
         t2;
       for (j = 0; j < 64; ++j) {
-        t1 = h + sigmaPrime(e) + ch(e, f, g) + k[j] + w[j];
+        t1 = h + sigmaPrime(e) + ch(e, f, g) + k[j]! + w[j]!;
         t2 = sigma(a) + maj(a, b, c);
         h = g;
         g = f;
@@ -627,7 +627,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
     const padded = new Uint8Array(paddedLength);
     let i, j;
     for (i = 0; i < length; ++i) {
-      padded[i] = data[offset++];
+      padded[i] = data[offset++]!;
     }
     padded[i++] = 0x80;
     const n = paddedLength - 16;
@@ -672,25 +672,25 @@ const calculateSHA512 = (function calculateSHA512Closure() {
     // for each 1024 bit block
     for (i = 0; i < paddedLength; ) {
       for (j = 0; j < 16; ++j) {
-        w[j].high =
-          (padded[i] << 24) |
-          (padded[i + 1] << 16) |
-          (padded[i + 2] << 8) |
-          padded[i + 3];
-        w[j].low =
-          (padded[i + 4] << 24) |
-          (padded[i + 5] << 16) |
-          (padded[i + 6] << 8) |
-          padded[i + 7];
+        w[j]!.high =
+          (padded[i]! << 24) |
+          (padded[i + 1]! << 16) |
+          (padded[i + 2]! << 8) |
+          padded[i + 3]!;
+        w[j]!.low =
+          (padded[i + 4]! << 24) |
+          (padded[i + 5]! << 16) |
+          (padded[i + 6]! << 8) |
+          padded[i + 7]!;
         i += 8;
       }
       for (j = 16; j < 80; ++j) {
-        tmp3 = w[j];
-        littleSigmaPrime(tmp3, w[j - 2], tmp2);
-        tmp3.add(w[j - 7]);
-        littleSigma(tmp1, w[j - 15], tmp2);
+        tmp3 = w[j]!;
+        littleSigmaPrime(tmp3, w[j - 2]!, tmp2);
+        tmp3.add(w[j - 7]!);
+        littleSigma(tmp1, w[j - 15]!, tmp2);
         tmp3.add(tmp1);
-        tmp3.add(w[j - 16]);
+        tmp3.add(w[j - 16]!);
       }
 
       a.assign(h0);
@@ -707,8 +707,8 @@ const calculateSHA512 = (function calculateSHA512Closure() {
         t1.add(tmp1);
         ch(tmp1, e, f, g, tmp2);
         t1.add(tmp1);
-        t1.add(k[j]);
-        t1.add(w[j]);
+        t1.add(k[j]!);
+        t1.add(w[j]!);
 
         sigma(t2, a, tmp2);
         maj(tmp1, a, b, c, tmp2);
@@ -915,42 +915,42 @@ class AESBaseCipher {
 
     // AddRoundKey
     for (let j = 0, k = this._keySize; j < 16; ++j, ++k) {
-      state[j] ^= key[k];
+      state[j]! ^= key[k]!;
     }
     for (let i = this._cyclesOfRepetition - 1; i >= 1; --i) {
       // InvShiftRows
-      t = state[13];
-      state[13] = state[9];
-      state[9] = state[5];
-      state[5] = state[1];
+      t = state[13]!;
+      state[13] = state[9]!;
+      state[9] = state[5]!;
+      state[5] = state[1]!;
       state[1] = t;
-      t = state[14];
-      u = state[10];
-      state[14] = state[6];
-      state[10] = state[2];
+      t = state[14]!;
+      u = state[10]!;
+      state[14] = state[6]!;
+      state[10] = state[2]!;
       state[6] = t;
       state[2] = u;
-      t = state[15];
-      u = state[11];
-      v = state[7];
-      state[15] = state[3];
+      t = state[15]!;
+      u = state[11]!;
+      v = state[7]!;
+      state[15] = state[3]!;
       state[11] = t;
       state[7] = u;
       state[3] = v;
       // InvSubBytes
       for (let j = 0; j < 16; ++j) {
-        state[j] = this._inv_s[state[j]];
+        state[j] = this._inv_s[state[j]!]!;
       }
       // AddRoundKey
       for (let j = 0, k = i * 16; j < 16; ++j, ++k) {
-        state[j] ^= key[k];
+        state[j]! ^= key[k]!;
       }
       // InvMixColumns
       for (let j = 0; j < 16; j += 4) {
-        const s0 = this._mix[state[j]];
-        const s1 = this._mix[state[j + 1]];
-        const s2 = this._mix[state[j + 2]];
-        const s3 = this._mix[state[j + 3]];
+        const s0 = this._mix[state[j]!]!;
+        const s1 = this._mix[state[j + 1]!]!;
+        const s2 = this._mix[state[j + 2]!]!;
+        const s3 = this._mix[state[j + 3]!]!;
         t =
           s0 ^
           (s1 >>> 8) ^
@@ -966,29 +966,29 @@ class AESBaseCipher {
       }
     }
     // InvShiftRows
-    t = state[13];
-    state[13] = state[9];
-    state[9] = state[5];
-    state[5] = state[1];
+    t = state[13]!;
+    state[13] = state[9]!;
+    state[9] = state[5]!;
+    state[5] = state[1]!;
     state[1] = t;
-    t = state[14];
-    u = state[10];
-    state[14] = state[6];
-    state[10] = state[2];
+    t = state[14]!;
+    u = state[10]!;
+    state[14] = state[6]!;
+    state[10] = state[2]!;
     state[6] = t;
     state[2] = u;
-    t = state[15];
-    u = state[11];
-    v = state[7];
-    state[15] = state[3];
+    t = state[15]!;
+    u = state[11]!;
+    v = state[7]!;
+    state[15] = state[3]!;
     state[11] = t;
     state[7] = u;
     state[3] = v;
     for (let j = 0; j < 16; ++j) {
       // InvSubBytes
-      state[j] = this._inv_s[state[j]];
+      state[j] = this._inv_s[state[j]!]!;
       // AddRoundKey
-      state[j] ^= key[j];
+      state[j]! ^= key[j]!;
     }
     return state;
   }
@@ -1002,77 +1002,77 @@ class AESBaseCipher {
 
     for (let j = 0; j < 16; ++j) {
       // AddRoundKey
-      state[j] ^= key[j];
+      state[j]! ^= key[j]!;
     }
 
     for (let i = 1; i < this._cyclesOfRepetition; i++) {
       // SubBytes
       for (let j = 0; j < 16; ++j) {
-        state[j] = s[state[j]];
+        state[j] = s[state[j]!]!;
       }
       // ShiftRows
-      v = state[1];
-      state[1] = state[5];
-      state[5] = state[9];
-      state[9] = state[13];
+      v = state[1]!;
+      state[1] = state[5]!;
+      state[5] = state[9]!;
+      state[9] = state[13]!;
       state[13] = v;
-      v = state[2];
-      u = state[6];
-      state[2] = state[10];
-      state[6] = state[14];
+      v = state[2]!;
+      u = state[6]!;
+      state[2] = state[10]!;
+      state[6] = state[14]!;
       state[10] = v;
       state[14] = u;
-      v = state[3];
-      u = state[7];
-      t = state[11];
-      state[3] = state[15];
+      v = state[3]!;
+      u = state[7]!;
+      t = state[11]!;
+      state[3] = state[15]!;
       state[7] = v;
       state[11] = u;
       state[15] = t;
       // MixColumns
       for (let j = 0; j < 16; j += 4) {
-        const s0 = state[j + 0];
-        const s1 = state[j + 1];
-        const s2 = state[j + 2];
-        const s3 = state[j + 3];
+        const s0 = state[j + 0]!;
+        const s1 = state[j + 1]!;
+        const s2 = state[j + 2]!;
+        const s3 = state[j + 3]!;
         t = s0 ^ s1 ^ s2 ^ s3;
-        state[j + 0] ^= t ^ this._mixCol[s0 ^ s1];
-        state[j + 1] ^= t ^ this._mixCol[s1 ^ s2];
-        state[j + 2] ^= t ^ this._mixCol[s2 ^ s3];
-        state[j + 3] ^= t ^ this._mixCol[s3 ^ s0];
+        state[j + 0]! ^= t ^ this._mixCol[s0 ^ s1]!;
+        state[j + 1]! ^= t ^ this._mixCol[s1 ^ s2]!;
+        state[j + 2]! ^= t ^ this._mixCol[s2 ^ s3]!;
+        state[j + 3]! ^= t ^ this._mixCol[s3 ^ s0]!;
       }
       // AddRoundKey
       for (let j = 0, k = i * 16; j < 16; ++j, ++k) {
-        state[j] ^= key[k];
+        state[j]! ^= key[k]!;
       }
     }
 
     // SubBytes
     for (let j = 0; j < 16; ++j) {
-      state[j] = s[state[j]];
+      state[j] = s[state[j]!]!;
     }
     // ShiftRows
-    v = state[1];
-    state[1] = state[5];
-    state[5] = state[9];
-    state[9] = state[13];
+    v = state[1]!;
+    state[1] = state[5]!;
+    state[5] = state[9]!;
+    state[9] = state[13]!;
     state[13] = v;
-    v = state[2];
-    u = state[6];
-    state[2] = state[10];
-    state[6] = state[14];
+    v = state[2]!;
+    u = state[6]!;
+    state[2] = state[10]!;
+    state[6] = state[14]!;
     state[10] = v;
     state[14] = u;
-    v = state[3];
-    u = state[7];
-    t = state[11];
-    state[3] = state[15];
+    v = state[3]!;
+    u = state[7]!;
+    t = state[11]!;
+    state[3] = state[15]!;
     state[7] = v;
     state[11] = u;
     state[15] = t;
     // AddRoundKey
     for (let j = 0, k = this._keySize; j < 16; ++j, ++k) {
-      state[j] ^= key[k];
+      state[j]! ^= key[k]!;
     }
     return state;
   }
@@ -1085,7 +1085,7 @@ class AESBaseCipher {
     let iv = this.iv;
 
     for (let i = 0; i < sourceLength; ++i) {
-      buffer[bufferLength] = data[i];
+      buffer[bufferLength] = data[i]!;
       ++bufferLength;
       if (bufferLength < 16) {
         continue;
@@ -1094,7 +1094,7 @@ class AESBaseCipher {
       const plain = this._decrypt(buffer, this._key);
       // xor-ing the IV vector to get plain text
       for (let j = 0; j < 16; ++j) {
-        plain[j] ^= iv[j];
+        plain[j]! ^= iv[j]!;
       }
       iv = buffer;
       result.push(plain);
@@ -1112,8 +1112,8 @@ class AESBaseCipher {
     let outputLength = 16 * result.length;
     if (finalize) {
       // undo a padding that is described in RFC 2898
-      const lastBlock = result[result.length - 1];
-      let psLen = lastBlock[15];
+      const lastBlock = result[result.length - 1]!;
+      let psLen = lastBlock[15]!;
       if (psLen <= 16) {
         for (let i = 15, ii = 16 - psLen; i >= ii; --i) {
           if (lastBlock[i] !== psLen) {
@@ -1128,7 +1128,7 @@ class AESBaseCipher {
     }
     const output = new Uint8Array(outputLength);
     for (let i = 0, j = 0, ii = result.length; i < ii; ++i, j += 16) {
-      output.set(result[i], j);
+      output.set(result[i]!, j);
     }
     return output;
   }
@@ -1151,7 +1151,7 @@ class AESBaseCipher {
         bufferLength < 16 && i < sourceLength;
         ++i, ++bufferLength
       ) {
-        buffer[bufferLength] = data[i];
+        buffer[bufferLength] = data[i]!;
       }
       if (bufferLength < 16) {
         // Need more data.
@@ -1178,14 +1178,14 @@ class AESBaseCipher {
       iv = new Uint8Array(16);
     }
     for (let i = 0; i < sourceLength; ++i) {
-      buffer[bufferLength] = data[i];
+      buffer[bufferLength] = data[i]!;
       ++bufferLength;
       if (bufferLength < 16) {
         continue;
       }
 
       for (let j = 0; j < 16; ++j) {
-        buffer[j] ^= iv[j];
+        buffer[j]! ^= iv[j]!;
       }
 
       // buffer is full, encrypting
@@ -1206,7 +1206,7 @@ class AESBaseCipher {
     const outputLength = 16 * result.length;
     const output = new Uint8Array(outputLength);
     for (let i = 0, j = 0, ii = result.length; i < ii; ++i, j += 16) {
-      output.set(result[i], j);
+      output.set(result[i]!, j);
     }
     return output;
   }
@@ -1259,25 +1259,25 @@ class AES128Cipher extends AESBaseCipher {
 
     for (let j = 16, i = 1; j < b; ++i) {
       // RotWord
-      let t1 = result[j - 3];
-      let t2 = result[j - 2];
-      let t3 = result[j - 1];
-      let t4 = result[j - 4];
+      let t1 = result[j - 3]!;
+      let t2 = result[j - 2]!;
+      let t3 = result[j - 1]!;
+      let t4 = result[j - 4]!;
       // SubWord
-      t1 = s[t1];
-      t2 = s[t2];
-      t3 = s[t3];
-      t4 = s[t4];
+      t1 = s[t1]!;
+      t2 = s[t2]!;
+      t3 = s[t3]!;
+      t4 = s[t4]!;
       // Rcon
-      t1 ^= rcon[i];
+      t1 ^= rcon[i]!;
       for (let n = 0; n < 4; ++n) {
-        result[j] = t1 ^= result[j - 16];
+        result[j] = t1 ^= result[j - 16]!;
         j++;
-        result[j] = t2 ^= result[j - 16];
+        result[j] = t2 ^= result[j - 16]!;
         j++;
-        result[j] = t3 ^= result[j - 16];
+        result[j] = t3 ^= result[j - 16]!;
         j++;
-        result[j] = t4 ^= result[j - 16];
+        result[j] = t4 ^= result[j - 16]!;
         j++;
       }
     }
@@ -1309,21 +1309,21 @@ class AES256Cipher extends AESBaseCipher {
       t4 = 0;
     for (let j = 32; j < b; ) {
       if (j % 32 === 16) {
-        t1 = s[t1];
-        t2 = s[t2];
-        t3 = s[t3];
-        t4 = s[t4];
+        t1 = s[t1]!;
+        t2 = s[t2]!;
+        t3 = s[t3]!;
+        t4 = s[t4]!;
       } else if (j % 32 === 0) {
         // RotWord
-        t1 = result[j - 3];
-        t2 = result[j - 2];
-        t3 = result[j - 1];
-        t4 = result[j - 4];
+        t1 = result[j - 3]!;
+        t2 = result[j - 2]!;
+        t3 = result[j - 1]!;
+        t4 = result[j - 4]!;
         // SubWord
-        t1 = s[t1];
-        t2 = s[t2];
-        t3 = s[t3];
-        t4 = s[t4];
+        t1 = s[t1]!;
+        t2 = s[t2]!;
+        t3 = s[t3]!;
+        t4 = s[t4]!;
         // Rcon
         t1 ^= r;
         if ((r <<= 1) >= 256) {
@@ -1332,13 +1332,13 @@ class AES256Cipher extends AESBaseCipher {
       }
 
       for (let n = 0; n < 4; ++n) {
-        result[j] = t1 ^= result[j - 32];
+        result[j] = t1 ^= result[j - 32]!;
         j++;
-        result[j] = t2 ^= result[j - 32];
+        result[j] = t2 ^= result[j - 32]!;
         j++;
-        result[j] = t3 ^= result[j - 32];
+        result[j] = t3 ^= result[j - 32]!;
         j++;
-        result[j] = t4 ^= result[j - 32];
+        result[j] = t4 ^= result[j - 32]!;
         j++;
       }
     }
@@ -1413,7 +1413,7 @@ class PDF20 {
     let k = calculateSHA256(input, 0, input.length).subarray(0, 32);
     let e: Uint8Array = new Uint8Array([0]);
     let i = 0;
-    while (i < 64 || e[e.length - 1] > i - 32) {
+    while (i < 64 || e[e.length - 1]! > i - 32) {
       const combinedLength = password.length + k.length + userBytes.length,
         combinedArray = new Uint8Array(combinedLength);
       let writeOffset = 0;
@@ -1879,23 +1879,23 @@ class CipherTransformFactory {
     if (password) {
       n = Math.min(32, password.length);
       for (; i < n; ++i) {
-        hashData[i] = password[i];
+        hashData[i] = password[i]!;
       }
     }
     j = 0;
     while (i < 32) {
-      hashData[i++] = this.defaultPasswordBytes[j++];
+      hashData[i++] = this.defaultPasswordBytes[j++]!;
     }
     // as now the padded password in the hashData[0..i]
     for (j = 0, n = ownerPassword.length; j < n; ++j) {
-      hashData[i++] = ownerPassword[j];
+      hashData[i++] = ownerPassword[j]!;
     }
     hashData[i++] = flags & 0xff;
     hashData[i++] = (flags >> 8) & 0xff;
     hashData[i++] = (flags >> 16) & 0xff;
     hashData[i++] = (flags >>> 24) & 0xff;
     for (j = 0, n = fileId.length; j < n; ++j) {
-      hashData[i++] = fileId[j];
+      hashData[i++] = fileId[j]!;
     }
     if (revision >= 4 && !encryptMetadata) {
       hashData[i++] = 0xff;
@@ -1915,10 +1915,10 @@ class CipherTransformFactory {
 
     if (revision >= 3) {
       for (i = 0; i < 32; ++i) {
-        hashData[i] = this.defaultPasswordBytes[i];
+        hashData[i] = this.defaultPasswordBytes[i]!;
       }
       for (j = 0, n = fileId.length; j < n; ++j) {
-        hashData[i++] = fileId[j];
+        hashData[i++] = fileId[j]!;
       }
       cipher = new ARCFourCipher(encryptionKey);
       checkData = cipher.encryptBlock(calculateMD5(hashData, 0, i));
@@ -1926,7 +1926,7 @@ class CipherTransformFactory {
       const derivedKey = new Uint8Array(n);
       for (j = 1; j <= 19; ++j) {
         for (let k = 0; k < n; ++k) {
-          derivedKey[k] = encryptionKey[k] ^ j;
+          derivedKey[k] = encryptionKey[k]! ^ j;
         }
         cipher = new ARCFourCipher(derivedKey);
         checkData = cipher.encryptBlock(checkData);
@@ -1958,11 +1958,11 @@ class CipherTransformFactory {
     let i = 0;
     const n = Math.min(32, password.length);
     for (; i < n; ++i) {
-      hashData[i] = password[i];
+      hashData[i] = password[i]!;
     }
     let j = 0;
     while (i < 32) {
-      hashData[i++] = this.defaultPasswordBytes[j++];
+      hashData[i++] = this.defaultPasswordBytes[j++]!;
     }
     let hash = calculateMD5(hashData, 0, i);
     const keyLengthInBytes = keyLength >> 3;
@@ -1978,7 +1978,7 @@ class CipherTransformFactory {
       const derivedKey = new Uint8Array(keyLengthInBytes);
       for (j = 19; j >= 0; j--) {
         for (let k = 0; k < keyLengthInBytes; ++k) {
-          derivedKey[k] = hash[k] ^ j;
+          derivedKey[k] = hash[k]! ^ j;
         }
         cipher = new ARCFourCipher(derivedKey);
         userPassword = cipher.encryptBlock(userPassword);
@@ -2000,7 +2000,7 @@ class CipherTransformFactory {
     const n = encryptionKey.length;
     let i;
     for (i = 0; i < n; ++i) {
-      key[i] = encryptionKey[i];
+      key[i] = encryptionKey[i]!;
     }
     key[i++] = num & 0xff;
     key[i++] = (num >> 8) & 0xff;

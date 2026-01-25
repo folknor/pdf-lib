@@ -47,7 +47,7 @@ class DecodeStream implements StreamType {
     return this.bufferLength === 0;
   }
 
-  getByte() {
+  getByte(): number {
     const pos = this.pos;
     while (this.bufferLength <= pos) {
       if (this.eof) {
@@ -55,10 +55,10 @@ class DecodeStream implements StreamType {
       }
       this.readBlock();
     }
-    return this.buffer[this.pos++];
+    return this.buffer[this.pos++]!;
   }
 
-  getUint16() {
+  getUint16(): number {
     const b0 = this.getByte();
     const b1 = this.getByte();
     if (b0 === -1 || b1 === -1) {
@@ -67,7 +67,7 @@ class DecodeStream implements StreamType {
     return (b0 << 8) + b1;
   }
 
-  getInt32() {
+  getInt32(): number {
     const b0 = this.getByte();
     const b1 = this.getByte();
     const b2 = this.getByte();
@@ -105,7 +105,7 @@ class DecodeStream implements StreamType {
       : subarray;
   }
 
-  peekByte() {
+  peekByte(): number {
     const peekedByte = this.getByte();
     this.pos--;
     return peekedByte;

@@ -143,7 +143,7 @@ export default class PDFForm {
 
     const fields: PDFField[] = [];
     for (let idx = 0, len = allFields.length; idx < len; idx++) {
-      const [acroField, ref] = allFields[idx];
+      const [acroField, ref] = allFields[idx]!;
       const field = convertToPDFField(acroField, ref, this.doc);
       if (field) fields.push(field);
     }
@@ -165,7 +165,7 @@ export default class PDFForm {
     assertIs(name, 'name', ['string']);
     const fields = this.getFields();
     for (let idx = 0, len = fields.length; idx < len; idx++) {
-      const field = fields[idx];
+      const field = fields[idx]!;
       if (field.getName() === name) return field;
     }
     return undefined;
@@ -353,7 +353,7 @@ export default class PDFForm {
     const button = PDFAcroPushButton.create(this.doc.context);
     button.setPartialName(nameParts.terminal);
 
-    addFieldToParent(parent, [button, button.ref], nameParts.terminal);
+    addFieldToParent(parent, [button, button.ref], nameParts.terminal!);
 
     return PDFButton.of(button, button.ref, this.doc);
   }
@@ -383,7 +383,7 @@ export default class PDFForm {
     const checkBox = PDFAcroCheckBox.create(this.doc.context);
     checkBox.setPartialName(nameParts.terminal);
 
-    addFieldToParent(parent, [checkBox, checkBox.ref], nameParts.terminal);
+    addFieldToParent(parent, [checkBox, checkBox.ref], nameParts.terminal!);
 
     return PDFCheckBox.of(checkBox, checkBox.ref, this.doc);
   }
@@ -413,7 +413,7 @@ export default class PDFForm {
     const comboBox = PDFAcroComboBox.create(this.doc.context);
     comboBox.setPartialName(nameParts.terminal);
 
-    addFieldToParent(parent, [comboBox, comboBox.ref], nameParts.terminal);
+    addFieldToParent(parent, [comboBox, comboBox.ref], nameParts.terminal!);
 
     return PDFDropdown.of(comboBox, comboBox.ref, this.doc);
   }
@@ -443,7 +443,7 @@ export default class PDFForm {
     const listBox = PDFAcroListBox.create(this.doc.context);
     listBox.setPartialName(nameParts.terminal);
 
-    addFieldToParent(parent, [listBox, listBox.ref], nameParts.terminal);
+    addFieldToParent(parent, [listBox, listBox.ref], nameParts.terminal!);
 
     return PDFOptionList.of(listBox, listBox.ref, this.doc);
   }
@@ -477,7 +477,7 @@ export default class PDFForm {
     addFieldToParent(
       parent,
       [radioButton, radioButton.ref],
-      nameParts.terminal,
+      nameParts.terminal!,
     );
 
     return PDFRadioGroup.of(radioButton, radioButton.ref, this.doc);
@@ -508,7 +508,7 @@ export default class PDFForm {
     const text = PDFAcroText.create(this.doc.context);
     text.setPartialName(nameParts.terminal);
 
-    addFieldToParent(parent, [text, text.ref], nameParts.terminal);
+    addFieldToParent(parent, [text, text.ref], nameParts.terminal!);
 
     return PDFTextField.of(text, text.ref, this.doc);
   }
@@ -542,16 +542,16 @@ export default class PDFForm {
     const fields = this.getFields();
 
     for (let i = 0, lenFields = fields.length; i < lenFields; i++) {
-      const field = fields[i];
+      const field = fields[i]!;
       const widgets = field.acroField.getWidgets();
 
       for (let j = 0, lenWidgets = widgets.length; j < lenWidgets; j++) {
         try {
-          const widget = widgets[j];
+          const widget = widgets[j]!;
           const page = this.findWidgetPage(widget);
           const widgetRef = this.findWidgetAppearanceRef(field, widget);
 
-          const xObjectKey = page.node.newXObject('FlatWidget', widgetRef);
+          const xObjectKey = page.node.newXObject('FlatWidget', widgetRef!);
 
           const rectangle = widget.getRectangle();
           const operators = [
@@ -588,7 +588,7 @@ export default class PDFForm {
 
     for (let i = 0, len = widgets.length; i < len; i++) {
       try {
-        const widget = widgets[i];
+        const widget = widgets[i]!;
         const widgetRef = this.doc.context.getObjectRef(widget.dict);
 
         const page = this.findWidgetPage(widget);
@@ -652,7 +652,7 @@ export default class PDFForm {
     const fields = this.getFields();
 
     for (let idx = 0, len = fields.length; idx < len; idx++) {
-      const field = fields[idx];
+      const field = fields[idx]!;
       if (field.needsAppearancesUpdate()) {
         field.defaultUpdateAppearances(font);
       }
@@ -760,7 +760,7 @@ export default class PDFForm {
       this.acroForm,
     ];
     for (let idx = 0, len = partialNames.length; idx < len; idx++) {
-      const namePart = partialNames[idx];
+      const namePart = partialNames[idx]!;
       if (!namePart) throw new InvalidFieldNamePartError(namePart);
       const [parent, parentRef] = nonTerminal;
       const res = this.findNonTerminal(namePart, parent);
@@ -789,7 +789,7 @@ export default class PDFForm {
         : createPDFAcroFields(parent.Kids());
 
     for (let idx = 0, len = fields.length; idx < len; idx++) {
-      const [field, ref] = fields[idx];
+      const [field, ref] = fields[idx]!;
       if (field.getPartialName() === partialName) {
         if (field instanceof PDFAcroNonTerminal) return [field, ref];
         throw new FieldAlreadyExistsError(partialName);
@@ -855,7 +855,7 @@ const addFieldToParent = (
     'Kids' in entries ? entries.Kids : entries.Fields,
   );
   for (let idx = 0, len = fields.length; idx < len; idx++) {
-    if (fields[idx][0].getPartialName() === partialName) {
+    if (fields[idx]![0].getPartialName() === partialName) {
       throw new FieldAlreadyExistsError(partialName);
     }
   }

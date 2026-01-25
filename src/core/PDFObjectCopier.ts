@@ -63,7 +63,7 @@ class PDFObjectCopier {
     // the copy.
     const { InheritableEntries } = PDFPageLeaf;
     for (let idx = 0, len = InheritableEntries.length; idx < len; idx++) {
-      const key = PDFName.of(InheritableEntries[idx]);
+      const key = PDFName.of(InheritableEntries[idx]!);
       const value = clonedPage.getInheritableAttribute(key)!;
       if (!clonedPage.get(key) && value) clonedPage.set(key, value);
     }
@@ -86,7 +86,7 @@ class PDFObjectCopier {
     const entries = originalDict.entries();
 
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       clonedDict.set(key, this.copy(value));
     }
 
@@ -119,7 +119,7 @@ class PDFObjectCopier {
 
     const entries = originalStream.dict.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       clonedStream.dict.set(key, this.copy(value));
     }
 

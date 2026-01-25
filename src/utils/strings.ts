@@ -100,7 +100,7 @@ const buildWordBreakRegex = (wordBreaks: string[]) => {
 
   const escapedRules: string[] = ['$'];
   for (let idx = 0, len = wordBreaks.length; idx < len; idx++) {
-    const wordBreak = wordBreaks[idx];
+    const wordBreak = wordBreaks[idx]!;
     if (isNewlineChar(wordBreak)) {
       throw new TypeError(`\`wordBreak\` must not include ${newlineCharUnion}`);
     }
@@ -132,7 +132,7 @@ export const breakTextIntoLines = (
   };
 
   for (let idx = 0, len = words.length; idx < len; idx++) {
-    const word = words[idx];
+    const word = words[idx]!;
     if (isNewlineChar(word)) {
       pushCurrLine();
     } else {

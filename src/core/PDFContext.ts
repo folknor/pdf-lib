@@ -179,7 +179,7 @@ class PDFContext {
   getObjectRef(pdfObject: PDFObject): PDFRef | undefined {
     const entries = Array.from(this.indirectObjects.entries());
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [ref, object] = entries[idx];
+      const [ref, object] = entries[idx]!;
       if (object === pdfObject) {
         return ref;
       }
@@ -217,14 +217,14 @@ class PDFContext {
     } else if (Array.isArray(literal)) {
       const array = PDFArray.withContext(this);
       for (let idx = 0, len = literal.length; idx < len; idx++) {
-        array.push(this.obj(literal[idx]));
+        array.push(this.obj(literal[idx as number]));
       }
       return array;
     } else {
       const dict = PDFDict.withContext(this);
       const keys = Object.keys(literal);
       for (let idx = 0, len = keys.length; idx < len; idx++) {
-        const key = keys[idx];
+        const key = keys[idx]!;
         const value = (literal as LiteralObject)[key] as any;
         if (value !== undefined) dict.set(PDFName.of(key), this.obj(value));
       }
@@ -271,7 +271,7 @@ class PDFContext {
       const lit: LiteralObject = {};
       const entries = obj.entries();
       for (let idx = 0, len = entries.length; idx < len; idx++) {
-        const [name, value] = entries[idx];
+        const [name, value] = entries[idx]!;
         lit[this.getLiteral(name)] = deep ? this.getLiteral(value, cfg) : value;
       }
       return lit;

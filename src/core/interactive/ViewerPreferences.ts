@@ -553,8 +553,8 @@ class ViewerPreferences {
 
     const flatRange: number[] = [];
     for (let idx = 0, len = printPageRange.length; idx < len; idx++) {
-      flatRange.push(printPageRange[idx].start);
-      flatRange.push(printPageRange[idx].end);
+      flatRange.push(printPageRange[idx]!.start);
+      flatRange.push(printPageRange[idx]!.end);
     }
 
     assertEachIs(flatRange, 'printPageRange', ['number']);

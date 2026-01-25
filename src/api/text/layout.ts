@@ -47,7 +47,7 @@ const computeFontSize = (
     ) {
       linesUsed += 1;
 
-      const line = lines[lineIdx];
+      const line = lines[lineIdx]!;
       const words = line.split(' ');
 
       // Layout the words using the current `fontSize`, line wrapping
@@ -55,7 +55,7 @@ const computeFontSize = (
       let spaceInLineRemaining = bounds.width;
       for (let idx = 0, len = words.length; idx < len; idx++) {
         const isLastWord = idx === len - 1;
-        const word = isLastWord ? words[idx] : `${words[idx]} `;
+        const word = isLastWord ? words[idx]! : `${words[idx]!} `;
         const widthOfWord = font.widthOfTextAtSize(word, fontSize);
         spaceInLineRemaining -= widthOfWord;
         if (spaceInLineRemaining <= 0) {
@@ -95,7 +95,7 @@ const computeCombedFontSize = (
   const chars = charSplit(line);
   while (fontSize < MAX_FONT_SIZE) {
     for (let idx = 0, len = chars.length; idx < len; idx++) {
-      const c = chars[idx];
+      const c = chars[idx]!;
       const tooLong = font.widthOfTextAtSize(c, fontSize) > cellWidth * 0.75;
       if (tooLong) return fontSize - 1;
     }
@@ -125,7 +125,7 @@ export interface MultilineTextLayout {
 
 const lastIndexOfWhitespace = (line: string) => {
   for (let idx = line.length; idx > 0; idx--) {
-    if (/\s/.test(line[idx])) return idx;
+    if (/\s/.test(line[idx]!)) return idx;
   }
   return undefined;
 };

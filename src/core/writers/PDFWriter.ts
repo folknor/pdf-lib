@@ -47,7 +47,7 @@ class PDFWriter {
     buffer[offset++] = CharCodes.Newline;
 
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
-      const [ref, object] = indirectObjects[idx];
+      const [ref, object] = indirectObjects[idx]!;
 
       const objectNumber = String(ref.objectNumber);
       offset += copyStringIntoBuffer(objectNumber, buffer, offset);
@@ -126,7 +126,7 @@ class PDFWriter {
     const indirectObjects = this.context.enumerateIndirectObjects();
 
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
-      const indirectObject = indirectObjects[idx];
+      const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
       if (security) this.encrypt(ref, object, security);
       xref.addEntry(ref, size);

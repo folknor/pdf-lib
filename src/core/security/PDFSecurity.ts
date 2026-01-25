@@ -479,7 +479,7 @@ const getUserPasswordR3R4 = (
     const xorRound = Math.ceil(key.sigBytes / 4);
     for (let j = 0; j < xorRound; j++) {
       key.words[j] =
-        encryptionKey.words[j] ^ (i | (i << 8) | (i << 16) | (i << 24));
+        encryptionKey.words[j]! ^ (i | (i << 8) | (i << 16) | (i << 24));
     }
     cipher = CryptoJS.RC4.encrypt(cipher, key).ciphertext;
   }
@@ -507,7 +507,7 @@ const getOwnerPasswordR2R3R4 = (
   for (let i = 0; i < round; i++) {
     const xorRound = Math.ceil(key.sigBytes / 4);
     for (let j = 0; j < xorRound; j++) {
-      key.words[j] = digest.words[j] ^ (i | (i << 8) | (i << 16) | (i << 24));
+      key.words[j] = digest.words[j]! ^ (i | (i << 8) | (i << 16) | (i << 24));
     }
     cipher = CryptoJS.RC4.encrypt(cipher, key).ciphertext;
   }
@@ -632,7 +632,7 @@ const processPasswordR2R3R4 = (password = '') => {
     index++;
   }
   while (index < 32) {
-    out[index] = PASSWORD_PADDING[index - length];
+    out[index] = PASSWORD_PADDING[index - length]!;
     index++;
   }
   return CryptoJS.lib.WordArray.create(out as unknown as number[]);
@@ -663,7 +663,7 @@ const wordArrayToBuffer = (wordArray: WordArray): Uint8Array => {
   const byteArray = [];
   for (let i = 0; i < wordArray.sigBytes; i++) {
     byteArray.push(
-      (wordArray.words[Math.floor(i / 4)] >> (8 * (3 - (i % 4)))) & 0xff,
+      (wordArray.words[Math.floor(i / 4)]! >> (8 * (3 - (i % 4)))) & 0xff,
     );
   }
 

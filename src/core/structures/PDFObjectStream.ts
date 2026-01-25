@@ -51,7 +51,7 @@ class PDFObjectStream extends PDFFlateStream {
   override getContentsString(): string {
     let value = this.offsetsString;
     for (let idx = 0, len = this.objects.length; idx < len; idx++) {
-      const [, object] = this.objects[idx];
+      const [, object] = this.objects[idx]!;
       value += `${object}\n`;
     }
     return value;
@@ -61,7 +61,7 @@ class PDFObjectStream extends PDFFlateStream {
     const buffer = new Uint8Array(this.getUnencodedContentsSize());
     let offset = copyStringIntoBuffer(this.offsetsString, buffer, 0);
     for (let idx = 0, len = this.objects.length; idx < len; idx++) {
-      const [, object] = this.objects[idx];
+      const [, object] = this.objects[idx]!;
       offset += object.copyBytesInto(buffer, offset);
       buffer[offset++] = CharCodes.Newline;
     }
@@ -71,8 +71,8 @@ class PDFObjectStream extends PDFFlateStream {
   getUnencodedContentsSize(): number {
     return (
       this.offsetsString.length +
-      last(this.offsets)[1] +
-      last(this.objects)[1].sizeInBytes() +
+      last(this.offsets)![1] +
+      last(this.objects)![1].sizeInBytes() +
       1
     );
   }
@@ -80,7 +80,7 @@ class PDFObjectStream extends PDFFlateStream {
   private computeOffsetsString(): string {
     let offsetsString = '';
     for (let idx = 0, len = this.offsets.length; idx < len; idx++) {
-      const [objectNumber, offset] = this.offsets[idx];
+      const [objectNumber, offset] = this.offsets[idx]!;
       offsetsString += `${objectNumber} ${offset} `;
     }
     return offsetsString;
@@ -90,7 +90,7 @@ class PDFObjectStream extends PDFFlateStream {
     let offset = 0;
     const offsets = new Array(this.objects.length);
     for (let idx = 0, len = this.objects.length; idx < len; idx++) {
-      const [ref, object] = this.objects[idx];
+      const [ref, object] = this.objects[idx]!;
       offsets[idx] = [ref.objectNumber, offset];
       offset += object.sizeInBytes() + 1; // '\n'
     }

@@ -113,19 +113,19 @@ class PDFCrossRefStream extends PDFFlateStream {
       entryIdx < entriesLen;
       entryIdx++
     ) {
-      const [first, second, third] = entryTuples[entryIdx];
+      const [first, second, third] = entryTuples[entryIdx]!;
 
       const firstBytes = reverseArray(bytesFor(first));
       const secondBytes = reverseArray(bytesFor(second));
       const thirdBytes = reverseArray(bytesFor(third));
 
-      for (let idx = byteWidths[0] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[0]! - 1; idx >= 0; idx--) {
         value += (firstBytes[idx] || 0).toString(2);
       }
-      for (let idx = byteWidths[1] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[1]! - 1; idx >= 0; idx--) {
         value += (secondBytes[idx] || 0).toString(2);
       }
-      for (let idx = byteWidths[2] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[2]! - 1; idx >= 0; idx--) {
         value += (thirdBytes[idx] || 0).toString(2);
       }
     }
@@ -144,19 +144,19 @@ class PDFCrossRefStream extends PDFFlateStream {
       entryIdx < entriesLen;
       entryIdx++
     ) {
-      const [first, second, third] = entryTuples[entryIdx];
+      const [first, second, third] = entryTuples[entryIdx]!;
 
       const firstBytes = reverseArray(bytesFor(first));
       const secondBytes = reverseArray(bytesFor(second));
       const thirdBytes = reverseArray(bytesFor(third));
 
-      for (let idx = byteWidths[0] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[0]! - 1; idx >= 0; idx--) {
         buffer[offset++] = firstBytes[idx] || 0;
       }
-      for (let idx = byteWidths[1] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[1]! - 1; idx >= 0; idx--) {
         buffer[offset++] = secondBytes[idx] || 0;
       }
-      for (let idx = byteWidths[2] - 1; idx >= 0; idx--) {
+      for (let idx = byteWidths[2]! - 1; idx >= 0; idx--) {
         buffer[offset++] = thirdBytes[idx] || 0;
       }
     }
@@ -189,12 +189,12 @@ class PDFCrossRefStream extends PDFFlateStream {
 
     let subsectionLength = 0;
     for (let idx = 0, len = this.entries.length; idx < len; idx++) {
-      const currEntry = this.entries[idx];
+      const currEntry = this.entries[idx]!;
       const prevEntry = this.entries[idx - 1];
 
       if (idx === 0) {
         subsections.push(currEntry.ref.objectNumber);
-      } else if (currEntry.ref.objectNumber - prevEntry.ref.objectNumber > 1) {
+      } else if (currEntry.ref.objectNumber - prevEntry!.ref.objectNumber > 1) {
         subsections.push(subsectionLength);
         subsections.push(currEntry.ref.objectNumber);
         subsectionLength = 0;
@@ -211,7 +211,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     const entryTuples: EntryTuple[] = new Array(this.entries.length);
 
     for (let idx = 0, len = this.entries.length; idx < len; idx++) {
-      const entry = this.entries[idx];
+      const entry = this.entries[idx]!;
       if (entry.type === EntryType.Deleted) {
         const { type, nextFreeObjectNumber, ref } = entry;
         entryTuples[idx] = [type, nextFreeObjectNumber, ref.generationNumber];
@@ -234,7 +234,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     const widths: [number, number, number] = [0, 0, 0];
 
     for (let idx = 0, len = entryTuples.length; idx < len; idx++) {
-      const [first, second, third] = entryTuples[idx];
+      const [first, second, third] = entryTuples[idx]!;
 
       const firstSize = sizeInBytes(first);
       const secondSize = sizeInBytes(second);

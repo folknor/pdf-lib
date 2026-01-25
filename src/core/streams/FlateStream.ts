@@ -228,7 +228,7 @@ class FlateStream extends DecodeStream {
 
       let i;
       for (i = 0; i < numCodeLenCodes; ++i) {
-        codeLenCodeLengths[codeLenCodeMap[i]] = this.getBits(3);
+        codeLenCodeLengths[codeLenCodeMap[i]!] = this.getBits(3);
       }
       const codeLenCodeTab = this.generateHuffmanTable(codeLenCodeLengths);
 
@@ -293,14 +293,14 @@ class FlateStream extends DecodeStream {
         return;
       }
       code1 -= 257;
-      code1 = lengthDecode[code1];
+      code1 = lengthDecode[code1]!;
       let code2 = code1 >> 16;
       if (code2 > 0) {
         code2 = this.getBits(code2);
       }
       len = (code1 & 0xffff) + code2;
       code1 = this.getCode(distCodeTable);
-      code1 = distDecode[code1];
+      code1 = distDecode[code1]!;
       code2 = code1 >> 16;
       if (code2 > 0) {
         code2 = this.getBits(code2);
@@ -311,7 +311,7 @@ class FlateStream extends DecodeStream {
         limit = buffer.length;
       }
       for (let k = 0; k < len; ++k, ++pos) {
-        buffer[pos] = buffer[pos - dist];
+        buffer[pos] = buffer[pos - dist]!;
       }
     }
   }
@@ -353,7 +353,7 @@ class FlateStream extends DecodeStream {
       codeBuf |= b << codeSize;
       codeSize += 8;
     }
-    const code = codes[codeBuf & ((1 << maxLen) - 1)];
+    const code = codes[codeBuf & ((1 << maxLen) - 1)]!;
     if (typeof codes === 'number') {
       console.log('FLATE:', code);
     }
@@ -374,8 +374,8 @@ class FlateStream extends DecodeStream {
     let maxLen = 0;
     let i;
     for (i = 0; i < n; ++i) {
-      if (lengths[i] > maxLen) {
-        maxLen = lengths[i];
+      if (lengths[i]! > maxLen) {
+        maxLen = lengths[i]!;
       }
     }
 

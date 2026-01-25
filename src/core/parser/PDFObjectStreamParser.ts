@@ -37,7 +37,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
     const offsetsAndObjectNumbers = this.parseOffsetsAndObjectNumbers();
     for (let idx = 0, len = offsetsAndObjectNumbers.length; idx < len; idx++) {
-      const { objectNumber, offset } = offsetsAndObjectNumbers[idx];
+      const { objectNumber, offset } = offsetsAndObjectNumbers[idx]!;
       this.bytes.moveTo(this.firstOffset + offset);
       const ref = PDFRef.of(objectNumber, 0);
       const object = this.parseObject(ref);

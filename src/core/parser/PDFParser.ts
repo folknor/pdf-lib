@@ -107,7 +107,7 @@ class PDFParser extends PDFObjectParser {
     if (!isValidCatalog(catalog)) {
       const indirectObjects = this.context.enumerateIndirectObjects();
       for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
-        const [ref, object] = indirectObjects[idx];
+        const [ref, object] = indirectObjects[idx]!;
         if (isValidCatalog(object)) {
           this.context.trailerInfo.Root = ref;
         }

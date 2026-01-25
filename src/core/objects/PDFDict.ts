@@ -175,7 +175,7 @@ class PDFDict extends PDFObject {
     const clone = PDFDict.withContext(context || this.context);
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       clone.set(key, value);
     }
     return clone;
@@ -185,7 +185,7 @@ class PDFDict extends PDFObject {
     let dictString = '<<\n';
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       dictString += `${key.toString()} ${value.toString()}\n`;
     }
     dictString += '>>';
@@ -196,7 +196,7 @@ class PDFDict extends PDFObject {
     let size = 5;
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       size += key.sizeInBytes() + value.sizeInBytes() + 2;
     }
     return size;
@@ -211,7 +211,7 @@ class PDFDict extends PDFObject {
 
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
-      const [key, value] = entries[idx];
+      const [key, value] = entries[idx]!;
       offset += key.copyBytesInto(buffer, offset);
       buffer[offset++] = CharCodes.Space;
       offset += value.copyBytesInto(buffer, offset);

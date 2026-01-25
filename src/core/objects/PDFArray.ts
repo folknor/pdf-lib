@@ -51,7 +51,7 @@ class PDFArray extends PDFObject {
   }
 
   get(index: number): PDFObject {
-    return this.array[index];
+    return this.array[index]!;
   }
 
   lookupMaybe(index: number, type: typeof PDFArray): PDFArray | undefined;
@@ -134,7 +134,7 @@ class PDFArray extends PDFObject {
   override clone(context?: PDFContext): PDFArray {
     const clone = PDFArray.withContext(context || this.context);
     for (let idx = 0, len = this.size(); idx < len; idx++) {
-      clone.push(this.array[idx]);
+      clone.push(this.array[idx]!);
     }
     return clone;
   }

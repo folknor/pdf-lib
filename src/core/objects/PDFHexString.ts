@@ -20,7 +20,7 @@ class PDFHexString extends PDFObject {
 
     let hex = '';
     for (let idx = 0, len = encoded.length; idx < len; idx++) {
-      hex += toHexStringOfMinLength(encoded[idx], 4);
+      hex += toHexStringOfMinLength(encoded[idx]!, 4);
     }
 
     return new PDFHexString(hex);

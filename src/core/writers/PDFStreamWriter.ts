@@ -64,7 +64,7 @@ class PDFStreamWriter extends PDFWriter {
 
     const indirectObjects = this.context.enumerateIndirectObjects();
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
-      const indirectObject = indirectObjects[idx];
+      const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
 
       const shouldNotCompress =
@@ -91,14 +91,14 @@ class PDFStreamWriter extends PDFWriter {
           objectStreamRef = PDFRef.of(objectNumber++);
           objectStreamRefs.push(objectStreamRef);
         }
-        xrefStream.addCompressedEntry(ref, objectStreamRef, chunk.length);
+        xrefStream.addCompressedEntry(ref, objectStreamRef!, chunk.length);
         chunk.push(indirectObject);
       }
     }
 
     for (let idx = 0, len = compressedObjects.length; idx < len; idx++) {
-      const chunk = compressedObjects[idx];
-      const ref = objectStreamRefs[idx];
+      const chunk = compressedObjects[idx]!;
+      const ref = objectStreamRefs[idx]!;
 
       const objectStream = PDFObjectStream.withContextAndObjects(
         this.context,

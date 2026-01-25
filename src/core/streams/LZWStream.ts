@@ -90,13 +90,13 @@ class LZWStream extends DecodeStream {
         currentSequenceLength = 1;
       } else if (code >= 258) {
         if (code < nextCode) {
-          currentSequenceLength = dictionaryLengths[code];
+          currentSequenceLength = dictionaryLengths[code]!;
           for (j = currentSequenceLength - 1, q = code; j >= 0; j--) {
-            currentSequence[j] = dictionaryValues[q];
-            q = dictionaryPrevCodes[q];
+            currentSequence[j] = dictionaryValues[q]!;
+            q = dictionaryPrevCodes[q]!;
           }
         } else {
-          currentSequence[currentSequenceLength++] = currentSequence[0];
+          currentSequence[currentSequenceLength++] = currentSequence[0]!;
         }
       } else if (code === 256) {
         codeLength = 9;
@@ -111,8 +111,8 @@ class LZWStream extends DecodeStream {
 
       if (hasPrev) {
         dictionaryPrevCodes[nextCode] = prevCode as number;
-        dictionaryLengths[nextCode] = dictionaryLengths[prevCode as number] + 1;
-        dictionaryValues[nextCode] = currentSequence[0];
+        dictionaryLengths[nextCode] = dictionaryLengths[prevCode as number]! + 1;
+        dictionaryValues[nextCode] = currentSequence[0]!;
         nextCode++;
         codeLength =
           (nextCode + earlyChange) & (nextCode + earlyChange - 1)
@@ -129,7 +129,7 @@ class LZWStream extends DecodeStream {
         buffer = this.ensureBuffer(this.bufferLength + estimatedDecodedSize);
       }
       for (j = 0; j < currentSequenceLength; j++) {
-        buffer[currentBufferLength++] = currentSequence[j];
+        buffer[currentBufferLength++] = currentSequence[j]!;
       }
     }
     lzwState.nextCode = nextCode;

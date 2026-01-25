@@ -196,7 +196,7 @@ export default class PDFCheckBox extends PDFField {
   override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const state = widget.getAppearanceState();
       const normal = widget.getAppearances()?.normal;
 
@@ -241,7 +241,7 @@ export default class PDFCheckBox extends PDFField {
 
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
-      const widget = widgets[idx];
+      const widget = widgets[idx]!;
       const onValue = widget.getOnValue() ?? PDFName.of('Yes');
       if (!onValue) continue;
       this.updateWidgetAppearance(widget, onValue, provider);

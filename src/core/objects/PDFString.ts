@@ -46,7 +46,7 @@ class PDFString extends PDFObject {
     };
 
     for (let idx = 0, len = this.value.length; idx < len; idx++) {
-      const char = this.value[idx];
+      const char = this.value[idx]!;
       const byte = toCharCode(char);
       const nextChar = this.value[idx + 1];
       if (!escaped) {
@@ -65,7 +65,7 @@ class PDFString extends PDFObject {
         else if (byte === CharCodes.Backspace) pushByte(CharCodes.BackSlash);
         else if (byte >= CharCodes.Zero && byte <= CharCodes.Seven) {
           octal += char;
-          if (octal.length === 3 || !(nextChar >= '0' && nextChar <= '7')) {
+          if (octal.length === 3 || !(nextChar! >= '0' && nextChar! <= '7')) {
             pushByte(parseInt(octal, 8));
             octal = '';
           }
