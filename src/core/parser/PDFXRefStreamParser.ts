@@ -1,12 +1,12 @@
 import { ReparseError } from '../errors';
 import PDFArray from '../objects/PDFArray';
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFRawStream from '../objects/PDFRawStream';
+import type PDFRawStream from '../objects/PDFRawStream';
 import PDFRef from '../objects/PDFRef';
 import ByteStream from './ByteStream';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 
 export interface Entry {
   ref: PDFRef;

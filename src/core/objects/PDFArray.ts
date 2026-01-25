@@ -1,17 +1,17 @@
-import PDFBool from './PDFBool';
-import PDFDict from './PDFDict';
-import PDFHexString from './PDFHexString';
-import PDFName from './PDFName';
-import PDFNull from './PDFNull';
+import type PDFBool from './PDFBool';
+import type PDFDict from './PDFDict';
+import type PDFHexString from './PDFHexString';
+import type PDFName from './PDFName';
+import type PDFNull from './PDFNull';
 import PDFNumber from './PDFNumber';
 import PDFObject from './PDFObject';
-import PDFRef from './PDFRef';
-import PDFStream from './PDFStream';
-import PDFString from './PDFString';
-import PDFContext from '../PDFContext';
+import type PDFRef from './PDFRef';
+import type PDFStream from './PDFStream';
+import type PDFString from './PDFString';
+import type PDFContext from '../PDFContext';
 import CharCodes from '../syntax/CharCodes';
 import { PDFArrayIsNotRectangleError } from '../errors';
-import PDFRawStream from './PDFRawStream';
+import type PDFRawStream from './PDFRawStream';
 
 class PDFArray extends PDFObject {
   static withContext = (context: PDFContext) => new PDFArray(context);
@@ -131,7 +131,7 @@ class PDFArray extends PDFObject {
     return this.array.slice();
   }
 
-  clone(context?: PDFContext): PDFArray {
+  override clone(context?: PDFContext): PDFArray {
     const clone = PDFArray.withContext(context || this.context);
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       clone.push(this.array[idx]);
@@ -139,7 +139,7 @@ class PDFArray extends PDFObject {
     return clone;
   }
 
-  toString(): string {
+  override toString(): string {
     let arrayString = '[ ';
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       arrayString += this.get(idx).toString();
@@ -149,7 +149,7 @@ class PDFArray extends PDFObject {
     return arrayString;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     let size = 3;
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       size += this.get(idx).sizeInBytes() + 1;
@@ -157,7 +157,7 @@ class PDFArray extends PDFObject {
     return size;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     const initialOffset = offset;
 
     buffer[offset++] = CharCodes.LeftSquareBracket;

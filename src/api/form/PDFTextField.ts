@@ -1,13 +1,13 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import PDFFont from '../PDFFont';
-import PDFImage from '../PDFImage';
+import type PDFImage from '../PDFImage';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultTextFieldAppearanceProvider,
 } from './appearances';
@@ -23,11 +23,11 @@ import { TextAlignment } from '../text/alignment';
 
 import {
   PDFHexString,
-  PDFRef,
+  type PDFRef,
   PDFStream,
   PDFAcroText,
   AcroTextFlags,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
 } from '../../core';
 import {
   assertIs,
@@ -62,7 +62,7 @@ export default class PDFTextField extends PDFField {
     new PDFTextField(acroText, ref, doc);
 
   /** The low-level PDFAcroText wrapped by this text field. */
-  readonly acroField: PDFAcroText;
+  override readonly acroField: PDFAcroText;
 
   private constructor(acroText: PDFAcroText, ref: PDFRef, doc: PDFDocument) {
     super(acroText, ref, doc);
@@ -754,7 +754,7 @@ export default class PDFTextField extends PDFField {
    * ```
    * @returns Whether or not this text field needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
@@ -778,7 +778,7 @@ export default class PDFTextField extends PDFField {
    * ```
    * @param font The font to be used for creating the appearance streams.
    */
-  defaultUpdateAppearances(font: PDFFont) {
+  override defaultUpdateAppearances(font: PDFFont) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.updateAppearances(font);
   }

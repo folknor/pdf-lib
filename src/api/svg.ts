@@ -1,19 +1,19 @@
 import {
   parse as parseHtml,
-  HTMLElement,
-  Attributes,
-  Node,
+  type HTMLElement,
+  type Attributes,
+  type Node,
   NodeType,
 } from 'node-html-better-parser';
-import { Color, colorString } from './colors';
-import { Degrees, degreesToRadians } from './rotations';
-import PDFFont from './PDFFont';
-import PDFPage from './PDFPage';
+import { type Color, colorString } from './colors';
+import { type Degrees, degreesToRadians } from './rotations';
+import type PDFFont from './PDFFont';
+import type PDFPage from './PDFPage';
 import PDFSvg from './PDFSvg';
-import { BlendMode, PDFPageDrawSVGElementOptions } from './PDFPageOptions';
+import { BlendMode, type PDFPageDrawSVGElementOptions } from './PDFPageOptions';
 import { LineCapStyle, LineJoinStyle, FillRule } from './operators';
-import { TransformationMatrix, identityMatrix } from '../types/matrix';
-import { Coordinates, Space } from '../types';
+import { type TransformationMatrix, identityMatrix } from '../types/matrix';
+import type { Coordinates, Space } from '../types';
 
 interface Position {
   x: number;
@@ -368,7 +368,7 @@ const runnersToPage = (
   image(element) {
     const { src } = element.svgAttributes;
     if (!(src && options.images?.[src])) return;
-    const img = options.images?.[src]!;
+    const img = options.images![src];
 
     const { x, y, width, height } = getFittingRectangle(
       img.width,
@@ -430,7 +430,7 @@ const runnersToPage = (
     });
   },
   circle(element) {
-    return runnersToPage(page, options).ellipse(element);
+    return runnersToPage(page, options)['ellipse'](element);
   },
 });
 
@@ -466,7 +466,7 @@ const parseColor = (
   const parsedColor = colorString(color);
   return {
     rgb: parsedColor.rgb,
-    alpha: parsedColor.alpha ? parsedColor.alpha + '' : undefined,
+    alpha: parsedColor.alpha ? `${parsedColor.alpha}` : undefined,
   };
 };
 
@@ -483,7 +483,7 @@ const parseAttributes = (
   matrix: TransformationMatrix,
 ): ParsedAttributes => {
   const attributes = element.attributes;
-  const style = parseStyles(attributes.style);
+  const style = parseStyles(attributes['style']);
   const widthRaw = styleOrAttribute(attributes, style, 'width', '');
   const heightRaw = styleOrAttribute(attributes, style, 'height', '');
   const fillRaw = parseColor(styleOrAttribute(attributes, style, 'fill'));
@@ -515,16 +515,16 @@ const parseAttributes = (
 
   const width = parseFloatValue(widthRaw, inherited.width);
   const height = parseFloatValue(heightRaw, inherited.height);
-  const x = parseFloatValue(attributes.x, inherited.width);
-  const y = parseFloatValue(attributes.y, inherited.height);
-  const x1 = parseFloatValue(attributes.x1, inherited.width);
-  const x2 = parseFloatValue(attributes.x2, inherited.width);
-  const y1 = parseFloatValue(attributes.y1, inherited.height);
-  const y2 = parseFloatValue(attributes.y2, inherited.height);
-  const cx = parseFloatValue(attributes.cx, inherited.width);
-  const cy = parseFloatValue(attributes.cy, inherited.height);
-  const rx = parseFloatValue(attributes.rx || attributes.r, inherited.width);
-  const ry = parseFloatValue(attributes.ry || attributes.r, inherited.height);
+  const x = parseFloatValue(attributes['x'], inherited.width);
+  const y = parseFloatValue(attributes['y'], inherited.height);
+  const x1 = parseFloatValue(attributes['x1'], inherited.width);
+  const x2 = parseFloatValue(attributes['x2'], inherited.width);
+  const y1 = parseFloatValue(attributes['y1'], inherited.height);
+  const y2 = parseFloatValue(attributes['y2'], inherited.height);
+  const cx = parseFloatValue(attributes['cx'], inherited.width);
+  const cy = parseFloatValue(attributes['cy'], inherited.height);
+  const rx = parseFloatValue(attributes['rx'] || attributes['r'], inherited.width);
+  const ry = parseFloatValue(attributes['ry'] || attributes['r'], inherited.height);
 
   const newInherited: InheritedAttributes = {
     fontFamily: fontFamilyRaw || inherited.fontFamily,
@@ -549,22 +549,22 @@ const parseAttributes = (
     height: height || inherited.height,
     rotation: inherited.rotation,
     viewBox:
-      element.tagName === 'svg' && element.attributes.viewBox
-        ? parseViewBox(element.attributes.viewBox)!
+      element.tagName === 'svg' && element.attributes['viewBox']
+        ? parseViewBox(element.attributes['viewBox'])!
         : inherited.viewBox,
     blendMode: parseBlendMode(blendModeRaw) || inherited.blendMode,
   };
 
   const svgAttributes: SVGAttributes = {
-    src: attributes.src || attributes.href || attributes['xlink:href'],
+    src: attributes['src'] || attributes['href'] || attributes['xlink:href'],
     textAnchor: attributes['text-anchor'],
     dominantBaseline: attributes[
       'dominant-baseline'
     ] as SVGAttributes['dominantBaseline'],
-    preserveAspectRatio: attributes.preserveAspectRatio,
+    preserveAspectRatio: attributes['preserveAspectRatio'],
   };
 
-  let transformList = attributes.transform || '';
+  let transformList = attributes['transform'] || '';
   // Handle transformations set as direct attributes
   [
     'translate',
@@ -579,13 +579,13 @@ const parseAttributes = (
     'matrix',
   ].forEach((name) => {
     if (attributes[name]) {
-      transformList = attributes[name] + ' ' + transformList;
+      transformList = `${attributes[name]} ${transformList}`;
     }
   });
 
   // Convert x/y as if it was a translation
   if (x || y) {
-    transformList = transformList + `translate(${x || 0} ${y || 0}) `;
+    transformList = `${transformList}translate(${x || 0} ${y || 0}) `;
   }
   let newMatrix = matrix;
   // Apply the transformations
@@ -610,30 +610,30 @@ const parseAttributes = (
   svgAttributes.x = x;
   svgAttributes.y = y;
 
-  if (attributes.cx || attributes.cy) {
+  if (attributes['cx'] || attributes['cy']) {
     svgAttributes.cx = cx;
     svgAttributes.cy = cy;
   }
-  if (attributes.rx || attributes.ry || attributes.r) {
+  if (attributes['rx'] || attributes['ry'] || attributes['r']) {
     svgAttributes.rx = rx;
     svgAttributes.ry = ry;
   }
-  if (attributes.x1 || attributes.y1) {
+  if (attributes['x1'] || attributes['y1']) {
     svgAttributes.x1 = x1;
     svgAttributes.y1 = y1;
   }
-  if (attributes.x2 || attributes.y2) {
+  if (attributes['x2'] || attributes['y2']) {
     svgAttributes.x2 = x2;
     svgAttributes.y2 = y2;
   }
-  if (attributes.width || attributes.height) {
+  if (attributes['width'] || attributes['height']) {
     svgAttributes.width = width ?? inherited.width;
     svgAttributes.height = height ?? inherited.height;
   }
 
-  if (attributes.d) {
+  if (attributes['d']) {
     newMatrix = combineTransformation(newMatrix, 'scale', [1, -1]);
-    svgAttributes.d = attributes.d;
+    svgAttributes.d = attributes['d'];
   }
 
   if (newInherited.fontFamily) {
@@ -790,8 +790,8 @@ const parseHTMLNode = (
   } else {
     if (node.tagName === 'polygon') {
       node.tagName = 'path';
-      node.attributes.d = `M${node.attributes.points}Z`;
-      delete node.attributes.points;
+      node.attributes['d'] = `M${node.attributes['points']}Z`;
+      delete node.attributes['points'];
     }
     const attributes = parseAttributes(node, inherited, matrix);
     const svgAttributes = {
@@ -812,21 +812,21 @@ const parseSvgNode = (
   clipSpaces: Space[],
 ): SVGElement[] => {
   // if the width/height aren't set, the svg will have the same dimension as the current drawing space
-  /* tslint:disable:no-unused-expression */
-  node.attributes.width ??
-    node.setAttribute('width', inherited.viewBox.width + '');
-  node.attributes.height ??
-    node.setAttribute('height', inherited.viewBox.height + '');
-  /* tslint:enable:no-unused-expression */
+  if (!node.attributes['width']) {
+    node.setAttribute('width', `${inherited.viewBox.width}`);
+  }
+  if (!node.attributes['height']) {
+    node.setAttribute('height', `${inherited.viewBox.height}`);
+  }
   const attributes = parseAttributes(node, inherited, matrix);
   const result: SVGElement[] = [];
-  const viewBox = node.attributes.viewBox
-    ? parseViewBox(node.attributes.viewBox)!
-    : node.attributes.width && node.attributes.height
-      ? parseViewBox(`0 0 ${node.attributes.width} ${node.attributes.height}`)!
+  const viewBox = node.attributes['viewBox']
+    ? parseViewBox(node.attributes['viewBox'])!
+    : node.attributes['width'] && node.attributes['height']
+      ? parseViewBox(`0 0 ${node.attributes['width']} ${node.attributes['height']}`)!
       : inherited.viewBox;
-  const x = parseFloat(node.attributes.x) || 0;
-  const y = parseFloat(node.attributes.y) || 0;
+  const x = parseFloat(node.attributes['x']) || 0;
+  const y = parseFloat(node.attributes['y']) || 0;
 
   let newMatrix = combineTransformation(matrix, 'translate', [x, y]);
 
@@ -835,9 +835,9 @@ const parseSvgNode = (
       newMatrix,
       viewBox.width,
       viewBox.height,
-      parseFloat(node.attributes.width),
-      parseFloat(node.attributes.height),
-      node.attributes.preserveAspectRatio,
+      parseFloat(node.attributes['width']),
+      parseFloat(node.attributes['height']),
+      node.attributes['preserveAspectRatio'],
     );
 
   const topLeft = applyTransformation(clipBoxTransform, {
@@ -966,15 +966,15 @@ const parse = (
   matrix: TransformationMatrix,
 ): SVGElement[] => {
   const htmlElement = parseHtml(svg).firstChild as HTMLElement;
-  if (width) htmlElement.setAttribute('width', width + '');
-  if (height) htmlElement.setAttribute('height', height + '');
-  if (fontSize) htmlElement.setAttribute('font-size', fontSize + '');
+  if (width) htmlElement.setAttribute('width', `${width}`);
+  if (height) htmlElement.setAttribute('height', `${height}`);
+  if (fontSize) htmlElement.setAttribute('font-size', `${fontSize}`);
   // TODO: what should be the default viewBox?
   return parseHTMLNode(
     htmlElement,
     {
       ...size,
-      viewBox: parseViewBox(htmlElement.attributes.viewBox || '0 0 1 1')!,
+      viewBox: parseViewBox(htmlElement.attributes['viewBox'] || '0 0 1 1')!,
     },
     matrix,
     [],
@@ -991,11 +991,11 @@ export const drawSvg = (
   const size = page.getSize();
   const svgNode = parseHtml(pdfSvg.svg).querySelector('svg');
   if (!svgNode) {
-    return console.error('This is not an svg. Ignoring: ' + pdfSvg.svg);
+    return console.error(`This is not an svg. Ignoring: ${pdfSvg.svg}`);
   }
 
   const attributes = svgNode.attributes;
-  const style = parseStyles(attributes.style);
+  const style = parseStyles(attributes['style']);
 
   const widthRaw = styleOrAttribute(attributes, style, 'width', '');
   const heightRaw = styleOrAttribute(attributes, style, 'height', '');
@@ -1006,7 +1006,7 @@ export const drawSvg = (
     options.height !== undefined ? options.height : parseFloat(heightRaw);
 
   // it's important to add the viewBox to allow svg resizing through the options
-  if (!attributes.viewBox) {
+  if (!attributes['viewBox']) {
     svgNode.setAttribute(
       'viewBox',
       `0 0 ${widthRaw || width} ${heightRaw || height}`,
@@ -1014,9 +1014,9 @@ export const drawSvg = (
   }
 
   if (options.width || options.height) {
-    if (width !== undefined) style.width = width + (isNaN(width) ? '' : 'px');
+    if (width !== undefined) style['width'] = width + (isNaN(width) ? '' : 'px');
     if (height !== undefined) {
-      style.height = height + (isNaN(height) ? '' : 'px');
+      style['height'] = height + (isNaN(height) ? '' : 'px');
     }
     svgNode.setAttribute(
       'style',

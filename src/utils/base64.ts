@@ -30,9 +30,9 @@ export const encodeToBase64 = (bytes: Uint8Array): string => {
   }
 
   if (len % 3 === 2) {
-    base64 = base64.substring(0, base64.length - 1) + '=';
+    base64 = `${base64.substring(0, base64.length - 1)}=`;
   } else if (len % 3 === 1) {
-    base64 = base64.substring(0, base64.length - 2) + '==';
+    base64 = `${base64.substring(0, base64.length - 2)}==`;
   }
 
   return base64;

@@ -138,19 +138,19 @@ class PDFName extends PDFObject {
     return this.encodedName;
   }
 
-  clone(): PDFName {
+  override clone(): PDFName {
     return this;
   }
 
-  toString(): string {
+  override toString(): string {
     return this.encodedName;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return this.encodedName.length;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.encodedName, buffer, offset);
     return this.encodedName.length;
   }

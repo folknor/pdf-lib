@@ -3,7 +3,7 @@ import {
   PDFDocument,
   PDFName,
   PDFArray,
-  PDFHexString,
+  type PDFHexString,
   AnnotationFlags,
 } from '../../../src/index';
 

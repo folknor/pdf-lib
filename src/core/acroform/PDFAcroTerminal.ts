@@ -1,6 +1,6 @@
 import PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
-import PDFRef from '../objects/PDFRef';
+import type PDFRef from '../objects/PDFRef';
 import PDFAcroField from './PDFAcroField';
 import PDFWidgetAnnotation from '../annotation/PDFWidgetAnnotation';
 import { IndexOutOfBoundsError } from '../errors';

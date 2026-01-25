@@ -1,4 +1,4 @@
-import { Coordinates } from '../../types';
+import type { Coordinates } from '../../types';
 import { intersectionLine } from '../intersections';
 import { isColinear, isEqual, orthogonal, vector } from '../maths';
 

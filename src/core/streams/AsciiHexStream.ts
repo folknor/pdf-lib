@@ -7,7 +7,7 @@
  */
 
 import DecodeStream from './DecodeStream';
-import { StreamType } from './Stream';
+import type { StreamType } from './Stream';
 
 class AsciiHexStream extends DecodeStream {
   private stream: StreamType;
@@ -27,7 +27,7 @@ class AsciiHexStream extends DecodeStream {
     }
   }
 
-  protected readBlock() {
+  protected override readBlock() {
     const UPSTREAM_BLOCK_SIZE = 8000;
     const bytes = this.stream.getBytes(UPSTREAM_BLOCK_SIZE);
     if (!bytes.length) {

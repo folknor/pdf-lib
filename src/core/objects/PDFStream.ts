@@ -1,9 +1,9 @@
 import { MethodNotImplementedError } from '../errors';
-import PDFDict from './PDFDict';
+import type PDFDict from './PDFDict';
 import PDFName from './PDFName';
 import PDFNumber from './PDFNumber';
 import PDFObject from './PDFObject';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import CharCodes from '../syntax/CharCodes';
 
 class PDFStream extends PDFObject {
@@ -14,7 +14,7 @@ class PDFStream extends PDFObject {
     this.dict = dict;
   }
 
-  clone(_context?: PDFContext): PDFStream {
+  override clone(_context?: PDFContext): PDFStream {
     throw new MethodNotImplementedError(this.constructor.name, 'clone');
   }
 
@@ -48,12 +48,12 @@ class PDFStream extends PDFObject {
     this.dict.set(PDFName.Length, PDFNumber.of(contentsSize));
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     this.updateDict();
     return this.dict.sizeInBytes() + this.getContentsSize() + 18;
   }
 
-  toString(): string {
+  override toString(): string {
     this.updateDict();
     let streamString = this.dict.toString();
     streamString += '\nstream\n';
@@ -62,7 +62,7 @@ class PDFStream extends PDFObject {
     return streamString;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     this.updateDict();
     const initialOffset = offset;
 

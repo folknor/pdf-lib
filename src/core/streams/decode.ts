@@ -2,15 +2,15 @@ import { UnexpectedObjectTypeError, UnsupportedEncodingError } from '../errors';
 import PDFArray from '../objects/PDFArray';
 import PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
-import PDFNull from '../objects/PDFNull';
+import type PDFNull from '../objects/PDFNull';
 import PDFNumber from '../objects/PDFNumber';
-import PDFRawStream from '../objects/PDFRawStream';
+import type PDFRawStream from '../objects/PDFRawStream';
 import Ascii85Stream from './Ascii85Stream';
 import AsciiHexStream from './AsciiHexStream';
 import FlateStream from './FlateStream';
 import LZWStream from './LZWStream';
 import RunLengthStream from './RunLengthStream';
-import Stream, { StreamType } from './Stream';
+import Stream, { type StreamType } from './Stream';
 
 const decodeStream = (
   stream: StreamType,

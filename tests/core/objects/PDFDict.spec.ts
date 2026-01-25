@@ -9,7 +9,7 @@ import {
   PDFNumber,
   PDFRef,
   PDFString,
-  PDFObject,
+  type PDFObject,
 } from '../../../src/core';
 import { toCharCode, typedArrayFor } from '../../../src/utils';
 

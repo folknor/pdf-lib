@@ -20,10 +20,8 @@ export {
 } from './embedders/FileEmbedder';
 export { default as JpegEmbedder } from './embedders/JpegEmbedder';
 export { default as PngEmbedder } from './embedders/PngEmbedder';
-export {
-  default as PDFPageEmbedder,
-  PageBoundingBox,
-} from './embedders/PDFPageEmbedder';
+export { default as PDFPageEmbedder } from './embedders/PDFPageEmbedder';
+export type { PageBoundingBox } from './embedders/PDFPageEmbedder';
 
 export {
   default as ViewerPreferences,
@@ -63,10 +61,8 @@ export { default as PDFObjectStreamParser } from './parser/PDFObjectStreamParser
 export { default as PDFParser } from './parser/PDFParser';
 export { default as PDFXRefStreamParser } from './parser/PDFXRefStreamParser';
 
-export {
-  default as PDFSecurity,
-  SecurityOptions,
-} from './security/PDFSecurity';
+export { default as PDFSecurity } from './security/PDFSecurity';
+export type { SecurityOptions } from './security/PDFSecurity';
 
 export { decodePDFRawStream } from './streams/decode';
 

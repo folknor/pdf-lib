@@ -1,24 +1,24 @@
 import {
   PDFObjectParsingError,
   PDFStreamParsingError,
-  Position,
+  type Position,
   UnbalancedParenthesisError,
 } from '../errors';
 import PDFArray from '../objects/PDFArray';
 import PDFBool from '../objects/PDFBool';
-import PDFDict, { DictMap } from '../objects/PDFDict';
+import PDFDict, { type DictMap } from '../objects/PDFDict';
 import PDFHexString from '../objects/PDFHexString';
 import PDFName from '../objects/PDFName';
 import PDFNull from '../objects/PDFNull';
 import PDFNumber from '../objects/PDFNumber';
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFRawStream from '../objects/PDFRawStream';
 import PDFRef from '../objects/PDFRef';
-import PDFStream from '../objects/PDFStream';
+import type PDFStream from '../objects/PDFStream';
 import PDFString from '../objects/PDFString';
 import BaseParser from './BaseParser';
 import ByteStream from './ByteStream';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFCatalog from '../structures/PDFCatalog';
 import PDFPageLeaf from '../structures/PDFPageLeaf';
 import PDFPageTree from '../structures/PDFPageTree';
@@ -28,7 +28,7 @@ import { Keywords } from '../syntax/Keywords';
 import { IsDigit, IsNumeric } from '../syntax/Numeric';
 import { IsWhitespace } from '../syntax/Whitespace';
 import { charFromCode } from '../../utils';
-import { CipherTransformFactory } from '../crypto';
+import type { CipherTransformFactory } from '../crypto';
 
 // TODO: Throw error if eof is reached before finishing object parse...
 class PDFObjectParser extends BaseParser {

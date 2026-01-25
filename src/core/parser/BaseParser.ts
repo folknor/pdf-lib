@@ -1,5 +1,5 @@
 import { NumberParsingError } from '../errors';
-import ByteStream from '../parser/ByteStream';
+import type ByteStream from '../parser/ByteStream';
 import CharCodes from '../syntax/CharCodes';
 import { IsDigit, IsNumeric } from '../syntax/Numeric';
 import { IsWhitespace } from '../syntax/Whitespace';

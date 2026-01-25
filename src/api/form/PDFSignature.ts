@@ -1,7 +1,7 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFField from './PDFField';
 
-import { PDFRef, PDFAcroSignature } from '../../core';
+import { type PDFRef, PDFAcroSignature } from '../../core';
 import { assertIs } from '../../utils';
 
 /**
@@ -31,7 +31,7 @@ export default class PDFSignature extends PDFField {
   ) => new PDFSignature(acroSignature, ref, doc);
 
   /** The low-level PDFAcroSignature wrapped by this signature. */
-  readonly acroField: PDFAcroSignature;
+  override readonly acroField: PDFAcroSignature;
 
   private constructor(
     acroSignature: PDFAcroSignature,
@@ -47,7 +47,7 @@ export default class PDFSignature extends PDFField {
     this.acroField = acroSignature;
   }
 
-  needsAppearancesUpdate() {
+  override needsAppearancesUpdate() {
     return false;
   }
 }

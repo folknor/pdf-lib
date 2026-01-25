@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import fs from 'fs';
 import {
   PDFDocument,
@@ -7,12 +8,12 @@ import {
   PDFRadioGroup,
   PDFOptionList,
   PDFDropdown,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
   PDFDict,
   PDFName,
   PDFForm,
   PDFAcroForm,
-  PDFRef,
+  type PDFRef,
 } from '../../../src/index';
 
 const getWidgets = (pdfDoc: PDFDocument) =>
@@ -60,14 +61,14 @@ describe('PDFForm', () => {
     const ignoredWarnings = [
       'Removing XFA form data as pdf-lib does not support reading or writing XFA',
     ];
-    console.warn = jest.fn((...args) => {
+    console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
       if (!isIgnored) origConsoleWarn(...args);
     });
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {

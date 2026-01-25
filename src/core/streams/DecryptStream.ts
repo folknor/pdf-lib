@@ -1,5 +1,5 @@
 import DecodeStream from './DecodeStream';
-import { StreamType } from './Stream';
+import type { StreamType } from './Stream';
 
 const chunkSize = 512;
 
@@ -27,7 +27,7 @@ class DecryptStream extends DecodeStream {
     this.initialized = false;
   }
 
-  readBlock() {
+  override readBlock() {
     let chunk;
     if (this.initialized) {
       chunk = this.nextChunk;

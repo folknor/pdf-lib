@@ -1,8 +1,8 @@
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFObject from '../objects/PDFObject';
-import PDFRef from '../objects/PDFRef';
-import PDFContext from '../PDFContext';
+import type PDFObject from '../objects/PDFObject';
+import type PDFRef from '../objects/PDFRef';
+import type PDFContext from '../PDFContext';
 import PDFFlateStream from './PDFFlateStream';
 import CharCodes from '../syntax/CharCodes';
 import { copyStringIntoBuffer, last } from '../../utils';
@@ -40,7 +40,7 @@ class PDFObjectStream extends PDFFlateStream {
     return this.objects.length;
   }
 
-  clone(context?: PDFContext): PDFObjectStream {
+  override clone(context?: PDFContext): PDFObjectStream {
     return PDFObjectStream.withContextAndObjects(
       context || this.dict.context,
       this.objects.slice(),
@@ -48,7 +48,7 @@ class PDFObjectStream extends PDFFlateStream {
     );
   }
 
-  getContentsString(): string {
+  override getContentsString(): string {
     let value = this.offsetsString;
     for (let idx = 0, len = this.objects.length; idx < len; idx++) {
       const [, object] = this.objects[idx];
@@ -57,7 +57,7 @@ class PDFObjectStream extends PDFFlateStream {
     return value;
   }
 
-  getUnencodedContents(): Uint8Array {
+  override getUnencodedContents(): Uint8Array {
     const buffer = new Uint8Array(this.getUnencodedContentsSize());
     let offset = copyStringIntoBuffer(this.offsetsString, buffer, 0);
     for (let idx = 0, len = this.objects.length; idx < len; idx++) {

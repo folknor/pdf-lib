@@ -1,11 +1,11 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultRadioGroupAppearanceProvider,
 } from './appearances';
@@ -14,10 +14,10 @@ import { degrees } from '../rotations';
 
 import {
   PDFName,
-  PDFRef,
+  type PDFRef,
   PDFHexString,
   PDFDict,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
   PDFAcroRadioButton,
   AcroButtonFlags,
 } from '../../core';
@@ -61,7 +61,7 @@ export default class PDFRadioGroup extends PDFField {
   ) => new PDFRadioGroup(acroRadioButton, ref, doc);
 
   /** The low-level PDFAcroRadioButton wrapped by this radio group. */
-  readonly acroField: PDFAcroRadioButton;
+  override readonly acroField: PDFAcroRadioButton;
 
   private constructor(
     acroRadioButton: PDFAcroRadioButton,
@@ -398,7 +398,7 @@ export default class PDFRadioGroup extends PDFField {
    * ```
    * @returns Whether or not this radio group needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx];
@@ -420,7 +420,7 @@ export default class PDFRadioGroup extends PDFField {
    * radioGroup.defaultUpdateAppearances()
    * ```
    */
-  defaultUpdateAppearances() {
+  override defaultUpdateAppearances() {
     this.updateAppearances();
   }
 

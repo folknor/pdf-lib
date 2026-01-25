@@ -20,19 +20,19 @@ class PDFBool extends PDFObject {
     return this.value;
   }
 
-  clone(): PDFBool {
+  override clone(): PDFBool {
     return this;
   }
 
-  toString(): string {
+  override toString(): string {
     return String(this.value);
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return this.value ? 4 : 5;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     if (this.value) {
       buffer[offset++] = CharCodes.t;
       buffer[offset++] = CharCodes.r;

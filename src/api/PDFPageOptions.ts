@@ -1,7 +1,7 @@
-import { Color } from './colors';
-import PDFFont from './PDFFont';
-import { Rotation } from './rotations';
-import { FillRule, LineCapStyle, TextRenderingMode } from './operators';
+import type { Color } from './colors';
+import type PDFFont from './PDFFont';
+import type { Rotation } from './rotations';
+import type { FillRule, LineCapStyle, TextRenderingMode } from './operators';
 import type { Space, TransformationMatrix } from '../types';
 
 interface SvgOptions {

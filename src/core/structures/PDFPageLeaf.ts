@@ -1,12 +1,12 @@
 import PDFArray from '../objects/PDFArray';
-import PDFDict, { DictMap } from '../objects/PDFDict';
+import PDFDict, { type DictMap } from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFObject from '../objects/PDFObject';
-import PDFRef from '../objects/PDFRef';
+import type PDFObject from '../objects/PDFObject';
+import type PDFRef from '../objects/PDFRef';
 import PDFStream from '../objects/PDFStream';
-import PDFContext from '../PDFContext';
-import PDFPageTree from './PDFPageTree';
+import type PDFContext from '../PDFContext';
+import type PDFPageTree from './PDFPageTree';
 
 class PDFPageLeaf extends PDFDict {
   static readonly InheritableEntries = [
@@ -25,7 +25,7 @@ class PDFPageLeaf extends PDFDict {
     return new PDFPageLeaf(dict, context, false);
   };
 
-  static fromMapWithContext = (
+  static override fromMapWithContext = (
     map: DictMap,
     context: PDFContext,
     autoNormalizeCTM = true,
@@ -43,7 +43,7 @@ class PDFPageLeaf extends PDFDict {
     this.autoNormalizeCTM = autoNormalizeCTM;
   }
 
-  clone(context?: PDFContext): PDFPageLeaf {
+  override clone(context?: PDFContext): PDFPageLeaf {
     const clone = PDFPageLeaf.fromMapWithContext(
       new Map(),
       context || this.context,

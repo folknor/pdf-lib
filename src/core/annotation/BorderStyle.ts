@@ -1,4 +1,4 @@
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
 

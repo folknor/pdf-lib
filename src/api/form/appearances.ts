@@ -1,13 +1,13 @@
-import { PDFOperator, PDFWidgetAnnotation } from '../../core';
-import PDFFont from '../PDFFont';
-import PDFButton from '../form/PDFButton';
-import PDFCheckBox from '../form/PDFCheckBox';
-import PDFDropdown from '../form/PDFDropdown';
-import PDFField from '../form/PDFField';
-import PDFOptionList from '../form/PDFOptionList';
-import PDFRadioGroup from '../form/PDFRadioGroup';
-import PDFSignature from '../form/PDFSignature';
-import PDFTextField from '../form/PDFTextField';
+import type { PDFOperator, PDFWidgetAnnotation } from '../../core';
+import type PDFFont from '../PDFFont';
+import type PDFButton from '../form/PDFButton';
+import type PDFCheckBox from '../form/PDFCheckBox';
+import type PDFDropdown from '../form/PDFDropdown';
+import type PDFField from '../form/PDFField';
+import type PDFOptionList from '../form/PDFOptionList';
+import type PDFRadioGroup from '../form/PDFRadioGroup';
+import type PDFSignature from '../form/PDFSignature';
+import type PDFTextField from '../form/PDFTextField';
 import {
   drawCheckBox,
   rotateInPlace,
@@ -22,13 +22,13 @@ import {
   setFillingColor,
   grayscale,
   cmyk,
-  Color,
+  type Color,
 } from '../colors';
 import { reduceRotation, adjustDimsForRotation } from '../rotations';
 import {
   layoutMultilineText,
   layoutCombedText,
-  TextPosition,
+  type TextPosition,
   layoutSinglelineText,
 } from '../text/layout';
 import { TextAlignment } from '../text/alignment';

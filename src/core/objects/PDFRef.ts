@@ -34,19 +34,19 @@ class PDFRef extends PDFObject {
     this.tag = `${objectNumber} ${generationNumber} R`;
   }
 
-  clone(): PDFRef {
+  override clone(): PDFRef {
     return this;
   }
 
-  toString(): string {
+  override toString(): string {
     return this.tag;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return this.tag.length;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.tag, buffer, offset);
     return this.tag.length;
   }

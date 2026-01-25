@@ -1,8 +1,8 @@
-import PDFDict from './PDFDict';
+import type PDFDict from './PDFDict';
 import PDFStream from './PDFStream';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import { arrayAsString } from '../../utils';
-import { CipherTransform } from '../crypto';
+import type { CipherTransform } from '../crypto';
 
 class PDFRawStream extends PDFStream {
   static of = (
@@ -28,23 +28,23 @@ class PDFRawStream extends PDFStream {
     return this.contents.slice();
   }
 
-  clone(context?: PDFContext): PDFRawStream {
+  override clone(context?: PDFContext): PDFRawStream {
     return PDFRawStream.of(this.dict.clone(context), this.contents.slice());
   }
 
-  getContentsString(): string {
+  override getContentsString(): string {
     return arrayAsString(this.contents);
   }
 
-  getContents(): Uint8Array {
+  override getContents(): Uint8Array {
     return this.contents;
   }
 
-  getContentsSize(): number {
+  override getContentsSize(): number {
     return this.contents.length;
   }
 
-  updateContents(contents: Uint8Array): void {
+  override updateContents(contents: Uint8Array): void {
     this.contents = contents;
   }
 }

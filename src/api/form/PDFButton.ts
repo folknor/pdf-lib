@@ -1,25 +1,25 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import PDFFont from '../PDFFont';
-import PDFImage from '../PDFImage';
+import type PDFImage from '../PDFImage';
 import { ImageAlignment } from '../image/alignment';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultButtonAppearanceProvider,
 } from './appearances';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 import { rgb } from '../colors';
 import { degrees } from '../rotations';
 
 import {
-  PDFRef,
+  type PDFRef,
   PDFStream,
   PDFAcroPushButton,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
 } from '../../core';
 import { assertIs, assertOrUndefined, assertPositive } from '../../utils';
 
@@ -51,7 +51,7 @@ export default class PDFButton extends PDFField {
   ) => new PDFButton(acroPushButton, ref, doc);
 
   /** The low-level PDFAcroPushButton wrapped by this button. */
-  readonly acroField: PDFAcroPushButton;
+  override readonly acroField: PDFAcroPushButton;
 
   private constructor(
     acroPushButton: PDFAcroPushButton,
@@ -193,7 +193,7 @@ export default class PDFButton extends PDFField {
    * ```
    * @returns Whether or not this button needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
@@ -217,7 +217,7 @@ export default class PDFButton extends PDFField {
    * ```
    * @param font The font to be used for creating the appearance streams.
    */
-  defaultUpdateAppearances(font: PDFFont) {
+  override defaultUpdateAppearances(font: PDFFont) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.updateAppearances(font);
   }

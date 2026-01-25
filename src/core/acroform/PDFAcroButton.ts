@@ -1,9 +1,9 @@
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFString from '../objects/PDFString';
 import PDFHexString from '../objects/PDFHexString';
 import PDFArray from '../objects/PDFArray';
 import PDFName from '../objects/PDFName';
-import PDFRef from '../objects/PDFRef';
+import type PDFRef from '../objects/PDFRef';
 import PDFAcroTerminal from './PDFAcroTerminal';
 import { IndexOutOfBoundsError } from '../errors';
 

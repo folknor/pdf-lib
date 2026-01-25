@@ -1,9 +1,9 @@
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFDict from '../objects/PDFDict';
 import PDFArray from '../objects/PDFArray';
 import PDFName from '../objects/PDFName';
-import PDFRef from '../objects/PDFRef';
-import PDFAcroField from './PDFAcroField';
+import type PDFRef from '../objects/PDFRef';
+import type PDFAcroField from './PDFAcroField';
 import PDFAcroNonTerminal from './PDFAcroNonTerminal';
 import { createPDFAcroField, createPDFAcroFields } from './utils';
 

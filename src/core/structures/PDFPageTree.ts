@@ -1,16 +1,16 @@
 import PDFArray from '../objects/PDFArray';
-import PDFDict, { DictMap } from '../objects/PDFDict';
+import PDFDict, { type DictMap } from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFRef from '../objects/PDFRef';
-import PDFContext from '../PDFContext';
+import type PDFRef from '../objects/PDFRef';
+import type PDFContext from '../PDFContext';
 import PDFPageLeaf from './PDFPageLeaf';
 import { InvalidTargetIndexError, CorruptPageTreeError } from '../errors';
 
 export type TreeNode = PDFPageTree | PDFPageLeaf;
 
 class PDFPageTree extends PDFDict {
-  static withContext = (context: PDFContext, parent?: PDFRef) => {
+  static override withContext = (context: PDFContext, parent?: PDFRef) => {
     const dict = new Map();
     dict.set(PDFName.of('Type'), PDFName.of('Pages'));
     dict.set(PDFName.of('Kids'), context.obj([]));
@@ -19,7 +19,7 @@ class PDFPageTree extends PDFDict {
     return new PDFPageTree(dict, context);
   };
 
-  static fromMapWithContext = (map: DictMap, context: PDFContext) =>
+  static override fromMapWithContext = (map: DictMap, context: PDFContext) =>
     new PDFPageTree(map, context);
 
   Parent(): PDFPageTree | undefined {

@@ -6,7 +6,7 @@ import Plot from './elements/Plot';
 import Point from './elements/Point';
 import Rectangle from './elements/Rectangle';
 import Segment from './elements/Segment';
-import { Coordinates, GraphicElement } from '../types';
+import type { Coordinates, GraphicElement } from '../types';
 import {
   distance,
   isColinear,
@@ -24,10 +24,8 @@ export const intersections = (
   B: GraphicElement,
 ): Coordinates[] => {
   if (A instanceof Point || B instanceof Point) return [];
-  else if (A instanceof Text || B instanceof Text) return [];
-  else if (A instanceof Image || B instanceof Image) return [];
   // TODO: calculate the coords of the intersection: https://www.emathzone.com/tutorials/geometry/intersection-of-line-and-ellipse.html
-  else if (A instanceof Line) return intersectionsLine(A, B);
+  if (A instanceof Line) return intersectionsLine(A, B);
   else if (A instanceof Segment) {
     return intersectionsLine(A.getLine(), B).filter((P) =>
       A.includes(new Point(P)),
@@ -50,7 +48,7 @@ export const intersection = (
 
 const intersectionsLine = (
   A: Line,
-  B: Exclude<GraphicElement, Text | Point>,
+  B: Exclude<GraphicElement, Point>,
 ): Coordinates[] => {
   if (B instanceof Line) return intersectionLine(A, B);
   else if (B instanceof Segment) {
@@ -70,7 +68,7 @@ const intersectionsLine = (
 
 const intersectionsEllipse = (
   A: Ellipse,
-  B: Exclude<GraphicElement, Text | Point>,
+  B: Exclude<GraphicElement, Point>,
 ): Coordinates[] => {
   if (B instanceof Line) return intersectionsLineAndEllipse(A, B);
   else if (B instanceof Segment) {
@@ -251,7 +249,7 @@ export const intersectionCircle = (A: Circle, B: Circle): Coordinates[] => {
 
 const intersectionsCircle = (
   A: Circle,
-  B: Exclude<GraphicElement, Text | Point>,
+  B: Exclude<GraphicElement, Point>,
 ): Coordinates[] => {
   if (B instanceof Circle) return intersectionCircle(A, B);
   else if (B instanceof Line) return intersectionCircleLine(A, B);

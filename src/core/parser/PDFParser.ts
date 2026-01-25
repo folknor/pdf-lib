@@ -11,7 +11,7 @@ import {
 import PDFDict from '../objects/PDFDict';
 import PDFInvalidObject from '../objects/PDFInvalidObject';
 import PDFName from '../objects/PDFName';
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFRawStream from '../objects/PDFRawStream';
 import PDFRef from '../objects/PDFRef';
 import ByteStream from './ByteStream';
@@ -23,7 +23,7 @@ import CharCodes from '../syntax/CharCodes';
 import { Keywords } from '../syntax/Keywords';
 import { IsDigit } from '../syntax/Numeric';
 import { waitForTick } from '../../utils';
-import { CipherTransformFactory } from '../crypto';
+import type { CipherTransformFactory } from '../crypto';
 
 class PDFParser extends PDFObjectParser {
   static forBytesWithOptions = (
@@ -151,7 +151,7 @@ class PDFParser extends PDFObjectParser {
     try {
       this.parseIndirectObjectHeader();
       return true;
-    } catch (e) {
+    } catch {
       this.bytes.moveTo(initialOffset);
       return false;
     }
@@ -238,7 +238,7 @@ class PDFParser extends PDFObjectParser {
 
       try {
         await this.parseIndirectObject();
-      } catch (e) {
+      } catch {
         // TODO: Add tracing/logging mechanism to track when this happens!
         this.bytes.moveTo(initialOffset);
         this.tryToParseInvalidIndirectObject();
@@ -379,7 +379,7 @@ class PDFParser extends PDFObjectParser {
       const initialOffset = this.bytes.offset();
       this.parseIndirectObjectHeader();
       this.bytes.moveTo(initialOffset);
-    } catch (e) {
+    } catch {
       this.bytes.next();
       this.skipWhitespaceAndComments();
     }

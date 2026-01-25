@@ -1,4 +1,4 @@
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import CharCodes from '../syntax/CharCodes';
 
 class PDFTrailerDict {

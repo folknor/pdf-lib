@@ -3,13 +3,13 @@ import PDFName from '../objects/PDFName';
 import PDFRef from '../objects/PDFRef';
 import PDFString from '../objects/PDFString';
 import PDFHexString from '../objects/PDFHexString';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import BorderStyle from './BorderStyle';
 import PDFAnnotation from './PDFAnnotation';
 import AppearanceCharacteristics from './AppearanceCharacteristics';
 
 class PDFWidgetAnnotation extends PDFAnnotation {
-  static fromDict = (dict: PDFDict): PDFWidgetAnnotation =>
+  static override fromDict = (dict: PDFDict): PDFWidgetAnnotation =>
     new PDFWidgetAnnotation(dict);
 
   static create = (context: PDFContext, parent: PDFRef) => {

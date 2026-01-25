@@ -1,8 +1,8 @@
-import PDFDict, { DictMap } from '../objects/PDFDict';
+import PDFDict, { type DictMap } from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
-import PDFRef from '../objects/PDFRef';
-import PDFContext from '../PDFContext';
-import PDFPageTree from './PDFPageTree';
+import type PDFRef from '../objects/PDFRef';
+import type PDFContext from '../PDFContext';
+import type PDFPageTree from './PDFPageTree';
 import { PDFAcroForm } from '../acroform';
 import ViewerPreferences from '../interactive/ViewerPreferences';
 import PDFArray from '../objects/PDFArray';
@@ -18,7 +18,7 @@ class PDFCatalog extends PDFDict {
     return new PDFCatalog(dict, context);
   };
 
-  static fromMapWithContext = (map: DictMap, context: PDFContext) =>
+  static override fromMapWithContext = (map: DictMap, context: PDFContext) =>
     new PDFCatalog(map, context);
 
   Pages(): PDFPageTree {

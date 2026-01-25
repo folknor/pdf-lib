@@ -1,4 +1,4 @@
-import { Color, rgb } from './colors';
+import { type Color, rgb } from './colors';
 import {
   drawImage,
   drawLine,
@@ -22,23 +22,23 @@ import PDFFont from './PDFFont';
 import PDFImage from './PDFImage';
 import PDFSvg from './PDFSvg';
 import {
-  PDFPageDrawCircleOptions,
-  PDFPageDrawEllipseOptions,
-  PDFPageDrawImageOptions,
-  PDFPageDrawLineOptions,
-  PDFPageDrawPageOptions,
-  PDFPageDrawRectangleOptions,
-  PDFPageDrawSquareOptions,
-  PDFPageDrawSVGOptions,
-  PDFPageDrawTextOptions,
+  type PDFPageDrawCircleOptions,
+  type PDFPageDrawEllipseOptions,
+  type PDFPageDrawImageOptions,
+  type PDFPageDrawLineOptions,
+  type PDFPageDrawPageOptions,
+  type PDFPageDrawRectangleOptions,
+  type PDFPageDrawSquareOptions,
+  type PDFPageDrawSVGOptions,
+  type PDFPageDrawTextOptions,
   BlendMode,
-  PDFPageDrawSVGElementOptions,
+  type PDFPageDrawSVGElementOptions,
 } from './PDFPageOptions';
-import { degrees, Rotation, toDegrees } from './rotations';
+import { degrees, type Rotation, toDegrees } from './rotations';
 import { StandardFonts } from './StandardFonts';
 import {
   PDFContentStream,
-  PDFHexString,
+  type PDFHexString,
   PDFName,
   PDFOperator,
   PDFPageLeaf,
@@ -204,10 +204,10 @@ export default class PDFPage {
     const trimBox = this.getTrimBox();
     const artBox = this.getArtBox();
 
-    const hasCropBox = this.node.CropBox()!!;
-    const hasBleedBox = this.node.BleedBox()!!;
-    const hasTrimBox = this.node.TrimBox()!!;
-    const hasArtBox = this.node.ArtBox()!!;
+    const hasCropBox = this.node.CropBox()!;
+    const hasBleedBox = this.node.BleedBox()!;
+    const hasTrimBox = this.node.TrimBox()!;
+    const hasArtBox = this.node.ArtBox()!;
 
     if (hasCropBox && rectanglesAreEqual(cropBox, mediaBox)) {
       this.setCropBox(mediaBox.x, mediaBox.y, width, height);

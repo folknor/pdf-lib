@@ -1,8 +1,8 @@
-import PDFFont from '../PDFFont';
+import type PDFFont from '../PDFFont';
 import { CombedTextLayoutError } from '../errors';
 import { TextAlignment } from './alignment';
 
-import { PDFHexString } from '../../core';
+import type { PDFHexString } from '../../core';
 import {
   cleanText,
   lineSplit,
@@ -56,7 +56,7 @@ const computeFontSize = (
       let spaceInLineRemaining = bounds.width;
       for (let idx = 0, len = words.length; idx < len; idx++) {
         const isLastWord = idx === len - 1;
-        const word = isLastWord ? words[idx] : words[idx] + ' ';
+        const word = isLastWord ? words[idx] : `${words[idx]} `;
         const widthOfWord = font.widthOfTextAtSize(word, fontSize);
         spaceInLineRemaining -= widthOfWord;
         if (spaceInLineRemaining <= 0) {

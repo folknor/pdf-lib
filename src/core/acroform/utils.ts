@@ -1,16 +1,16 @@
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFNumber from '../objects/PDFNumber';
 import PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFArray from '../objects/PDFArray';
 import PDFRef from '../objects/PDFRef';
 
-import PDFAcroField from './PDFAcroField';
+import type PDFAcroField from './PDFAcroField';
 import PDFAcroTerminal from './PDFAcroTerminal';
 import PDFAcroNonTerminal from './PDFAcroNonTerminal';
-import PDFAcroButton from './PDFAcroButton';
+import type PDFAcroButton from './PDFAcroButton';
 import PDFAcroSignature from './PDFAcroSignature';
-import PDFAcroChoice from './PDFAcroChoice';
+import type PDFAcroChoice from './PDFAcroChoice';
 import PDFAcroText from './PDFAcroText';
 import PDFAcroPushButton from './PDFAcroPushButton';
 import PDFAcroRadioButton from './PDFAcroRadioButton';

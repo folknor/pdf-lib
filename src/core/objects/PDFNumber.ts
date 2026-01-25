@@ -23,19 +23,19 @@ class PDFNumber extends PDFObject {
     return this.numberValue;
   }
 
-  clone(): PDFNumber {
+  override clone(): PDFNumber {
     return PDFNumber.of(this.numberValue);
   }
 
-  toString(): string {
+  override toString(): string {
     return this.stringValue;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return this.stringValue.length;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.stringValue, buffer, offset);
     return this.stringValue.length;
   }

@@ -4,7 +4,7 @@ import {
   mergeIntoTypedArray,
   PDFContext,
   PDFHexString,
-  PDFObject,
+  type PDFObject,
   PDFObjectStream,
   PDFRef,
   PDFString,

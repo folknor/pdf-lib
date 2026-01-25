@@ -3,20 +3,20 @@ import PDFTrailer from '../document/PDFTrailer';
 import PDFInvalidObject from '../objects/PDFInvalidObject';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFRef from '../objects/PDFRef';
 import PDFStream from '../objects/PDFStream';
 import PDFCatalog from '../structures/PDFCatalog';
 import PDFPageTree from '../structures/PDFPageTree';
 import PDFPageLeaf from '../structures/PDFPageLeaf';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFCrossRefStream from '../structures/PDFCrossRefStream';
 import PDFObjectStream from '../structures/PDFObjectStream';
 import PDFWriter from './PDFWriter';
 import { last, waitForTick } from '../../utils';
 
 class PDFStreamWriter extends PDFWriter {
-  static forContext = (
+  static override forContext = (
     context: PDFContext,
     objectsPerTick: number,
     encodeStreams = true,
@@ -44,7 +44,7 @@ class PDFStreamWriter extends PDFWriter {
     this.objectsPerStream = objectsPerStream;
   }
 
-  protected async computeBufferSize() {
+  protected override async computeBufferSize() {
     let objectNumber = this.context.largestObjectNumber + 1;
 
     const header = PDFHeader.forVersion(1, 7);

@@ -1,10 +1,10 @@
 import PDFArray from './objects/PDFArray';
 import PDFDict from './objects/PDFDict';
 import PDFName from './objects/PDFName';
-import PDFObject from './objects/PDFObject';
+import type PDFObject from './objects/PDFObject';
 import PDFRef from './objects/PDFRef';
 import PDFStream from './objects/PDFStream';
-import PDFContext from './PDFContext';
+import type PDFContext from './PDFContext';
 import PDFPageLeaf from './structures/PDFPageLeaf';
 
 /**

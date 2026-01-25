@@ -1,5 +1,5 @@
 import { NextByteAssertionError } from '../errors';
-import PDFRawStream from '../objects/PDFRawStream';
+import type PDFRawStream from '../objects/PDFRawStream';
 import { decodePDFRawStream } from '../streams/decode';
 import CharCodes from '../syntax/CharCodes';
 

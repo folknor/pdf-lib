@@ -1,23 +1,23 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultCheckBoxAppearanceProvider,
 } from './appearances';
 import { rgb } from '../colors';
 import { degrees } from '../rotations';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 
 import {
   PDFName,
-  PDFRef,
+  type PDFRef,
   PDFDict,
   PDFAcroCheckBox,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
 } from '../../core';
 import { assertIs, assertOrUndefined } from '../../utils';
 
@@ -46,7 +46,7 @@ export default class PDFCheckBox extends PDFField {
     new PDFCheckBox(acroCheckBox, ref, doc);
 
   /** The low-level PDFAcroCheckBox wrapped by this check box. */
-  readonly acroField: PDFAcroCheckBox;
+  override readonly acroField: PDFAcroCheckBox;
 
   private constructor(
     acroCheckBox: PDFAcroCheckBox,
@@ -194,7 +194,7 @@ export default class PDFCheckBox extends PDFField {
    * ```
    * @returns Whether or not this check box needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx];
@@ -216,7 +216,7 @@ export default class PDFCheckBox extends PDFField {
    * checkBox.defaultUpdateAppearances()
    * ```
    */
-  defaultUpdateAppearances() {
+  override defaultUpdateAppearances() {
     this.updateAppearances();
   }
 

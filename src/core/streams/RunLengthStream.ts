@@ -7,7 +7,7 @@
  */
 
 import DecodeStream from './DecodeStream';
-import { StreamType } from './Stream';
+import type { StreamType } from './Stream';
 
 class RunLengthStream extends DecodeStream {
   private stream: StreamType;
@@ -17,7 +17,7 @@ class RunLengthStream extends DecodeStream {
     this.stream = stream;
   }
 
-  protected readBlock() {
+  protected override readBlock() {
     // The repeatHeader has following format. The first byte defines type of run
     // and amount of bytes to repeat/copy: n = 0 through 127 - copy next n bytes
     // (in addition to the second byte from the header), n = 129 through 255 -

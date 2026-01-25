@@ -1,4 +1,4 @@
-import Embeddable from './Embeddable';
+import type Embeddable from './Embeddable';
 import PDFDocument from './PDFDocument';
 import { JpegEmbedder, PDFRef, PngEmbedder } from '../core';
 import { assertIs } from '../utils';

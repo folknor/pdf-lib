@@ -1,5 +1,5 @@
 import { MethodNotImplementedError } from '../errors';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 
 class PDFObject {
   clone(_context?: PDFContext): PDFObject {

@@ -1,12 +1,12 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import PDFFont from '../PDFFont';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultOptionListAppearanceProvider,
 } from './appearances';
@@ -14,13 +14,13 @@ import { rgb } from '../colors';
 import { degrees } from '../rotations';
 
 import {
-  PDFRef,
+  type PDFRef,
   PDFHexString,
-  PDFString,
+  type PDFString,
   PDFStream,
   PDFAcroListBox,
   AcroChoiceFlags,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
 } from '../../core';
 import {
   assertIs,
@@ -57,7 +57,7 @@ export default class PDFOptionList extends PDFField {
     new PDFOptionList(acroListBox, ref, doc);
 
   /** The low-level PDFAcroListBox wrapped by this option list. */
-  readonly acroField: PDFAcroListBox;
+  override readonly acroField: PDFAcroListBox;
 
   private constructor(
     acroListBox: PDFAcroListBox,
@@ -492,7 +492,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    * @returns Whether or not this option list needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
@@ -516,7 +516,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    * @param font The font to be used for creating the appearance streams.
    */
-  defaultUpdateAppearances(font: PDFFont) {
+  override defaultUpdateAppearances(font: PDFFont) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.updateAppearances(font);
   }

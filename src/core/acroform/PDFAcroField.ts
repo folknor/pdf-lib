@@ -2,7 +2,7 @@ import PDFDict from '../objects/PDFDict';
 import PDFString from '../objects/PDFString';
 import PDFHexString from '../objects/PDFHexString';
 import PDFName from '../objects/PDFName';
-import PDFObject from '../objects/PDFObject';
+import type PDFObject from '../objects/PDFObject';
 import PDFNumber from '../objects/PDFNumber';
 import PDFArray from '../objects/PDFArray';
 import PDFRef from '../objects/PDFRef';

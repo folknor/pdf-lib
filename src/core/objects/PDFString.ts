@@ -95,19 +95,19 @@ class PDFString extends PDFObject {
     return this.value;
   }
 
-  clone(): PDFString {
+  override clone(): PDFString {
     return PDFString.of(this.value);
   }
 
-  toString(): string {
+  override toString(): string {
     return `(${this.value})`;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return this.value.length + 2;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     buffer[offset++] = CharCodes.LeftParen;
     offset += copyStringIntoBuffer(this.value, buffer, offset);
     buffer[offset++] = CharCodes.RightParen;

@@ -1,5 +1,5 @@
-import { EmbeddedFileOptions } from '../core/embedders/FileEmbedder';
-import { TypeFeatures } from '../types/fontkit';
+import type { EmbeddedFileOptions } from '../core/embedders/FileEmbedder';
+import type { TypeFeatures } from '../types/fontkit';
 
 export enum ParseSpeeds {
   Fastest = Infinity,
@@ -8,7 +8,7 @@ export enum ParseSpeeds {
   Slow = 100,
 }
 
-export interface AttachmentOptions extends EmbeddedFileOptions {}
+export type AttachmentOptions = EmbeddedFileOptions;
 
 export interface SaveOptions {
   useObjectStreams?: boolean;

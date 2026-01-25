@@ -17,7 +17,7 @@ import PDFString from './objects/PDFString';
 import PDFOperator from './operators/PDFOperator';
 import Ops from './operators/PDFOperatorNames';
 import PDFContentStream from './structures/PDFContentStream';
-import PDFSecurity from './security/PDFSecurity';
+import type PDFSecurity from './security/PDFSecurity';
 import { typedArrayFor } from '../utils';
 import { SimpleRNG } from '../utils/rng';
 

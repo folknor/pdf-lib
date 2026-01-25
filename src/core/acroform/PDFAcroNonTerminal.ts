@@ -1,7 +1,7 @@
-import PDFDict from '../objects/PDFDict';
-import PDFRef from '../objects/PDFRef';
+import type PDFDict from '../objects/PDFDict';
+import type PDFRef from '../objects/PDFRef';
 import PDFName from '../objects/PDFName';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFAcroField from './PDFAcroField';
 
 class PDFAcroNonTerminal extends PDFAcroField {

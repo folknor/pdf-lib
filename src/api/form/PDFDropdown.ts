@@ -1,12 +1,12 @@
-import PDFDocument from '../PDFDocument';
+import type PDFDocument from '../PDFDocument';
 import PDFPage from '../PDFPage';
 import PDFFont from '../PDFFont';
 import PDFField, {
-  FieldAppearanceOptions,
+  type FieldAppearanceOptions,
   assertFieldAppearanceOptions,
 } from './PDFField';
 import {
-  AppearanceProviderFor,
+  type AppearanceProviderFor,
   normalizeAppearance,
   defaultDropdownAppearanceProvider,
 } from './appearances';
@@ -15,10 +15,10 @@ import { degrees } from '../rotations';
 
 import {
   PDFHexString,
-  PDFRef,
-  PDFString,
+  type PDFRef,
+  type PDFString,
   PDFStream,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
   PDFAcroComboBox,
   AcroChoiceFlags,
 } from '../../core';
@@ -52,7 +52,7 @@ export default class PDFDropdown extends PDFField {
     new PDFDropdown(acroComboBox, ref, doc);
 
   /** The low-level PDFAcroComboBox wrapped by this dropdown. */
-  readonly acroField: PDFAcroComboBox;
+  override readonly acroField: PDFAcroComboBox;
 
   private constructor(
     acroComboBox: PDFAcroComboBox,
@@ -573,7 +573,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    * @returns Whether or not this dropdown needs an appearance update.
    */
-  needsAppearancesUpdate(): boolean {
+  override needsAppearancesUpdate(): boolean {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
@@ -597,7 +597,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    * @param font The font to be used for creating the appearance streams.
    */
-  defaultUpdateAppearances(font: PDFFont) {
+  override defaultUpdateAppearances(font: PDFFont) {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.updateAppearances(font);
   }

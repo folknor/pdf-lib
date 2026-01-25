@@ -1,14 +1,14 @@
-import PDFArray from './PDFArray';
-import PDFBool from './PDFBool';
-import PDFHexString from './PDFHexString';
+import type PDFArray from './PDFArray';
+import type PDFBool from './PDFBool';
+import type PDFHexString from './PDFHexString';
 import PDFName from './PDFName';
 import PDFNull from './PDFNull';
-import PDFNumber from './PDFNumber';
+import type PDFNumber from './PDFNumber';
 import PDFObject from './PDFObject';
-import PDFRef from './PDFRef';
-import PDFStream from './PDFStream';
-import PDFString from './PDFString';
-import PDFContext from '../PDFContext';
+import type PDFRef from './PDFRef';
+import type PDFStream from './PDFStream';
+import type PDFString from './PDFString';
+import type PDFContext from '../PDFContext';
 import CharCodes from '../syntax/CharCodes';
 
 export type DictMap = Map<PDFName, PDFObject>;
@@ -171,7 +171,7 @@ class PDFDict extends PDFObject {
     return key;
   }
 
-  clone(context?: PDFContext): PDFDict {
+  override clone(context?: PDFContext): PDFDict {
     const clone = PDFDict.withContext(context || this.context);
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
@@ -181,18 +181,18 @@ class PDFDict extends PDFObject {
     return clone;
   }
 
-  toString(): string {
+  override toString(): string {
     let dictString = '<<\n';
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx];
-      dictString += key.toString() + ' ' + value.toString() + '\n';
+      dictString += `${key.toString()} ${value.toString()}\n`;
     }
     dictString += '>>';
     return dictString;
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     let size = 5;
     const entries = this.entries();
     for (let idx = 0, len = entries.length; idx < len; idx++) {
@@ -202,7 +202,7 @@ class PDFDict extends PDFObject {
     return size;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     const initialOffset = offset;
 
     buffer[offset++] = CharCodes.LessThan;

@@ -1,7 +1,7 @@
 import { ReparseError } from '../errors';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFRawStream from '../objects/PDFRawStream';
+import type PDFRawStream from '../objects/PDFRawStream';
 import PDFRef from '../objects/PDFRef';
 import ByteStream from './ByteStream';
 import PDFObjectParser from './PDFObjectParser';

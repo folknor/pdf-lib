@@ -6,19 +6,19 @@ class PDFNull extends PDFObject {
     return null;
   }
 
-  clone(): PDFNull {
+  override clone(): PDFNull {
     return this;
   }
 
-  toString(): string {
+  override toString(): string {
     return 'null';
   }
 
-  sizeInBytes(): number {
+  override sizeInBytes(): number {
     return 4;
   }
 
-  copyBytesInto(buffer: Uint8Array, offset: number): number {
+  override copyBytesInto(buffer: Uint8Array, offset: number): number {
     buffer[offset++] = CharCodes.n;
     buffer[offset++] = CharCodes.u;
     buffer[offset++] = CharCodes.l;

@@ -1,9 +1,9 @@
 import PDFDocument from '../PDFDocument';
-import PDFFont from '../PDFFont';
-import { AppearanceMapping } from './appearances';
-import { Color, colorToComponents, setFillingColor } from '../colors';
+import type PDFFont from '../PDFFont';
+import type { AppearanceMapping } from './appearances';
+import { type Color, colorToComponents, setFillingColor } from '../colors';
 import {
-  Rotation,
+  type Rotation,
   toDegrees,
   rotateRectangle,
   reduceRotation,
@@ -14,9 +14,9 @@ import {
 import {
   PDFRef,
   PDFWidgetAnnotation,
-  PDFOperator,
+  type PDFOperator,
   PDFName,
-  PDFDict,
+  type PDFDict,
   MethodNotImplementedError,
   AcroFieldFlags,
   PDFAcroTerminal,
@@ -24,7 +24,7 @@ import {
 } from '../../core';
 import { assertIs, assertMultiple, assertOrUndefined } from '../../utils';
 import { ImageAlignment } from '../image';
-import PDFImage from '../PDFImage';
+import type PDFImage from '../PDFImage';
 import { drawImage, rotateInPlace } from '../operations';
 
 export interface FieldAppearanceOptions {
@@ -336,7 +336,7 @@ export default class PDFField {
     // Set acrofield properties
     if (textColor) {
       const da = this.acroField.getDefaultAppearance() ?? '';
-      const newDa = da + '\n' + setFillingColor(textColor).toString();
+      const newDa = `${da}\n${setFillingColor(textColor).toString()}`;
       this.acroField.setDefaultAppearance(newDa);
     }
 

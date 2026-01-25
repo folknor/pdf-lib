@@ -1,4 +1,4 @@
-import { Color, setFillingColor, setStrokingColor } from './colors';
+import { type Color, setFillingColor, setStrokingColor } from './colors';
 import {
   beginText,
   closePath,
@@ -21,7 +21,7 @@ import {
   skewRadians,
   stroke,
   translate,
-  LineCapStyle,
+  type LineCapStyle,
   setLineCap,
   rotateDegrees,
   setGraphicsState,
@@ -33,12 +33,12 @@ import {
   FillRule,
   fillEvenOdd,
   concatTransformationMatrix,
-  TextRenderingMode,
+  type TextRenderingMode,
   setTextRenderingMode,
 } from './operators';
-import { Rotation, degrees, toDegrees, toRadians } from './rotations';
+import { type Rotation, degrees, toDegrees, toRadians } from './rotations';
 import { svgPathToOperators } from './svgPath';
-import { PDFHexString, PDFName, PDFNumber, PDFOperator } from '../core';
+import type { PDFHexString, PDFName, PDFNumber, PDFOperator } from '../core';
 import { asNumber } from './objects';
 import type { Space, TransformationMatrix } from '../types';
 import { transformationToMatrix, combineMatrix } from './svg';

@@ -2,13 +2,13 @@ import PDFCrossRefSection from '../document/PDFCrossRefSection';
 import PDFHeader from '../document/PDFHeader';
 import PDFTrailer from '../document/PDFTrailer';
 import PDFTrailerDict from '../document/PDFTrailerDict';
-import PDFDict from '../objects/PDFDict';
-import PDFObject from '../objects/PDFObject';
-import PDFRef from '../objects/PDFRef';
+import type PDFDict from '../objects/PDFDict';
+import type PDFObject from '../objects/PDFObject';
+import type PDFRef from '../objects/PDFRef';
 import PDFStream from '../objects/PDFStream';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFObjectStream from '../structures/PDFObjectStream';
-import PDFSecurity from '../security/PDFSecurity';
+import type PDFSecurity from '../security/PDFSecurity';
 import CharCodes from '../syntax/CharCodes';
 import { copyStringIntoBuffer, waitForTick } from '../../utils';
 

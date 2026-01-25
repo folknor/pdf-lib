@@ -7,7 +7,7 @@
  */
 
 import DecodeStream from './DecodeStream';
-import { StreamType } from './Stream';
+import type { StreamType } from './Stream';
 
 class LZWStream extends DecodeStream {
   private stream: StreamType;
@@ -54,7 +54,7 @@ class LZWStream extends DecodeStream {
     this.lzwState = lzwState;
   }
 
-  protected readBlock() {
+  protected override readBlock() {
     const blockSize = 512;
 
     let estimatedDecodedSize = blockSize * 2;

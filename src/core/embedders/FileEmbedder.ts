@@ -1,7 +1,7 @@
 import PDFString from '../objects/PDFString';
 import PDFHexString from '../objects/PDFHexString';
-import PDFContext from '../PDFContext';
-import PDFRef from '../objects/PDFRef';
+import type PDFContext from '../PDFContext';
+import type PDFRef from '../objects/PDFRef';
 
 /**
  * From the PDF-A3 specification, section **3.1. Requirements - General**.

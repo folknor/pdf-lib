@@ -1,9 +1,9 @@
 import PDFArray from '../objects/PDFArray';
 import PDFBool from '../objects/PDFBool';
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFNumber from '../objects/PDFNumber';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import {
   assertEachIs,
   assertInteger,

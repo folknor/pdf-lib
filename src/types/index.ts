@@ -1,12 +1,12 @@
-import Arc from '../utils/elements/Arc';
-import Circle from '../utils/elements/Circle';
-import Ellipse from '../utils/elements/Ellipse';
-import Line from '../utils/elements/Line';
-import Plot from '../utils/elements/Plot';
-import Point from '../utils/elements/Point';
-import Rectangle from '../utils/elements/Rectangle';
-import Segment from '../utils/elements/Segment';
-export { TransformationMatrix } from './matrix';
+import type Arc from '../utils/elements/Arc';
+import type Circle from '../utils/elements/Circle';
+import type Ellipse from '../utils/elements/Ellipse';
+import type Line from '../utils/elements/Line';
+import type Plot from '../utils/elements/Plot';
+import type Point from '../utils/elements/Point';
+import type Rectangle from '../utils/elements/Rectangle';
+import type Segment from '../utils/elements/Segment';
+export type { TransformationMatrix } from './matrix';
 
 export type Size = {
   width: number;

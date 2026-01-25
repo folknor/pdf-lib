@@ -1,9 +1,9 @@
 import {
   parse as parseHtml,
-  HTMLElement,
+  type HTMLElement,
   NodeType,
 } from 'node-html-better-parser';
-import Embeddable from './Embeddable';
+import type Embeddable from './Embeddable';
 import {
   EncryptedPDFError,
   FontkitNotRegisteredError,
@@ -16,12 +16,12 @@ import PDFImage from './PDFImage';
 import PDFPage from './PDFPage';
 import PDFForm from './form/PDFForm';
 import { PageSizes } from './sizes';
-import { StandardFonts } from './StandardFonts';
+import type { StandardFonts } from './StandardFonts';
 import {
   CustomFontEmbedder,
   CustomFontSubsetEmbedder,
   JpegEmbedder,
-  PageBoundingBox,
+  type PageBoundingBox,
   PageEmbeddingMismatchedContextError,
   PDFArray,
   PDFCatalog,
@@ -29,7 +29,7 @@ import {
   PDFDict,
   decodePDFRawStream,
   PDFStream,
-  PDFRawStream,
+  type PDFRawStream,
   PDFHexString,
   PDFName,
   PDFObjectCopier,
@@ -46,18 +46,18 @@ import {
 } from '../core';
 import {
   ParseSpeeds,
-  AttachmentOptions,
-  SaveOptions,
-  Base64SaveOptions,
-  LoadOptions,
-  CreateOptions,
-  EmbedFontOptions,
-  SetTitleOptions,
+  type AttachmentOptions,
+  type SaveOptions,
+  type Base64SaveOptions,
+  type LoadOptions,
+  type CreateOptions,
+  type EmbedFontOptions,
+  type SetTitleOptions,
 } from './PDFDocumentOptions';
-import PDFObject from '../core/objects/PDFObject';
-import PDFRef from '../core/objects/PDFRef';
-import { Fontkit } from '../types/fontkit';
-import { TransformationMatrix } from '../types/matrix';
+import type PDFObject from '../core/objects/PDFObject';
+import type PDFRef from '../core/objects/PDFRef';
+import type { Fontkit } from '../types/fontkit';
+import type { TransformationMatrix } from '../types/matrix';
 import {
   assertIs,
   assertIsOneOfOrUndefined,
@@ -77,7 +77,9 @@ import PDFJavaScript from './PDFJavaScript';
 import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder';
 import { CipherTransformFactory } from '../core/crypto';
 import PDFSvg from './PDFSvg';
-import PDFSecurity, { SecurityOptions } from '../core/security/PDFSecurity';
+import PDFSecurity, {
+  type SecurityOptions,
+} from '../core/security/PDFSecurity';
 
 export type BasePDFAttachment = {
   name: string;
@@ -1342,7 +1344,7 @@ export default class PDFDocument {
 
     await Promise.all(
       images.map(async (image) => {
-        const href = image.attributes.href ?? image.attributes['xlink:href'];
+        const href = image.attributes['href'] ?? image.attributes['xlink:href'];
         if (!href || imagesDict[href]) return;
         const isPng = href.match(/\.png(\?|$)|^data:image\/png;base64/gim);
         const pdfImage = isPng

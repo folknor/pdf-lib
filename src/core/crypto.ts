@@ -16,13 +16,13 @@
 
 import { arrayAsString, isArrayEqual } from '../utils/arrays';
 import { stringAsByteArray } from '../utils/strings';
-import PDFBool from './objects/PDFBool';
+import type PDFBool from './objects/PDFBool';
 import PDFDict from './objects/PDFDict';
 import PDFName from './objects/PDFName';
-import PDFNumber from './objects/PDFNumber';
-import PDFString from './objects/PDFString';
+import type PDFNumber from './objects/PDFNumber';
+import type PDFString from './objects/PDFString';
 import DecryptStream from './streams/DecryptStream';
-import { StreamType } from './streams/Stream';
+import type { StreamType } from './streams/Stream';
 
 class ARCFourCipher {
   private s: Uint8Array;
@@ -1172,7 +1172,7 @@ class AES128Cipher extends AESBaseCipher {
     this._key = this._expandKey(key);
   }
 
-  _expandKey(cipherKey: Uint8Array) {
+  override _expandKey(cipherKey: Uint8Array) {
     const b = 176;
     const s = this._s;
     const rcon = this._rcon;
@@ -1218,7 +1218,7 @@ class AES256Cipher extends AESBaseCipher {
     this._key = this._expandKey(key);
   }
 
-  _expandKey(cipherKey: Uint8Array) {
+  override _expandKey(cipherKey: Uint8Array) {
     const b = 240;
     const s = this._s;
 
@@ -1454,7 +1454,7 @@ class CipherTransform {
     const cipher = this.StreamCipherConstructor();
     return new DecryptStream(
       stream,
-      function cipherTransformDecryptStream(data, finalize) {
+      (data, finalize) => {
         return cipher.decryptBlock(data as Uint8Array, finalize);
       },
       length,
@@ -1604,7 +1604,7 @@ class CipherTransformFactory {
       if (revision === 6) {
         try {
           password = unescape(encodeURIComponent(password));
-        } catch (ex) {
+        } catch {
           console.warn(
             'CipherTransformFactory: ' +
               'Unable to convert UTF8 encoded password.',

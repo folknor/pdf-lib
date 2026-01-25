@@ -1,7 +1,7 @@
 import pako from 'pako';
 
 import { MethodNotImplementedError } from '../errors';
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFStream from '../objects/PDFStream';
 import { Cache } from '../../utils';
@@ -24,11 +24,11 @@ class PDFFlateStream extends PDFStream {
     return this.encode ? pako.deflate(unencodedContents) : unencodedContents;
   };
 
-  getContents(): Uint8Array {
+  override getContents(): Uint8Array {
     return this.contentsCache.access();
   }
 
-  getContentsSize(): number {
+  override getContentsSize(): number {
     return this.contentsCache.access().length;
   }
 
@@ -39,7 +39,7 @@ class PDFFlateStream extends PDFStream {
     );
   }
 
-  updateContents(contents: Uint8Array): void {
+  override updateContents(contents: Uint8Array): void {
     this.contentsCache = Cache.populatedBy(() => contents);
   }
 }

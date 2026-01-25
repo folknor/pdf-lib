@@ -16,7 +16,7 @@
 
 /* tslint:disable  no-conditional-assignment */
 import DecodeStream from '../../core/streams/DecodeStream';
-import { StreamType } from '../../core/streams/Stream';
+import type { StreamType } from '../../core/streams/Stream';
 
 // prettier-ignore
 const codeLenCodeMap = new Int32Array([
@@ -146,7 +146,7 @@ class FlateStream extends DecodeStream {
     this.codeBuf = 0;
   }
 
-  protected readBlock() {
+  protected override readBlock() {
     let buffer;
     let len;
     const str = this.stream;
@@ -272,8 +272,6 @@ class FlateStream extends DecodeStream {
     buffer = this.buffer;
     let limit = buffer ? buffer.length : 0;
     let pos = this.bufferLength;
-
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       let code1 = this.getCode(litCodeTable);
       if (code1 < 256) {

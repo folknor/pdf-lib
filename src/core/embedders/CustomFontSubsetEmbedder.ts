@@ -1,4 +1,4 @@
-import {
+import type {
   Font,
   Fontkit,
   Glyph,
@@ -16,7 +16,7 @@ import { Cache, mergeUint8Arrays, toHexStringOfMinLength } from '../../utils';
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/jpeg.coffee
  */
 class CustomFontSubsetEmbedder extends CustomFontEmbedder {
-  static async for(
+  static override async for(
     fontkit: Fontkit,
     fontData: Uint8Array,
     customFontName?: string,
@@ -49,7 +49,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     this.glyphIdMap = new Map();
   }
 
-  encodeText(text: string): PDFHexString {
+  override encodeText(text: string): PDFHexString {
     const { glyphs } = this.font.layout(text, this.fontFeatures);
     const hexCodes = new Array(glyphs.length);
 
@@ -67,15 +67,15 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     return PDFHexString.of(hexCodes.join(''));
   }
 
-  protected isCFF(): boolean {
+  protected override isCFF(): boolean {
     return (this.subset as any).cff;
   }
 
-  protected glyphId(glyph?: Glyph): number {
+  protected override glyphId(glyph?: Glyph): number {
     return glyph ? this.glyphIdMap.get(glyph.id)! : -1;
   }
 
-  protected serializeFont(): Promise<Uint8Array> {
+  protected override serializeFont(): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
       const parts: Uint8Array[] = [];
       this.subset

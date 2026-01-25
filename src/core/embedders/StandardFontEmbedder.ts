@@ -2,12 +2,12 @@ import {
   Encodings,
   Font,
   FontNames,
-  EncodingType,
+  type EncodingType,
 } from '@pdf-lib/standard-fonts';
 
 import PDFHexString from '../objects/PDFHexString';
-import PDFRef from '../objects/PDFRef';
-import PDFContext from '../PDFContext';
+import type PDFRef from '../objects/PDFRef';
+import type PDFContext from '../PDFContext';
 import { toCodePoint, toHexString } from '../../utils';
 
 export interface Glyph {
@@ -123,7 +123,7 @@ class StandardFontEmbedder {
       const codePoint = toCodePoint(codePoints[idx])!;
       try {
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(codePoint);
-      } catch (error) {
+      } catch {
         // Replace non-WinAnsi characters with a placeholder
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(toCodePoint('?')!);
       }

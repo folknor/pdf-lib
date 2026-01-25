@@ -1,7 +1,7 @@
-import PDFDict from '../objects/PDFDict';
+import type PDFDict from '../objects/PDFDict';
 import PDFName from '../objects/PDFName';
 import PDFRef from '../objects/PDFRef';
-import PDFContext from '../PDFContext';
+import type PDFContext from '../PDFContext';
 import PDFFlateStream from './PDFFlateStream';
 import { bytesFor, Cache, reverseArray, sizeInBytes, sum } from '../../utils';
 
@@ -92,12 +92,12 @@ class PDFCrossRefStream extends PDFFlateStream {
     this.contentsCache.invalidate();
   }
 
-  clone(context?: PDFContext): PDFCrossRefStream {
+  override clone(context?: PDFContext): PDFCrossRefStream {
     const { dict, entries, encode } = this;
     return PDFCrossRefStream.of(dict.clone(context), entries.slice(), encode);
   }
 
-  getContentsString(): string {
+  override getContentsString(): string {
     const entryTuples = this.entryTuplesCache.access();
     const byteWidths = this.maxByteWidthsCache.access();
     let value = '';
@@ -127,7 +127,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     return value;
   }
 
-  getUnencodedContents(): Uint8Array {
+  override getUnencodedContents(): Uint8Array {
     const entryTuples = this.entryTuplesCache.access();
     const byteWidths = this.maxByteWidthsCache.access();
     const buffer = new Uint8Array(this.getUnencodedContentsSize());
@@ -164,7 +164,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     return entryWidth * this.entries.length;
   }
 
-  updateDict(): void {
+  override updateDict(): void {
     super.updateDict();
 
     const byteWidths = this.maxByteWidthsCache.access();

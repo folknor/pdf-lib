@@ -1,6 +1,6 @@
 import PDFDocument from '../PDFDocument';
-import PDFPage from '../PDFPage';
-import PDFField from './PDFField';
+import type PDFPage from '../PDFPage';
+import type PDFField from './PDFField';
 import PDFButton from './PDFButton';
 import PDFCheckBox from './PDFCheckBox';
 import PDFDropdown from './PDFDropdown';
@@ -25,7 +25,7 @@ import {
 } from '../operators';
 import {
   PDFAcroForm,
-  PDFAcroField,
+  type PDFAcroField,
   PDFAcroCheckBox,
   PDFAcroComboBox,
   PDFAcroListBox,
@@ -35,11 +35,11 @@ import {
   PDFAcroPushButton,
   PDFAcroNonTerminal,
   PDFDict,
-  PDFOperator,
+  type PDFOperator,
   PDFRef,
   createPDFAcroFields,
   PDFName,
-  PDFWidgetAnnotation,
+  type PDFWidgetAnnotation,
 } from '../../core';
 import { assertIs, Cache, assertOrUndefined } from '../../utils';
 

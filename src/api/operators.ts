@@ -1,9 +1,9 @@
 import { asNumber, asPDFName, asPDFNumber } from './objects';
 import { degreesToRadians } from './rotations';
 import {
-  PDFHexString,
-  PDFName,
-  PDFNumber,
+  type PDFHexString,
+  type PDFName,
+  type PDFNumber,
   PDFOperator,
   PDFOperatorNames as Ops,
 } from '../core';
