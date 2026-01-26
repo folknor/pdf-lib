@@ -42,7 +42,7 @@
     // These are valuable but need codebase refactoring:
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
-    // "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": true,
     "noPropertyAccessFromIndexSignature": true,
 
     // Skip

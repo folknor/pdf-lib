@@ -22,7 +22,7 @@ class LZWStream extends DecodeStream {
     dictionaryPrevCodes: Uint16Array;
     currentSequence: Uint8Array;
     currentSequenceLength: number;
-    prevCode?: number | null;
+    prevCode: number | null | undefined;
   };
 
   constructor(
@@ -46,6 +46,7 @@ class LZWStream extends DecodeStream {
       dictionaryPrevCodes: new Uint16Array(maxLzwDictionarySize),
       currentSequence: new Uint8Array(maxLzwDictionarySize),
       currentSequenceLength: 0,
+      prevCode: undefined,
     };
     for (let i = 0; i < 256; ++i) {
       lzwState.dictionaryValues[i] = i;

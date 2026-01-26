@@ -58,10 +58,10 @@ class PDFContext {
   largestObjectNumber: number;
   header: PDFHeader;
   trailerInfo: {
-    Root?: PDFObject;
-    Encrypt?: PDFObject;
-    Info?: PDFObject;
-    ID?: PDFObject;
+    Root: PDFObject | undefined;
+    Encrypt: PDFObject | undefined;
+    Info: PDFObject | undefined;
+    ID: PDFObject | undefined;
   };
   rng: SimpleRNG;
 
@@ -75,7 +75,12 @@ class PDFContext {
   private constructor() {
     this.largestObjectNumber = 0;
     this.header = PDFHeader.forVersion(1, 7);
-    this.trailerInfo = {};
+    this.trailerInfo = {
+      Root: undefined,
+      Encrypt: undefined,
+      Info: undefined,
+      ID: undefined,
+    };
 
     this.indirectObjects = new Map();
     this.rng = SimpleRNG.withSeed(1);

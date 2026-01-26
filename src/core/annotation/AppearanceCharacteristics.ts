@@ -83,7 +83,11 @@ class AppearanceCharacteristics {
     return components;
   }
 
-  getCaptions(): { normal?: string; rollover?: string; down?: string } {
+  getCaptions(): {
+    normal: string | undefined;
+    rollover: string | undefined;
+    down: string | undefined;
+  } {
     const CA = this.CA();
     const RC = this.RC();
     const AC = this.AC();

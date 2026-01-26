@@ -104,8 +104,8 @@ export default class PDFPage {
   /** The document to which this page belongs. */
   readonly doc: PDFDocument;
 
-  private fontKey?: PDFName;
-  private font?: PDFFont;
+  private fontKey: PDFName | undefined;
+  private font: PDFFont | undefined;
   private fontSize = 24;
   private fontColor = rgb(0, 0, 0) as Color;
   private lineHeight = 24;
@@ -1003,8 +1003,8 @@ export default class PDFPage {
     }
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     const contentStream = this.getContentStream();
@@ -1019,12 +1019,22 @@ export default class PDFPage {
         x: options.x ?? this.x,
         y: options.y ?? this.y,
         lineHeight: options.lineHeight ?? this.lineHeight,
-        graphicsState: graphicsStateKey,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
-        strokeColor: options.strokeColor,
-        strokeWidth: options.strokeWidth,
-        renderMode: options.renderMode,
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
+        ...(options.strokeColor !== undefined && {
+          strokeColor: options.strokeColor,
+        }),
+        ...(options.strokeWidth !== undefined && {
+          strokeWidth: options.strokeWidth,
+        }),
+        ...(options.renderMode !== undefined && {
+          renderMode: options.renderMode,
+        }),
       }),
     );
 
@@ -1075,8 +1085,8 @@ export default class PDFPage {
     const xObjectKey = this.node.newXObject('Image', image.ref);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     const contentStream = this.getContentStream();
@@ -1089,9 +1099,13 @@ export default class PDFPage {
         rotate: options.rotate ?? degrees(0),
         xSkew: options.xSkew ?? degrees(0),
         ySkew: options.ySkew ?? degrees(0),
-        graphicsState: graphicsStateKey,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
       }),
     );
   }
@@ -1154,8 +1168,8 @@ export default class PDFPage {
     );
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     // prettier-ignore
@@ -1184,7 +1198,9 @@ export default class PDFPage {
         rotate: options.rotate ?? degrees(0),
         xSkew: options.xSkew ?? degrees(0),
         ySkew: options.ySkew ?? degrees(0),
-        graphicsState: graphicsStateKey,
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
       }),
     );
   }
@@ -1259,9 +1275,11 @@ export default class PDFPage {
     assertIsOneOfOrUndefined(options.fillRule, 'options.fillRule', FillRule);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      borderOpacity: options.borderOpacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.borderOpacity !== undefined && {
+        borderOpacity: options.borderOpacity,
+      }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     if (!('color' in options) && !('borderColor' in options)) {
@@ -1275,16 +1293,26 @@ export default class PDFPage {
         y: options.y ?? this.y,
         scale: options.scale,
         rotate: options.rotate ?? degrees(0),
-        color: options.color ?? undefined,
-        borderColor: options.borderColor ?? undefined,
+        color: options.color,
+        borderColor: options.borderColor,
         borderWidth: options.borderWidth ?? 1,
-        borderDashArray: options.borderDashArray ?? undefined,
-        borderDashPhase: options.borderDashPhase ?? undefined,
-        borderLineCap: options.borderLineCap ?? undefined,
-        graphicsState: graphicsStateKey,
-        fillRule: options.fillRule,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
+        ...(options.borderDashArray !== undefined && {
+          borderDashArray: options.borderDashArray,
+        }),
+        ...(options.borderDashPhase !== undefined && {
+          borderDashPhase: options.borderDashPhase,
+        }),
+        ...(options.borderLineCap !== undefined && {
+          borderLineCap: options.borderLineCap,
+        }),
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.fillRule !== undefined && { fillRule: options.fillRule }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
       }),
     );
   }
@@ -1324,8 +1352,8 @@ export default class PDFPage {
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      borderOpacity: options.opacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { borderOpacity: options.opacity }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     if (!('color' in options)) {
@@ -1338,13 +1366,21 @@ export default class PDFPage {
         start: options.start,
         end: options.end,
         thickness: options.thickness ?? 1,
-        color: options.color ?? undefined,
-        dashArray: options.dashArray ?? undefined,
-        dashPhase: options.dashPhase ?? undefined,
-        lineCap: options.lineCap ?? undefined,
-        graphicsState: graphicsStateKey,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
+        color: options.color,
+        ...(options.dashArray !== undefined && {
+          dashArray: options.dashArray,
+        }),
+        ...(options.dashPhase !== undefined && {
+          dashPhase: options.dashPhase,
+        }),
+        ...(options.lineCap !== undefined && { lineCap: options.lineCap }),
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
       }),
     );
   }
@@ -1407,9 +1443,11 @@ export default class PDFPage {
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      borderOpacity: options.borderOpacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.borderOpacity !== undefined && {
+        borderOpacity: options.borderOpacity,
+      }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     if (!('color' in options) && !('borderColor' in options)) {
@@ -1427,16 +1465,26 @@ export default class PDFPage {
         xSkew: options.xSkew ?? degrees(0),
         ySkew: options.ySkew ?? degrees(0),
         borderWidth: options.borderWidth ?? 0,
-        color: options.color ?? undefined,
+        color: options.color,
         rx: options.rx ?? 0,
         ry: options.ry ?? 0,
-        borderColor: options.borderColor ?? undefined,
-        borderDashArray: options.borderDashArray ?? undefined,
-        borderDashPhase: options.borderDashPhase ?? undefined,
-        graphicsState: graphicsStateKey,
-        borderLineCap: options.borderLineCap ?? undefined,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
+        borderColor: options.borderColor,
+        ...(options.borderDashArray !== undefined && {
+          borderDashArray: options.borderDashArray,
+        }),
+        ...(options.borderDashPhase !== undefined && {
+          borderDashPhase: options.borderDashPhase,
+        }),
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.borderLineCap !== undefined && {
+          borderLineCap: options.borderLineCap,
+        }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
       }),
     );
   }
@@ -1463,7 +1511,10 @@ export default class PDFPage {
   drawSquare(options: PDFPageDrawSquareOptions = {}): void {
     const { size } = options;
     assertOrUndefined(size, 'size', ['number']);
-    this.drawRectangle({ ...options, width: size, height: size });
+    this.drawRectangle({
+      ...options,
+      ...(size !== undefined && { width: size, height: size }),
+    });
   }
 
   /**
@@ -1516,9 +1567,11 @@ export default class PDFPage {
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
     const graphicsStateKey = this.maybeEmbedGraphicsState({
-      opacity: options.opacity,
-      borderOpacity: options.borderOpacity,
-      blendMode: options.blendMode,
+      ...(options.opacity !== undefined && { opacity: options.opacity }),
+      ...(options.borderOpacity !== undefined && {
+        borderOpacity: options.borderOpacity,
+      }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
     if (!('color' in options) && !('borderColor' in options)) {
@@ -1532,16 +1585,26 @@ export default class PDFPage {
         y: options.y ?? this.y,
         xScale: options.xScale ?? 100,
         yScale: options.yScale ?? 100,
-        rotate: options.rotate ?? undefined,
-        color: options.color ?? undefined,
-        borderColor: options.borderColor ?? undefined,
+        ...(options.rotate !== undefined && { rotate: options.rotate }),
+        color: options.color,
+        borderColor: options.borderColor,
         borderWidth: options.borderWidth ?? 0,
-        borderDashArray: options.borderDashArray ?? undefined,
-        borderDashPhase: options.borderDashPhase ?? undefined,
-        borderLineCap: options.borderLineCap ?? undefined,
-        graphicsState: graphicsStateKey,
-        matrix: options.matrix,
-        clipSpaces: options.clipSpaces,
+        ...(options.borderDashArray !== undefined && {
+          borderDashArray: options.borderDashArray,
+        }),
+        ...(options.borderDashPhase !== undefined && {
+          borderDashPhase: options.borderDashPhase,
+        }),
+        ...(options.borderLineCap !== undefined && {
+          borderLineCap: options.borderLineCap,
+        }),
+        ...(graphicsStateKey !== undefined && {
+          graphicsState: graphicsStateKey,
+        }),
+        ...(options.matrix !== undefined && { matrix: options.matrix }),
+        ...(options.clipSpaces !== undefined && {
+          clipSpaces: options.clipSpaces,
+        }),
       }),
     );
   }
@@ -1617,10 +1680,10 @@ export default class PDFPage {
     drawSvg(this, svg, {
       x: options.x ?? this.x,
       y: options.y ?? this.y,
-      fonts: options.fonts,
-      width: options.width,
-      height: options.height,
-      blendMode: options.blendMode,
+      ...(options.fonts !== undefined && { fonts: options.fonts }),
+      ...(options.width !== undefined && { width: options.width }),
+      ...(options.height !== undefined && { height: options.height }),
+      ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
   }
 

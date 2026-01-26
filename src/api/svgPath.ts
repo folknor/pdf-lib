@@ -43,7 +43,7 @@ const parameters = new Map<string, number>([
 ]);
 
 interface Cmd {
-  cmd?: string;
+  cmd: string | undefined;
   args: number[];
 }
 

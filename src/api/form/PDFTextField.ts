@@ -731,7 +731,7 @@ export default class PDFTextField extends PDFField {
       borderColor: options.borderColor,
       borderWidth: options.borderWidth ?? 0,
       rotate: options.rotate ?? degrees(0),
-      hidden: options.hidden,
+      ...(options.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
     const widgetRef = this.doc.context.register(widget.dict);

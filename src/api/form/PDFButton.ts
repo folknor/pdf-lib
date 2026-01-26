@@ -167,11 +167,13 @@ export default class PDFButton extends PDFField {
       height: options?.height ?? 50,
       textColor: options?.textColor ?? rgb(0, 0, 0),
       backgroundColor: options?.backgroundColor ?? rgb(0.75, 0.75, 0.75),
-      borderColor: options?.borderColor,
+      ...(options?.borderColor !== undefined && {
+        borderColor: options.borderColor,
+      }),
       borderWidth: options?.borderWidth ?? 0,
       rotate: options?.rotate ?? degrees(0),
       caption: text,
-      hidden: options?.hidden,
+      ...(options?.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
     const widgetRef = this.doc.context.register(widget.dict);

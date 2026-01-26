@@ -45,7 +45,7 @@ class PDFObjectParser extends BaseParser {
   ) => new PDFObjectParser(byteStream, context, capNumbers);
 
   protected readonly context: PDFContext;
-  private readonly cryptoFactory?: CipherTransformFactory;
+  private readonly cryptoFactory: CipherTransformFactory | undefined;
 
   constructor(
     byteStream: ByteStream,

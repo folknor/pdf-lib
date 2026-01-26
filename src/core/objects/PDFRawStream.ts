@@ -12,7 +12,7 @@ class PDFRawStream extends PDFStream {
   ) => new PDFRawStream(dict, contents, transform);
 
   contents: Uint8Array;
-  readonly transform?: CipherTransform;
+  readonly transform: CipherTransform | undefined;
 
   private constructor(
     dict: PDFDict,

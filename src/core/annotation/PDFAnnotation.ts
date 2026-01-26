@@ -101,8 +101,8 @@ class PDFAnnotation {
   getAppearances():
     | {
         normal: PDFStream | PDFDict;
-        rollover?: PDFStream | PDFDict;
-        down?: PDFStream | PDFDict;
+        rollover: PDFStream | PDFDict | undefined;
+        down: PDFStream | PDFDict | undefined;
       }
     | undefined {
     const AP = this.AP();

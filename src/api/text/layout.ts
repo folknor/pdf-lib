@@ -111,7 +111,7 @@ const computeCombedFontSize = (
 
 export interface LayoutTextOptions {
   alignment: TextAlignment;
-  fontSize?: number;
+  fontSize: number | undefined;
   font: PDFFont;
   bounds: LayoutBounds;
 }
@@ -227,7 +227,7 @@ export const layoutMultilineText = (
 };
 
 export interface LayoutCombedTextOptions {
-  fontSize?: number;
+  fontSize: number | undefined;
   font: PDFFont;
   bounds: LayoutBounds;
   cellCount: number;
@@ -301,7 +301,7 @@ export const layoutCombedText = (
 
 export interface LayoutSinglelineTextOptions {
   alignment: TextAlignment;
-  fontSize?: number;
+  fontSize: number | undefined;
   font: PDFFont;
   bounds: LayoutBounds;
 }

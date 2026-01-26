@@ -35,46 +35,46 @@ type SVGStyle = Record<string, string>;
 type InheritedAttributes = {
   width: number;
   height: number;
-  fill?: Color;
-  fillOpacity?: number;
-  stroke?: Color;
-  strokeWidth?: number;
-  strokeOpacity?: number;
-  strokeLineCap?: LineCapStyle;
-  fillRule?: FillRule;
-  strokeLineJoin?: LineJoinStyle;
-  fontFamily?: string;
-  fontStyle?: string;
-  fontWeight?: string;
-  fontSize?: number;
-  rotation?: Degrees;
+  fill: Color | undefined;
+  fillOpacity: number | undefined;
+  stroke: Color | undefined;
+  strokeWidth: number | undefined;
+  strokeOpacity: number | undefined;
+  strokeLineCap: LineCapStyle | undefined;
+  fillRule: FillRule | undefined;
+  strokeLineJoin: LineJoinStyle | undefined;
+  fontFamily: string | undefined;
+  fontStyle: string | undefined;
+  fontWeight: string | undefined;
+  fontSize: number | undefined;
+  rotation: Degrees | undefined;
   viewBox: Box;
-  blendMode?: BlendMode;
+  blendMode: BlendMode | undefined;
 };
 type SVGAttributes = {
   rotate?: Degrees;
   scale?: number;
   skewX?: Degrees;
   skewY?: Degrees;
-  width?: number;
-  height?: number;
-  x?: number;
-  y?: number;
-  cx?: number;
-  cy?: number;
+  width: number | undefined;
+  height: number | undefined;
+  x: number | undefined;
+  y: number | undefined;
+  cx: number | undefined;
+  cy: number | undefined;
   r?: number;
-  rx?: number;
-  ry?: number;
-  x1?: number;
-  y1?: number;
-  x2?: number;
-  y2?: number;
+  rx: number | undefined;
+  ry: number | undefined;
+  x1: number | undefined;
+  y1: number | undefined;
+  x2: number | undefined;
+  y2: number | undefined;
   d?: string;
-  src?: string;
-  textAnchor?: string;
-  preserveAspectRatio?: string;
+  src: string | undefined;
+  textAnchor: string | undefined;
+  preserveAspectRatio: string | undefined;
   strokeWidth?: number;
-  dominantBaseline?:
+  dominantBaseline:
     | 'auto'
     | 'text-bottom'
     | 'alphabetic'
@@ -88,7 +88,8 @@ type SVGAttributes = {
     | 'no-change'
     | 'reset-size'
     | 'text-after-edge'
-    | 'text-before-edge';
+    | 'text-before-edge'
+    | undefined;
   points?: string;
 };
 
@@ -320,51 +321,80 @@ const runnersToPage = (
         offsetY = 0; // Default to alphabetic if not specified
         break;
     }
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
     page.drawText(text, {
       x: -offsetX,
       y: -offsetY,
-      font,
+      ...(font !== undefined && { font }),
       // TODO: the font size should be correctly scaled too
       size: fontSize,
-      color: element.svgAttributes.fill,
-      opacity: element.svgAttributes.fillOpacity,
+      ...(element.svgAttributes.fill !== undefined && {
+        color: element.svgAttributes.fill,
+      }),
+      ...(element.svgAttributes.fillOpacity !== undefined && {
+        opacity: element.svgAttributes.fillOpacity,
+      }),
       matrix: element.svgAttributes.matrix,
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   line(element) {
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
     page.drawLine({
       start: {
         x: element.svgAttributes.x1 || 0,
-        y: -element.svgAttributes.y1! || 0,
+        y: -(element.svgAttributes.y1 ?? 0),
       },
       end: {
-        x: element.svgAttributes.x2! || 0,
-        y: -element.svgAttributes.y2! || 0,
+        x: element.svgAttributes.x2 ?? 0,
+        y: -(element.svgAttributes.y2 ?? 0),
       },
-      thickness: element.svgAttributes.strokeWidth,
-      color: element.svgAttributes.stroke,
-      opacity: element.svgAttributes.strokeOpacity,
-      lineCap: element.svgAttributes.strokeLineCap,
+      ...(element.svgAttributes.strokeWidth !== undefined && {
+        thickness: element.svgAttributes.strokeWidth,
+      }),
+      ...(element.svgAttributes.stroke !== undefined && {
+        color: element.svgAttributes.stroke,
+      }),
+      ...(element.svgAttributes.strokeOpacity !== undefined && {
+        opacity: element.svgAttributes.strokeOpacity,
+      }),
+      ...(element.svgAttributes.strokeLineCap !== undefined && {
+        lineCap: element.svgAttributes.strokeLineCap,
+      }),
       matrix: element.svgAttributes.matrix,
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   path(element) {
     if (!element.svgAttributes.d) return;
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
     // See https://jsbin.com/kawifomupa/edit?html,output and
     page.drawSvgPath(element.svgAttributes.d, {
       x: 0,
       y: 0,
-      borderColor: element.svgAttributes.stroke,
-      borderWidth: element.svgAttributes.strokeWidth,
-      borderOpacity: element.svgAttributes.strokeOpacity,
-      borderLineCap: element.svgAttributes.strokeLineCap,
-      color: element.svgAttributes.fill,
-      opacity: element.svgAttributes.fillOpacity,
-      fillRule: element.svgAttributes.fillRule,
+      ...(element.svgAttributes.stroke !== undefined && {
+        borderColor: element.svgAttributes.stroke,
+      }),
+      ...(element.svgAttributes.strokeWidth !== undefined && {
+        borderWidth: element.svgAttributes.strokeWidth,
+      }),
+      ...(element.svgAttributes.strokeOpacity !== undefined && {
+        borderOpacity: element.svgAttributes.strokeOpacity,
+      }),
+      ...(element.svgAttributes.strokeLineCap !== undefined && {
+        borderLineCap: element.svgAttributes.strokeLineCap,
+      }),
+      ...(element.svgAttributes.fill !== undefined && {
+        color: element.svgAttributes.fill,
+      }),
+      ...(element.svgAttributes.fillOpacity !== undefined && {
+        opacity: element.svgAttributes.fillOpacity,
+      }),
+      ...(element.svgAttributes.fillRule !== undefined && {
+        fillRule: element.svgAttributes.fillRule,
+      }),
       // drawSvgPath already handle the page y coord correctly, so we can undo the svg parsing correction
       matrix: combineTransformation(
         element.svgAttributes.matrix,
@@ -372,19 +402,20 @@ const runnersToPage = (
         [1, -1],
       ),
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   image(element) {
     const { src } = element.svgAttributes;
     if (!(src && options.images?.[src])) return;
     const img = options.images![src];
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
 
     const { x, y, width, height } = getFittingRectangle(
       img.width,
       img.height,
-      element.svgAttributes.width || img.width,
-      element.svgAttributes.height || img.height,
+      element.svgAttributes.width ?? img.width,
+      element.svgAttributes.height ?? img.height,
       element.svgAttributes.preserveAspectRatio,
     );
     page.drawImage(img, {
@@ -392,51 +423,92 @@ const runnersToPage = (
       y: -y - height,
       width,
       height,
-      opacity: element.svgAttributes.fillOpacity,
+      ...(element.svgAttributes.fillOpacity !== undefined && {
+        opacity: element.svgAttributes.fillOpacity,
+      }),
       matrix: element.svgAttributes.matrix,
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   rect(element) {
     if (!element.svgAttributes.fill && !element.svgAttributes.stroke) return;
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
+    const height = element.svgAttributes.height ?? 0;
     page.drawRectangle({
       x: 0,
       y: 0,
-      width: element.svgAttributes.width,
-      height: element.svgAttributes.height,
-      rx: element.svgAttributes.rx,
-      ry: element.svgAttributes.ry,
-      borderColor: element.svgAttributes.stroke,
-      borderWidth: element.svgAttributes.strokeWidth,
-      borderOpacity: element.svgAttributes.strokeOpacity,
-      borderLineCap: element.svgAttributes.strokeLineCap,
-      color: element.svgAttributes.fill,
-      opacity: element.svgAttributes.fillOpacity,
+      ...(element.svgAttributes.width !== undefined && {
+        width: element.svgAttributes.width,
+      }),
+      ...(element.svgAttributes.height !== undefined && {
+        height: element.svgAttributes.height,
+      }),
+      ...(element.svgAttributes.rx !== undefined && {
+        rx: element.svgAttributes.rx,
+      }),
+      ...(element.svgAttributes.ry !== undefined && {
+        ry: element.svgAttributes.ry,
+      }),
+      ...(element.svgAttributes.stroke !== undefined && {
+        borderColor: element.svgAttributes.stroke,
+      }),
+      ...(element.svgAttributes.strokeWidth !== undefined && {
+        borderWidth: element.svgAttributes.strokeWidth,
+      }),
+      ...(element.svgAttributes.strokeOpacity !== undefined && {
+        borderOpacity: element.svgAttributes.strokeOpacity,
+      }),
+      ...(element.svgAttributes.strokeLineCap !== undefined && {
+        borderLineCap: element.svgAttributes.strokeLineCap,
+      }),
+      ...(element.svgAttributes.fill !== undefined && {
+        color: element.svgAttributes.fill,
+      }),
+      ...(element.svgAttributes.fillOpacity !== undefined && {
+        opacity: element.svgAttributes.fillOpacity,
+      }),
       matrix: combineTransformation(
         element.svgAttributes.matrix,
         'translateY',
-        [element.svgAttributes.height],
+        [height],
       ),
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   ellipse(element) {
+    const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
     page.drawEllipse({
-      x: element.svgAttributes.cx || 0,
-      y: -(element.svgAttributes.cy || 0),
-      xScale: element.svgAttributes.rx,
-      yScale: element.svgAttributes.ry,
-      borderColor: element.svgAttributes.stroke,
-      borderWidth: element.svgAttributes.strokeWidth,
-      borderOpacity: element.svgAttributes.strokeOpacity,
-      borderLineCap: element.svgAttributes.strokeLineCap,
-      color: element.svgAttributes.fill,
-      opacity: element.svgAttributes.fillOpacity,
+      x: element.svgAttributes.cx ?? 0,
+      y: -(element.svgAttributes.cy ?? 0),
+      ...(element.svgAttributes.rx !== undefined && {
+        xScale: element.svgAttributes.rx,
+      }),
+      ...(element.svgAttributes.ry !== undefined && {
+        yScale: element.svgAttributes.ry,
+      }),
+      ...(element.svgAttributes.stroke !== undefined && {
+        borderColor: element.svgAttributes.stroke,
+      }),
+      ...(element.svgAttributes.strokeWidth !== undefined && {
+        borderWidth: element.svgAttributes.strokeWidth,
+      }),
+      ...(element.svgAttributes.strokeOpacity !== undefined && {
+        borderOpacity: element.svgAttributes.strokeOpacity,
+      }),
+      ...(element.svgAttributes.strokeLineCap !== undefined && {
+        borderLineCap: element.svgAttributes.strokeLineCap,
+      }),
+      ...(element.svgAttributes.fill !== undefined && {
+        color: element.svgAttributes.fill,
+      }),
+      ...(element.svgAttributes.fillOpacity !== undefined && {
+        opacity: element.svgAttributes.fillOpacity,
+      }),
       matrix: element.svgAttributes.matrix,
       clipSpaces: element.svgAttributes.clipSpaces,
-      blendMode: element.svgAttributes.blendMode || options.blendMode,
+      ...(blendMode !== undefined && { blendMode }),
     });
   },
   circle(element) {
@@ -468,8 +540,8 @@ const parseStyles = (style: string): SVGStyle => {
 
 const parseColor = (
   color: string,
-  inherited?: { rgb: Color; alpha?: string },
-): { rgb: Color; alpha?: string } | undefined => {
+  inherited?: { rgb: Color; alpha: string | undefined },
+): { rgb: Color; alpha: string | undefined } | undefined => {
   if (!color || color.length === 0) return undefined;
   if (['none', 'transparent'].includes(color)) return undefined;
   if (color === 'currentColor') return inherited || parseColor('#000000');
@@ -578,6 +650,18 @@ const parseAttributes = (
       'dominant-baseline'
     ] as SVGAttributes['dominantBaseline'],
     preserveAspectRatio: attributes['preserveAspectRatio'],
+    width: undefined,
+    height: undefined,
+    x: undefined,
+    y: undefined,
+    cx: undefined,
+    cy: undefined,
+    rx: undefined,
+    ry: undefined,
+    x1: undefined,
+    y1: undefined,
+    x2: undefined,
+    y2: undefined,
   };
 
   let transformList = attributes['transform'] || '';
@@ -994,6 +1078,20 @@ const parse = (
     {
       ...size,
       viewBox: parseViewBox(htmlElement.attributes['viewBox'] || '0 0 1 1')!,
+      fill: undefined,
+      fillOpacity: undefined,
+      stroke: undefined,
+      strokeWidth: undefined,
+      strokeOpacity: undefined,
+      strokeLineCap: undefined,
+      fillRule: undefined,
+      strokeLineJoin: undefined,
+      fontFamily: undefined,
+      fontStyle: undefined,
+      fontWeight: undefined,
+      fontSize: undefined,
+      rotation: undefined,
+      blendMode: undefined,
     },
     matrix,
     [],

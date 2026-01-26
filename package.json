@@ -50,9 +50,9 @@
     "clean": "rimraf dist coverage",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "testw": "vitest",
     "testc": "vitest run --coverage",
     "lint": "pnpm exec biome check --write --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
+    "check": "pnpm lint",
     "build": "tsc"
   },
   "main": "./dist/index.js",

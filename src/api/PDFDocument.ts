@@ -265,7 +265,7 @@ export default class PDFDocument {
 
     if (!!context.lookup(context.trailerInfo.Encrypt) && context.isDecrypted) {
       // context.delete(context.trailerInfo.Encrypt);
-      delete context.trailerInfo.Encrypt;
+      context.trailerInfo.Encrypt = undefined;
     }
     this.isEncrypted = !!context.lookup(context.trailerInfo.Encrypt);
 

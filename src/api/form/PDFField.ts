@@ -353,8 +353,12 @@ export default class PDFField {
   ) {
     this.updateWidgetAppearances(widget, {
       normal: this.createAppearanceStream(widget, normal, font),
-      rollover: rollover && this.createAppearanceStream(widget, rollover, font),
-      down: down && this.createAppearanceStream(widget, down, font),
+      ...(rollover !== undefined && {
+        rollover: this.createAppearanceStream(widget, rollover, font),
+      }),
+      ...(down !== undefined && {
+        down: this.createAppearanceStream(widget, down, font),
+      }),
     });
   }
 
@@ -369,9 +373,12 @@ export default class PDFField {
   ) {
     this.updateWidgetAppearances(widget, {
       normal: this.createAppearanceDict(widget, normal, onValue),
-      rollover:
-        rollover && this.createAppearanceDict(widget, rollover, onValue),
-      down: down && this.createAppearanceDict(widget, down, onValue),
+      ...(rollover !== undefined && {
+        rollover: this.createAppearanceDict(widget, rollover, onValue),
+      }),
+      ...(down !== undefined && {
+        down: this.createAppearanceDict(widget, down, onValue),
+      }),
     });
   }
 

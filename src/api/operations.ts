@@ -836,9 +836,9 @@ const getDrawingOperator = ({
   borderColor,
   fillRule,
 }: {
-  color?: Color;
+  color: Color | undefined;
   borderWidth?: number | PDFNumber;
-  borderColor?: Color;
+  borderColor: Color | undefined;
   fillRule?: FillRule;
 }) => {
   if (color && borderColor && borderWidth !== 0) {

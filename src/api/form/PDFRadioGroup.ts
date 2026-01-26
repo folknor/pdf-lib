@@ -377,7 +377,7 @@ export default class PDFRadioGroup extends PDFField {
       borderColor: options?.borderColor ?? rgb(0, 0, 0),
       borderWidth: options?.borderWidth ?? 1,
       rotate: options?.rotate ?? degrees(0),
-      hidden: options?.hidden,
+      ...(options?.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
     const widgetRef = this.doc.context.register(widget.dict);
