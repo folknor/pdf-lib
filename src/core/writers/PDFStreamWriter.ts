@@ -1,5 +1,4 @@
 import { last, waitForTick } from '../../utils/index.js';
-import PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFInvalidObject from '../objects/PDFInvalidObject.js';
 import PDFName from '../objects/PDFName.js';
@@ -47,7 +46,7 @@ class PDFStreamWriter extends PDFWriter {
   protected override async computeBufferSize() {
     let objectNumber = this.context.largestObjectNumber + 1;
 
-    const header = PDFHeader.forVersion(1, 7);
+    const header = this.context.header;
 
     let size = header.sizeInBytes() + 2;
 
