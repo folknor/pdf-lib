@@ -125,24 +125,24 @@ export const breakTextIntoLines = (
   let currWidth = 0;
   const lines: string[] = [];
 
-  const pushCurrLine = () => {
-    if (currLine !== '') lines.push(currLine);
-    currLine = '';
-    currWidth = 0;
-  };
-
   for (let idx = 0, len = words.length; idx < len; idx++) {
     const word = words[idx]!;
     if (isNewlineChar(word)) {
-      pushCurrLine();
+      lines.push(currLine);
+      currLine = '';
+      currWidth = 0;
     } else {
       const width = computeWidthOfText(word);
-      if (currWidth + width > maxWidth) pushCurrLine();
+      if (currWidth + width > maxWidth) {
+        if (currLine !== '') lines.push(currLine);
+        currLine = '';
+        currWidth = 0;
+      }
       currLine += word;
       currWidth += width;
     }
   }
-  pushCurrLine();
+  if (currLine !== '') lines.push(currLine);
 
   return lines;
 };

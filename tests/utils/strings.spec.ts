@@ -34,6 +34,20 @@ describe('breakTextIntoLines', () => {
     expect(actual).toEqual(expected);
   });
 
+  it('preserves empty lines between consecutive newlines', () => {
+    const input = 'foo\n\nbar';
+    const expected = ['foo', '', 'bar'];
+    const actual = breakTextIntoLines(input, [], 90000, computeTextWidth);
+    expect(actual).toEqual(expected);
+  });
+
+  it('preserves multiple consecutive empty lines', () => {
+    const input = 'foo\n\n\nbar';
+    const expected = ['foo', '', '', 'bar'];
+    const actual = breakTextIntoLines(input, [], 90000, computeTextWidth);
+    expect(actual).toEqual(expected);
+  });
+
   it('always breaks lines when EOLs are encountered', () => {
     const input = 'foo\nbar-qux\rbaz\n';
     const expected = ['foo', 'bar-qux', 'baz'];
