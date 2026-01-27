@@ -12,6 +12,10 @@ export const numberToString = (num: number) => {
   if (Math.abs(num) < 1.0) {
     const e = parseInt(num.toString().split('e-')[1]!, 10);
     if (e) {
+      // Numbers with very large negative exponents produce absurdly long
+      // strings (e.g. Number.MIN_VALUE with e=324 → 331 chars) that
+      // corrupt PDF output for many readers. Clamp to zero.
+      if (e > 100) return num < 0 ? '-0' : '0';
       const negative = num < 0;
       if (negative) num *= -1;
       num *= 10 ** (e - 1);
