@@ -551,7 +551,9 @@ export default class PDFForm {
           const page = this.findWidgetPage(widget);
           const widgetRef = this.findWidgetAppearanceRef(field, widget);
 
-          const xObjectKey = page.node.newXObject('FlatWidget', widgetRef!);
+          if (!widgetRef) continue;
+
+          const xObjectKey = page.node.newXObject('FlatWidget', widgetRef);
 
           const rectangle = widget.getRectangle();
           const operators = [
@@ -730,8 +732,9 @@ export default class PDFForm {
   private findWidgetAppearanceRef(
     field: PDFField,
     widget: PDFWidgetAnnotation,
-  ): PDFRef {
+  ): PDFRef | undefined {
     let refOrDict = widget.getNormalAppearance();
+    if (!refOrDict) return undefined;
 
     if (field instanceof PDFCheckBox || field instanceof PDFRadioGroup) {
       if (refOrDict instanceof PDFRef) {
@@ -747,10 +750,7 @@ export default class PDFForm {
       }
     }
 
-    if (!(refOrDict instanceof PDFRef)) {
-      const name = field.getName();
-      throw new Error(`Failed to extract appearance ref for: ${name}`);
-    }
+    if (!(refOrDict instanceof PDFRef)) return undefined;
 
     return refOrDict;
   }
