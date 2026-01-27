@@ -215,6 +215,16 @@ describe('PDFDocument', () => {
       expect(pdfDoc.getPageCount()).toBe(4);
     });
 
+    it('invalidates the page cache after removing a page', () => {
+      const pageCount = pdfDoc.getPageCount();
+      const beforePages = pdfDoc.getPages();
+      expect(beforePages.length).toBe(pageCount);
+      pdfDoc.removePage(0);
+      const afterPages = pdfDoc.getPages();
+      expect(afterPages.length).toBe(pageCount - 1);
+      expect(afterPages.length).toBe(pdfDoc.getPageCount());
+    });
+
     it('returns 0 for brand new documents', async () => {
       const newDoc = await PDFDocument.create();
       expect(newDoc.getPageCount()).toBe(0);
