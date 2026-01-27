@@ -44,14 +44,12 @@ These issues have 10+ comments indicating widespread problems:
 - **#1103** - Failed to parse PDF document (line:2 col:630 offset=354): No PDF header found (5 comments)
 - **#1136** - TypeError: _this.catalog.Pages(...).traverse is not a function (9 comments)
 - **#1520** - Some pages (PageLeaf) missing once the pdf is loaded
-- **#1283** - PDF load not loading pdf version 1.3
 - **#1497** - Problems to edit a pdf version 2.0 of acrobat
 - **#1294** - Unable to get correct information from high version PDF file
 
 **Parsing specific features**
 
 - **#1751** - Badly parsed JavaScript in AcroForm field
-- **#1692** - Failure Exception: Converting circular structure to JSON (7 comments)
 
 ---
 
@@ -79,9 +77,7 @@ These issues have 10+ comments indicating widespread problems:
 - **#1538** - Original font is not maintained when a form is filled
 - **#1504** - PDFDocument method saveAsBase64({dataUri: true}) returning same contents even after modifying (2 comments)
 - **#1488** - Field with diacritics cannot be filled
-- **#1255** - Cannot create textField with fontSize
 - **#1240** - Duplicate field names after copying & adding pages
-- **#1168** - Cannot remove multiline form field (6 comments)
 - **#1077** - setText method removes border & combing (4 comments)
 - **#1104** - PDF form field not filled according to field font (5 comments)
 - **#1112** - Filling PDF causes styles of filled fields to be reset
@@ -106,8 +102,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1519** - Error on flattening with some pdf
 - **#1482** - Flattening form causing Error 14 in Adobe (3 comments)
 - **#1387** - PDFs with flattened forms can't be printed in Adobe Reader or Acrobat (5 comments)
-- **#1347** - Flattening IRS Form W-8BEN throws `Error: Unexpected N type: undefined`
-- **#1281** - Could not find page for PDFRef Error during flatten (2 comments)
 - **#1267** - Flattened PDFs Malformed
 
 **Form-related features**
@@ -144,7 +138,6 @@ These issues have 10+ comments indicating widespread problems:
 **Font errors**
 
 - **#1544** - getCreationDate has issues parsing some dates (fontkit.create is not a function) (2 comments)
-- **#1638** - TypeError: PDFDocument.registerFontkit is not a function
 - **#1506** - pdf.drawText is not supporting with custom font
 
 **Text rendering**
@@ -363,10 +356,6 @@ These issues have 10+ comments indicating widespread problems:
 **Performance**
 
 - **#1437** - Reduce memory footprint
-- **#1228** - Improve the performance of `CustomFontEmbedder.widthOfTextAtSize` (6 comments)
-- **#1203** - Improve performance of layoutMultilineText (2 comments)
-- **#1202** - layoutMultilineText takes a very long time for long strings
-- **#1184** - Performance issue while filling out IRS form (2 comments)
 
 **Validation and error handling**
 
@@ -407,6 +396,9 @@ limitations, or are design issues that require architectural changes.
 - **#1310** - getAuthor() only returns first author — not a bug; PDF spec stores Author as a single string, library returns it correctly; users should split on `;` or `,` themselves
 - **#1454** - setting viewerPrefs does not change viewer — code is correct; user likely not calling `save()` after setting preferences, or PDF reader ignores preferences
 - **#1461** - Invalid typed array length: 5310707417 — user code issue; copying all pages in a loop (`copyPages` with all indices, then adding one) creates exponential object duplication and size growth
+- **#1638** - TypeError: PDFDocument.registerFontkit is not a function — not a library bug; user's bundler/caching issue in Next.js, `registerFontkit` exists and works correctly
+- **#1283** - PDF load not loading pdf version 1.3 — not a version parsing issue; the PDF header version is parsed correctly; the real problem is likely invalid objects in old PDFs, not version detection
+- **#1692** - Failure Exception: Converting circular structure to JSON — user error; `PDFForm`/`PDFArray` objects contain circular references to `PDFContext` by design; users cannot `JSON.stringify()` them directly
 
 **Fundamental limitations (no simple fix):**
 

@@ -6,6 +6,7 @@
 - [x] `noImplicitOverride` (~110 methods)
 - [x] `noPropertyAccessFromIndexSignature` (~55 bracket notations)
 - [x] `noUncheckedIndexedAccess` (582 errors fixed)
+- [x] `exactOptionalPropertyTypes`
 
 ### Biome Rules Enabled
 - [x] `noBannedTypes` - replaced `Function` type
@@ -32,19 +33,12 @@
 - [x] Remove husky/lint-staged
 - [x] Add `"sideEffects": false`
 - [x] Delete apps/, docs/, scratchpad/, .circleci/, .github/, .vscode/
+- [x] Release workflow with `release-it`
+- [x] Sub-path exports reviewed — not needed with `sideEffects: false`
 
 ---
 
-## Remaining
-
-### High Priority
-- [ ] `exactOptionalPropertyTypes` (~50 errors)
-
-### Medium Priority
-- [ ] Review exports field - consider `./core`, `./utils` entry points
-- [ ] Release workflow - `"release"` script or changesets
-
-### Intentionally Disabled (too noisy or conflicts with codebase)
+## Intentionally Disabled (too noisy or conflicts with codebase)
 | Rule | Reason |
 |------|--------|
 | `noExplicitAny` | Large effort, many legitimate uses |
@@ -60,6 +54,36 @@
 
 ---
 
+## Test Coverage Improvements
+
+Overall: 70% statements, 56% branches, 75% functions, 70% lines.
+
+### High Priority
+
+- [ ] **PDFPage drawing operations** (31% stmts) — Most user-facing API, critically undertested. drawText, drawImage, drawRectangle, drawLine, drawCircle, drawEllipse, drawSvgPath, setRotation, setSize, translateContent.
+- [ ] **SVG parser** (11% stmts) — Almost entirely untested. Path commands, transforms, gradients, error cases.
+- [ ] **PDFEmbeddedPage** (0% stmts) — Completely untested. embed, scale, size, width, height.
+- [ ] **PDFTextField** (64% stmts) — setText with various encodings, setFontSize, setAlignment, multiline, max length, appearance generation.
+
+### Medium Priority
+
+- [ ] **DecodeStream and stream decoders** (27% stmts) — Core stream decoding infrastructure. Decode filters, error handling on malformed streams.
+- [ ] **PDFForm flatten and removeField** (76% stmts, 48% branches) — Flattening with missing appearances, checkboxes/radio groups, orphaned widgets.
+- [ ] **Text layout** (62% stmts) — layoutMultilineText edge cases, text alignment, bounds computation.
+- [ ] **PDFField base class** (73% stmts) — enableReadOnly, disableExporting, isRequired, getName, default appearance handling.
+- [ ] **Validators and error utilities** (59% / 20% stmts) — Low-hanging fruit. assertIs, assertRange, assertOrUndefined, error class constructors.
+
+### Low Priority
+
+- [ ] **Colors, rotations, operations** (68% / 76% / 89% stmts) — Branch coverage gaps in color conversions, rotation transforms, drawing operations.
+- [ ] **PDFDropdown and PDFOptionList** (77% stmts) — multi-select, setOptions, addOptions, clear, sort, appearance updates.
+
+### Lowest Priority
+
+- [ ] **Crypto/security module** (1% stmts) — Encryption/decryption almost entirely untested. DecryptStream 5%, PDFSecurity 8%.
+
+---
+
 ## Final Checklist
-- [ ] `pnpm build && pnpm test && pnpm lint` passes
+- [x] `pnpm build && pnpm test && pnpm lint` passes
 - [ ] Delete this file
