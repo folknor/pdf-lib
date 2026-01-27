@@ -546,28 +546,24 @@ export default class PDFForm {
       const widgets = field.acroField.getWidgets();
 
       for (let j = 0, lenWidgets = widgets.length; j < lenWidgets; j++) {
-        try {
-          const widget = widgets[j]!;
-          const page = this.findWidgetPage(widget);
-          const widgetRef = this.findWidgetAppearanceRef(field, widget);
+        const widget = widgets[j]!;
+        const page = this.findWidgetPage(widget);
+        const widgetRef = this.findWidgetAppearanceRef(field, widget);
 
-          if (!widgetRef) continue;
+        if (!page || !widgetRef) continue;
 
-          const xObjectKey = page.node.newXObject('FlatWidget', widgetRef);
+        const xObjectKey = page.node.newXObject('FlatWidget', widgetRef);
 
-          const rectangle = widget.getRectangle();
-          const operators = [
-            pushGraphicsState(),
-            translate(rectangle.x, rectangle.y),
-            ...rotateInPlace({ ...rectangle, rotation: 0 }),
-            drawObject(xObjectKey),
-            popGraphicsState(),
-          ].filter(Boolean) as PDFOperator[];
+        const rectangle = widget.getRectangle();
+        const operators = [
+          pushGraphicsState(),
+          translate(rectangle.x, rectangle.y),
+          ...rotateInPlace({ ...rectangle, rotation: 0 }),
+          drawObject(xObjectKey),
+          popGraphicsState(),
+        ].filter(Boolean) as PDFOperator[];
 
-          page.pushOperators(...operators);
-        } catch (err) {
-          console.error(err);
-        }
+        page.pushOperators(...operators);
       }
 
       this.removeField(field);
@@ -589,18 +585,15 @@ export default class PDFForm {
     const pages: Set<PDFPage> = new Set();
 
     for (let i = 0, len = widgets.length; i < len; i++) {
-      try {
-        const widget = widgets[i]!;
-        const widgetRef = this.doc.context.getObjectRef(widget.dict);
+      const widget = widgets[i]!;
+      const widgetRef = this.doc.context.getObjectRef(widget.dict);
+      const page = this.findWidgetPage(widget);
 
-        const page = this.findWidgetPage(widget);
-        pages.add(page);
+      if (!page) continue;
+      pages.add(page);
 
-        if (widgetRef !== undefined) {
-          page.node.removeAnnot(widgetRef);
-        }
-      } catch (err) {
-        console.error(err);
+      if (widgetRef !== undefined) {
+        page.node.removeAnnot(widgetRef);
       }
     }
 
@@ -710,22 +703,16 @@ export default class PDFForm {
     return this.defaultFontCache.access();
   }
 
-  private findWidgetPage(widget: PDFWidgetAnnotation): PDFPage {
+  private findWidgetPage(
+    widget: PDFWidgetAnnotation,
+  ): PDFPage | undefined {
     const pageRef = widget.P();
     let page = this.doc.getPages().find((x) => x.ref === pageRef);
     if (page === undefined) {
       const widgetRef = this.doc.context.getObjectRef(widget.dict);
-      if (widgetRef === undefined) {
-        throw new Error('Could not find PDFRef for PDFObject');
-      }
-
+      if (widgetRef === undefined) return undefined;
       page = this.doc.findPageForAnnotationRef(widgetRef);
-
-      if (page === undefined) {
-        throw new Error(`Could not find page for PDFRef ${widgetRef}`);
-      }
     }
-
     return page;
   }
 
