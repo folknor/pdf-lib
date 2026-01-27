@@ -43,7 +43,7 @@ describe('PDFAcroField', () => {
   });
 
   describe('setFontSize()', () => {
-    it('throws an error if the /DA entry is missing', () => {
+    it('creates a default DA when the /DA entry is missing', () => {
       const context = PDFContext.create();
 
       const dict = context.obj({
@@ -52,10 +52,11 @@ describe('PDFAcroField', () => {
       const dictRef = context.register(dict);
       const field = PDFAcroTerminal.fromDict(dict, dictRef);
 
-      expect(() => field.setFontSize(8)).toThrow();
+      field.setFontSize(8);
+      expect(field.getDefaultAppearance()).toBe('/Helv 8 Tf 0 g');
     });
 
-    it('throw an error if the /DA string does not contain a Tf operator', () => {
+    it('creates a default DA when the /DA string does not contain a Tf operator', () => {
       const context = PDFContext.create();
 
       const dict = context.obj({
@@ -64,7 +65,8 @@ describe('PDFAcroField', () => {
       const dictRef = context.register(dict);
       const field = PDFAcroTerminal.fromDict(dict, dictRef);
 
-      expect(() => field.setFontSize(8)).toThrow();
+      field.setFontSize(8);
+      expect(field.getDefaultAppearance()).toBe('/Helv 8 Tf 0 g');
     });
 
     it('replaces the font size of the last occurring Tf operator', () => {

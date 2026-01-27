@@ -1,5 +1,4 @@
 import { findLastMatch } from '../../utils/index.js';
-import { MissingDAEntryError, MissingTfOperatorError } from '../errors.js';
 import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFHexString from '../objects/PDFHexString.js';
@@ -105,13 +104,17 @@ class PDFAcroField {
   }
 
   setFontSize(fontSize: number) {
-    const name = this.getFullyQualifiedName() ?? '';
-
     const da = this.getDefaultAppearance();
-    if (!da) throw new MissingDAEntryError(name);
+    if (!da) {
+      this.setDefaultAppearance(`/Helv ${fontSize} Tf 0 g`);
+      return;
+    }
 
     const daMatch = findLastMatch(da, tfRegex);
-    if (!daMatch.match) throw new MissingTfOperatorError(name);
+    if (!daMatch.match) {
+      this.setDefaultAppearance(`/Helv ${fontSize} Tf 0 g`);
+      return;
+    }
 
     const daStart = da.slice(0, daMatch.pos - daMatch.match[0].length);
     const daEnd = daMatch.pos <= da.length ? da.slice(daMatch.pos) : '';
