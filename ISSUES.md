@@ -86,7 +86,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1077** - setText method removes border & combing (4 comments)
 - **#1104** - PDF form field not filled according to field font (5 comments)
 - **#1112** - Filling PDF causes styles of filled fields to be reset
-- **#1184** - Performance issue while filling out IRS form (looping through ~1000 fields) (2 comments)
 
 **Form field styling and appearance**
 
@@ -159,7 +158,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1295** - Text overlaps itself when drawText is used inside for loop
 - **#1272** - drawText does not support text style like text decoration (7 comments)
 - **#1169** - Scrambled Text when pdfs are viewed in acrobat
-- **#1228** - Let's improve the performance of `CustomFontEmbedder.widthOfTextAtSize` (6 comments) (proposal)
 
 ---
 
