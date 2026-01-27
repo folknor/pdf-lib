@@ -44,7 +44,10 @@ export const escapeRegExp = (str: string) =>
   str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const cleanText = (text: string) =>
-  text.replace(/\t|\u0085|\u2028|\u2029/g, '    ').replace(/[\b\v]/g, '');
+  text
+    .replace(/\r\n/g, '\n')
+    .replace(/\t|\u0085|\u2028|\u2029/g, '    ')
+    .replace(/[\b\v]/g, '');
 
 export const escapedNewlineChars = ['\\n', '\\f', '\\r', '\\u000B'];
 

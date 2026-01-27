@@ -4,6 +4,7 @@ import fs from 'fs';
 
 import { CustomFontEmbedder, StandardFontEmbedder } from '../../src/core';
 import { breakTextIntoLines } from '../../src/utils';
+import { cleanText, lineSplit } from '../../src/utils/strings';
 
 const font = StandardFontEmbedder.for(FontNames.Helvetica);
 
@@ -108,5 +109,30 @@ describe('breakTextIntoLines', () => {
       sourceHansFont.widthOfTextAtSize(text, 24),
     );
     expect(actual).toEqual(expected);
+  });
+});
+
+describe('cleanText', () => {
+  it('normalizes \\r\\n to \\n', () => {
+    expect(cleanText('Line 1\r\nLine 2')).toBe('Line 1\nLine 2');
+  });
+
+  it('normalizes multiple \\r\\n sequences', () => {
+    expect(cleanText('A\r\nB\r\nC')).toBe('A\nB\nC');
+  });
+
+  it('preserves standalone \\n', () => {
+    expect(cleanText('A\nB')).toBe('A\nB');
+  });
+
+  it('preserves standalone \\r', () => {
+    expect(cleanText('A\rB')).toBe('A\rB');
+  });
+});
+
+describe('lineSplit', () => {
+  it('splits \\r\\n-cleaned text into the correct number of lines', () => {
+    const text = cleanText('Line 1\r\nLine 2\r\nLine 3');
+    expect(lineSplit(text)).toEqual(['Line 1', 'Line 2', 'Line 3']);
   });
 });
