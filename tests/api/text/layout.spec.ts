@@ -130,6 +130,29 @@ describe('layoutMultilineText', () => {
     expect(multilineTextLayout.fontSize).toStrictEqual(MAX_FONT_SIZE);
   });
 
+  it('should handle long strings without excessive time', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const alignment = TextAlignment.Left;
+    const text = 'word '.repeat(2000).trim(); // 10,000 characters
+
+    const bounds = { x: 0, y: 0, width: 200, height: 10000 };
+
+    const start = Date.now();
+    const result = layoutMultilineText(text, {
+      alignment,
+      bounds,
+      font,
+      fontSize: 12,
+    });
+    const elapsed = Date.now() - start;
+
+    expect(result.lines.length).toBeGreaterThan(1);
+    // The old O(n²) algorithm took 30+ seconds for this input.
+    // The new O(n) algorithm should complete well under 5 seconds.
+    expect(elapsed).toBeLessThan(5000);
+  });
+
   it('should respect empty lines', async () => {
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);

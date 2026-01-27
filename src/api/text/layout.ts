@@ -123,29 +123,62 @@ export interface MultilineTextLayout {
   lineHeight: number;
 }
 
-const lastIndexOfWhitespace = (line: string) => {
-  for (let idx = line.length; idx > 0; idx--) {
-    if (/\s/.test(line[idx]!)) return idx;
-  }
-  return undefined;
-};
-
 const splitOutLines = (
   input: string,
   maxWidth: number,
   font: PDFFont,
   fontSize: number,
 ) => {
-  let lastWhitespaceIdx = input.length;
-  while (lastWhitespaceIdx > 0) {
-    const line = input.substring(0, lastWhitespaceIdx);
-    const encoded = font.encodeText(line);
-    const width = font.widthOfTextAtSize(line, fontSize);
-    if (width < maxWidth) {
-      const remainder = input.substring(lastWhitespaceIdx) || undefined;
-      return { line, encoded, width, remainder };
+  const fullWidth = font.widthOfTextAtSize(input, fontSize);
+
+  if (fullWidth < maxWidth) {
+    return {
+      line: input,
+      encoded: font.encodeText(input),
+      width: fullWidth,
+      remainder: undefined,
+    };
+  }
+
+  // Forward scan: accumulate character widths and track word boundaries.
+  // This is O(n) compared to the previous backward-scanning approach which
+  // was O(n²) due to repeated substring measurements.
+  let width = 0;
+  let lastBreakPoint = -1;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i]!;
+    const charWidth = font.widthOfTextAtSize(char, fontSize);
+
+    if (width + charWidth >= maxWidth) {
+      if (lastBreakPoint >= 0) {
+        const line = input.substring(0, lastBreakPoint);
+        // Skip past whitespace to find the start of the next word
+        let remainderStart = lastBreakPoint;
+        while (
+          remainderStart < input.length &&
+          /\s/.test(input[remainderStart]!)
+        ) {
+          remainderStart++;
+        }
+        const remainder = input.substring(remainderStart) || undefined;
+        return {
+          line,
+          encoded: font.encodeText(line),
+          width: font.widthOfTextAtSize(line, fontSize),
+          remainder,
+        };
+      }
+      // No word boundary found — can't split this word
+      break;
     }
-    lastWhitespaceIdx = lastIndexOfWhitespace(line) ?? 0;
+
+    // Track the start of each whitespace sequence as a potential break point
+    if (/\s/.test(char) && (i === 0 || !/\s/.test(input[i - 1]!))) {
+      lastBreakPoint = i;
+    }
+
+    width += charWidth;
   }
 
   // We were unable to split the input enough to get a chunk that would fit
@@ -153,7 +186,7 @@ const splitOutLines = (
   return {
     line: input,
     encoded: font.encodeText(input),
-    width: font.widthOfTextAtSize(input, fontSize),
+    width: fullWidth,
     remainder: undefined,
   };
 };
