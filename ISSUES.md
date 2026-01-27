@@ -52,7 +52,6 @@ These issues have 10+ comments indicating widespread problems:
 **Parsing specific features**
 
 - **#1751** - Badly parsed JavaScript in AcroForm field
-- **#1476** - The utf16Decode helper is not suitable for handling long strings safely
 - **#1692** - Failure Exception: Converting circular structure to JSON (7 comments)
 
 ---
