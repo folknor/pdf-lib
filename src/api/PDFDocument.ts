@@ -563,7 +563,7 @@ export default class PDFDocument {
    * @param producer The producer of this document.
    */
   setProducer(producer: string): void {
-    assertIs(producer, 'creator', ['string']);
+    assertIs(producer, 'producer', ['string']);
     const key = PDFName.of('Producer');
     this.getInfoDict().set(key, PDFHexString.fromText(producer));
   }
@@ -1622,7 +1622,7 @@ export default class PDFDocument {
 
     const info = this.getInfoDict();
 
-    this.setProducer(pdfLib);
+    if (!info.get(PDFName.of('Producer'))) this.setProducer(pdfLib);
     this.setModificationDate(now);
 
     if (!info.get(PDFName.of('Creator'))) this.setCreator(pdfLib);
