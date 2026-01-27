@@ -4,7 +4,7 @@ import fs from 'fs';
 
 import { CustomFontEmbedder, StandardFontEmbedder } from '../../src/core';
 import { breakTextIntoLines } from '../../src/utils';
-import { cleanText, lineSplit } from '../../src/utils/strings';
+import { cleanText, lineSplit, parseDate } from '../../src/utils/strings';
 
 const font = StandardFontEmbedder.for(FontNames.Helvetica);
 
@@ -134,5 +134,38 @@ describe('lineSplit', () => {
   it('splits \\r\\n-cleaned text into the correct number of lines', () => {
     const text = cleanText('Line 1\r\nLine 2\r\nLine 3');
     expect(lineSplit(text)).toEqual(['Line 1', 'Line 2', 'Line 3']);
+  });
+});
+
+describe('parseDate', () => {
+  it('parses a full PDF date string', () => {
+    const date = parseDate("D:20210514143134-05'00'");
+    expect(date).toBeInstanceOf(Date);
+    expect(date!.getUTCFullYear()).toBe(2021);
+    expect(date!.getUTCMonth()).toBe(4); // May = 4 (0-indexed)
+    expect(date!.getUTCDate()).toBe(14);
+  });
+
+  it('parses a date with single-digit timezone offset hour', () => {
+    const date = parseDate("D:20210514143134-5'00'");
+    expect(date).toBeInstanceOf(Date);
+    expect(date!.getUTCFullYear()).toBe(2021);
+  });
+
+  it('parses a date with Z timezone', () => {
+    const date = parseDate('D:20210514143134Z');
+    expect(date).toBeInstanceOf(Date);
+    expect(date!.getUTCHours()).toBe(14);
+  });
+
+  it('parses a minimal date (year only)', () => {
+    const date = parseDate('D:2021');
+    expect(date).toBeInstanceOf(Date);
+    expect(date!.getUTCFullYear()).toBe(2021);
+  });
+
+  it('returns undefined for invalid date strings', () => {
+    expect(parseDate('not a date')).toBeUndefined();
+    expect(parseDate('2021')).toBeUndefined();
   });
 });

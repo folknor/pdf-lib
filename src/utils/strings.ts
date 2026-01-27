@@ -152,7 +152,7 @@ export const breakTextIntoLines = (
 
 // See section "7.9.4 Dates" of the PDF specification
 const dateRegex =
-  /^D:(\d\d\d\d)(\d\d)?(\d\d)?(\d\d)?(\d\d)?(\d\d)?([+\-Z])?(\d\d)?'?(\d\d)?'?$/;
+  /^D:(\d\d\d\d)(\d\d)?(\d\d)?(\d\d)?(\d\d)?(\d\d)?([+\-Z])?(\d{1,2})?'?(\d\d)?'?$/;
 
 export const parseDate = (dateStr: string): Date | undefined => {
   const match = dateStr.match(dateRegex);
@@ -174,7 +174,9 @@ export const parseDate = (dateStr: string): Date | undefined => {
 
   // http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15
   const tzOffset =
-    offsetSign === 'Z' ? 'Z' : `${offsetSign}${offsetHours}:${offsetMins}`;
+    offsetSign === 'Z'
+      ? 'Z'
+      : `${offsetSign}${offsetHours.padStart(2, '0')}:${offsetMins}`;
   const date = new Date(
     `${year}-${month}-${day}T${hours}:${mins}:${secs}${tzOffset}`,
   );
