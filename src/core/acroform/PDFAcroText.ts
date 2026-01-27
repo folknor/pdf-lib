@@ -41,7 +41,8 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   getMaxLength(): number | undefined {
-    return this.MaxLen()?.asNumber();
+    const maxLen = this.MaxLen()?.asNumber();
+    return maxLen === 0 ? undefined : maxLen;
   }
 
   setQuadding(quadding: 0 | 1 | 2) {
