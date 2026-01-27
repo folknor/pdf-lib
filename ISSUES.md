@@ -155,7 +155,6 @@ These issues have 10+ comments indicating widespread problems:
 **Text rendering**
 
 - **#1750** - MacOS preview doesn't show the correct font size
-- **#1570** - Getting unexpected Error: WinAnsi cannot encode " " (0x000a) (2 comments)
 - **#1450** - Arabic text with numbers, numbers gets reversed (4 comments)
 - **#1365** - Dash in between alphanumeric adds additional space
 - **#1295** - Text overlaps itself when drawText is used inside for loop
