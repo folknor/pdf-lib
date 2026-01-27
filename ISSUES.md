@@ -243,7 +243,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1761** - Fix Set Producer metadata on saved document when provided
 - **#1744** - Not possible to use setAuthor with german umlauts
-- **#1545** - getCreationDate has issues parsing some dates (2 comments)
 - **#1426** - Cannot make "setKeywords" work
 - **#1374** - Loading bigger metadata informations of PDF create maximum call stack exceeded on iOS devices
 - **#1310** - getAuthor() only returns first author
