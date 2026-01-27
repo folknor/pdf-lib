@@ -161,8 +161,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1295** - Text overlaps itself when drawText is used inside for loop
 - **#1272** - drawText does not support text style like text decoration (7 comments)
 - **#1169** - Scrambled Text when pdfs are viewed in acrobat
-- **#1202** - layoutMultilineText takes a very long time for long strings
-- **#1203** - Improve performance of layoutMultilineText (2 comments)
 - **#1228** - Let's improve the performance of `CustomFontEmbedder.widthOfTextAtSize` (6 comments) (proposal)
 
 ---
