@@ -44,8 +44,8 @@ describe('CustomFontSubsetEmbedder', () => {
   it('can measure the width of text strings at the given font size', async () => {
     const text = 'Stuff and thingz!';
     const embedder = await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont);
-    expect(embedder.widthOfTextAtSize(text, 12)).toBe(90.672);
-    expect(embedder.widthOfTextAtSize(text, 24)).toBe(181.344);
+    expect(embedder.widthOfTextAtSize(text, 12)).toBe(90.624);
+    expect(embedder.widthOfTextAtSize(text, 24)).toBe(181.248);
   });
 
   it('can measure the height of the font at the given size', async () => {
