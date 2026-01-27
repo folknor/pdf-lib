@@ -88,6 +88,16 @@ describe('PDFTextField', () => {
     expect(() => textField.setText('abcdef')).toThrow();
   });
 
+  it('treats MaxLen=0 as no length limit', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const form = pdfDoc.getForm();
+    const textField = form.createTextField('foo.baz');
+
+    textField.setMaxLength(0);
+    expect(textField.getMaxLength()).toBeUndefined();
+    expect(() => textField.setText('any length text')).not.toThrow();
+  });
+
   it('throws an error when setting a max length less than the text length', async () => {
     const pdfDoc = await PDFDocument.create();
     const form = pdfDoc.getForm();

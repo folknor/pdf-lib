@@ -295,6 +295,15 @@ describe('PDFDocument', () => {
       );
     });
 
+    it('preserves custom producer metadata across save and load', async () => {
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.setProducer('CustomProducer/v1');
+      const savedBytes = await pdfDoc.save();
+
+      const loaded = await PDFDocument.load(savedBytes);
+      expect(loaded.getProducer()).toBe('CustomProducer/v1');
+    });
+
     it('they can retrieve the creation date and modification date from an existing document', async () => {
       const pdfDoc = await PDFDocument.load(normalPdfBytes, {
         updateMetadata: false,
@@ -307,6 +316,21 @@ describe('PDFDocument', () => {
         new Date('2018-01-04T01:05:06.000Z'),
       );
     });
+  });
+
+  it('preserves the original PDF version on save', async () => {
+    const pdfDoc = await PDFDocument.load(normalPdfBytes, {
+      updateMetadata: false,
+    });
+    const savedBytes = await pdfDoc.save();
+    const header = new TextDecoder().decode(savedBytes.slice(0, 8));
+    // normalPdfBytes is a PDF 1.6 file
+    expect(header).toContain('%PDF-1.');
+    // Verify the version matches the original, not hardcoded 1.7
+    const originalHeader = new TextDecoder().decode(
+      (normalPdfBytes as Uint8Array).slice(0, 8),
+    );
+    expect(header).toBe(originalHeader);
   });
 
   describe('ViewerPreferences', () => {

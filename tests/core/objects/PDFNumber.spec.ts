@@ -27,6 +27,11 @@ describe('PDFNumber', () => {
     expect(String(PDFNumber.of(-3.403e-38))).toContain(
       '-0.00000000000000000000000000000000000003403',
     );
+    // Extremely small numbers should clamp to zero to avoid
+    // producing absurdly long strings that corrupt PDF output
+    expect(String(PDFNumber.of(Number.MIN_VALUE))).toEqual('0');
+    expect(String(PDFNumber.of(-Number.MIN_VALUE))).toEqual('-0');
+    expect(String(PDFNumber.of(5e-200))).toEqual('0');
   });
 
   it('can provide its size in bytes', () => {
