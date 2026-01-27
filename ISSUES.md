@@ -159,7 +159,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1450** - Arabic text with numbers, numbers gets reversed (4 comments)
 - **#1365** - Dash in between alphanumeric adds additional space
 - **#1335** - Incorrect line splitting
-- **#1330** - No empty line when using `PDFPage.drawText` with the option `maxWidth`
 - **#1295** - Text overlaps itself when drawText is used inside for loop
 - **#1272** - drawText does not support text style like text decoration (7 comments)
 - **#1169** - Scrambled Text when pdfs are viewed in acrobat
@@ -210,7 +209,6 @@ These issues have 10+ comments indicating widespread problems:
 
 **Page manipulation**
 
-- **#1588** - removePage function does not fully remove the page (2 comments)
 - **#1563** - Outside SetCropBox content is maintained when cloning (not sure if it's a bug)
 - **#1420** - Can't call translateContent multiple times per page
 - **#1348** - Page translateContent does not work for form fields
