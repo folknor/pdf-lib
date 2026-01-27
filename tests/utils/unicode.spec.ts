@@ -347,6 +347,20 @@ describe('utf16Decode', () => {
     expect(actual).toEqual(expected);
   });
 
+  it('handles long strings without stack overflow', () => {
+    // Build a UTF-16 BE byte array with 50,000 ASCII 'A' characters
+    // This exceeds the ~32k argument limit of String.fromCodePoint(...args)
+    const charCount = 50000;
+    const input = new Uint8Array(charCount * 2);
+    for (let i = 0; i < charCount; i++) {
+      input[i * 2] = 0;     // high byte
+      input[i * 2 + 1] = 65; // 'A'
+    }
+    const expected = 'A'.repeat(charCount);
+    const actual = utf16Decode(input, false);
+    expect(actual).toEqual(expected);
+  });
+
   it('injects a replacement character when high surrogates are not followed by low surrogates', () => {
     // prettier-ignore
     const input = new Uint8Array([

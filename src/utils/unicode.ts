@@ -323,7 +323,17 @@ export const utf16Decode = (
   // There shouldn't be extra byte(s) left over
   if (idx < input.length) codePoints.push(REPLACEMENT);
 
-  return String.fromCodePoint(...codePoints);
+  // String.fromCodePoint throws RangeError when called with more arguments
+  // than the engine's call stack allows (~32k). Chunk to stay safe.
+  const chunkSize = 8192;
+  if (codePoints.length <= chunkSize) {
+    return String.fromCodePoint(...codePoints);
+  }
+  let result = '';
+  for (let i = 0; i < codePoints.length; i += chunkSize) {
+    result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));
+  }
+  return result;
 };
 
 /**
