@@ -36,7 +36,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1372** - Library not recognising all pages in a file with mixed page dimensions (4 comments)
 - **#1355** - Expected instance of PDFDict or PDFStream, but got instance of undefined (5 comments)
 - **#1361** - Expected instance of PDFName2, but got instance of undefined
-- **#1324** - Error in PDFName.of()
 - **#1274** - Trying to parse invalid object (3 comments)
 - **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) - HIGH ENGAGEMENT
 - **#1192** - Expected instance of PDFArray, but got instance of PDFDict
@@ -97,11 +96,9 @@ These issues have 10+ comments indicating widespread problems:
 **Checkboxes and radio buttons**
 
 - **#1685** - Improve acro checkbox set value (3 comments)
-- **#1622** - enableReadOnly() method does not work for checkboxes (PDFCheckBox) (6 comments)
 - **#1574** - On pdf.flatten() check mark getting removed from flattened pdf
 - **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) - HIGH ENGAGEMENT
 - **#1546** - Unexpected Checkbox Borders on Print After Editing PDF with pdf-lib
-- **#1391** - Cannot read checkbox value correctly (4 comments)
 
 **Form flattening**
 
@@ -154,8 +151,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1750** - MacOS preview doesn't show the correct font size
 - **#1450** - Arabic text with numbers, numbers gets reversed (4 comments)
-- **#1365** - Dash in between alphanumeric adds additional space
-- **#1295** - Text overlaps itself when drawText is used inside for loop
 - **#1272** - drawText does not support text style like text decoration (7 comments)
 - **#1169** - Scrambled Text when pdfs are viewed in acrobat
 
@@ -203,7 +198,6 @@ These issues have 10+ comments indicating widespread problems:
 **Page manipulation**
 
 - **#1563** - Outside SetCropBox content is maintained when cloning (not sure if it's a bug)
-- **#1420** - Can't call translateContent multiple times per page
 - **#1348** - Page translateContent does not work for form fields
 - **#1317** - The page content disappears
 - **#1399** - Text boxes disappear when embedding PDFs
@@ -237,8 +231,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1761** - Fix Set Producer metadata on saved document when provided
 - **#1744** - Not possible to use setAuthor with german umlauts
-- **#1426** - Cannot make "setKeywords" work
-- **#1310** - getAuthor() only returns first author
 
 ---
 
@@ -355,10 +347,8 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1589** - Library produces different results in browser vs nodejs
 - **#1504** - PDFDocument method saveAsBase64({dataUri: true}) returning same contents even after modifying (2 comments)
-- **#1454** - setting viewerPrefs does not change viewer
 - **#1422** - Set default file name for a PDF document created with pdf lib by Javascript (2 comments)
 - **#1410** - PDFDocument.save() generates pdf missing trailer dictionary (3 comments)
-- **#1263** - Saving PDF with number that is too large for some PDF readers results in broken PDF
 - **#1068** - pdf-lib automatically add a layer without any operation (2 comments)
 
 **Incremental updates**
@@ -372,7 +362,6 @@ These issues have 10+ comments indicating widespread problems:
 
 **Performance**
 
-- **#1461** - Invalid typed array length: 5310707417 (2 comments)
 - **#1437** - Reduce memory footprint
 - **#1228** - Improve the performance of `CustomFontEmbedder.widthOfTextAtSize` (6 comments)
 - **#1203** - Improve performance of layoutMultilineText (2 comments)
@@ -391,10 +380,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1556** - Run existing PDF Javascript from PDF-Lib (proposal)
 - **#1258** - Interactive form calculation not working in nodejs (6 comments)
 
-**Viewer preferences**
-
-- **#1454** - setting viewerPrefs does not change viewer
-
 ---
 
 ## Documentation / Examples
@@ -407,6 +392,33 @@ These issues have 10+ comments indicating widespread problems:
 - **#1200** - Update CONTRIBUTING.md
 - **#1178** - Update README.md
 - **#1703** - Stale method comment
+
+---
+
+## Triaged / Investigated — Not Fixable or Not Bugs
+
+Issues we investigated and determined are not library bugs, are fundamental
+limitations, or are design issues that require architectural changes.
+
+**Not bugs (user error / environment):**
+
+- **#1324** - Error in PDFName.of() — user's TypeScript/AdonisJS module resolution config issue, not a library bug
+- **#1426** - Cannot make "setKeywords" work — environment-specific (Node-Red); `setKeywords` code is correct, `assertIs` validation works as expected
+- **#1310** - getAuthor() only returns first author — not a bug; PDF spec stores Author as a single string, library returns it correctly; users should split on `;` or `,` themselves
+- **#1454** - setting viewerPrefs does not change viewer — code is correct; user likely not calling `save()` after setting preferences, or PDF reader ignores preferences
+- **#1461** - Invalid typed array length: 5310707417 — user code issue; copying all pages in a loop (`copyPages` with all indices, then adding one) creates exponential object duplication and size growth
+
+**Fundamental limitations (no simple fix):**
+
+- **#1263** - Saving PDF with number that is too large — fundamental JavaScript limitation; numbers beyond `Number.MAX_SAFE_INTEGER` lose precision in float64, and the reconstructed decimal string has incorrect trailing digits. Would require storing original string representations from the parser, which is a major refactor
+- **#1365** - Dash in between alphanumeric adds additional space — likely a font metrics/kerning issue; unclear root cause, needs font-specific debugging with a repro PDF
+
+**Design issues (require architectural changes):**
+
+- **#1295** - Text overlaps itself when drawText is used inside for loop — copied pages may share content stream references; `translateContent` wraps all streams cumulatively. Would require deep-cloning content streams during page copy
+- **#1420** - Can't call translateContent multiple times per page — by design, `translateContent` wraps ALL content streams (not just new ones), so each call shifts all previous content. Would need a scoped translation API
+- **#1622** - enableReadOnly() does not work for checkboxes — the ReadOnly flag is set correctly in memory (`isReadOnly()` returns true), but may not be properly respected by PDF viewers during save/render for checkbox widgets specifically
+- **#1391** - Cannot read checkbox value correctly — checkbox `/V` (value) and `/AS` (appearance state) can be out of sync when toggled in external PDF viewers; `isChecked()` compares field value to appearance-derived on-value, which fails when they diverge
 
 ---
 
