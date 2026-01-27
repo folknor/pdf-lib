@@ -4,7 +4,7 @@ import {
   PDFRef,
   StandardFontEmbedder,
 } from '../core/index.js';
-import { assertIs, assertOrUndefined } from '../utils/index.js';
+import { assertIs, assertOrUndefined, mergeLines, cleanText } from '../utils/index.js';
 import type Embeddable from './Embeddable.js';
 import PDFDocument from './PDFDocument.js';
 
@@ -86,7 +86,7 @@ export default class PDFFont implements Embeddable {
   widthOfTextAtSize(text: string, size: number): number {
     assertIs(text, 'text', ['string']);
     assertIs(size, 'size', ['number']);
-    return this.embedder.widthOfTextAtSize(text, size);
+    return this.embedder.widthOfTextAtSize(mergeLines(cleanText(text)), size);
   }
 
   /**
