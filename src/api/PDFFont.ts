@@ -4,7 +4,12 @@ import {
   PDFRef,
   StandardFontEmbedder,
 } from '../core/index.js';
-import { assertIs, assertOrUndefined, mergeLines, cleanText } from '../utils/index.js';
+import {
+  assertIs,
+  assertOrUndefined,
+  cleanText,
+  mergeLines,
+} from '../utils/index.js';
 import type Embeddable from './Embeddable.js';
 import PDFDocument from './PDFDocument.js';
 

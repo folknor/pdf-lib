@@ -12,6 +12,7 @@ import {
   PDFOptionList,
   PDFRadioGroup,
   type PDFRef,
+  PDFSignature,
   PDFTextField,
   type PDFWidgetAnnotation,
 } from '../../../src/index';
@@ -381,4 +382,1029 @@ describe('PDFForm', () => {
 
   // TODO: Add method to remove APs and use `NeedsAppearances`? How would this
   //       work with RadioGroups? Just set the APs to `null`but keep the keys?
+
+  describe('field creation and retrieval', () => {
+    it('getFields() returns the correct count after creating fields of each type', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      expect(form.getFields().length).toBe(0);
+
+      form.createTextField('myText');
+      expect(form.getFields().length).toBe(1);
+
+      form.createCheckBox('myCheckBox');
+      expect(form.getFields().length).toBe(2);
+
+      form.createDropdown('myDropdown');
+      expect(form.getFields().length).toBe(3);
+
+      form.createOptionList('myOptionList');
+      expect(form.getFields().length).toBe(4);
+
+      form.createRadioGroup('myRadioGroup');
+      expect(form.getFields().length).toBe(5);
+
+      form.createButton('myButton');
+      expect(form.getFields().length).toBe(6);
+    });
+
+    it('getField() returns the field with the matching name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('alpha');
+      form.createCheckBox('beta');
+      form.createDropdown('gamma');
+
+      const alpha = form.getField('alpha');
+      expect(alpha.getName()).toBe('alpha');
+      expect(alpha).toBeInstanceOf(PDFTextField);
+
+      const beta = form.getField('beta');
+      expect(beta.getName()).toBe('beta');
+      expect(beta).toBeInstanceOf(PDFCheckBox);
+
+      const gamma = form.getField('gamma');
+      expect(gamma.getName()).toBe('gamma');
+      expect(gamma).toBeInstanceOf(PDFDropdown);
+    });
+
+    it('getFieldMaybe() returns undefined for non-existent fields', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('existingField');
+
+      expect(form.getFieldMaybe('existingField')).toBeInstanceOf(PDFTextField);
+      expect(form.getFieldMaybe('nonExistent')).toBeUndefined();
+      expect(form.getFieldMaybe('')).toBeUndefined();
+      expect(form.getFieldMaybe('existingfield')).toBeUndefined();
+    });
+
+    it('getField() throws NoSuchFieldError for non-existent fields', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('realField');
+
+      expect(() => form.getField('fakeField')).toThrow(
+        'PDFDocument has no form field with the name "fakeField"',
+      );
+    });
+
+    it('getFields() returns all fields with correct names', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('field1');
+      form.createCheckBox('field2');
+      form.createDropdown('field3');
+
+      const fieldNames = form.getFields().map((f) => f.getName());
+      expect(fieldNames).toEqual(['field1', 'field2', 'field3']);
+    });
+
+    it('supports dot-separated hierarchical field names', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('page1.section1.name');
+      form.createCheckBox('page1.section1.agree');
+      form.createDropdown('page2.options.color');
+
+      expect(form.getField('page1.section1.name')).toBeInstanceOf(
+        PDFTextField,
+      );
+      expect(form.getField('page1.section1.agree')).toBeInstanceOf(
+        PDFCheckBox,
+      );
+      expect(form.getField('page2.options.color')).toBeInstanceOf(PDFDropdown);
+
+      const fieldNames = form.getFields().map((f) => f.getName());
+      expect(fieldNames).toContain('page1.section1.name');
+      expect(fieldNames).toContain('page1.section1.agree');
+      expect(fieldNames).toContain('page2.options.color');
+    });
+  });
+
+  describe('type-specific getters', () => {
+    it('getTextField() returns a PDFTextField for a text field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('myTextField');
+
+      const field = form.getTextField('myTextField');
+      expect(field).toBeInstanceOf(PDFTextField);
+      expect(field.getName()).toBe('myTextField');
+    });
+
+    it('getCheckBox() returns a PDFCheckBox for a check box', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createCheckBox('myCheckBox');
+
+      const field = form.getCheckBox('myCheckBox');
+      expect(field).toBeInstanceOf(PDFCheckBox);
+      expect(field.getName()).toBe('myCheckBox');
+    });
+
+    it('getDropdown() returns a PDFDropdown for a dropdown', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createDropdown('myDropdown');
+
+      const field = form.getDropdown('myDropdown');
+      expect(field).toBeInstanceOf(PDFDropdown);
+      expect(field.getName()).toBe('myDropdown');
+    });
+
+    it('getOptionList() returns a PDFOptionList for an option list', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createOptionList('myOptionList');
+
+      const field = form.getOptionList('myOptionList');
+      expect(field).toBeInstanceOf(PDFOptionList);
+      expect(field.getName()).toBe('myOptionList');
+    });
+
+    it('getRadioGroup() returns a PDFRadioGroup for a radio group', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createRadioGroup('myRadioGroup');
+
+      const field = form.getRadioGroup('myRadioGroup');
+      expect(field).toBeInstanceOf(PDFRadioGroup);
+      expect(field.getName()).toBe('myRadioGroup');
+    });
+
+    it('getButton() returns a PDFButton for a button', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createButton('myButton');
+
+      const field = form.getButton('myButton');
+      expect(field).toBeInstanceOf(PDFButton);
+      expect(field.getName()).toBe('myButton');
+    });
+
+    it('getSignature() returns a PDFSignature for a signature field', async () => {
+      const pdfDoc = await PDFDocument.load(signaturePdfBytes);
+      const form = pdfDoc.getForm();
+      const fields = form.getFields();
+      const sigField = fields.find((f) => f instanceof PDFSignature);
+
+      expect(sigField).toBeInstanceOf(PDFSignature);
+      if (sigField) {
+        const sig = form.getSignature(sigField.getName());
+        expect(sig).toBeInstanceOf(PDFSignature);
+      }
+    });
+
+    it('getTextField() throws UnexpectedFieldTypeError when field is not a text field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createCheckBox('notATextField');
+
+      expect(() => form.getTextField('notATextField')).toThrow(
+        /Expected field "notATextField" to be of type PDFTextField/,
+      );
+    });
+
+    it('getCheckBox() throws UnexpectedFieldTypeError when field is not a check box', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notACheckBox');
+
+      expect(() => form.getCheckBox('notACheckBox')).toThrow(
+        /Expected field "notACheckBox" to be of type PDFCheckBox/,
+      );
+    });
+
+    it('getDropdown() throws UnexpectedFieldTypeError when field is not a dropdown', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notADropdown');
+
+      expect(() => form.getDropdown('notADropdown')).toThrow(
+        /Expected field "notADropdown" to be of type PDFDropdown/,
+      );
+    });
+
+    it('getOptionList() throws UnexpectedFieldTypeError when field is not an option list', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notAnOptionList');
+
+      expect(() => form.getOptionList('notAnOptionList')).toThrow(
+        /Expected field "notAnOptionList" to be of type PDFOptionList/,
+      );
+    });
+
+    it('getRadioGroup() throws UnexpectedFieldTypeError when field is not a radio group', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notARadioGroup');
+
+      expect(() => form.getRadioGroup('notARadioGroup')).toThrow(
+        /Expected field "notARadioGroup" to be of type PDFRadioGroup/,
+      );
+    });
+
+    it('getButton() throws UnexpectedFieldTypeError when field is not a button', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notAButton');
+
+      expect(() => form.getButton('notAButton')).toThrow(
+        /Expected field "notAButton" to be of type PDFButton/,
+      );
+    });
+
+    it('getSignature() throws UnexpectedFieldTypeError when field is not a signature', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('notASignature');
+
+      expect(() => form.getSignature('notASignature')).toThrow(
+        /Expected field "notASignature" to be of type PDFSignature/,
+      );
+    });
+  });
+
+  describe('field name uniqueness', () => {
+    it('throws FieldAlreadyExistsError when creating a field with a duplicate name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('uniqueName');
+
+      expect(() => form.createTextField('uniqueName')).toThrow(
+        'A field already exists with the specified name: "uniqueName"',
+      );
+    });
+
+    it('throws FieldAlreadyExistsError even when the duplicate has a different type', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('sharedName');
+
+      expect(() => form.createCheckBox('sharedName')).toThrow(
+        'A field already exists with the specified name: "sharedName"',
+      );
+    });
+
+    it('throws FieldAlreadyExistsError for hierarchical name conflicts at the terminal level', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('parent.child');
+
+      expect(() => form.createCheckBox('parent.child')).toThrow(
+        'A field already exists with the specified name: "child"',
+      );
+    });
+
+    it('allows creating fields that share non-terminal name segments', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('parent.child1');
+      form.createCheckBox('parent.child2');
+
+      expect(form.getFields().length).toBe(2);
+      expect(form.getTextField('parent.child1').getName()).toBe(
+        'parent.child1',
+      );
+      expect(form.getCheckBox('parent.child2').getName()).toBe('parent.child2');
+    });
+
+    it('throws for empty field names', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      expect(() => form.createTextField('')).toThrow(
+        'PDF field names must not be empty strings',
+      );
+    });
+
+    it('throws for field names with consecutive dots', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      expect(() => form.createTextField('a..b')).toThrow(
+        'Periods in PDF field names must be separated by at least one character',
+      );
+    });
+  });
+
+  describe('removeField', () => {
+    it('decreases getFields().length by 1 when a field is removed', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('fieldA');
+      form.createCheckBox('fieldB');
+      form.createDropdown('fieldC');
+
+      expect(form.getFields().length).toBe(3);
+
+      const fieldB = form.getField('fieldB');
+      form.removeField(fieldB);
+
+      expect(form.getFields().length).toBe(2);
+    });
+
+    it('causes getField() to throw for the removed field name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('toRemove');
+      form.createCheckBox('toKeep');
+
+      const toRemove = form.getField('toRemove');
+      form.removeField(toRemove);
+
+      expect(() => form.getField('toRemove')).toThrow(
+        'PDFDocument has no form field with the name "toRemove"',
+      );
+    });
+
+    it('causes getFieldMaybe() to return undefined for the removed field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('ephemeral');
+
+      const field = form.getField('ephemeral');
+      form.removeField(field);
+
+      expect(form.getFieldMaybe('ephemeral')).toBeUndefined();
+    });
+
+    it('leaves other fields unaffected after removing a field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('text1');
+      form.createCheckBox('check1');
+      form.createDropdown('drop1');
+
+      const check1 = form.getField('check1');
+      form.removeField(check1);
+
+      // Remaining fields are intact
+      expect(form.getTextField('text1').getName()).toBe('text1');
+      expect(form.getDropdown('drop1').getName()).toBe('drop1');
+
+      // Remaining field count is correct
+      const remainingNames = form.getFields().map((f) => f.getName());
+      expect(remainingNames).toEqual(['text1', 'drop1']);
+    });
+
+    it('removes multiple fields one at a time and tracks the count accurately', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('f1');
+      form.createCheckBox('f2');
+      form.createDropdown('f3');
+      form.createOptionList('f4');
+
+      expect(form.getFields().length).toBe(4);
+
+      form.removeField(form.getField('f2'));
+      expect(form.getFields().length).toBe(3);
+      expect(form.getFields().map((f) => f.getName())).toEqual([
+        'f1',
+        'f3',
+        'f4',
+      ]);
+
+      form.removeField(form.getField('f4'));
+      expect(form.getFields().length).toBe(2);
+      expect(form.getFields().map((f) => f.getName())).toEqual(['f1', 'f3']);
+
+      form.removeField(form.getField('f1'));
+      expect(form.getFields().length).toBe(1);
+      expect(form.getFields().map((f) => f.getName())).toEqual(['f3']);
+
+      form.removeField(form.getField('f3'));
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('removes widget annotations from the page when removing a field with addToPage', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const cb = form.createCheckBox('removeMe');
+      cb.addToPage(page);
+
+      // The page should have at least one annotation
+      const annotsBefore = page.node.Annots();
+      expect(annotsBefore).toBeDefined();
+      expect(annotsBefore!.size()).toBeGreaterThan(0);
+
+      form.removeField(cb);
+
+      // After removing, the field should not appear
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('cleans up context references (field ref and widget refs) when removing a pdf-lib-created field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('contextCleanup');
+      tf.addToPage(page);
+
+      const fieldRef = tf.ref;
+      const widgetRefs = tf.acroField.normalizedEntries().Kids.asArray();
+      expect(widgetRefs.length).toBeGreaterThan(0);
+
+      const refsBefore = getRefs(pdfDoc);
+      expect(refsBefore.includes(fieldRef)).toBe(true);
+      widgetRefs.forEach((ref) => expect(refsBefore).toContain(ref));
+
+      form.removeField(tf);
+
+      const refsAfter = getRefs(pdfDoc);
+      expect(refsAfter.includes(fieldRef)).toBe(false);
+      widgetRefs.forEach((ref) => expect(refsAfter).not.toContain(ref));
+    });
+  });
+
+  describe('flatten', () => {
+    it('results in getFields() returning an empty array', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('flatText');
+      tf.setText('Hello World');
+      tf.addToPage(page);
+
+      const cb = form.createCheckBox('flatCheck');
+      cb.addToPage(page);
+      cb.check();
+
+      expect(form.getFields().length).toBe(2);
+
+      form.flatten();
+
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('preserves the document and allows it to be saved after flattening', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('saveAfterFlatten');
+      tf.setText('persisted text');
+      tf.addToPage(page);
+
+      form.flatten();
+
+      // Saving should succeed and produce a valid PDF
+      const savedBytes = await pdfDoc.save();
+      expect(savedBytes).toBeInstanceOf(Uint8Array);
+      expect(savedBytes.length).toBeGreaterThan(0);
+
+      // The saved PDF can be reloaded
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(1);
+    });
+
+    it('flattened document has no form fields upon reload', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('willBeFlatText');
+      tf.setText('some value');
+      tf.addToPage(page);
+
+      const cb = form.createCheckBox('willBeFlatCheck');
+      cb.addToPage(page);
+      cb.check();
+
+      form.flatten();
+
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      const reloadedForm = reloaded.getForm();
+
+      expect(reloadedForm.getFields().length).toBe(0);
+    });
+
+    it('flattens all field types added to a page', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const btn = form.createButton('btn');
+      btn.addToPage('Click', page);
+
+      const cb = form.createCheckBox('cb');
+      cb.addToPage(page);
+
+      const dd = form.createDropdown('dd');
+      dd.addToPage(page);
+
+      const ol = form.createOptionList('ol');
+      ol.addToPage(page);
+
+      const tf = form.createTextField('tf');
+      tf.addToPage(page);
+
+      expect(form.getFields().length).toBe(5);
+
+      form.flatten();
+
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('removes fields from getFields() even if they have values set', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('valuedText');
+      tf.setText('I have a value');
+      tf.addToPage(page);
+
+      const dd = form.createDropdown('valuedDropdown');
+      dd.setOptions(['A', 'B', 'C']);
+      dd.select('B');
+      dd.addToPage(page);
+
+      const cb = form.createCheckBox('valuedCheck');
+      cb.addToPage(page);
+      cb.check();
+
+      expect(form.getFields().length).toBe(3);
+
+      // Verify values are set before flatten
+      expect(form.getTextField('valuedText').getText()).toBe('I have a value');
+      expect(form.getDropdown('valuedDropdown').getSelected()).toEqual(['B']);
+      expect(form.getCheckBox('valuedCheck').isChecked()).toBe(true);
+
+      form.flatten();
+
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('allows saving with {updateFieldAppearances: false} after flatten since no fields remain', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('flatAndSave');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      form.flatten();
+
+      const savedBytes = await pdfDoc.save({ updateFieldAppearances: false });
+      expect(savedBytes).toBeInstanceOf(Uint8Array);
+      expect(savedBytes.length).toBeGreaterThan(0);
+    });
+
+    it('flattens loaded PDF form fields and verifies empty fields upon reload', async () => {
+      const pdfDoc = await PDFDocument.load(fancyFieldsPdfBytes);
+      const form = pdfDoc.getForm();
+
+      expect(form.getFields().length).toBe(15);
+
+      form.flatten();
+
+      expect(form.getFields().length).toBe(0);
+
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      const reloadedForm = reloaded.getForm();
+
+      expect(reloadedForm.getFields().length).toBe(0);
+    });
+  });
+
+  describe('multiple field types coexistence', () => {
+    it('creates one of each type and verifies correct types via getFields()', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('tf');
+      form.createCheckBox('cb');
+      form.createDropdown('dd');
+      form.createOptionList('ol');
+      form.createRadioGroup('rg');
+      form.createButton('btn');
+
+      const fields = form.getFields();
+      expect(fields.length).toBe(6);
+
+      const typeMap = new Map(
+        fields.map((f) => [f.getName(), f.constructor.name]),
+      );
+
+      expect(typeMap.get('tf')).toBe('PDFTextField');
+      expect(typeMap.get('cb')).toBe('PDFCheckBox');
+      expect(typeMap.get('dd')).toBe('PDFDropdown');
+      expect(typeMap.get('ol')).toBe('PDFOptionList');
+      expect(typeMap.get('rg')).toBe('PDFRadioGroup');
+      expect(typeMap.get('btn')).toBe('PDFButton');
+    });
+
+    it('each type-specific getter returns the correct instance for each field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('tf');
+      form.createCheckBox('cb');
+      form.createDropdown('dd');
+      form.createOptionList('ol');
+      form.createRadioGroup('rg');
+      form.createButton('btn');
+
+      expect(form.getTextField('tf')).toBeInstanceOf(PDFTextField);
+      expect(form.getCheckBox('cb')).toBeInstanceOf(PDFCheckBox);
+      expect(form.getDropdown('dd')).toBeInstanceOf(PDFDropdown);
+      expect(form.getOptionList('ol')).toBeInstanceOf(PDFOptionList);
+      expect(form.getRadioGroup('rg')).toBeInstanceOf(PDFRadioGroup);
+      expect(form.getButton('btn')).toBeInstanceOf(PDFButton);
+    });
+  });
+
+  describe('XFA handling', () => {
+    it('hasXFA() returns true for documents with XFA data', async () => {
+      const pdfDoc = await PDFDocument.load(xfaPdfBytes);
+      const acroForm = pdfDoc.catalog.getOrCreateAcroForm();
+      const form = PDFForm.of(acroForm, pdfDoc);
+
+      expect(form.hasXFA()).toBe(true);
+    });
+
+    it('deleteXFA() removes XFA data from the form', async () => {
+      const pdfDoc = await PDFDocument.load(xfaPdfBytes);
+      const acroForm = pdfDoc.catalog.getOrCreateAcroForm();
+      const form = PDFForm.of(acroForm, pdfDoc);
+
+      expect(form.hasXFA()).toBe(true);
+
+      form.deleteXFA();
+
+      expect(form.hasXFA()).toBe(false);
+    });
+
+    it('hasXFA() returns false for documents without XFA data', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      expect(form.hasXFA()).toBe(false);
+    });
+  });
+
+  describe('dirty field tracking', () => {
+    it('markFieldAsDirty() causes fieldIsDirty() to return true', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('dirtyField');
+
+      expect(form.fieldIsDirty(tf.ref)).toBe(false);
+
+      form.markFieldAsDirty(tf.ref);
+
+      expect(form.fieldIsDirty(tf.ref)).toBe(true);
+    });
+
+    it('markFieldAsClean() causes fieldIsDirty() to return false', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('cleanField');
+
+      form.markFieldAsDirty(tf.ref);
+      expect(form.fieldIsDirty(tf.ref)).toBe(true);
+
+      form.markFieldAsClean(tf.ref);
+      expect(form.fieldIsDirty(tf.ref)).toBe(false);
+    });
+
+    it('marking one field dirty does not affect others', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const tf1 = form.createTextField('field1');
+      const tf2 = form.createTextField('field2');
+
+      form.markFieldAsDirty(tf1.ref);
+
+      expect(form.fieldIsDirty(tf1.ref)).toBe(true);
+      expect(form.fieldIsDirty(tf2.ref)).toBe(false);
+    });
+  });
+
+  describe('removeField with field values and round-trip', () => {
+    it('removing a text field with a value set does not affect other fields', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf1 = form.createTextField('keepMe');
+      tf1.setText('preserved');
+      tf1.addToPage(page);
+
+      const tf2 = form.createTextField('removeMe');
+      tf2.setText('will be gone');
+      tf2.addToPage(page);
+
+      form.removeField(tf2);
+
+      expect(form.getFields().length).toBe(1);
+      expect(form.getTextField('keepMe').getText()).toBe('preserved');
+      expect(form.getFieldMaybe('removeMe')).toBeUndefined();
+    });
+
+    it('document can be saved and reloaded after removing a field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf1 = form.createTextField('survivor');
+      tf1.setText('I survive');
+      tf1.addToPage(page);
+
+      const tf2 = form.createTextField('victim');
+      tf2.setText('I am removed');
+      tf2.addToPage(page);
+
+      form.removeField(tf2);
+
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      const reloadedForm = reloaded.getForm();
+
+      expect(reloadedForm.getFields().length).toBe(1);
+      expect(reloadedForm.getTextField('survivor').getText()).toBe('I survive');
+      expect(reloadedForm.getFieldMaybe('victim')).toBeUndefined();
+    });
+
+    it('removing a checkbox preserves other checkbox values', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const cb1 = form.createCheckBox('keep');
+      cb1.addToPage(page);
+      cb1.check();
+
+      const cb2 = form.createCheckBox('remove');
+      cb2.addToPage(page);
+      cb2.check();
+
+      expect(form.getCheckBox('keep').isChecked()).toBe(true);
+      expect(form.getCheckBox('remove').isChecked()).toBe(true);
+
+      form.removeField(cb2);
+
+      expect(form.getFields().length).toBe(1);
+      expect(form.getCheckBox('keep').isChecked()).toBe(true);
+    });
+
+    it('removing a dropdown preserves other dropdown values', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const dd1 = form.createDropdown('keepDD');
+      dd1.setOptions(['X', 'Y']);
+      dd1.select('X');
+      dd1.addToPage(page);
+
+      const dd2 = form.createDropdown('removeDD');
+      dd2.setOptions(['A', 'B']);
+      dd2.select('A');
+      dd2.addToPage(page);
+
+      form.removeField(dd2);
+
+      expect(form.getFields().length).toBe(1);
+      expect(form.getDropdown('keepDD').getSelected()).toEqual(['X']);
+      expect(form.getDropdown('keepDD').getOptions()).toEqual(['X', 'Y']);
+    });
+  });
+
+  describe('flatten with updateFieldAppearances option', () => {
+    it('flatten({updateFieldAppearances: false}) still removes all fields', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('noUpdateFlatten');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      expect(form.getFields().length).toBe(1);
+
+      form.flatten({ updateFieldAppearances: false });
+
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('flatten({updateFieldAppearances: true}) removes all fields (default behavior)', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const cb = form.createCheckBox('updateFlatten');
+      cb.addToPage(page);
+      cb.check();
+
+      expect(form.getFields().length).toBe(1);
+
+      form.flatten({ updateFieldAppearances: true });
+
+      expect(form.getFields().length).toBe(0);
+    });
+  });
+
+  describe('removeField from loaded PDF', () => {
+    it('removes a specific field from a loaded PDF and preserves others', async () => {
+      const pdfDoc = await PDFDocument.load(fancyFieldsPdfBytes);
+      const form = pdfDoc.getForm();
+
+      const initialCount = form.getFields().length;
+      expect(initialCount).toBe(15);
+
+      const dropdown = form.getDropdown('Choose A Gundam 🤖');
+      form.removeField(dropdown);
+
+      const afterCount = form.getFields().length;
+      expect(afterCount).toBe(14);
+
+      expect(form.getFieldMaybe('Choose A Gundam 🤖')).toBeUndefined();
+
+      // Other fields still exist
+      expect(form.getField('Prefix ⚽️')).toBeInstanceOf(PDFTextField);
+      expect(form.getField('Are You A Fairy? 🌿')).toBeInstanceOf(
+        PDFCheckBox,
+      );
+      expect(form.getField('Historical Figures 🐺')).toBeInstanceOf(
+        PDFRadioGroup,
+      );
+    });
+
+    it('removes multiple fields from a loaded PDF by type', async () => {
+      const pdfDoc = await PDFDocument.load(fancyFieldsPdfBytes);
+      const form = pdfDoc.getForm();
+
+      // Remove all checkboxes
+      const checkboxes = form
+        .getFields()
+        .filter((f) => f instanceof PDFCheckBox);
+      expect(checkboxes.length).toBe(4);
+
+      for (const cb of checkboxes) {
+        form.removeField(cb);
+      }
+
+      const remainingFields = form.getFields();
+      expect(remainingFields.length).toBe(11);
+
+      // Verify no checkboxes remain
+      const remainingCheckboxes = remainingFields.filter(
+        (f) => f instanceof PDFCheckBox,
+      );
+      expect(remainingCheckboxes.length).toBe(0);
+
+      // Text fields still exist
+      expect(form.getTextField('Prefix ⚽️').getName()).toBe('Prefix ⚽️');
+    });
+  });
+
+  describe('field creation return values', () => {
+    it('createTextField returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('my.text.field');
+      expect(tf.getName()).toBe('my.text.field');
+      expect(tf).toBeInstanceOf(PDFTextField);
+    });
+
+    it('createCheckBox returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const cb = form.createCheckBox('my.check.box');
+      expect(cb.getName()).toBe('my.check.box');
+      expect(cb).toBeInstanceOf(PDFCheckBox);
+    });
+
+    it('createDropdown returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const dd = form.createDropdown('my.dropdown');
+      expect(dd.getName()).toBe('my.dropdown');
+      expect(dd).toBeInstanceOf(PDFDropdown);
+    });
+
+    it('createOptionList returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const ol = form.createOptionList('my.option.list');
+      expect(ol.getName()).toBe('my.option.list');
+      expect(ol).toBeInstanceOf(PDFOptionList);
+    });
+
+    it('createRadioGroup returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const rg = form.createRadioGroup('my.radio.group');
+      expect(rg.getName()).toBe('my.radio.group');
+      expect(rg).toBeInstanceOf(PDFRadioGroup);
+    });
+
+    it('createButton returns a field whose getName() matches the provided name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const btn = form.createButton('my.button');
+      expect(btn.getName()).toBe('my.button');
+      expect(btn).toBeInstanceOf(PDFButton);
+    });
+  });
+
+  describe('flatten and removeField interaction', () => {
+    it('removing a field before flatten excludes it from flatten processing', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf1 = form.createTextField('pre-remove');
+      tf1.setText('removed before flatten');
+      tf1.addToPage(page);
+
+      const tf2 = form.createTextField('flattened');
+      tf2.setText('flattened');
+      tf2.addToPage(page);
+
+      form.removeField(tf1);
+      expect(form.getFields().length).toBe(1);
+
+      form.flatten();
+      expect(form.getFields().length).toBe(0);
+
+      // Document is still savable
+      const savedBytes = await pdfDoc.save();
+      expect(savedBytes).toBeInstanceOf(Uint8Array);
+    });
+
+    it('flatten effectively removes all fields, which means subsequent getField calls throw', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('gone');
+      tf.setText('bye');
+      tf.addToPage(page);
+
+      const cb = form.createCheckBox('alsoGone');
+      cb.addToPage(page);
+
+      form.flatten();
+
+      expect(() => form.getField('gone')).toThrow(
+        'PDFDocument has no form field with the name "gone"',
+      );
+      expect(() => form.getField('alsoGone')).toThrow(
+        'PDFDocument has no form field with the name "alsoGone"',
+      );
+    });
+
+    it('getFieldMaybe returns undefined for all previously existing fields after flatten', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      form.createTextField('a').addToPage(page);
+      form.createCheckBox('b').addToPage(page);
+      form.createDropdown('c').addToPage(page);
+
+      form.flatten();
+
+      expect(form.getFieldMaybe('a')).toBeUndefined();
+      expect(form.getFieldMaybe('b')).toBeUndefined();
+      expect(form.getFieldMaybe('c')).toBeUndefined();
+    });
+  });
 });

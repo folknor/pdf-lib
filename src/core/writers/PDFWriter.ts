@@ -1,6 +1,6 @@
 import { copyStringIntoBuffer, waitForTick } from '../../utils/index.js';
 import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
-import PDFHeader from '../document/PDFHeader.js';
+import type PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFTrailerDict from '../document/PDFTrailerDict.js';
 import type PDFDict from '../objects/PDFDict.js';

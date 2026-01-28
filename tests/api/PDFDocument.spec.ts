@@ -7,6 +7,7 @@ import {
   Duplex,
   EncryptedPDFError,
   NonFullScreenPageMode,
+  PageSizes,
   ParseSpeeds,
   PDFArray,
   PDFDict,
@@ -899,6 +900,978 @@ describe('PDFDocument', () => {
       pdfDoc.detach('not_existing.txt');
       attachments = pdfDoc.getAttachments();
       expect(attachments.length).toEqual(2);
+    });
+  });
+
+  describe('Page operations behavioral tests', () => {
+    describe('addPage()', () => {
+      it('increases getPageCount() by 1 each time', async () => {
+        const doc = await PDFDocument.create();
+        expect(doc.getPageCount()).toBe(0);
+
+        doc.addPage();
+        expect(doc.getPageCount()).toBe(1);
+
+        doc.addPage();
+        expect(doc.getPageCount()).toBe(2);
+
+        doc.addPage();
+        expect(doc.getPageCount()).toBe(3);
+      });
+
+      it('creates a default A4 page when called with no arguments', async () => {
+        const doc = await PDFDocument.create();
+        const page = doc.addPage();
+
+        expect(page.getWidth()).toBeCloseTo(595.28, 1);
+        expect(page.getHeight()).toBeCloseTo(841.89, 1);
+      });
+
+      it('creates a page with the specified dimensions when given [width, height]', async () => {
+        const doc = await PDFDocument.create();
+        const page = doc.addPage([300, 500]);
+
+        expect(page.getWidth()).toBe(300);
+        expect(page.getHeight()).toBe(500);
+      });
+
+      it('creates a page with PageSizes.Letter dimensions', async () => {
+        const doc = await PDFDocument.create();
+        const page = doc.addPage(PageSizes.Letter);
+
+        expect(page.getWidth()).toBe(612.0);
+        expect(page.getHeight()).toBe(792.0);
+      });
+
+      it('appends the page to the end of the document', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[0].getHeight()).toBe(200);
+        expect(pages[1].getWidth()).toBe(300);
+        expect(pages[1].getHeight()).toBe(400);
+        expect(pages[2].getWidth()).toBe(500);
+        expect(pages[2].getHeight()).toBe(600);
+      });
+
+      it('returns the newly created PDFPage instance', async () => {
+        const doc = await PDFDocument.create();
+        const page = doc.addPage([250, 350]);
+
+        expect(page).toBeInstanceOf(PDFPage);
+        expect(page.getWidth()).toBe(250);
+        expect(page.getHeight()).toBe(350);
+      });
+    });
+
+    describe('insertPage()', () => {
+      it('inserts a page at the beginning when index is 0', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+
+        doc.insertPage(0, [500, 600]);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+        expect(pages[0].getWidth()).toBe(500);
+        expect(pages[0].getHeight()).toBe(600);
+        expect(pages[1].getWidth()).toBe(100);
+        expect(pages[1].getHeight()).toBe(200);
+        expect(pages[2].getWidth()).toBe(300);
+        expect(pages[2].getHeight()).toBe(400);
+      });
+
+      it('inserts a page in the middle at the specified index', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+
+        doc.insertPage(1, [500, 600]);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[0].getHeight()).toBe(200);
+        expect(pages[1].getWidth()).toBe(500);
+        expect(pages[1].getHeight()).toBe(600);
+        expect(pages[2].getWidth()).toBe(300);
+        expect(pages[2].getHeight()).toBe(400);
+      });
+
+      it('inserts a page at the end when index equals page count', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+
+        doc.insertPage(2, [500, 600]);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+        expect(pages[2].getWidth()).toBe(500);
+        expect(pages[2].getHeight()).toBe(600);
+      });
+
+      it('increases the page count by 1', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        expect(doc.getPageCount()).toBe(1);
+
+        doc.insertPage(0);
+        expect(doc.getPageCount()).toBe(2);
+
+        doc.insertPage(1);
+        expect(doc.getPageCount()).toBe(3);
+      });
+
+      it('creates a default A4 page when no page argument is given', async () => {
+        const doc = await PDFDocument.create();
+        const page = doc.insertPage(0);
+
+        expect(page.getWidth()).toBeCloseTo(595.28, 1);
+        expect(page.getHeight()).toBeCloseTo(841.89, 1);
+      });
+    });
+
+    describe('removePage()', () => {
+      it('decreases the page count by 1', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+        expect(doc.getPageCount()).toBe(3);
+
+        doc.removePage(1);
+        expect(doc.getPageCount()).toBe(2);
+      });
+
+      it('removes the correct page (first page)', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+
+        doc.removePage(0);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(2);
+        expect(pages[0].getWidth()).toBe(300);
+        expect(pages[0].getHeight()).toBe(400);
+        expect(pages[1].getWidth()).toBe(500);
+        expect(pages[1].getHeight()).toBe(600);
+      });
+
+      it('removes the correct page (middle page)', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+
+        doc.removePage(1);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(2);
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[0].getHeight()).toBe(200);
+        expect(pages[1].getWidth()).toBe(500);
+        expect(pages[1].getHeight()).toBe(600);
+      });
+
+      it('removes the correct page (last page)', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+
+        doc.removePage(2);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(2);
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[0].getHeight()).toBe(200);
+        expect(pages[1].getWidth()).toBe(300);
+        expect(pages[1].getHeight()).toBe(400);
+      });
+
+      it('removes all pages one by one until the document is empty', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+
+        doc.removePage(0);
+        expect(doc.getPageCount()).toBe(1);
+        expect(doc.getPages()[0].getWidth()).toBe(300);
+
+        doc.removePage(0);
+        expect(doc.getPageCount()).toBe(0);
+        expect(doc.getPages()).toHaveLength(0);
+      });
+
+      it('throws when removing from an empty document', async () => {
+        const doc = await PDFDocument.create();
+        expect(() => doc.removePage(0)).toThrow();
+      });
+
+      it('throws when index is out of range', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        doc.addPage();
+
+        expect(() => doc.removePage(2)).toThrow();
+        expect(() => doc.removePage(-1)).toThrow();
+      });
+    });
+
+    describe('getPages()', () => {
+      it('returns an empty array for a new document', async () => {
+        const doc = await PDFDocument.create();
+        const pages = doc.getPages();
+
+        expect(pages).toHaveLength(0);
+        expect(Array.isArray(pages)).toBe(true);
+      });
+
+      it('returns correct number of pages after additions', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        doc.addPage();
+        doc.addPage();
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+      });
+
+      it('returns pages in document order', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 100]);
+        doc.addPage([200, 200]);
+        doc.addPage([300, 300]);
+
+        const pages = doc.getPages();
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[1].getWidth()).toBe(200);
+        expect(pages[2].getWidth()).toBe(300);
+      });
+
+      it('reflects insertions correctly', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 100]);
+        doc.addPage([300, 300]);
+        doc.insertPage(1, [200, 200]);
+
+        const pages = doc.getPages();
+        expect(pages).toHaveLength(3);
+        expect(pages[0].getWidth()).toBe(100);
+        expect(pages[1].getWidth()).toBe(200);
+        expect(pages[2].getWidth()).toBe(300);
+      });
+    });
+
+    describe('getPage()', () => {
+      it('returns the page at a specific index', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage([100, 200]);
+        doc.addPage([300, 400]);
+        doc.addPage([500, 600]);
+
+        const page0 = doc.getPage(0);
+        expect(page0.getWidth()).toBe(100);
+        expect(page0.getHeight()).toBe(200);
+
+        const page1 = doc.getPage(1);
+        expect(page1.getWidth()).toBe(300);
+        expect(page1.getHeight()).toBe(400);
+
+        const page2 = doc.getPage(2);
+        expect(page2.getWidth()).toBe(500);
+        expect(page2.getHeight()).toBe(600);
+      });
+
+      it('returns a PDFPage instance', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+
+        const page = doc.getPage(0);
+        expect(page).toBeInstanceOf(PDFPage);
+      });
+
+      it('throws when index is out of range', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+
+        expect(() => doc.getPage(1)).toThrow();
+        expect(() => doc.getPage(-1)).toThrow();
+      });
+    });
+
+    describe('getPageIndices()', () => {
+      it('returns an empty array for a new document', async () => {
+        const doc = await PDFDocument.create();
+        expect(doc.getPageIndices()).toEqual([]);
+      });
+
+      it('returns [0] for a document with one page', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        expect(doc.getPageIndices()).toEqual([0]);
+      });
+
+      it('returns [0, 1, 2] for a document with three pages', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        doc.addPage();
+        doc.addPage();
+        expect(doc.getPageIndices()).toEqual([0, 1, 2]);
+      });
+
+      it('reflects removals correctly', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        doc.addPage();
+        doc.addPage();
+        expect(doc.getPageIndices()).toEqual([0, 1, 2]);
+
+        doc.removePage(1);
+        expect(doc.getPageIndices()).toEqual([0, 1]);
+      });
+
+      it('reflects insertions correctly', async () => {
+        const doc = await PDFDocument.create();
+        doc.addPage();
+        doc.insertPage(0);
+        doc.addPage();
+        expect(doc.getPageIndices()).toEqual([0, 1, 2]);
+      });
+    });
+
+    describe('copyPages()', () => {
+      it('copies pages from another document with matching dimensions', async () => {
+        const srcDoc = await PDFDocument.create();
+        srcDoc.addPage([111, 222]);
+        srcDoc.addPage([333, 444]);
+        srcDoc.addPage([555, 666]);
+
+        const destDoc = await PDFDocument.create();
+        const copiedPages = await destDoc.copyPages(srcDoc, [0, 1, 2]);
+
+        expect(copiedPages).toHaveLength(3);
+        expect(copiedPages[0].getWidth()).toBe(111);
+        expect(copiedPages[0].getHeight()).toBe(222);
+        expect(copiedPages[1].getWidth()).toBe(333);
+        expect(copiedPages[1].getHeight()).toBe(444);
+        expect(copiedPages[2].getWidth()).toBe(555);
+        expect(copiedPages[2].getHeight()).toBe(666);
+      });
+
+      it('allows adding copied pages to the destination document', async () => {
+        const srcDoc = await PDFDocument.create();
+        srcDoc.addPage([111, 222]);
+        srcDoc.addPage([333, 444]);
+
+        const destDoc = await PDFDocument.create();
+        const [page1, page2] = await destDoc.copyPages(srcDoc, [0, 1]);
+
+        destDoc.addPage(page1);
+        destDoc.addPage(page2);
+
+        expect(destDoc.getPageCount()).toBe(2);
+        expect(destDoc.getPage(0).getWidth()).toBe(111);
+        expect(destDoc.getPage(0).getHeight()).toBe(222);
+        expect(destDoc.getPage(1).getWidth()).toBe(333);
+        expect(destDoc.getPage(1).getHeight()).toBe(444);
+      });
+
+      it('copies a subset of pages', async () => {
+        const srcDoc = await PDFDocument.create();
+        srcDoc.addPage([100, 100]);
+        srcDoc.addPage([200, 200]);
+        srcDoc.addPage([300, 300]);
+
+        const destDoc = await PDFDocument.create();
+        const copiedPages = await destDoc.copyPages(srcDoc, [0, 2]);
+
+        expect(copiedPages).toHaveLength(2);
+        expect(copiedPages[0].getWidth()).toBe(100);
+        expect(copiedPages[1].getWidth()).toBe(300);
+      });
+
+      it('does not modify the source document page count', async () => {
+        const srcDoc = await PDFDocument.create();
+        srcDoc.addPage([100, 200]);
+        srcDoc.addPage([300, 400]);
+
+        const destDoc = await PDFDocument.create();
+        await destDoc.copyPages(srcDoc, [0, 1]);
+
+        expect(srcDoc.getPageCount()).toBe(2);
+      });
+
+      it('copied pages can be inserted at specific positions', async () => {
+        const srcDoc = await PDFDocument.create();
+        srcDoc.addPage([999, 888]);
+
+        const destDoc = await PDFDocument.create();
+        destDoc.addPage([100, 100]);
+        destDoc.addPage([200, 200]);
+
+        const [copiedPage] = await destDoc.copyPages(srcDoc, [0]);
+        destDoc.insertPage(1, copiedPage);
+
+        expect(destDoc.getPageCount()).toBe(3);
+        expect(destDoc.getPage(0).getWidth()).toBe(100);
+        expect(destDoc.getPage(1).getWidth()).toBe(999);
+        expect(destDoc.getPage(1).getHeight()).toBe(888);
+        expect(destDoc.getPage(2).getWidth()).toBe(200);
+      });
+    });
+  });
+
+  describe('Metadata round-trip tests', () => {
+    it('setTitle / getTitle round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getTitle()).toBeUndefined();
+
+      doc.setTitle('My Test PDF');
+      expect(doc.getTitle()).toBe('My Test PDF');
+
+      doc.setTitle('Updated Title');
+      expect(doc.getTitle()).toBe('Updated Title');
+    });
+
+    it('setAuthor / getAuthor round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getAuthor()).toBeUndefined();
+
+      doc.setAuthor('John Doe');
+      expect(doc.getAuthor()).toBe('John Doe');
+
+      doc.setAuthor('Jane Smith');
+      expect(doc.getAuthor()).toBe('Jane Smith');
+    });
+
+    it('setSubject / getSubject round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getSubject()).toBeUndefined();
+
+      doc.setSubject('Test Subject');
+      expect(doc.getSubject()).toBe('Test Subject');
+    });
+
+    it('setKeywords / getKeywords round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getKeywords()).toBeUndefined();
+
+      doc.setKeywords(['pdf', 'test', 'library']);
+      expect(doc.getKeywords()).toBe('pdf test library');
+    });
+
+    it('setProducer / getProducer round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      // Default producer is set by updateInfoDict
+      expect(doc.getProducer()).toBe(
+        'pdf-lib (https://github.com/Hopding/pdf-lib)',
+      );
+
+      doc.setProducer('Custom Producer v2.0');
+      expect(doc.getProducer()).toBe('Custom Producer v2.0');
+    });
+
+    it('setCreator / getCreator round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      // Default creator is set by updateInfoDict
+      expect(doc.getCreator()).toBe(
+        'pdf-lib (https://github.com/Hopding/pdf-lib)',
+      );
+
+      doc.setCreator('Custom Creator App');
+      expect(doc.getCreator()).toBe('Custom Creator App');
+    });
+
+    it('setCreationDate / getCreationDate round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      // Default creation date is set by updateInfoDict, so it exists
+      expect(doc.getCreationDate()).toBeInstanceOf(Date);
+
+      const customDate = new Date('2000-06-15T12:30:00Z');
+      doc.setCreationDate(customDate);
+      expect(doc.getCreationDate()).toEqual(customDate);
+    });
+
+    it('setModificationDate / getModificationDate round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      // Default mod date is set by updateInfoDict, so it exists
+      expect(doc.getModificationDate()).toBeInstanceOf(Date);
+
+      const customDate = new Date('2020-03-25T08:15:00Z');
+      doc.setModificationDate(customDate);
+      expect(doc.getModificationDate()).toEqual(customDate);
+    });
+
+    it('setLanguage / getLanguage round-trips correctly', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getLanguage()).toBeUndefined();
+
+      doc.setLanguage('en-US');
+      expect(doc.getLanguage()).toBe('en-US');
+
+      doc.setLanguage('de-DE');
+      expect(doc.getLanguage()).toBe('de-DE');
+    });
+
+    it('handles unicode metadata values', async () => {
+      const doc = await PDFDocument.create();
+
+      doc.setTitle('Titre du document');
+      doc.setAuthor('Auteur avec accents');
+      doc.setSubject('Sujet en japonais');
+
+      expect(doc.getTitle()).toBe('Titre du document');
+      expect(doc.getAuthor()).toBe('Auteur avec accents');
+      expect(doc.getSubject()).toBe('Sujet en japonais');
+    });
+  });
+
+  describe('Save and load round-trip tests', () => {
+    it('preserves page count through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage([100, 200]);
+      doc.addPage([300, 400]);
+      doc.addPage([500, 600]);
+
+      const savedBytes = await doc.save({ addDefaultPage: false });
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getPageCount()).toBe(3);
+    });
+
+    it('preserves page dimensions through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage([100, 200]);
+      doc.addPage([300, 400]);
+      doc.addPage([500, 600]);
+
+      const savedBytes = await doc.save({ addDefaultPage: false });
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getPage(0).getWidth()).toBe(100);
+      expect(loadedDoc.getPage(0).getHeight()).toBe(200);
+      expect(loadedDoc.getPage(1).getWidth()).toBe(300);
+      expect(loadedDoc.getPage(1).getHeight()).toBe(400);
+      expect(loadedDoc.getPage(2).getWidth()).toBe(500);
+      expect(loadedDoc.getPage(2).getHeight()).toBe(600);
+    });
+
+    it('preserves PageSizes.Letter dimensions through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage(PageSizes.Letter);
+
+      const savedBytes = await doc.save({ addDefaultPage: false });
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getPage(0).getWidth()).toBe(612.0);
+      expect(loadedDoc.getPage(0).getHeight()).toBe(792.0);
+    });
+
+    it('preserves title metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setTitle('Persistent Title');
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getTitle()).toBe('Persistent Title');
+    });
+
+    it('preserves author metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setAuthor('Persistent Author');
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getAuthor()).toBe('Persistent Author');
+    });
+
+    it('preserves subject metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setSubject('Persistent Subject');
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getSubject()).toBe('Persistent Subject');
+    });
+
+    it('preserves keywords metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setKeywords(['keyword1', 'keyword2', 'keyword3']);
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getKeywords()).toBe('keyword1 keyword2 keyword3');
+    });
+
+    it('preserves producer metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setProducer('My Custom Producer');
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getProducer()).toBe('My Custom Producer');
+    });
+
+    it('preserves creator metadata through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      doc.setCreator('My Custom Creator');
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      expect(loadedDoc.getCreator()).toBe('My Custom Creator');
+    });
+
+    it('preserves creation date through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      const creationDate = new Date('2005-11-20T10:30:00Z');
+      doc.setCreationDate(creationDate);
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes, {
+        updateMetadata: false,
+      });
+
+      expect(loadedDoc.getCreationDate()).toEqual(creationDate);
+    });
+
+    it('preserves modification date through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      const modDate = new Date('2023-01-15T14:00:00Z');
+      doc.setModificationDate(modDate);
+
+      const savedBytes = await doc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes, {
+        updateMetadata: false,
+      });
+
+      expect(loadedDoc.getModificationDate()).toEqual(modDate);
+    });
+
+    it('preserves all metadata fields through save/load cycle', async () => {
+      const doc = await PDFDocument.create();
+      const title = 'Full Round-Trip Title';
+      const author = 'Full Round-Trip Author';
+      const subject = 'Full Round-Trip Subject';
+      const keywords = ['roundtrip', 'test', 'pdf'];
+      const producer = 'Full Round-Trip Producer';
+      const creator = 'Full Round-Trip Creator';
+      const creationDate = new Date('1999-12-31T23:59:00Z');
+      const modificationDate = new Date('2024-06-15T12:00:00Z');
+
+      doc.setTitle(title);
+      doc.setAuthor(author);
+      doc.setSubject(subject);
+      doc.setKeywords(keywords);
+      doc.setProducer(producer);
+      doc.setCreator(creator);
+      doc.setCreationDate(creationDate);
+      doc.setModificationDate(modificationDate);
+
+      const savedBytes = await doc.save();
+      const loaded = await PDFDocument.load(savedBytes, {
+        updateMetadata: false,
+      });
+
+      expect(loaded.getTitle()).toBe(title);
+      expect(loaded.getAuthor()).toBe(author);
+      expect(loaded.getSubject()).toBe(subject);
+      expect(loaded.getKeywords()).toBe(keywords.join(' '));
+      expect(loaded.getProducer()).toBe(producer);
+      expect(loaded.getCreator()).toBe(creator);
+      expect(loaded.getCreationDate()).toEqual(creationDate);
+      expect(loaded.getModificationDate()).toEqual(modificationDate);
+    });
+
+    it('saves and loads pages added with different PageSizes', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage(PageSizes.A4);
+      doc.addPage(PageSizes.Letter);
+      doc.addPage(PageSizes.Legal);
+
+      const savedBytes = await doc.save({ addDefaultPage: false });
+      const loaded = await PDFDocument.load(savedBytes);
+
+      expect(loaded.getPageCount()).toBe(3);
+
+      expect(loaded.getPage(0).getWidth()).toBeCloseTo(595.28, 1);
+      expect(loaded.getPage(0).getHeight()).toBeCloseTo(841.89, 1);
+
+      expect(loaded.getPage(1).getWidth()).toBe(612.0);
+      expect(loaded.getPage(1).getHeight()).toBe(792.0);
+
+      expect(loaded.getPage(2).getWidth()).toBe(612.0);
+      expect(loaded.getPage(2).getHeight()).toBe(1008.0);
+    });
+
+    it('handles a double save/load cycle preserving pages and metadata', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage([150, 250]);
+      doc.setTitle('Double Cycle Title');
+      doc.setAuthor('Double Cycle Author');
+
+      const bytes1 = await doc.save({ addDefaultPage: false });
+      const loaded1 = await PDFDocument.load(bytes1, {
+        updateMetadata: false,
+      });
+
+      expect(loaded1.getPageCount()).toBe(1);
+      expect(loaded1.getPage(0).getWidth()).toBe(150);
+      expect(loaded1.getTitle()).toBe('Double Cycle Title');
+      expect(loaded1.getAuthor()).toBe('Double Cycle Author');
+
+      // Second save/load cycle
+      loaded1.addPage([350, 450]);
+      loaded1.setTitle('Updated Double Cycle Title');
+
+      const bytes2 = await loaded1.save({ addDefaultPage: false });
+      const loaded2 = await PDFDocument.load(bytes2, {
+        updateMetadata: false,
+      });
+
+      expect(loaded2.getPageCount()).toBe(2);
+      expect(loaded2.getPage(0).getWidth()).toBe(150);
+      expect(loaded2.getPage(0).getHeight()).toBe(250);
+      expect(loaded2.getPage(1).getWidth()).toBe(350);
+      expect(loaded2.getPage(1).getHeight()).toBe(450);
+      expect(loaded2.getTitle()).toBe('Updated Double Cycle Title');
+      expect(loaded2.getAuthor()).toBe('Double Cycle Author');
+    });
+  });
+
+  describe('Document creation options', () => {
+    it('PDFDocument.create() creates an empty document with 0 pages', async () => {
+      const doc = await PDFDocument.create();
+
+      expect(doc.getPageCount()).toBe(0);
+      expect(doc.getPages()).toHaveLength(0);
+      expect(doc.getPageIndices()).toEqual([]);
+    });
+
+    it('PDFDocument.create() produces a document that is not encrypted', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.isEncrypted).toBe(false);
+    });
+
+    it('PDFDocument.create() with updateMetadata: false does not set default metadata', async () => {
+      const doc = await PDFDocument.create({ updateMetadata: false });
+
+      expect(doc.getProducer()).toBeUndefined();
+      expect(doc.getCreator()).toBeUndefined();
+      expect(doc.getCreationDate()).toBeUndefined();
+      expect(doc.getModificationDate()).toBeUndefined();
+    });
+
+    it('PDFDocument.create() with updateMetadata: true (default) sets default producer and creator', async () => {
+      const doc = await PDFDocument.create();
+
+      expect(doc.getProducer()).toBe(
+        'pdf-lib (https://github.com/Hopding/pdf-lib)',
+      );
+      expect(doc.getCreator()).toBe(
+        'pdf-lib (https://github.com/Hopding/pdf-lib)',
+      );
+      expect(doc.getCreationDate()).toBeInstanceOf(Date);
+      expect(doc.getModificationDate()).toBeInstanceOf(Date);
+    });
+
+    it('PDFDocument.load() loads a document from existing PDF bytes', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage([123, 456]);
+      doc.setTitle('Load Test');
+
+      const bytes = await doc.save({ addDefaultPage: false });
+      const loaded = await PDFDocument.load(bytes);
+
+      expect(loaded).toBeInstanceOf(PDFDocument);
+      expect(loaded.getPageCount()).toBe(1);
+      expect(loaded.getPage(0).getWidth()).toBe(123);
+      expect(loaded.getPage(0).getHeight()).toBe(456);
+      expect(loaded.getTitle()).toBe('Load Test');
+    });
+
+    it('PDFDocument.load() with updateMetadata: false preserves original dates', async () => {
+      const doc = await PDFDocument.create();
+      const creationDate = new Date('2010-05-20T08:00:00Z');
+      const modDate = new Date('2015-10-10T16:30:00Z');
+      doc.setCreationDate(creationDate);
+      doc.setModificationDate(modDate);
+
+      const bytes = await doc.save();
+      const loaded = await PDFDocument.load(bytes, {
+        updateMetadata: false,
+      });
+
+      expect(loaded.getCreationDate()).toEqual(creationDate);
+      expect(loaded.getModificationDate()).toEqual(modDate);
+    });
+
+    it('save() with addDefaultPage: true adds a page when document is empty', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getPageCount()).toBe(0);
+
+      const bytes = await doc.save({ addDefaultPage: true });
+      const loaded = await PDFDocument.load(bytes);
+
+      expect(loaded.getPageCount()).toBe(1);
+    });
+
+    it('save() with addDefaultPage: false does not add a page when document is empty', async () => {
+      const doc = await PDFDocument.create();
+      expect(doc.getPageCount()).toBe(0);
+
+      const bytes = await doc.save({ addDefaultPage: false });
+      const loaded = await PDFDocument.load(bytes);
+
+      expect(loaded.getPageCount()).toBe(0);
+    });
+
+    it('save() returns Uint8Array bytes', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage();
+
+      const bytes = await doc.save();
+
+      expect(bytes).toBeInstanceOf(Uint8Array);
+      expect(bytes.byteLength).toBeGreaterThan(0);
+    });
+
+    it('saveAsBase64() returns a base64 string', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage();
+
+      const base64 = await doc.saveAsBase64();
+
+      expect(typeof base64).toBe('string');
+      expect(base64.length).toBeGreaterThan(0);
+      // Should not have data URI prefix by default
+      expect(base64.startsWith('data:')).toBe(false);
+    });
+
+    it('saveAsBase64() with dataUri: true returns a data URI', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage();
+
+      const dataUri = await doc.saveAsBase64({ dataUri: true });
+
+      expect(typeof dataUri).toBe('string');
+      expect(dataUri.startsWith('data:application/pdf;base64,')).toBe(true);
+    });
+  });
+
+  describe('Combined page and metadata operations', () => {
+    it('can manipulate pages and metadata on the same document', async () => {
+      const doc = await PDFDocument.create();
+
+      doc.setTitle('Combined Test');
+      doc.setAuthor('Test Author');
+      doc.addPage([100, 200]);
+      doc.addPage([300, 400]);
+      doc.setSubject('Combined Subject');
+
+      expect(doc.getPageCount()).toBe(2);
+      expect(doc.getTitle()).toBe('Combined Test');
+      expect(doc.getAuthor()).toBe('Test Author');
+      expect(doc.getSubject()).toBe('Combined Subject');
+      expect(doc.getPage(0).getWidth()).toBe(100);
+      expect(doc.getPage(1).getWidth()).toBe(300);
+    });
+
+    it('page operations do not affect metadata', async () => {
+      const doc = await PDFDocument.create();
+      doc.setTitle('Stable Title');
+      doc.setAuthor('Stable Author');
+
+      doc.addPage([100, 200]);
+      expect(doc.getTitle()).toBe('Stable Title');
+      expect(doc.getAuthor()).toBe('Stable Author');
+
+      doc.insertPage(0, [300, 400]);
+      expect(doc.getTitle()).toBe('Stable Title');
+      expect(doc.getAuthor()).toBe('Stable Author');
+
+      doc.removePage(0);
+      expect(doc.getTitle()).toBe('Stable Title');
+      expect(doc.getAuthor()).toBe('Stable Author');
+    });
+
+    it('metadata changes do not affect page structure', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage([100, 200]);
+      doc.addPage([300, 400]);
+
+      doc.setTitle('New Title');
+      doc.setAuthor('New Author');
+      doc.setProducer('New Producer');
+
+      expect(doc.getPageCount()).toBe(2);
+      expect(doc.getPage(0).getWidth()).toBe(100);
+      expect(doc.getPage(0).getHeight()).toBe(200);
+      expect(doc.getPage(1).getWidth()).toBe(300);
+      expect(doc.getPage(1).getHeight()).toBe(400);
+    });
+
+    it('full workflow: create, add pages, set metadata, save, load, verify', async () => {
+      const doc = await PDFDocument.create();
+
+      doc.addPage(PageSizes.A4);
+      doc.addPage(PageSizes.Letter);
+      doc.addPage([400, 600]);
+
+      doc.setTitle('Workflow Test');
+      doc.setAuthor('Workflow Author');
+      doc.setSubject('Workflow Subject');
+      doc.setKeywords(['workflow', 'test']);
+      doc.setProducer('Workflow Producer');
+      doc.setCreator('Workflow Creator');
+
+      const creationDate = new Date('2022-01-01T00:00:00Z');
+      const modDate = new Date('2023-06-15T12:00:00Z');
+      doc.setCreationDate(creationDate);
+      doc.setModificationDate(modDate);
+
+      const bytes = await doc.save({ addDefaultPage: false });
+      const loaded = await PDFDocument.load(bytes, {
+        updateMetadata: false,
+      });
+
+      // Verify pages
+      expect(loaded.getPageCount()).toBe(3);
+      expect(loaded.getPageIndices()).toEqual([0, 1, 2]);
+
+      expect(loaded.getPage(0).getWidth()).toBeCloseTo(595.28, 1);
+      expect(loaded.getPage(0).getHeight()).toBeCloseTo(841.89, 1);
+
+      expect(loaded.getPage(1).getWidth()).toBe(612.0);
+      expect(loaded.getPage(1).getHeight()).toBe(792.0);
+
+      expect(loaded.getPage(2).getWidth()).toBe(400);
+      expect(loaded.getPage(2).getHeight()).toBe(600);
+
+      // Verify metadata
+      expect(loaded.getTitle()).toBe('Workflow Test');
+      expect(loaded.getAuthor()).toBe('Workflow Author');
+      expect(loaded.getSubject()).toBe('Workflow Subject');
+      expect(loaded.getKeywords()).toBe('workflow test');
+      expect(loaded.getProducer()).toBe('Workflow Producer');
+      expect(loaded.getCreator()).toBe('Workflow Creator');
+      expect(loaded.getCreationDate()).toEqual(creationDate);
+      expect(loaded.getModificationDate()).toEqual(modDate);
     });
   });
 });
