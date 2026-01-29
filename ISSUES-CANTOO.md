@@ -11,9 +11,8 @@ This is the upstream fork we're based on. It's an actively maintained fork of Ho
 
 ### PR #133 - TypeScript 5.9 Compatibility (DRAFT)
 Restricts Uint8Array types from `Uint8Array<ArrayBufferLike>` to `Uint8Array<ArrayBuffer>` for TypeScript 5.9+ compatibility.
-- **Status**: Draft, linked to issue #132
-- **Impact**: Breaking change for TypeScript 5.9+ users
-- **Note**: We already use TypeScript 5.9.3 - may need to verify if we're affected
+- **Status**: **IMPLEMENTED IN THIS FORK** - Public API now uses `Uint8Array<ArrayBuffer>` for parameters and return types. Users can now do `new Blob([pdfBytes.buffer])` without TypeScript errors.
+- **Impact**: Fixes TypeScript 5.9+ compatibility
 
 ### PR #121 - Text Markup Annotations
 Adds support for text markup annotations (highlight, underline, strikeout, squiggly).
@@ -179,11 +178,11 @@ Request for better handling of non-compliant PDFs.
 - **#86** - Auto-dirty fields before flatten ✓
 - **PR #121** - Text markup annotations ✓
 - **PR #111** - Incremental updates for digital signatures ✓
+- **PR #133** - TypeScript 5.9 compatibility ✓
 
 ### Should Investigate/Fix
 1. **#122/#120** - CIDSystemInfo encryption issue (potentially fixed by PR #130, needs verification)
 2. **#55** - setText font handling
 
 ### Consider for Future
-1. **PR #133** - TypeScript 5.9 compatibility (verify if we're affected first)
-2. **#95** - SVG pattern support
+1. **#95** - SVG pattern support
