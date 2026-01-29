@@ -1331,6 +1331,48 @@ describe('PDFDocument', () => {
     });
   });
 
+  describe('registerFontkit validation', () => {
+    it('throws InvalidFontkitError when passed null', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit(null as any)).toThrow(
+        /Invalid fontkit instance/,
+      );
+    });
+
+    it('throws InvalidFontkitError when passed undefined', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit(undefined as any)).toThrow(
+        /Invalid fontkit instance/,
+      );
+    });
+
+    it('throws InvalidFontkitError when passed a non-object', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit('not-fontkit' as any)).toThrow(
+        /Invalid fontkit instance/,
+      );
+    });
+
+    it('throws InvalidFontkitError when passed an object without create method', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit({} as any)).toThrow(
+        /Invalid fontkit instance/,
+      );
+    });
+
+    it('throws InvalidFontkitError when create is not a function', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit({ create: 'not-a-function' } as any)).toThrow(
+        /Invalid fontkit instance/,
+      );
+    });
+
+    it('accepts a valid fontkit instance', async () => {
+      const doc = await PDFDocument.create();
+      expect(() => doc.registerFontkit(fontkit)).not.toThrow();
+    });
+  });
+
   describe('Metadata round-trip tests', () => {
     it('setTitle / getTitle round-trips correctly', async () => {
       const doc = await PDFDocument.create();

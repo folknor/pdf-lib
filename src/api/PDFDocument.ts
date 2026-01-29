@@ -60,6 +60,7 @@ import {
   EncryptedPDFError,
   FontkitNotRegisteredError,
   ForeignPageError,
+  InvalidFontkitError,
   RemovePageFromEmptyDocumentError,
 } from './errors.js';
 import PDFForm from './form/PDFForm.js';
@@ -302,6 +303,13 @@ export default class PDFDocument {
    * @param fontkit The fontkit instance to be registered.
    */
   registerFontkit(fontkit: Fontkit): void {
+    if (
+      !fontkit ||
+      typeof fontkit !== 'object' ||
+      typeof fontkit.create !== 'function'
+    ) {
+      throw new InvalidFontkitError();
+    }
     this.fontkit = fontkit;
   }
 

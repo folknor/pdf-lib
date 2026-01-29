@@ -18,6 +18,14 @@ export class FontkitNotRegisteredError extends Error {
   }
 }
 
+export class InvalidFontkitError extends Error {
+  constructor() {
+    const msg =
+      'Invalid fontkit instance passed to `PDFDocument.registerFontkit`. The fontkit instance must be an object with a `create` method. Ensure you have installed and imported fontkit correctly: `npm install @pdf-lib/fontkit` and `import fontkit from "@pdf-lib/fontkit"`.';
+    super(msg);
+  }
+}
+
 // TODO: Include link to documentation with example
 export class ForeignPageError extends Error {
   constructor() {
