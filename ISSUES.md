@@ -1,4 +1,8 @@
-# PDF-Lib Open Issues Analysis
+# PDF-Lib Issues Analysis
+
+---
+
+# Hopding/pdf-lib
 
 **Total Issues Analyzed**: 312
 **Filtered for Legitimate Issues**: ~180 (excluding noise, React Native questions, user support, duplicates)
@@ -531,3 +535,11 @@ limitations, or are design issues that require architectural changes.
 3. Font encoding and Unicode support (widespread issues)
 4. Page copying with forms/encryption (corrupts data)
 5. File size optimization (exponential growth issues)
+
+---
+---
+
+# cantoo-scribe/pdf-lib
+
+*Issues and PRs to be analyzed*
+
