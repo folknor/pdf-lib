@@ -42,6 +42,30 @@ export interface PDFPageDrawTextOptions extends SvgOptions {
   strokeWidth?: number;
   strokeColor?: Color;
   renderMode?: TextRenderingMode;
+  /**
+   * Extra spacing between characters in PDF points.
+   * Positive values increase spacing, negative decrease it.
+   * Default: 0 (normal character spacing)
+   */
+  characterSpacing?: number;
+  /**
+   * Extra spacing between words in PDF points.
+   * This spacing is added in addition to the normal space width.
+   * Default: 0 (normal word spacing)
+   */
+  wordSpacing?: number;
+  /**
+   * Horizontal scaling of text as a percentage.
+   * 100 = normal width, 50 = half width, 200 = double width.
+   * Default: 100
+   */
+  horizontalScaling?: number;
+  /**
+   * Text rise (superscript/subscript offset) in PDF points.
+   * Positive values move text up, negative move it down.
+   * Default: 0 (baseline)
+   */
+  textRise?: number;
 }
 
 export interface PDFPageDrawImageOptions extends SvgOptions {

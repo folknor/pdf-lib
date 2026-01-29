@@ -37,6 +37,8 @@ import {
   rotateDegrees,
   rotateRadians,
   scale,
+  setCharacterSpacing,
+  setCharacterSqueeze,
   setDashPattern,
   setFontAndSize,
   setGraphicsState,
@@ -44,6 +46,8 @@ import {
   setLineHeight,
   setLineWidth,
   setTextRenderingMode,
+  setTextRise,
+  setWordSpacing,
   showText,
   skewRadians,
   stroke,
@@ -69,6 +73,14 @@ export interface DrawTextOptions {
   strokeWidth?: number;
   strokeColor?: Color;
   renderMode?: TextRenderingMode;
+  /** Character spacing (Tc operator) in PDF points */
+  characterSpacing?: number | PDFNumber;
+  /** Word spacing (Tw operator) in PDF points */
+  wordSpacing?: number | PDFNumber;
+  /** Horizontal scaling (Th operator) as a percentage (100 = normal) */
+  horizontalScaling?: number | PDFNumber;
+  /** Text rise (Ts operator) in PDF points */
+  textRise?: number | PDFNumber;
 }
 
 const clipSpace = ({ topLeft, topRight, bottomRight, bottomLeft }: Space) => [
@@ -124,6 +136,12 @@ export const drawLinesOfText = (
     setFillingColor(options.color),
     setFontAndSize(options.font, options.size),
     setLineHeight(options.lineHeight),
+    options.characterSpacing !== undefined &&
+      setCharacterSpacing(options.characterSpacing),
+    options.wordSpacing !== undefined && setWordSpacing(options.wordSpacing),
+    options.horizontalScaling !== undefined &&
+      setCharacterSqueeze(options.horizontalScaling),
+    options.textRise !== undefined && setTextRise(options.textRise),
     options.strokeWidth && setLineWidth(options.strokeWidth),
     options.strokeColor && setStrokingColor(options.strokeColor),
     options.renderMode && setTextRenderingMode(options.renderMode),

@@ -465,6 +465,69 @@ describe('PDFDocument', () => {
         ),
       ).not.toThrow();
     });
+
+    it('draws text with character spacing', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      expect(() =>
+        page.drawText('Spaced out', {
+          font,
+          characterSpacing: 5,
+        }),
+      ).not.toThrow();
+    });
+
+    it('draws text with word spacing', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      expect(() =>
+        page.drawText('Extra word spacing', {
+          font,
+          wordSpacing: 10,
+        }),
+      ).not.toThrow();
+    });
+
+    it('draws text with horizontal scaling', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      expect(() =>
+        page.drawText('Condensed', {
+          font,
+          horizontalScaling: 75,
+        }),
+      ).not.toThrow();
+    });
+
+    it('draws text with text rise (superscript/subscript)', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      expect(() =>
+        page.drawText('Raised text', {
+          font,
+          textRise: 5,
+        }),
+      ).not.toThrow();
+    });
+
+    it('draws text with all text state operators combined', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      expect(() =>
+        page.drawText('Styled text', {
+          font,
+          characterSpacing: 2,
+          wordSpacing: 5,
+          horizontalScaling: 110,
+          textRise: 3,
+        }),
+      ).not.toThrow();
+    });
   });
 
   describe('drawRectangle() method', () => {

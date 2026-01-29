@@ -1046,6 +1046,14 @@ export default class PDFPage {
     ]);
     assertOrUndefined(options.strokeWidth, 'options.strokeWidth', ['number']);
     assertOrUndefined(options.renderMode, 'options.renderMode', ['number']);
+    assertOrUndefined(options.characterSpacing, 'options.characterSpacing', [
+      'number',
+    ]);
+    assertOrUndefined(options.wordSpacing, 'options.wordSpacing', ['number']);
+    assertOrUndefined(options.horizontalScaling, 'options.horizontalScaling', [
+      'number',
+    ]);
+    assertOrUndefined(options.textRise, 'options.textRise', ['number']);
 
     const { oldFont, newFont, newFontKey } = this.setOrEmbedFont(options.font);
     const fontSize = options.size || this.fontSize;
@@ -1094,6 +1102,18 @@ export default class PDFPage {
         }),
         ...(options.renderMode !== undefined && {
           renderMode: options.renderMode,
+        }),
+        ...(options.characterSpacing !== undefined && {
+          characterSpacing: options.characterSpacing,
+        }),
+        ...(options.wordSpacing !== undefined && {
+          wordSpacing: options.wordSpacing,
+        }),
+        ...(options.horizontalScaling !== undefined && {
+          horizontalScaling: options.horizontalScaling,
+        }),
+        ...(options.textRise !== undefined && {
+          textRise: options.textRise,
         }),
       }),
     );
