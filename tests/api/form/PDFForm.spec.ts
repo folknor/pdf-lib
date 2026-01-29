@@ -1684,6 +1684,68 @@ describe('PDFForm', () => {
       expect(form.getFieldMaybe('b')).toBeUndefined();
       expect(form.getFieldMaybe('c')).toBeUndefined();
     });
+
+    it('flattens a field with multiple widgets correctly', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // Create a text field with widgets on two pages (same field, multiple locations)
+      const tf = form.createTextField('multiWidget');
+      tf.setText('Shared Value');
+      tf.addToPage(page1, { x: 50, y: 700, width: 200, height: 20 });
+      tf.addToPage(page2, { x: 50, y: 700, width: 200, height: 20 });
+
+      // Verify both widgets exist
+      expect(tf.acroField.getWidgets().length).toBe(2);
+
+      // Count objects before flatten
+      const objectsBefore = pdfDoc.context.enumerateIndirectObjects().length;
+
+      form.flatten();
+
+      // Field should be gone
+      expect(form.getFields().length).toBe(0);
+      expect(form.getFieldMaybe('multiWidget')).toBeUndefined();
+
+      // Both pages should have content
+      const page1Contents = page1.node.Contents();
+      const page2Contents = page2.node.Contents();
+      expect(page1Contents).toBeDefined();
+      expect(page2Contents).toBeDefined();
+
+      // Document should be savable
+      const savedBytes = await pdfDoc.save();
+      expect(savedBytes).toBeInstanceOf(Uint8Array);
+
+      // Reload and verify structure
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(2);
+      expect(reloaded.getForm().getFields().length).toBe(0);
+    });
+
+    it('flattens multiple widgets on the same page correctly', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // Create a text field with two widgets on the same page
+      const tf = form.createTextField('samePageMulti');
+      tf.setText('Appears Twice');
+      tf.addToPage(page, { x: 50, y: 700, width: 200, height: 20 });
+      tf.addToPage(page, { x: 50, y: 600, width: 200, height: 20 });
+
+      expect(tf.acroField.getWidgets().length).toBe(2);
+
+      form.flatten();
+
+      // Document should be savable and reloadable
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(1);
+      expect(reloaded.getForm().getFields().length).toBe(0);
+    });
   });
 
   describe('PDFAcroForm.getFields() graceful degradation', () => {
