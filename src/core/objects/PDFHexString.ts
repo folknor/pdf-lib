@@ -1,10 +1,12 @@
 import {
   byteArrayToHexString,
   copyStringIntoBuffer,
+  hasUtf8BOM,
   hasUtf16BOM,
   parseDate,
   pdfDocEncodingDecode,
   toHexStringOfMinLength,
+  utf8Decode,
   utf16Decode,
   utf16Encode,
 } from '../../utils/index.js';
@@ -61,6 +63,7 @@ class PDFHexString extends PDFObject {
   decodeText(): string {
     const bytes = this.asBytes();
     if (hasUtf16BOM(bytes)) return utf16Decode(bytes);
+    if (hasUtf8BOM(bytes)) return utf8Decode(bytes);
     return pdfDocEncodingDecode(bytes);
   }
 

@@ -222,6 +222,19 @@ describe('PDFString', () => {
       const literal = 'a\nb\rc\\xd\\;';
       expect(PDFString.of(literal).decodeText()).toBe('a\nb\rcxd;');
     });
+
+    it('can interpret UTF-8 strings with BOM', () => {
+      // UTF-8 BOM followed by "Počet" (Czech word with diacritics)
+      // č = U+010D = 0xC4 0x8D in UTF-8
+      const literal = '\\357\\273\\277Po\\304\\215et';
+      expect(PDFString.of(literal).decodeText()).toBe('Počet');
+    });
+
+    it('can interpret UTF-8 strings with Cyrillic', () => {
+      // UTF-8 BOM followed by "Тест" (Russian word for "test")
+      const literal = '\\357\\273\\277\\320\\242\\320\\265\\321\\201\\321\\202';
+      expect(PDFString.of(literal).decodeText()).toBe('Тест');
+    });
   });
 
   describe('decoding to date', () => {

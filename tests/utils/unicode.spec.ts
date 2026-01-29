@@ -1,5 +1,6 @@
 import {
   mergeIntoTypedArray,
+  utf8Decode,
   utf8Encode,
   utf16Decode,
   utf16Encode,
@@ -372,6 +373,98 @@ describe('utf16Decode', () => {
 
     const actual = utf16Decode(input, false);
 
+    expect(actual).toEqual(expected);
+  });
+});
+
+describe('utf8Decode', () => {
+  it('decodes <U+004D U+0430 U+4E8C U+10302> from UTF-8 with BOM', () => {
+    // prettier-ignore
+    const input = new Uint8Array([
+      /* BOM */ 0xef, 0xbb, 0xbf,
+      /* U+004D  */ 0x4d, /* U+0430  */ 0xd0, 0xb0, /* U+4E8C  */ 0xe4, 0xba,
+      0x8c, /* U+10302 */ 0xf0, 0x90, 0x8c, 0x82,
+    ]);
+
+    const expected = '\u{004D}\u{0430}\u{4E8C}\u{10302}';
+
+    const actual = utf8Decode(input);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('decodes Czech text "Počet" from UTF-8 with BOM', () => {
+    // "Počet" where č is U+010D
+    // prettier-ignore
+    const input = new Uint8Array([
+      /* BOM */ 0xef, 0xbb, 0xbf,
+      /* P */ 0x50, /* o */ 0x6f, /* č */ 0xc4, 0x8d, /* e */ 0x65, /* t */ 0x74,
+    ]);
+
+    const expected = 'Počet';
+
+    const actual = utf8Decode(input);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('decodes "Дмитрий Козлюк" from UTF-8 with BOM', () => {
+    // prettier-ignore
+    const input = new Uint8Array([
+      /* BOM */ 0xef, 0xbb, 0xbf,
+      0xd0, 0x94, 0xd0, 0xbc, 0xd0, 0xb8, 0xd1, 0x82, 0xd1, 0x80, 0xd0, 0xb8,
+      0xd0, 0xb9, 0x20, 0xd0, 0x9a, 0xd0, 0xbe, 0xd0, 0xb7, 0xd0, 0xbb, 0xd1,
+      0x8e, 0xd0, 0xba,
+    ]);
+
+    const expected = 'Дмитрий Козлюк';
+
+    const actual = utf8Decode(input);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('decodes UTF-8 without BOM when byteOrderMark is false', () => {
+    // "Počet" without BOM
+    // prettier-ignore
+    const input = new Uint8Array([
+      /* P */ 0x50, /* o */ 0x6f, /* č */ 0xc4, 0x8d, /* e */ 0x65, /* t */ 0x74,
+    ]);
+
+    const expected = 'Počet';
+
+    const actual = utf8Decode(input, false);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('decodes emoji from UTF-8', () => {
+    // prettier-ignore
+    const input = new Uint8Array([
+      /* BOM */ 0xef, 0xbb, 0xbf,
+      /* U+1F4A9 */ 0xf0, 0x9f, 0x92, 0xa9, /* U+1F382 */ 0xf0, 0x9f, 0x8e,
+      0x82,
+    ]);
+
+    const expected = '💩🎂';
+
+    const actual = utf8Decode(input);
+
+    expect(actual).toEqual(expected);
+  });
+
+  it('handles long strings without stack overflow', () => {
+    // Build a UTF-8 byte array with BOM + 50,000 ASCII 'A' characters
+    const charCount = 50000;
+    const input = new Uint8Array(3 + charCount);
+    input[0] = 0xef;
+    input[1] = 0xbb;
+    input[2] = 0xbf;
+    for (let i = 0; i < charCount; i++) {
+      input[3 + i] = 65; // 'A'
+    }
+    const expected = 'A'.repeat(charCount);
+    const actual = utf8Decode(input);
     expect(actual).toEqual(expected);
   });
 });

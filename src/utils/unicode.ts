@@ -395,3 +395,80 @@ const hasUtf16LittleEndianBOM = (bytes: Uint8Array) =>
 
 export const hasUtf16BOM = (bytes: Uint8Array) =>
   hasUtf16BigEndianBOM(bytes) || hasUtf16LittleEndianBOM(bytes);
+
+export const hasUtf8BOM = (bytes: Uint8Array) =>
+  bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
+
+/**
+ * Decodes a Uint8Array of data to a string using UTF-8.
+ *
+ * @param input A Uint8Array containing UTF-8 encoded data
+ * @param byteOrderMark Whether or not a byte order marker (BOM) should be
+ *                      skipped at the start. (default `true`)
+ * @returns The decoded string.
+ */
+export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
+  // Skip BOM if present and expected
+  const start = byteOrderMark && hasUtf8BOM(input) ? 3 : 0;
+  const bytes = input.subarray(start);
+
+  // Use TextDecoder if available (Node.js and modern browsers)
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  // Fallback manual UTF-8 decoding
+  const codePoints: number[] = [];
+  let idx = 0;
+
+  while (idx < bytes.length) {
+    const byte1 = bytes[idx]!;
+
+    if (byte1 < 0x80) {
+      // Single byte (ASCII)
+      codePoints.push(byte1);
+      idx += 1;
+    } else if ((byte1 & 0xe0) === 0xc0) {
+      // Two bytes
+      const byte2 = bytes[idx + 1] ?? 0;
+      const codePoint = ((byte1 & 0x1f) << 6) | (byte2 & 0x3f);
+      codePoints.push(codePoint);
+      idx += 2;
+    } else if ((byte1 & 0xf0) === 0xe0) {
+      // Three bytes
+      const byte2 = bytes[idx + 1] ?? 0;
+      const byte3 = bytes[idx + 2] ?? 0;
+      const codePoint =
+        ((byte1 & 0x0f) << 12) | ((byte2 & 0x3f) << 6) | (byte3 & 0x3f);
+      codePoints.push(codePoint);
+      idx += 3;
+    } else if ((byte1 & 0xf8) === 0xf0) {
+      // Four bytes
+      const byte2 = bytes[idx + 1] ?? 0;
+      const byte3 = bytes[idx + 2] ?? 0;
+      const byte4 = bytes[idx + 3] ?? 0;
+      const codePoint =
+        ((byte1 & 0x07) << 18) |
+        ((byte2 & 0x3f) << 12) |
+        ((byte3 & 0x3f) << 6) |
+        (byte4 & 0x3f);
+      codePoints.push(codePoint);
+      idx += 4;
+    } else {
+      // Invalid UTF-8, use replacement character
+      codePoints.push(0xfffd);
+      idx += 1;
+    }
+  }
+
+  // String.fromCodePoint throws when called with too many arguments
+  const chunkSize = 8192;
+  if (codePoints.length <= chunkSize) {
+    return String.fromCodePoint(...codePoints);
+  }
+  let result = '';
+  for (let i = 0; i < codePoints.length; i += chunkSize) {
+    result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));
+  }
+  return result;
+};

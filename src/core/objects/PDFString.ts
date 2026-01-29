@@ -1,10 +1,12 @@
 import {
   copyStringIntoBuffer,
+  hasUtf8BOM,
   hasUtf16BOM,
   padStart,
   parseDate,
   pdfDocEncodingDecode,
   toCharCode,
+  utf8Decode,
   utf16Decode,
 } from '../../utils/index.js';
 import { InvalidPDFDateStringError } from '../errors.js';
@@ -81,6 +83,7 @@ class PDFString extends PDFObject {
   decodeText(): string {
     const bytes = this.asBytes();
     if (hasUtf16BOM(bytes)) return utf16Decode(bytes);
+    if (hasUtf8BOM(bytes)) return utf8Decode(bytes);
     return pdfDocEncodingDecode(bytes);
   }
 
