@@ -22,9 +22,8 @@ Adds support for text markup annotations (highlight, underline, strikeout, squig
 
 ### PR #111 - Incremental Update Implementation
 Implements incremental PDF updates for PAdES/LTV digital signature compliance.
-- **Status**: Open, active discussion
+- **Status**: **IMPLEMENTED IN THIS FORK** - Added `takeSnapshot()`, `commit()`, and `saveIncremental()` methods. Load with `{ forIncrementalUpdate: true }` to enable. Includes bug fixes (preserve original PDF version) and performance optimizations (Set-based change tracking).
 - **Impact**: Critical for digital signature workflows; preserves original PDF bytes
-- **Complexity**: High - requires careful handling of object numbering and cross-reference tables
 - **Use case**: Required for long-term validation (LTV) signatures
 
 ---
@@ -179,13 +178,11 @@ Request for better handling of non-compliant PDFs.
 - **#96** - PDFNull graceful handling ✓
 - **#86** - Auto-dirty fields before flatten ✓
 - **PR #121** - Text markup annotations ✓
+- **PR #111** - Incremental updates for digital signatures ✓
 
 ### Should Investigate/Fix
 1. **#122/#120** - CIDSystemInfo encryption issue (potentially fixed by PR #130, needs verification)
 2. **#55** - setText font handling
-
-### Should Merge
-1. **PR #111** - Incremental updates (NEXT PRIORITY - critical for digital signatures)
 
 ### Consider for Future
 1. **PR #133** - TypeScript 5.9 compatibility (verify if we're affected first)
