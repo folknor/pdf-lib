@@ -21,6 +21,25 @@ export interface CopyOptions {
    * Default: false (copies all inherited resources)
    */
   optimizeResources?: boolean;
+
+  /**
+   * A function to transform field names when copying pages with form fields.
+   * This is useful to avoid field name conflicts when copying pages from
+   * multiple source documents into the same destination document.
+   *
+   * The function receives the original field name and should return the new name.
+   * If the function returns the same name, no rename occurs.
+   *
+   * Example: Add a prefix to avoid conflicts:
+   * ```js
+   * const copiedPages = await pdfDoc.copyPages(srcDoc, [0], {
+   *   renameFields: (name) => `doc1_${name}`
+   * });
+   * ```
+   *
+   * Default: undefined (field names are preserved)
+   */
+  renameFields?: (fieldName: string) => string;
 }
 
 /**

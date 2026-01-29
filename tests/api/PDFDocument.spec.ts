@@ -1427,6 +1427,91 @@ describe('PDFDocument', () => {
         expect(destDoc.getPage(1).getHeight()).toBe(888);
         expect(destDoc.getPage(2).getWidth()).toBe(200);
       });
+
+      it('renames form fields when renameFields option is provided', async () => {
+        // Create source document with a form field
+        const srcDoc = await PDFDocument.create();
+        const srcPage = srcDoc.addPage([500, 500]);
+        const srcForm = srcDoc.getForm();
+        const srcField = srcForm.createTextField('myField');
+        srcField.setText('Hello');
+        srcField.addToPage(srcPage, { x: 50, y: 400, width: 200, height: 30 });
+
+        // Copy pages with a rename function
+        const destDoc = await PDFDocument.create();
+        const [copiedPage] = await destDoc.copyPages(srcDoc, [0], {
+          renameFields: (name) => `doc1_${name}`,
+        });
+        destDoc.addPage(copiedPage);
+
+        // The field should have been renamed
+        const destForm = destDoc.getForm();
+        const fields = destForm.getFields();
+
+        expect(fields.length).toBe(1);
+        expect(fields[0].getName()).toBe('doc1_myField');
+      });
+
+      it('allows copying from multiple sources without field name conflicts', async () => {
+        // Create first source document
+        const src1 = await PDFDocument.create();
+        const page1 = src1.addPage([500, 500]);
+        const form1 = src1.getForm();
+        const field1 = form1.createTextField('sharedName');
+        field1.setText('From doc 1');
+        field1.addToPage(page1, { x: 50, y: 400, width: 200, height: 30 });
+
+        // Create second source document with same field name
+        const src2 = await PDFDocument.create();
+        const page2 = src2.addPage([500, 500]);
+        const form2 = src2.getForm();
+        const field2 = form2.createTextField('sharedName');
+        field2.setText('From doc 2');
+        field2.addToPage(page2, { x: 50, y: 400, width: 200, height: 30 });
+
+        // Copy both to destination with unique prefixes
+        const destDoc = await PDFDocument.create();
+
+        const [copiedPage1] = await destDoc.copyPages(src1, [0], {
+          renameFields: (name) => `src1_${name}`,
+        });
+        destDoc.addPage(copiedPage1);
+
+        const [copiedPage2] = await destDoc.copyPages(src2, [0], {
+          renameFields: (name) => `src2_${name}`,
+        });
+        destDoc.addPage(copiedPage2);
+
+        // Both fields should exist with different names
+        const destForm = destDoc.getForm();
+        const fields = destForm.getFields();
+
+        expect(fields.length).toBe(2);
+        const fieldNames = fields.map((f) => f.getName()).sort();
+        expect(fieldNames).toEqual(['src1_sharedName', 'src2_sharedName']);
+      });
+
+      it('preserves field names when renameFields is not provided', async () => {
+        // Create source document with a form field
+        const srcDoc = await PDFDocument.create();
+        const srcPage = srcDoc.addPage([500, 500]);
+        const srcForm = srcDoc.getForm();
+        const srcField = srcForm.createTextField('originalName');
+        srcField.setText('Test');
+        srcField.addToPage(srcPage, { x: 50, y: 400, width: 200, height: 30 });
+
+        // Copy pages without rename option
+        const destDoc = await PDFDocument.create();
+        const [copiedPage] = await destDoc.copyPages(srcDoc, [0]);
+        destDoc.addPage(copiedPage);
+
+        // The field should keep its original name
+        const destForm = destDoc.getForm();
+        const fields = destForm.getFields();
+
+        expect(fields.length).toBe(1);
+        expect(fields[0].getName()).toBe('originalName');
+      });
     });
   });
 

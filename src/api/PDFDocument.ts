@@ -37,7 +37,7 @@ import {
   UnexpectedObjectTypeError,
 } from '../core/index.js';
 import type PDFObject from '../core/objects/PDFObject.js';
-import type PDFRef from '../core/objects/PDFRef.js';
+import PDFRef from '../core/objects/PDFRef.js';
 import PDFSecurity, {
   type SecurityOptions,
 } from '../core/security/PDFSecurity.js';
@@ -858,13 +858,169 @@ export default class PDFDocument {
     const copier = PDFObjectCopier.for(srcDoc.context, this.context, options);
     const srcPages = srcDoc.getPages();
     // Copy each page in a separate thread
-    const copiedPages = indices
-      .map((i) => srcPages[i]!)
-      .map(async (page) => copier.copy(page.node))
-      .map((p) =>
-        p.then((copy) => PDFPage.of(copy, this.context.register(copy), this)),
+    const copiedPageNodes = await Promise.all(
+      indices.map((i) => srcPages[i]!).map(async (page) => copier.copy(page.node)),
+    );
+
+    const pages = copiedPageNodes.map((copy) =>
+      PDFPage.of(copy, this.context.register(copy), this),
+    );
+
+    // Register copied form fields with the destination AcroForm and optionally rename them
+    this.registerCopiedFormFields(pages, options?.renameFields);
+
+    return pages;
+  }
+
+  /**
+   * Register form fields from copied pages with this document's AcroForm.
+   * Optionally rename fields using the provided transform function.
+   */
+  private registerCopiedFormFields(
+    pages: PDFPage[],
+    renameTransform?: (name: string) => string,
+  ): void {
+    const processedFields = new Set<PDFDict>();
+    const rootFields: PDFRef[] = [];
+
+    for (const page of pages) {
+      const annots = page.node.Annots();
+      if (!annots) continue;
+
+      for (let i = 0; i < annots.size(); i++) {
+        const annotRef = annots.get(i);
+        const annotDict = this.context.lookup(annotRef);
+        if (!(annotDict instanceof PDFDict)) continue;
+
+        // Check if this is a widget annotation
+        const subtype = annotDict.get(PDFName.of('Subtype'));
+        if (!(subtype instanceof PDFName) || subtype.decodeText() !== 'Widget')
+          continue;
+
+        // Find the root field (topmost parent or the widget itself if merged)
+        const rootFieldResult = this.findRootField(annotDict);
+        if (!rootFieldResult) continue;
+
+        const { dict: rootDict, ref: rootRef } = rootFieldResult;
+
+        // Skip if we've already processed this root field
+        if (processedFields.has(rootDict)) continue;
+        processedFields.add(rootDict);
+
+        // Apply rename transform if provided
+        if (renameTransform) {
+          this.renameFieldHierarchy(rootDict, renameTransform, processedFields);
+        }
+
+        // Collect root field ref to add to AcroForm
+        rootFields.push(rootRef);
+      }
+    }
+
+    // Add root fields to AcroForm if there are any
+    if (rootFields.length > 0) {
+      const form = this.getForm();
+      const acroForm = form.acroForm;
+      for (const fieldRef of rootFields) {
+        acroForm.addField(fieldRef);
+      }
+    }
+  }
+
+  /**
+   * Find the root field dictionary and ref for a widget annotation.
+   * Returns undefined if no field is found.
+   */
+  private findRootField(
+    widgetDict: PDFDict,
+  ): { dict: PDFDict; ref: PDFRef } | undefined {
+    let currentDict = widgetDict;
+    let currentRef = this.context.getObjectRef(widgetDict);
+
+    // Traverse up the parent chain to find the root
+    while (true) {
+      const parentEntry = currentDict.get(PDFName.of('Parent'));
+      if (!parentEntry) break;
+
+      const parentDict = this.context.lookup(parentEntry);
+      if (!(parentDict instanceof PDFDict)) break;
+
+      // Check if this parent is a field (has /T) or just the AcroForm
+      // AcroForm won't have a /T entry
+      const hasT = parentDict.has(PDFName.of('T'));
+      if (!hasT) break;
+
+      currentDict = parentDict;
+      if (parentEntry instanceof PDFRef) {
+        currentRef = parentEntry;
+      } else {
+        currentRef = this.context.getObjectRef(parentDict);
+      }
+    }
+
+    if (!currentRef) return undefined;
+    return { dict: currentDict, ref: currentRef };
+  }
+
+  /**
+   * Rename a field and all its children using the transform function.
+   */
+  private renameFieldHierarchy(
+    fieldDict: PDFDict,
+    transform: (name: string) => string,
+    _processedFields: Set<PDFDict>,
+  ): void {
+    // Get the full name and compute the new name
+    const fullName = this.getFieldFullName(fieldDict);
+    if (!fullName) return;
+
+    const newFullName = transform(fullName);
+    if (newFullName === fullName) return;
+
+    // For the transform, we only need to change the partial name of this field
+    // Extract the new partial name
+    const lastDot = newFullName.lastIndexOf('.');
+    const newPartialName =
+      lastDot >= 0 ? newFullName.slice(lastDot + 1) : newFullName;
+
+    // Update the /T entry with the new partial name
+    fieldDict.set(PDFName.of('T'), PDFHexString.fromText(newPartialName));
+  }
+
+  /**
+   * Get the fully qualified name of a field dictionary.
+   */
+  private getFieldFullName(fieldDict: PDFDict): string {
+    const parts: string[] = [];
+
+    let currentDict: PDFDict | undefined = fieldDict;
+    while (currentDict) {
+      const tEntry = currentDict.get(PDFName.of('T'));
+      if (tEntry) {
+        let partialName: string | undefined;
+        if (tEntry instanceof PDFString) {
+          partialName = tEntry.asString();
+        } else if (tEntry instanceof PDFHexString) {
+          partialName = tEntry.decodeText();
+        }
+        if (partialName) {
+          parts.unshift(partialName);
+        }
+      }
+
+      const parentRef: PDFObject | undefined = currentDict.get(
+        PDFName.of('Parent'),
       );
-    return Promise.all(copiedPages);
+      if (parentRef) {
+        const parentDict: PDFObject | undefined =
+          this.context.lookup(parentRef);
+        currentDict = parentDict instanceof PDFDict ? parentDict : undefined;
+      } else {
+        currentDict = undefined;
+      }
+    }
+
+    return parts.join('.');
   }
 
   /**
