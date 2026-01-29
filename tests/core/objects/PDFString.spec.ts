@@ -152,6 +152,37 @@ describe('PDFString', () => {
         ),
       );
     });
+
+    it('can interpret escaped backslashes', () => {
+      // An escaped backslash (\\) should become a single backslash byte
+      const literal = 'foo\\\\bar';
+
+      expect(PDFString.of(literal).asBytes()).toEqual(
+        Uint8Array.of(
+          toCharCode('f'),
+          toCharCode('o'),
+          toCharCode('o'),
+          toCharCode('\\'),
+          toCharCode('b'),
+          toCharCode('a'),
+          toCharCode('r'),
+        ),
+      );
+    });
+
+    it('can interpret multiple escaped backslashes', () => {
+      // Multiple escaped backslashes in a row
+      const literal = 'a\\\\\\\\b';
+
+      expect(PDFString.of(literal).asBytes()).toEqual(
+        Uint8Array.of(
+          toCharCode('a'),
+          toCharCode('\\'),
+          toCharCode('\\'),
+          toCharCode('b'),
+        ),
+      );
+    });
   });
 
   describe('decoding to string', () => {

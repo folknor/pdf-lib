@@ -58,20 +58,23 @@ export default class PDFEmbeddedFile implements Embeddable {
         this.ref,
       );
 
-      if (!this.doc.catalog.has(PDFName.of('Names'))) {
-        this.doc.catalog.set(PDFName.of('Names'), this.doc.context.obj({}));
+      let Names = this.doc.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
+      if (!Names) {
+        Names = this.doc.context.obj({});
+        this.doc.catalog.set(PDFName.of('Names'), Names);
       }
-      const Names = this.doc.catalog.lookup(PDFName.of('Names'), PDFDict);
 
-      if (!Names.has(PDFName.of('EmbeddedFiles'))) {
-        Names.set(PDFName.of('EmbeddedFiles'), this.doc.context.obj({}));
+      let EmbeddedFiles = Names.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
+      if (!EmbeddedFiles) {
+        EmbeddedFiles = this.doc.context.obj({});
+        Names.set(PDFName.of('EmbeddedFiles'), EmbeddedFiles);
       }
-      const EmbeddedFiles = Names.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
 
-      if (!EmbeddedFiles.has(PDFName.of('Names'))) {
-        EmbeddedFiles.set(PDFName.of('Names'), this.doc.context.obj([]));
+      let EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
+      if (!EFNames) {
+        EFNames = this.doc.context.obj([]);
+        EmbeddedFiles.set(PDFName.of('Names'), EFNames);
       }
-      const EFNames = EmbeddedFiles.lookup(PDFName.of('Names'), PDFArray);
 
       EFNames.push(PDFHexString.fromText(this.embedder.fileName));
       EFNames.push(ref);

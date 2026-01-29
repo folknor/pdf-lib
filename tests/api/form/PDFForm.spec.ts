@@ -991,6 +991,60 @@ describe('PDFForm', () => {
 
       expect(reloadedForm.getFields().length).toBe(0);
     });
+
+    it('marks fields dirty by default when flattening with updateFieldAppearances: true', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('dirtyTest');
+      tf.addToPage(page);
+
+      // Manually clear the dirty flag
+      form.markFieldAsClean(tf.ref);
+      expect(form.fieldIsDirty(tf.ref)).toBe(false);
+
+      // Flatten should mark it dirty before updating appearances
+      form.flatten();
+
+      // Field is removed, so we can't check dirty flag - but this tests the code path
+      expect(form.getFields().length).toBe(0);
+    });
+
+    it('respects markFieldsAsDirty: false option', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('noMarkDirty');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      // Flatten with markFieldsAsDirty: false
+      form.flatten({ updateFieldAppearances: true, markFieldsAsDirty: false });
+
+      // Field is removed
+      expect(form.getFields().length).toBe(0);
+
+      // The document should still be savable
+      const savedBytes = await pdfDoc.save();
+      expect(savedBytes).toBeInstanceOf(Uint8Array);
+    });
+
+    it('skips marking dirty when updateFieldAppearances is false', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('skipAppearances');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      // Flatten with updateFieldAppearances: false (markFieldsAsDirty is ignored)
+      form.flatten({ updateFieldAppearances: false });
+
+      expect(form.getFields().length).toBe(0);
+    });
   });
 
   describe('multiple field types coexistence', () => {

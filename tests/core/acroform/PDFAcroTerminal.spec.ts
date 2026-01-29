@@ -5,6 +5,7 @@ import {
   PDFContext,
   PDFDocument,
   PDFName,
+  PDFNull,
   PDFRef,
   PDFWidgetAnnotation,
 } from '../../../src/index';
@@ -320,6 +321,38 @@ describe('PDFAcroTerminal', () => {
 
       expect(widgets.length).toBe(1);
       expect(widgets[0]).toBeInstanceOf(PDFWidgetAnnotation);
+    });
+
+    it('skips null entries in Kids array gracefully', () => {
+      const context = PDFContext.create();
+
+      // Create valid widget dicts
+      const widget1 = context.obj({ Type: 'Annot', Subtype: 'Widget' });
+      const widget1Ref = context.register(widget1);
+
+      const widget2 = context.obj({ Type: 'Annot', Subtype: 'Widget' });
+      const widget2Ref = context.register(widget2);
+
+      // Create Kids array with a null entry in the middle
+      const kids = PDFArray.withContext(context);
+      kids.push(widget1Ref);
+      kids.push(PDFNull); // This should be skipped gracefully
+      kids.push(widget2Ref);
+      const kidsRef = context.register(kids);
+
+      const dict = context.obj({
+        FT: 'Tx',
+        Kids: kidsRef,
+      });
+      const dictRef = context.register(dict);
+
+      const terminal = PDFAcroTerminal.fromDict(dict, dictRef);
+      const widgets = terminal.getWidgets();
+
+      // Should return only the two valid widgets, skipping the null
+      expect(widgets.length).toBe(2);
+      expect(widgets[0]).toBeInstanceOf(PDFWidgetAnnotation);
+      expect(widgets[1]).toBeInstanceOf(PDFWidgetAnnotation);
     });
   });
 });

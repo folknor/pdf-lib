@@ -541,5 +541,323 @@ limitations, or are design issues that require architectural changes.
 
 # cantoo-scribe/pdf-lib
 
-*Issues and PRs to be analyzed*
+This is an actively maintained fork of Hopding/pdf-lib with significant enhancements including PDF encryption, improved SVG support, and many bug fixes.
+
+**Repository**: https://github.com/cantoo-scribe/pdf-lib
+**NPM Package**: `@cantoo/pdf-lib`
+**Current Version**: 2.4.x
+
+---
+
+## Major Features Added (Merged PRs)
+
+### PDF Encryption (PR #54, v2.2.0)
+Full encryption support with password protection. Fixed Adobe Acrobat compatibility issue where encrypted PDFs couldn't be opened (fix: exclude catalog, page objects from object streams per PDF spec).
+
+### Browser Encryption Support (PR #92, v2.3.0)
+Made PDF encryption work in browser environments.
+
+### Checkbox/Radio Flatten Fix (PR #56, v2.1.6)
+Fixed `form.flatten()` removing CheckBox and RadioGroup content. The code now correctly dereferences PDFRef to PDFDict before extracting appearance states.
+
+### InputField Rendering Fix (PR #102, v2.4.0)
+Fixed form text fields only displaying when focused. Issue occurred when there was no border or color defined for the input field.
+
+### JPEG Embedder Fix (PR #114, v2.4.3)
+Fixed incorrect construction of DataView from Uint8Array in JpegEmbedder.
+
+### Flattened Forms Print Fix (PR #126)
+Fixed PDFs with flattened forms that couldn't be printed in Adobe Reader or Acrobat. Issue was incorrect widget ref removal.
+
+### Attachment Handling
+- **PR #117**: Implemented file detach functionality
+- **PR #103, #113**: Get attachments support, including handling attachments without descriptions
+
+### SVG Rendering Improvements (Multiple PRs)
+Extensive SVG support improvements:
+- **PR #50**: Fixed drawSvgPath y-coordinate handling
+- **PR #35**: Fixed elliptical arc parsing with axis scaling
+- **PR #36**: Added support for 'evenodd' fill rule
+- **PR #30**: Fixed SVG path command T duplicate adjustment
+- **PR #42, #43**: Refactored drawSvg for transformations and cropping
+- **PR #39**: Fixed matrix transformation for rotations
+- **PR #62, #81**: Fixed drawRectangle rotation handling
+
+### Other Notable Merges
+- **PR #79**: Full language support in document info
+- **PR #74**: Skip invalid xref entries gracefully
+- **PR #47**: Fixed PDFs with invalid key length in encryption
+- **PR #46**: Added conversion method from PDFObjects to TypeScript literals
+- **PR #52**: Text outline/stroke option
+- **PR #94**: Fixed fullPageBoundingBox mediabox handling
+- **PR #82**: Fixed drawSvg blendMode option passing
+
+---
+
+## Open Pull Requests (Actionable)
+
+### PR #133 - TypeScript 5.9 Compatibility (DRAFT)
+Restricts Uint8Array types from `Uint8Array<ArrayBufferLike>` to `Uint8Array<ArrayBuffer>` for TypeScript 5.9+ compatibility.
+- **Status**: Draft, linked to issue #132
+- **Impact**: Breaking change for TypeScript 5.9+ users
+
+### PR #130 - Fix Literal String Decryption
+Fixes decryption of literal strings in encrypted PDFs.
+- **Status**: **IMPLEMENTED IN THIS FORK** - Fixed two bugs: (1) PDFString.asBytes() typo checking Backspace instead of BackSlash for escaped backslashes, (2) PDFObjectParser.parseString() now uses decryptBytes() with proper byte conversion instead of decryptString().
+- **Impact**: Encryption reliability
+
+### PR #129 - XFA Forms Support
+Working with XFA (XML Forms Architecture) forms.
+- **Status**: Open
+- **Impact**: Support for Adobe LiveCycle forms (complex feature)
+
+### PR #121 - Text Markup Annotations
+Adds support for text markup annotations (highlight, underline, strikeout, squiggly).
+- **Status**: Open, needs review
+- **Impact**: New annotation features
+
+### PR #111 - Incremental Update Implementation
+Implements incremental PDF updates for PAdES/LTV digital signature compliance.
+- **Status**: Open, active discussion
+- **Impact**: Critical for digital signature workflows; preserves original PDF bytes
+- **Complexity**: High - requires careful handling of object numbering and cross-reference tables
+- **Use case**: Required for long-term validation (LTV) signatures
+
+### PR #87 - Save to Target Path
+Adds `saveToTargetPath()` method for direct file writing.
+- **Status**: Open, stalled (memory issues being worked out)
+- **Issue**: Cross-platform compatibility (Node vs browser)
+- **Suggestion**: Use Web Streams API for better compatibility
+
+### PR #66 - Remove Unnecessary Async
+Refactors to remove unnecessary async from embed functions.
+- **Status**: Stale, changes requested (remove yarn/package-lock changes)
+- **Note**: Async was intentionally added for performance (allows event loop breathing)
+
+---
+
+## Open Issues
+
+### Critical / High Priority
+
+#### #122 - CIDSystemInfo Not Set in Password-Protected PDFs
+Registry and Ordering fields in CIDFont CIDSystemInfo structure are not properly handled during PDFObjectCopier for password-protected PDFs. After decryption, these fields remain as encrypted binary data instead of being decrypted.
+- **Symptoms**: Text doesn't display in regenerated password-protected PDFs
+- **Root cause**: PDFObjectCopier copies encrypted values as-is instead of decrypting them
+- **Workaround**: Force set `Registry: "Adobe"` and `Ordering: "Identity"`
+- **Related**: #120 (same root cause)
+- **Status**: **POTENTIALLY FIXED** - The PR #130 literal string decryption fix we implemented may resolve this issue, as it fixes how encrypted literal strings are decrypted (using `decryptBytes()` with proper byte conversion instead of `decryptString()`). The parser correctly passes the parent object's `ref` down to nested dictionaries for decryption. Needs verification with a test PDF that exhibits this issue.
+
+#### #120 - Text Missing After Saving PDF
+Text disappears after saving certain PDFs.
+- **Related to**: #122 (CIDSystemInfo issue)
+- **Status**: Linked to same root cause
+
+#### #86 - Form Field Content Lost After Flatten
+When flattening PDFs filled by external applications (like Adobe Acrobat), field values may not appear.
+- **Root cause**: External apps may store values differently (in /V vs appearance stream)
+- **Status**: **FIXED IN THIS FORK** - `flatten()` now automatically marks all fields dirty by default before updating appearances. Use `markFieldsAsDirty: false` option to skip this if not needed.
+
+#### #55 - Form Field setText Not Respecting Embedded Fonts
+Text set via setText() doesn't use the font embedded in the PDF form field.
+- **Root cause**: Font descriptor parsing may not match pdf-lib expectations
+- **Status**: Needs investigation
+
+### Build / Module Issues
+
+#### #132 - TypeScript >= 5.9 Compatibility
+TypeScript 5.9 changed Uint8Array type handling causing compile errors.
+- **Status**: Has draft PR #133
+
+#### #85 - UPNG.decode Error with ESM
+`UPNG.decode is not a function` error when using ESM modules.
+- **Root cause**: UPNG CommonJS module not properly exported for ESM
+- **Status**: Fixed in v2.4.5
+- **Related**: #72, #24
+
+#### #72 - Error Embedding PNG
+Same root cause as #85 - ESM/CommonJS interop issue with UPNG.
+- **Status**: Fixed in v2.4.5
+
+#### #24 - Update Pako Dependency
+Request to update pako to ^2.0.2 for better tree shaking.
+- **Status**: Open, would help with bundle size
+
+### Feature Requests
+
+#### #105 - Add Layers Management
+Feature request for PDF layer (Optional Content Groups) management.
+- **Status**: Help wanted
+
+#### #98 - PDF/A Conversion
+Feature request to convert PDFs to PDF/A format.
+- **Status**: Help wanted
+
+#### #95 - SVG Pattern/Defs Not Supported
+Error when SVG fill uses `url(#pattern)`.
+- **Root cause**: SVG `<defs>` and `<pattern>` elements not implemented
+- **Complexity**: Requires implementing pattern tiling with clipping
+- **Status**: Help wanted
+
+#### #91 - Get Embedded Image Size/Position
+Feature request to retrieve size and position of embedded images, or calculate PPI.
+- **Status**: Help wanted
+
+#### #73 - PDF Compression
+Feature request for PDF file compression.
+- **Status**: Help wanted
+
+#### #68 - Deflating Streams
+Feature request for stream deflation/compression.
+- **Status**: Help wanted
+
+### Parsing / Encryption Issues
+
+#### #96 - PDFNull Instead of PDFDict
+Error: "Expected instance of PDFDict, but got instance of PDFNull"
+- **Status**: **FIXED IN THIS FORK** - Multiple locations now use `lookupMaybe()` instead of `lookup()` with graceful undefined handling. Fixed in: PDFAcroTerminal.getWidgets(), PDFForm.findWidgetAppearanceRef(), PDFDocument.getRawAttachments(), PDFDocument.getSavedAttachments(), PDFAnnotation.getAppearances(), PDFEmbeddedFile.embedIntoContext().
+
+#### #69 - Images Corrupted in Encrypted PDF Clone
+Image objects get corrupted when cloning/saving encrypted PDFs.
+- **Workaround**: Use qpdf CLI for decryption before processing
+- **Status**: Help wanted
+
+#### #65 - Deep Clone Decrypted PDFDocument Error
+Error when creating deep clone of decrypted PDFDocument object.
+- **Workaround**: Use qpdf for decryption
+- **Status**: Help wanted
+
+#### #64 - Failed to Parse Number
+Parsing error at specific file offset.
+- **Status**: Needs investigation with repro file
+
+#### #63 - Failed to Parse Invalid PDF Object
+Generic parsing failure.
+- **Status**: Needs investigation with repro file
+
+### Minor Issues
+
+#### #128 - Missing Page Index for Acrofield Widget
+Cannot get page index for form field widgets.
+- **Status**: Bug, needs triage
+
+#### #118 - Remove Form Fields and Comments
+User question about removing form fields and annotations.
+- **Status**: Support question (feature exists via form.removeField)
+
+#### #112 - Can't Read Attachments Without Description
+Attachments missing the description field caused errors.
+- **Status**: Fixed by PR #113
+
+#### #106 - Catalog Missing in Saved PDF
+Catalog not present when saving PDF in Next.js client-side.
+- **Root cause**: Environment-specific issue, works on server side
+- **Status**: User confirmed works server-side
+
+#### #89 - Attachment Names Cause Acrobat Error
+Some attachment names cause errors in Acrobat Reader.
+- **Workaround**: Add attachments in lexical order (1.jpg, 10.jpg, 2.jpg)
+- **Status**: Help wanted
+
+#### #71 - Save to Specific File Path
+Feature request for `save(filePath)` method.
+- **Status**: Has PR #87
+
+#### #67 - Add packageManager Field
+Request to add packageManager field to package.json for reliable dependency management.
+- **Status**: Open
+
+#### #27 - Support Non PDF/A Compliant PDFs
+Request for better handling of non-compliant PDFs.
+- **Status**: Help wanted
+
+---
+
+## Closed Issues (Already Fixed)
+
+### Fixed in cantoo-scribe Fork
+
+- **#131** - Optional /AF support for attachments (closed)
+- **#127** - UMD module single JS file (closed)
+- **#125** - WebSocket error (unrelated to pdf-lib)
+- **#116** - drawSvg path element not rendered (fixed in 2.4.x)
+- **#115** - Incremental saving (has PR #111)
+- **#108** - tslib as runtime dependency (fixed)
+- **#107** - Checkbox form not showing checked on flatten (fixed by PR #56)
+- **#104** - Missing tslib runtime dependency (fixed)
+- **#101** - Form text fields only display when focused (fixed by PR #102)
+- **#100** - XFA support (has PR #129)
+- **#97** - String attachments corrupted (fixed)
+- **#90** - Convert PDF to DOCX (out of scope)
+- **#76** - tslib in devDependencies (fixed)
+- **#75** - Encrypted PDF error even when readable (fixed by encryption support)
+- **#70** - text pdf (unclear, closed)
+- **#61** - drawRectangle rotation issue (fixed by PR #62)
+- **#59** - Strange MediaBox/CropBox (fixed)
+- **#58** - Clickable links (closed)
+- **#51** - Flatten leaves borders on checkboxes/radios (fixed)
+- **#49** - drawSvgPath upside-down (fixed by PR #50)
+- **#44** - Error if Length entry missing in encrypted PDF (fixed by PR #47)
+- **#41** - Check mark removed on flatten (fixed by PR #56)
+- **#40** - Too many "Trying to parse invalid object" warnings (closed)
+- **#34** - Error embedding SVGs (fixed)
+- **#33** - Error on embedPng (fixed)
+- **#32** - Check checkboxes by export value with same names (fixed)
+- **#29** - ESM broken (fixed)
+
+---
+
+## Summary: What cantoo-scribe Adds Over Hopding/pdf-lib
+
+### Major Features
+1. **PDF Encryption** - Full password protection support
+2. **Enhanced SVG Rendering** - Many fixes for paths, arcs, transformations
+3. **Better Form Handling** - Flatten fixes for checkboxes/radios
+4. **Attachment API** - Get attachments, detach files
+5. **Bug Fixes** - More graceful parsing, better error handling
+
+### Key Differences
+- Actively maintained (vs abandoned Hopding repo)
+- Better TypeScript support
+- More robust SVG path handling
+- Encryption support
+- Form flattening fixes
+
+### Recommended for Use When
+- Need PDF encryption
+- Need SVG embedding
+- Need reliable form flattening
+- Need attachment handling
+- Need active maintenance
+
+### Still Missing (Compared to Needs)
+- Incremental updates (PR #111 in progress)
+- Text markup annotations (PR #121 in progress)
+- XFA forms (PR #129 in progress)
+- PDF/A conversion
+- Layer management
+- Pattern fill for SVG
+
+---
+
+## Priority Items for This Fork
+
+### Should Investigate/Fix
+
+1. **#122/#120** - CIDSystemInfo encryption issue (text disappearing)
+2. **#55** - setText font handling
+3. **#96** - PDFNull graceful handling
+4. **#86** - Auto-dirty fields before flatten (could be automatic)
+
+### Should Merge
+
+1. **PR #130** - Literal string decryption fix
+2. **PR #121** - Text markup annotations
+3. **PR #133** - TypeScript 5.9 compatibility (when ready)
+
+### Consider for Future
+
+1. **PR #111** - Incremental updates (complex but valuable)
+2. **PR #129** - XFA support (complex)
+3. **#95** - SVG pattern support
 

@@ -109,9 +109,12 @@ class PDFAnnotation {
 
     if (!AP) return undefined;
 
-    const N = AP.lookup(PDFName.of('N'), PDFDict, PDFStream);
+    const N = AP.lookupMaybe(PDFName.of('N'), PDFDict, PDFStream);
     const R = AP.lookupMaybe(PDFName.of('R'), PDFDict, PDFStream);
     const D = AP.lookupMaybe(PDFName.of('D'), PDFDict, PDFStream);
+
+    // Normal appearance is required, return undefined if missing
+    if (!N) return undefined;
 
     return { normal: N, rollover: R, down: D };
   }

@@ -21,10 +21,13 @@ class PDFAcroTerminal extends PDFAcroField {
     if (!kidDicts) return [PDFWidgetAnnotation.fromDict(this.dict)];
 
     // This field's kids are its widgets
-    const widgets = new Array<PDFWidgetAnnotation>(kidDicts.size());
+    // Skip invalid/null entries gracefully
+    const widgets: PDFWidgetAnnotation[] = [];
     for (let idx = 0, len = kidDicts.size(); idx < len; idx++) {
-      const dict = kidDicts.lookup(idx, PDFDict);
-      widgets[idx] = PDFWidgetAnnotation.fromDict(dict);
+      const dict = kidDicts.lookupMaybe(idx, PDFDict);
+      if (dict) {
+        widgets.push(PDFWidgetAnnotation.fromDict(dict));
+      }
     }
 
     return widgets;

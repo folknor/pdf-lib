@@ -1001,19 +1001,20 @@ export default class PDFDocument {
   }
 
   private getRawAttachments() {
-    if (!this.catalog.has(PDFName.of('Names'))) return [];
-    const Names = this.catalog.lookup(PDFName.of('Names'), PDFDict);
+    const Names = this.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
+    if (!Names) return [];
 
-    if (!Names.has(PDFName.of('EmbeddedFiles'))) return [];
-    const EmbeddedFiles = Names.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+    const EmbeddedFiles = Names.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
+    if (!EmbeddedFiles) return [];
 
-    if (!EmbeddedFiles.has(PDFName.of('Names'))) return [];
-    const EFNames = EmbeddedFiles.lookup(PDFName.of('Names'), PDFArray);
+    const EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
+    if (!EFNames) return [];
 
     const rawAttachments = [];
     for (let idx = 0, len = EFNames.size(); idx < len; idx += 2) {
       const fileName = EFNames.lookup(idx) as PDFHexString | PDFString;
-      const fileSpec = EFNames.lookup(idx + 1, PDFDict);
+      const fileSpec = EFNames.lookupMaybe(idx + 1, PDFDict);
+      if (!fileSpec) continue; // Skip invalid/null entries
       rawAttachments.push({
         fileName,
         fileSpec,
@@ -1053,12 +1054,15 @@ export default class PDFDocument {
             ? subtype.decodeText()
             : undefined;
 
-      const paramsDict = embeddedFileDict.lookup(PDFName.of('Params'), PDFDict);
+      const paramsDict = embeddedFileDict.lookupMaybe(
+        PDFName.of('Params'),
+        PDFDict,
+      );
 
       let creationDate: Date | undefined;
       let modificationDate: Date | undefined;
 
-      if (paramsDict instanceof PDFDict) {
+      if (paramsDict) {
         const creationDateRaw = paramsDict.lookup(PDFName.of('CreationDate'));
         const modDateRaw = paramsDict.lookup(PDFName.of('ModDate'));
 

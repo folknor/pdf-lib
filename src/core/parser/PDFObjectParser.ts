@@ -1,4 +1,4 @@
-import { charFromCode } from '../../utils/index.js';
+import { arrayAsString, charFromCode } from '../../utils/index.js';
 import type { CipherTransformFactory } from '../crypto.js';
 import {
   PDFObjectParsingError,
@@ -157,7 +157,10 @@ class PDFObjectParser extends BaseParser {
             ref.objectNumber,
             ref.generationNumber,
           );
-          actualValue = transformer.decryptString(actualValue);
+          const decrypted = transformer.decryptBytes(
+            PDFString.of(actualValue).asBytes(),
+          );
+          actualValue = arrayAsString(decrypted);
         }
         // Remove the outer parens so they aren't part of the contents
         return PDFString.of(actualValue);

@@ -44,7 +44,21 @@ import PDFSignature from './PDFSignature.js';
 import PDFTextField from './PDFTextField.js';
 
 export interface FlattenOptions {
+  /**
+   * When `true`, appearances will be updated for all fields before flattening.
+   * @defaultValue `true`
+   */
   updateFieldAppearances: boolean;
+
+  /**
+   * When `true` and `updateFieldAppearances` is also `true`, all fields will
+   * be marked as dirty before updating appearances. This ensures that appearance
+   * streams are regenerated for all fields, which is important for PDFs that
+   * were filled by external applications (like Adobe Acrobat) that may not
+   * have updated the appearance streams to match the field values.
+   * @defaultValue `true`
+   */
+  markFieldsAsDirty?: boolean;
 }
 
 /**
@@ -537,9 +551,39 @@ export default class PDFForm {
    * const form = pdfDoc.getForm();
    * form.flatten();
    * ```
+   *
+   * By default, all fields are marked as dirty before flattening to ensure
+   * appearance streams are regenerated. This is important for PDFs filled by
+   * external applications (like Adobe Acrobat) that may not update appearance
+   * streams. If you know your PDF's appearances are already correct and want
+   * to skip this step for performance:
+   * ```js
+   * form.flatten({ updateFieldAppearances: true, markFieldsAsDirty: false });
+   * ```
+   *
+   * @param options.updateFieldAppearances Whether to update field appearances
+   *   before flattening (default: true)
+   * @param options.markFieldsAsDirty Whether to mark all fields dirty before
+   *   updating appearances, ensuring all appearances are regenerated (default: true)
    */
-  flatten(options: FlattenOptions = { updateFieldAppearances: true }) {
+  flatten(
+    options: FlattenOptions = {
+      updateFieldAppearances: true,
+      markFieldsAsDirty: true,
+    },
+  ) {
+    const markDirty = options.markFieldsAsDirty ?? true;
+
     if (options.updateFieldAppearances) {
+      // Mark all fields as dirty before updating appearances to ensure
+      // appearance streams are regenerated for all fields, including those
+      // filled by external applications that may not have updated appearances
+      if (markDirty) {
+        const fields = this.getFields();
+        for (let idx = 0, len = fields.length; idx < len; idx++) {
+          this.markFieldAsDirty(fields[idx]!.ref);
+        }
+      }
       this.updateFieldAppearances();
     }
 
@@ -727,7 +771,9 @@ export default class PDFForm {
 
     if (field instanceof PDFCheckBox || field instanceof PDFRadioGroup) {
       if (refOrDict instanceof PDFRef) {
-        refOrDict = this.doc.context.lookup(refOrDict, PDFDict);
+        const lookedUp = this.doc.context.lookupMaybe(refOrDict, PDFDict);
+        if (!lookedUp) return undefined;
+        refOrDict = lookedUp;
       }
       if (refOrDict instanceof PDFDict) {
         const value = field.acroField.getValue();
