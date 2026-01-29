@@ -619,6 +619,12 @@ export default class PDFForm {
 
       this.removeField(field);
     }
+
+    // Clean up AcroForm properties that may reference deleted fields
+    // /CO (calculation order) contains refs to fields - these become orphans
+    // /NeedAppearances is no longer relevant since appearances are baked in
+    this.acroForm.dict.delete(PDFName.of('CO'));
+    this.acroForm.dict.delete(PDFName.of('NeedAppearances'));
   }
 
   /**

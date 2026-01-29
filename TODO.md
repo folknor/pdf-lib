@@ -52,7 +52,7 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - [x] **#1267 #1387 - Orphan annotation references after flatten** — Fixed: `removeField()` now removes widget refs from ALL pages' Annots arrays, not just pages where `findWidgetPage()` succeeds. This prevents orphan refs when widget's P (page) reference is missing.
 
-- [ ] **#1482 #1757 - Error 14 after flatten with cross-page fields** — Fields shared across pages or `copyPages()` after `flatten()` creates broken object references. Adobe shows "Expected a dict object".
+- [x] **#1482 #1757 - Error 14 after flatten with cross-page fields** — Fixed: `flatten()` now removes `/CO` (calculation order) and `/NeedAppearances` from AcroForm dict after flattening. These arrays could contain refs to deleted fields, causing Adobe's "Expected a dict object" error.
 
 ### Flatten Bugs (Medium Priority)
 

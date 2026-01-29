@@ -1034,6 +1034,71 @@ describe('PDFForm', () => {
       expect(widgetsAfter.length).toBe(0);
     });
 
+    it('flattens fields with widgets across multiple pages (#1482)', async () => {
+      // This tests the scenario where a single field has widgets on multiple pages
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const page3 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // Create a text field and add widgets to multiple pages
+      const tf = form.createTextField('multiPageField');
+      tf.setText('Same value on all pages');
+      tf.addToPage(page1, { x: 50, y: 700, width: 200, height: 20 });
+      tf.addToPage(page2, { x: 50, y: 700, width: 200, height: 20 });
+      tf.addToPage(page3, { x: 50, y: 700, width: 200, height: 20 });
+
+      // Verify 3 widgets exist (one field, three widgets)
+      expect(form.getFields().length).toBe(1);
+      expect(tf.acroField.getWidgets().length).toBe(3);
+
+      // Verify each page has an annotation
+      expect(page1.node.Annots()?.size()).toBe(1);
+      expect(page2.node.Annots()?.size()).toBe(1);
+      expect(page3.node.Annots()?.size()).toBe(1);
+
+      form.flatten();
+
+      // All widgets should be removed from all pages
+      expect(page1.node.Annots()?.size()).toBe(0);
+      expect(page2.node.Annots()?.size()).toBe(0);
+      expect(page3.node.Annots()?.size()).toBe(0);
+
+      // No fields should remain
+      expect(form.getFields().length).toBe(0);
+
+      // No widget objects should remain in context
+      expect(getWidgets(pdfDoc).length).toBe(0);
+
+      // Document should save and reload successfully
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(3);
+      expect(reloaded.getForm().getFields().length).toBe(0);
+    });
+
+    it('cleans up AcroForm /CO (calculation order) after flatten', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('calcField');
+      tf.addToPage(page);
+
+      // Manually add a /CO entry to simulate a PDF with calculation order
+      const fieldRef = tf.ref;
+      form.acroForm.dict.set(PDFName.of('CO'), pdfDoc.context.obj([fieldRef]));
+
+      // Verify /CO exists before flatten
+      expect(form.acroForm.dict.has(PDFName.of('CO'))).toBe(true);
+
+      form.flatten();
+
+      // /CO should be removed after flatten to prevent orphan refs
+      expect(form.acroForm.dict.has(PDFName.of('CO'))).toBe(false);
+    });
+
     it('marks fields dirty by default when flattening with updateFieldAppearances: true', async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
