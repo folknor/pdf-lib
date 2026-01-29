@@ -23,7 +23,7 @@ import {
   lineSplit,
   rectanglesAreEqual,
 } from '../utils/index.js';
-import { type Color, rgb } from './colors.js';
+import { type Color, colorToComponents, rgb } from './colors.js';
 import {
   drawEllipse,
   drawImage,
@@ -52,6 +52,7 @@ import {
   type PDFPageDrawEllipseOptions,
   type PDFPageDrawImageOptions,
   type PDFPageDrawLineOptions,
+  type PDFPageDrawLinkOptions,
   type PDFPageDrawPageOptions,
   type PDFPageDrawRectangleOptions,
   type PDFPageDrawSquareOptions,
@@ -1792,6 +1793,80 @@ export default class PDFPage {
     page.addAnnot(ref);
 
     return annotation;
+  }
+
+  /**
+   * Draw a hyperlink on this page. The link will be an invisible clickable
+   * rectangle that opens the specified URL when clicked.
+   *
+   * For example:
+   * ```js
+   * import { rgb } from 'pdf-lib'
+   *
+   * // Draw invisible link
+   * page.drawLink({
+   *   url: 'https://pdf-lib.js.org',
+   *   x: 50,
+   *   y: 50,
+   *   width: 200,
+   *   height: 20,
+   * })
+   *
+   * // Draw link with visible border
+   * page.drawLink({
+   *   url: 'https://github.com/Hopding/pdf-lib',
+   *   x: 50,
+   *   y: 100,
+   *   width: 200,
+   *   height: 20,
+   *   borderWidth: 1,
+   *   borderColor: rgb(0, 0, 1),
+   * })
+   * ```
+   * @param options The options for drawing the link.
+   */
+  drawLink(options: PDFPageDrawLinkOptions): void {
+    assertIs(options.url, 'options.url', ['string']);
+    assertIs(options.x, 'options.x', ['number']);
+    assertIs(options.y, 'options.y', ['number']);
+    assertIs(options.width, 'options.width', ['number']);
+    assertIs(options.height, 'options.height', ['number']);
+    assertOrUndefined(options.borderWidth, 'options.borderWidth', ['number']);
+    assertOrUndefined(options.borderColor, 'options.borderColor', [
+      [Object, 'Color'],
+    ]);
+
+    const context = this.doc.context;
+
+    const borderWidth = options.borderWidth ?? 0;
+
+    // Create the Link annotation dictionary
+    const linkDict = context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: [
+        options.x,
+        options.y,
+        options.x + options.width,
+        options.y + options.height,
+      ],
+      Border: [0, 0, borderWidth],
+      A: {
+        Type: 'Action',
+        S: 'URI',
+        URI: PDFName.of(options.url),
+      },
+    });
+
+    // Add border color if specified
+    if (options.borderColor) {
+      const colorComponents = colorToComponents(options.borderColor);
+      linkDict.set(PDFName.of('C'), context.obj(colorComponents));
+    }
+
+    // Register the annotation and add it to the page
+    const ref = context.register(linkDict);
+    this.node.addAnnot(ref);
   }
 
   private scaleAnnot(annot: PDFDict, x: number, y: number) {

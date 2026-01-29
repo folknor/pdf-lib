@@ -220,3 +220,23 @@ export interface PDFPageAddTextMarkupAnnotationOptions
     leftbottomY: number;
   };
 }
+
+/**
+ * Options for drawing a hyperlink on a PDF page.
+ */
+export interface PDFPageDrawLinkOptions {
+  /** The URL to link to */
+  url: string;
+  /** The x-coordinate of the lower-left corner of the link rectangle */
+  x: number;
+  /** The y-coordinate of the lower-left corner of the link rectangle */
+  y: number;
+  /** The width of the link rectangle */
+  width: number;
+  /** The height of the link rectangle */
+  height: number;
+  /** The border width (default: 0, invisible) */
+  borderWidth?: number;
+  /** The border color (default: none) */
+  borderColor?: Color;
+}

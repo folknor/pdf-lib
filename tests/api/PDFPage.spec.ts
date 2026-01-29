@@ -974,4 +974,77 @@ describe('PDFDocument', () => {
       expect(loadedPage.getHeight()).toBe(456);
     });
   });
+
+  describe('drawLink', () => {
+    it('adds a link annotation to the page', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+
+      page.drawLink({
+        url: 'https://pdf-lib.js.org',
+        x: 50,
+        y: 50,
+        width: 200,
+        height: 20,
+      });
+
+      const annots = page.node.Annots();
+      expect(annots).toBeDefined();
+      expect(annots!.size()).toBe(1);
+
+      const annotRef = annots!.get(0);
+      const annotDict = pdfDoc.context.lookup(annotRef);
+      expect(annotDict).toBeDefined();
+    });
+
+    it('creates a link with correct properties', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+
+      page.drawLink({
+        url: 'https://example.com',
+        x: 100,
+        y: 200,
+        width: 150,
+        height: 25,
+        borderWidth: 2,
+        borderColor: rgb(0, 0, 1),
+      });
+
+      const annots = page.node.Annots();
+      const annotRef = annots!.get(0);
+      const annotDict = pdfDoc.context.lookup(annotRef) as any;
+
+      // Check annotation type
+      expect(annotDict.get(PDFName.of('Subtype'))?.decodeText()).toBe('Link');
+
+      // Check rect
+      const rect = annotDict.get(PDFName.of('Rect'));
+      expect(rect.get(0).numberValue).toBe(100);
+      expect(rect.get(1).numberValue).toBe(200);
+      expect(rect.get(2).numberValue).toBe(250); // x + width
+      expect(rect.get(3).numberValue).toBe(225); // y + height
+    });
+
+    it('preserves link after save and reload', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+
+      page.drawLink({
+        url: 'https://test.com',
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 30,
+      });
+
+      const bytes = await pdfDoc.save();
+      const loaded = await PDFDocument.load(bytes);
+      const loadedPage = loaded.getPage(0);
+
+      const annots = loadedPage.node.Annots();
+      expect(annots).toBeDefined();
+      expect(annots!.size()).toBe(1);
+    });
+  });
 });
