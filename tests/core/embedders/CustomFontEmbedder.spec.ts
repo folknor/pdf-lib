@@ -93,4 +93,25 @@ describe('CustomFontEmbedder', () => {
     expect(embedder.sizeOfFontAtHeight(12)).toBeCloseTo(10.705);
     expect(embedder.sizeOfFontAtHeight(24)).toBeCloseTo(21.409);
   });
+
+  it('does not create orphan objects when re-embedded', async () => {
+    const context = PDFContext.create();
+    const predefinedRef = PDFRef.of(9999);
+    const embedder = await CustomFontEmbedder.for(
+      fontkit,
+      new Uint8Array(ubuntuFont),
+    );
+
+    // First embedding creates 5 objects
+    await embedder.embedIntoContext(context, predefinedRef);
+    expect(context.enumerateIndirectObjects().length).toBe(5);
+
+    // Re-embedding should reuse the same refs, not create new objects
+    await embedder.embedIntoContext(context, predefinedRef);
+    expect(context.enumerateIndirectObjects().length).toBe(5);
+
+    // Third embedding also shouldn't create orphans
+    await embedder.embedIntoContext(context, predefinedRef);
+    expect(context.enumerateIndirectObjects().length).toBe(5);
+  });
 });

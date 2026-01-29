@@ -90,7 +90,7 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - [x] **PDFPageLeaf inherited resource mutation** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: `normalize()` now clones inherited Resources, Font, XObject, and ExtGState dictionaries to prevent mutation of shared parent dictionaries.
 
-- [ ] **PDFFont orphan cleanup** (`src/api/PDFFont.ts:153`) — Embedding the same font multiple times creates orphan objects that bloat the PDF. TODO in code says "Cleanup orphan embedded objects if a font is embedded multiple times..."
+- [x] **PDFFont orphan cleanup** (`src/core/embedders/CustomFontEmbedder.ts`) — Fixed: Embedder now tracks refs to child objects (CID font dict, font descriptor, font stream, unicode cmap) and reuses them on re-embedding instead of creating new orphan objects.
 
 - [ ] **PDFPage resource reuse** (`src/api/PDFPage.ts:707, 1077, 1153`) — Drawing the same image/font/embeddedPage multiple times creates duplicate resource entries instead of reusing existing names.
 

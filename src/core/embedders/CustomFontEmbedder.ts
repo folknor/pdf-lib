@@ -43,6 +43,12 @@ class CustomFontEmbedder {
   protected baseFontName: string;
   protected glyphCache: Cache<Glyph[]>;
 
+  // Track refs to embedded objects to avoid orphans on re-embedding
+  protected cidFontDictRef?: PDFRef;
+  protected fontDescriptorRef?: PDFRef;
+  protected fontStreamRef?: PDFRef;
+  protected unicodeCmapRef?: PDFRef;
+
   protected constructor(
     font: Font,
     fontData: Uint8Array,
@@ -161,7 +167,13 @@ class CustomFontEmbedder {
       W: this.computeWidths(),
     });
 
-    return context.register(cidFontDict);
+    // Reuse existing ref to avoid orphans on re-embedding
+    if (this.cidFontDictRef) {
+      context.assign(this.cidFontDictRef, cidFontDict);
+    } else {
+      this.cidFontDictRef = context.register(cidFontDict);
+    }
+    return this.cidFontDictRef;
   }
 
   protected async embedFontDescriptor(context: PDFContext): Promise<PDFRef> {
@@ -189,7 +201,13 @@ class CustomFontEmbedder {
       [this.isCFF() ? 'FontFile3' : 'FontFile2']: fontStreamRef,
     });
 
-    return context.register(fontDescriptor);
+    // Reuse existing ref to avoid orphans on re-embedding
+    if (this.fontDescriptorRef) {
+      context.assign(this.fontDescriptorRef, fontDescriptor);
+    } else {
+      this.fontDescriptorRef = context.register(fontDescriptor);
+    }
+    return this.fontDescriptorRef;
   }
 
   protected async serializeFont(): Promise<Uint8Array> {
@@ -200,13 +218,27 @@ class CustomFontEmbedder {
     const fontStream = context.flateStream(await this.serializeFont(), {
       Subtype: this.isCFF() ? 'CIDFontType0C' : undefined,
     });
-    return context.register(fontStream);
+
+    // Reuse existing ref to avoid orphans on re-embedding
+    if (this.fontStreamRef) {
+      context.assign(this.fontStreamRef, fontStream);
+    } else {
+      this.fontStreamRef = context.register(fontStream);
+    }
+    return this.fontStreamRef;
   }
 
   protected embedUnicodeCmap(context: PDFContext): PDFRef {
     const cmap = createCmap(this.glyphCache.access(), this.glyphId.bind(this));
     const cmapStream = context.flateStream(cmap);
-    return context.register(cmapStream);
+
+    // Reuse existing ref to avoid orphans on re-embedding
+    if (this.unicodeCmapRef) {
+      context.assign(this.unicodeCmapRef, cmapStream);
+    } else {
+      this.unicodeCmapRef = context.register(cmapStream);
+    }
+    return this.unicodeCmapRef;
   }
 
   protected glyphId(glyph?: Glyph): number {

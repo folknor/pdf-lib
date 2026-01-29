@@ -150,7 +150,6 @@ export default class PDFFont implements Embeddable {
    * @returns Resolves when the embedding is complete.
    */
   async embed(): Promise<void> {
-    // TODO: Cleanup orphan embedded objects if a font is embedded multiple times...
     if (this.modified) {
       await this.embedder.embedIntoContext(this.doc.context, this.ref);
       this.modified = false;
