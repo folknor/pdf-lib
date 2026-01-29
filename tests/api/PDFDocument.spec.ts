@@ -568,6 +568,39 @@ describe('PDFDocument', () => {
 
       await expect(noErrorFunc()).resolves.not.toThrowError();
     });
+
+    it('compresses uncompressed streams when compress=true', async () => {
+      // Create a PDF with some content that can be compressed
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+
+      // Draw lots of text to create content streams worth compressing
+      for (let i = 0; i < 50; i++) {
+        page.drawText(`Line ${i}: This is some text content that will be compressed.`, {
+          x: 50,
+          y: 750 - i * 14,
+          size: 10,
+        });
+      }
+
+      // Save without compression
+      const uncompressedBytes = await pdfDoc.save({ compress: false });
+
+      // Save with compression
+      const compressedBytes = await pdfDoc.save({ compress: true });
+
+      // Compressed version should be smaller (or at least not larger)
+      // Note: The difference may not be huge since content streams are already
+      // compressed by default, but other streams may benefit
+      expect(compressedBytes.length).toBeLessThanOrEqual(uncompressedBytes.length);
+
+      // Both should produce valid PDFs that can be loaded
+      const loadedUncompressed = await PDFDocument.load(uncompressedBytes);
+      const loadedCompressed = await PDFDocument.load(compressedBytes);
+
+      expect(loadedUncompressed.getPageCount()).toBe(1);
+      expect(loadedCompressed.getPageCount()).toBe(1);
+    });
   });
 
   describe('copy() method', () => {

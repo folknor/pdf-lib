@@ -1,3 +1,4 @@
+import pako from 'pako';
 import {
   DefaultDocumentSnapshot,
   defaultDocumentSnapshot,
@@ -30,19 +31,24 @@ export interface SerializationInfo {
 }
 
 class PDFWriter {
-  static forContext = (context: PDFContext, objectsPerTick: number) =>
-    new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot);
+  static forContext = (
+    context: PDFContext,
+    objectsPerTick: number,
+    compress = false,
+  ) => new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
 
   static forContextWithSnapshot = (
     context: PDFContext,
     objectsPerTick: number,
     snapshot: DocumentSnapshot,
-  ) => new PDFWriter(context, objectsPerTick, snapshot);
+    compress = false,
+  ) => new PDFWriter(context, objectsPerTick, snapshot, compress);
 
   protected readonly context: PDFContext;
 
   protected readonly objectsPerTick: number;
   protected readonly snapshot: DocumentSnapshot;
+  protected readonly shouldCompress: boolean;
   private parsedObjects = 0;
 
   /**
@@ -56,10 +62,12 @@ class PDFWriter {
     context: PDFContext,
     objectsPerTick: number,
     snapshot: DocumentSnapshot,
+    compress: boolean,
   ) {
     this.context = context;
     this.objectsPerTick = objectsPerTick;
     this.snapshot = snapshot;
+    this.shouldCompress = compress;
   }
 
   /**
@@ -209,6 +217,7 @@ class PDFWriter {
       const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
       if (!this.shouldSave(incremental, ref.objectNumber, object)) continue;
+      if (this.shouldCompress) this.compress(object);
       if (security) this.encrypt(ref, object, security);
       xref.addEntry(ref, size);
       size += this.computeIndirectObjectSize(indirectObject);
@@ -239,6 +248,27 @@ class PDFWriter {
     size -= this.snapshot.pdfSize;
 
     return { size, header, indirectObjects, xref, trailerDict, trailer };
+  }
+
+  protected compress(object: PDFObject): void {
+    if (!(object instanceof PDFRawStream)) return;
+
+    // Skip if already has a Filter (already compressed)
+    const filter = object.dict.get(PDFName.of('Filter'));
+    if (filter) return;
+
+    const contents = object.getContents();
+
+    // Skip small streams where compression overhead exceeds benefit
+    if (contents.length < 50) return;
+
+    const compressed = pako.deflate(contents);
+
+    // Only apply if compression actually reduces size
+    if (compressed.length >= contents.length) return;
+
+    object.updateContents(compressed as Uint8Array<ArrayBuffer>);
+    object.dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
   }
 
   protected encrypt(ref: PDFRef, object: PDFObject, security: PDFSecurity) {

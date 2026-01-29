@@ -17,11 +17,15 @@ export interface SaveOptions {
   updateFieldAppearances?: boolean;
   /** Force a full rewrite instead of incremental save (only applies when loaded with forIncrementalUpdate) */
   rewrite?: boolean;
+  /** Compress uncompressed streams using FlateDecode to reduce file size */
+  compress?: boolean;
 }
 
 export interface IncrementalSaveOptions {
   objectsPerTick?: number;
   useObjectStreams?: boolean;
+  /** Compress uncompressed streams using FlateDecode to reduce file size */
+  compress?: boolean;
 }
 
 export interface Base64SaveOptions extends SaveOptions {

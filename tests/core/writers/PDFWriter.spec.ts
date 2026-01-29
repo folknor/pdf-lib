@@ -2,6 +2,7 @@ import pako from 'pako';
 import {
   mergeIntoTypedArray,
   PDFContext,
+  PDFDocument,
   PDFName,
   PDFRef,
   PDFWriter,
@@ -140,5 +141,89 @@ describe('PDFWriter', () => {
 
     expect(buffer.length).toBe(pdfBytes.length);
     expect(buffer).toEqual(pdfBytes);
+  });
+
+  describe('compress option', () => {
+    it('compresses uncompressed streams when compress=true', async () => {
+      const context = PDFContext.create();
+
+      // Create an uncompressed stream (no Filter)
+      const uncompressedContent = 'Hello World! '.repeat(100); // Repeating content compresses well
+      const stream = context.stream(uncompressedContent);
+      const streamRef = context.register(stream);
+
+      // Verify stream has no Filter initially
+      expect(stream.dict.get(PDFName.of('Filter'))).toBeUndefined();
+
+      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      context.trailerInfo.Root = context.register(catalog);
+
+      // Save with compression
+      const compressedBuffer = await PDFWriter.forContext(
+        context,
+        Infinity,
+        true, // compress=true
+      ).serializeToBuffer();
+
+      // The stream should now have FlateDecode filter
+      expect(stream.dict.get(PDFName.of('Filter'))).toEqual(
+        PDFName.of('FlateDecode'),
+      );
+
+      // Save without compression (new context to compare sizes)
+      const context2 = PDFContext.create();
+      const stream2 = context2.stream(uncompressedContent);
+      const streamRef2 = context2.register(stream2);
+      const catalog2 = context2.obj({ Type: 'Catalog', Test: streamRef2 });
+      context2.trailerInfo.Root = context2.register(catalog2);
+
+      const uncompressedBuffer = await PDFWriter.forContext(
+        context2,
+        Infinity,
+        false, // compress=false
+      ).serializeToBuffer();
+
+      // Compressed should be smaller
+      expect(compressedBuffer.length).toBeLessThan(uncompressedBuffer.length);
+    });
+
+    it('skips streams that already have a Filter', async () => {
+      const context = PDFContext.create();
+
+      // Create an already-compressed stream using flateStream
+      const content = 'Already compressed content';
+      const stream = context.flateStream(content);
+      const streamRef = context.register(stream);
+
+      // Get original compressed contents
+      const originalContents = stream.getContents();
+
+      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      context.trailerInfo.Root = context.register(catalog);
+
+      // Save with compression
+      await PDFWriter.forContext(context, Infinity, true).serializeToBuffer();
+
+      // Contents should not have changed (already compressed)
+      expect(stream.getContents()).toEqual(originalContents);
+    });
+
+    it('skips small streams where compression overhead exceeds benefit', async () => {
+      const context = PDFContext.create();
+
+      // Create a tiny uncompressed stream (less than 50 bytes)
+      const tinyContent = 'tiny';
+      const stream = context.stream(tinyContent);
+      const streamRef = context.register(stream);
+
+      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      context.trailerInfo.Root = context.register(catalog);
+
+      // Save with compression
+      await PDFWriter.forContext(context, Infinity, true).serializeToBuffer();
+
+      // Small stream should not have Filter added
+      expect(stream.dict.get(PDFName.of('Filter'))).toBeUndefined();
+    });
   });
 });

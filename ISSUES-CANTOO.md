@@ -139,11 +139,11 @@ Feature request to retrieve size and position of embedded images, or calculate P
 
 #### #73 - PDF Compression
 Feature request for PDF file compression.
-- **Status**: Help wanted
+- **Status**: **FIXED IN THIS FORK** - Added `compress: boolean` option to `save()` and `saveIncremental()`. When enabled, compresses uncompressed streams using FlateDecode.
 
 #### #68 - Deflating Streams
 Feature request for stream deflation/compression.
-- **Status**: Help wanted
+- **Status**: **FIXED IN THIS FORK** - Same as #73, use `save({ compress: true })`
 
 ### Parsing Issues
 
@@ -207,6 +207,7 @@ Request for better handling of non-compliant PDFs.
 - **#89** - Attachment name lexical sorting for Acrobat compatibility ✓
 - **#24** - Updated pako dependency ✓
 - **#67** - Added packageManager field to package.json ✓
+- **#73/#68** - PDF stream compression (`save({ compress: true })`) ✓
 
 ### Complex Issues (Future Consideration)
 1. **#55** - setText font handling (HIGH effort - architecture limitation)

@@ -23,6 +23,7 @@ class PDFStreamWriter extends PDFWriter {
     objectsPerTick: number,
     encodeStreams = true,
     objectsPerStream = 50,
+    compress = false,
   ) =>
     new PDFStreamWriter(
       context,
@@ -30,6 +31,7 @@ class PDFStreamWriter extends PDFWriter {
       defaultDocumentSnapshot,
       encodeStreams,
       objectsPerStream,
+      compress,
     );
 
   static override forContextWithSnapshot = (
@@ -38,6 +40,7 @@ class PDFStreamWriter extends PDFWriter {
     snapshot: DocumentSnapshot,
     encodeStreams = true,
     objectsPerStream = 50,
+    compress = false,
   ) =>
     new PDFStreamWriter(
       context,
@@ -45,6 +48,7 @@ class PDFStreamWriter extends PDFWriter {
       snapshot,
       encodeStreams,
       objectsPerStream,
+      compress,
     );
 
   private readonly encodeStreams: boolean;
@@ -60,8 +64,9 @@ class PDFStreamWriter extends PDFWriter {
     snapshot: DocumentSnapshot,
     encodeStreams: boolean,
     objectsPerStream: number,
+    compress: boolean,
   ) {
-    super(context, objectsPerTick, snapshot);
+    super(context, objectsPerTick, snapshot, compress);
 
     this.encodeStreams = encodeStreams;
     this.objectsPerStream = objectsPerStream;
@@ -110,6 +115,7 @@ class PDFStreamWriter extends PDFWriter {
 
       if (shouldNotCompress) {
         uncompressedObjects.push(indirectObject);
+        if (this.shouldCompress) this.compress(object);
         if (security) this.encrypt(ref, object, security);
         xrefStream.addUncompressedEntry(ref, size);
         size += this.computeIndirectObjectSize(indirectObject);

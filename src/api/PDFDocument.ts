@@ -1592,6 +1592,7 @@ export default class PDFDocument {
       objectsPerTick = 50,
       updateFieldAppearances = true,
       rewrite = false,
+      compress = false,
     } = options;
 
     assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
@@ -1599,6 +1600,7 @@ export default class PDFDocument {
     assertIs(objectsPerTick, 'objectsPerTick', ['number']);
     assertIs(updateFieldAppearances, 'updateFieldAppearances', ['boolean']);
     assertIs(rewrite, 'rewrite', ['boolean']);
+    assertIs(compress, 'compress', ['boolean']);
 
     const incrementalUpdate =
       !rewrite &&
@@ -1612,25 +1614,59 @@ export default class PDFDocument {
 
     await this.prepareForSave(options);
 
-    const Writer = useObjectStreams ? PDFStreamWriter : PDFWriter;
-    if (incrementalUpdate) {
-      const increment = await Writer.forContextWithSnapshot(
+    if (useObjectStreams) {
+      if (incrementalUpdate) {
+        const increment = await PDFStreamWriter.forContextWithSnapshot(
+          this.context,
+          objectsPerTick,
+          this.context.snapshot!,
+          true,
+          50,
+          compress,
+        ).serializeToBuffer();
+        const result = new Uint8Array(
+          this.context.pdfFileDetails.originalBytes!.byteLength +
+            increment.byteLength,
+        );
+        result.set(this.context.pdfFileDetails.originalBytes!);
+        result.set(
+          increment,
+          this.context.pdfFileDetails.originalBytes!.byteLength,
+        );
+        return result;
+      }
+      return PDFStreamWriter.forContext(
         this.context,
         objectsPerTick,
-        this.context.snapshot!,
+        true,
+        50,
+        compress,
       ).serializeToBuffer();
-      const result = new Uint8Array(
-        this.context.pdfFileDetails.originalBytes!.byteLength +
-          increment.byteLength,
-      );
-      result.set(this.context.pdfFileDetails.originalBytes!);
-      result.set(
-        increment,
-        this.context.pdfFileDetails.originalBytes!.byteLength,
-      );
-      return result;
+    } else {
+      if (incrementalUpdate) {
+        const increment = await PDFWriter.forContextWithSnapshot(
+          this.context,
+          objectsPerTick,
+          this.context.snapshot!,
+          compress,
+        ).serializeToBuffer();
+        const result = new Uint8Array(
+          this.context.pdfFileDetails.originalBytes!.byteLength +
+            increment.byteLength,
+        );
+        result.set(this.context.pdfFileDetails.originalBytes!);
+        result.set(
+          increment,
+          this.context.pdfFileDetails.originalBytes!.byteLength,
+        );
+        return result;
+      }
+      return PDFWriter.forContext(
+        this.context,
+        objectsPerTick,
+        compress,
+      ).serializeToBuffer();
     }
-    return Writer.forContext(this.context, objectsPerTick).serializeToBuffer();
   }
 
   /**
@@ -1657,9 +1693,10 @@ export default class PDFDocument {
     // Check PDF version
     const vparts = this.context.header.getVersionString().split('.');
     const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
-    const { objectsPerTick = 50 } = options;
+    const { objectsPerTick = 50, compress = false } = options;
 
     assertIs(objectsPerTick, 'objectsPerTick', ['number']);
+    assertIs(compress, 'compress', ['boolean']);
 
     const saveOptions: SaveOptions = {
       useObjectStreams: uOS,
@@ -1669,12 +1706,23 @@ export default class PDFDocument {
     };
     await this.prepareForSave(saveOptions);
 
-    const Writer = saveOptions.useObjectStreams ? PDFStreamWriter : PDFWriter;
-    return Writer.forContextWithSnapshot(
-      this.context,
-      objectsPerTick,
-      snapshot,
-    ).serializeToBuffer();
+    if (saveOptions.useObjectStreams) {
+      return PDFStreamWriter.forContextWithSnapshot(
+        this.context,
+        objectsPerTick,
+        snapshot,
+        true,
+        50,
+        compress,
+      ).serializeToBuffer();
+    } else {
+      return PDFWriter.forContextWithSnapshot(
+        this.context,
+        objectsPerTick,
+        snapshot,
+        compress,
+      ).serializeToBuffer();
+    }
   }
 
   /**
