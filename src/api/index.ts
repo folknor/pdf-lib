@@ -7,6 +7,7 @@ export * from './objects.js';
 export * from './operations.js';
 export * from './operators.js';
 export { default as PDFDocument } from './PDFDocument.js';
+export type { CopyOptions } from '../core/PDFObjectCopier.js';
 export * from './PDFDocumentOptions.js';
 export { default as PDFEmbeddedPage } from './PDFEmbeddedPage.js';
 export { default as PDFFont } from './PDFFont.js';

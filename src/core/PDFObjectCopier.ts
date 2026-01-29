@@ -6,6 +6,22 @@ import PDFRef from './objects/PDFRef.js';
 import PDFStream from './objects/PDFStream.js';
 import type PDFContext from './PDFContext.js';
 import PDFPageLeaf from './structures/PDFPageLeaf.js';
+import {
+  analyzePageResources,
+  filterResources,
+} from './utils/ContentStreamResourceAnalyzer.js';
+
+export interface CopyOptions {
+  /**
+   * When true, analyzes page content streams to determine which resources
+   * (fonts, images, etc.) are actually used and only copies those.
+   * This can significantly reduce file size when copying pages from documents
+   * with many shared resources.
+   *
+   * Default: false (copies all inherited resources)
+   */
+  optimizeResources?: boolean;
+}
 
 /**
  * PDFObjectCopier copies PDFObjects from a src context to a dest context.
@@ -29,16 +45,22 @@ import PDFPageLeaf from './structures/PDFPageLeaf.js';
  * supported, but is equivalent to cloning it.
  */
 class PDFObjectCopier {
-  static for = (src: PDFContext, dest: PDFContext) =>
-    new PDFObjectCopier(src, dest);
+  static for = (src: PDFContext, dest: PDFContext, options?: CopyOptions) =>
+    new PDFObjectCopier(src, dest, options);
 
   private readonly src: PDFContext;
   private readonly dest: PDFContext;
   private readonly traversedObjects = new Map<PDFObject, PDFObject>();
+  private readonly options: CopyOptions;
 
-  private constructor(src: PDFContext, dest: PDFContext) {
+  private constructor(
+    src: PDFContext,
+    dest: PDFContext,
+    options?: CopyOptions,
+  ) {
     this.src = src;
     this.dest = dest;
+    this.options = options || {};
   }
 
   // prettier-ignore
@@ -66,6 +88,25 @@ class PDFObjectCopier {
       const key = PDFName.of(InheritableEntries[idx]!);
       const value = clonedPage.getInheritableAttribute(key)!;
       if (!clonedPage.get(key) && value) clonedPage.set(key, value);
+    }
+
+    // Optimize resources if requested - analyze content streams to find
+    // which resources are actually used and filter out unused ones.
+    // This fixes issue #1338 where copying pages from documents with many
+    // shared resources causes file size explosion.
+    if (this.options.optimizeResources) {
+      const usedResources = analyzePageResources(originalPage, this.src);
+      if (usedResources) {
+        const resources = originalPage.Resources();
+        if (resources) {
+          const filteredResources = filterResources(
+            resources,
+            usedResources,
+            this.src,
+          );
+          clonedPage.set(PDFName.Resources, filteredResources);
+        }
+      }
     }
 
     // Remove the parent reference to prevent the whole donor document's page

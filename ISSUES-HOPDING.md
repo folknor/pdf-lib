@@ -12,18 +12,15 @@
 
 ---
 
-### #1338 - File Size 433MB from 15MB (10 comments) - NOT FIXED
+### #1338 - File Size 433MB from 15MB (10 comments) - FIXED
 
 **Root Cause**: `PDFObjectCopier.copyPDFPage()` copies **entire inherited Resources dictionary** (all fonts, images, XObjects) even if the page only uses a subset. Copying 10 pages from a document with 100 shared images = 10 × 100 = 1000 image copies.
 
-**Why Difficult**: Proper fix requires parsing content streams to identify which resources are actually used. pdf-lib lacks a content stream parser.
+**Fix**: Added `optimizeResources` option to `copyPages()`. When enabled, analyzes content streams using regex patterns to identify which resources are actually used (`/FontName Tf`, `/XObjectName Do`, `/ExtGStateName gs`, etc.) and only copies those. Created `ContentStreamResourceAnalyzer` utility for parsing.
 
-**Partial Solutions**:
-1. Object deduplication at save time (helps file size, not memory)
-2. User-provided resource filter option
-3. Post-copy resource pruning utility
+**Usage**: `await destDoc.copyPages(srcDoc, [0], { optimizeResources: true })`
 
-**Complexity**: MEDIUM-HIGH
+**Complexity**: MEDIUM - ~300 lines (analyzer + copier changes)
 
 ---
 
@@ -119,6 +116,7 @@
 ## Already Fixed in This Fork
 
 - #951 - Object ordering (needsReordering flag)
+- #1338 - File size explosion on page copy (optimizeResources option)
 - #1390 - Encrypted PDF copy error
 - #1284 - JPEG EXIF orientation
 - #1260 - PDFDict undefined (graceful degradation)

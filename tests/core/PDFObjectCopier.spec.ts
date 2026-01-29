@@ -418,4 +418,129 @@ describe('PDFObjectCopier', () => {
     expect(copiedDict.entries().length).toBe(1);
     expect(copiedDict.get(PDFName.of('Foo'))).toBe(PDFRef.of(1));
   });
+
+  describe('optimizeResources option (issue #1338)', () => {
+    it('copies only used resources when optimizeResources is true', () => {
+      // Arrange - create source context with page that has resources
+      const src = PDFContext.create();
+
+      // Create fonts (refs 10, 11)
+      const font1 = src.obj({ Type: 'Font', BaseFont: 'Helvetica' });
+      const font1Ref = PDFRef.of(10);
+      src.assign(font1Ref, font1);
+
+      const font2 = src.obj({ Type: 'Font', BaseFont: 'Times-Roman' });
+      const font2Ref = PDFRef.of(11);
+      src.assign(font2Ref, font2);
+
+      // Create XObjects (refs 12, 13)
+      const xobject1 = src.stream(new Uint8Array([1, 2, 3]));
+      const xobject1Ref = PDFRef.of(12);
+      src.assign(xobject1Ref, xobject1);
+
+      const xobject2 = src.stream(new Uint8Array([4, 5, 6]));
+      const xobject2Ref = PDFRef.of(13);
+      src.assign(xobject2Ref, xobject2);
+
+      // Create resources dictionary with fonts and xobjects
+      const fontDict = src.obj({});
+      fontDict.set(PDFName.of('F1'), font1Ref);
+      fontDict.set(PDFName.of('F2'), font2Ref);
+
+      const xobjectDict = src.obj({});
+      xobjectDict.set(PDFName.of('Im1'), xobject1Ref);
+      xobjectDict.set(PDFName.of('Im2'), xobject2Ref);
+
+      const resources = src.obj({});
+      resources.set(PDFName.Font, fontDict);
+      resources.set(PDFName.XObject, xobjectDict);
+      const resourcesRef = PDFRef.of(20);
+      src.assign(resourcesRef, resources);
+
+      // Create page tree
+      const pageTreeRef = src.nextRef();
+      const pageTree = PDFPageTree.withContext(src);
+      pageTree.set(PDFName.Resources, resourcesRef);
+      src.assign(pageTreeRef, pageTree);
+
+      // Create page with content stream that only uses F1 and Im1
+      const contentData = new TextEncoder().encode(
+        'BT /F1 12 Tf (Hello) Tj ET q /Im1 Do Q',
+      );
+      const contentStream = PDFRawStream.of(src.obj({}), contentData);
+      const contentRef = src.register(contentStream);
+
+      const page = PDFPageLeaf.withContextAndParent(src, pageTreeRef);
+      page.set(PDFName.Contents, src.obj([contentRef]));
+      page.delete(PDFName.Resources); // Remove default resources so it inherits from parent
+
+      const dest = PDFContext.create();
+
+      // Act - copy with optimizeResources
+      const copiedPage = PDFObjectCopier.for(src, dest, {
+        optimizeResources: true,
+      }).copy(page);
+
+      // Assert
+      const copiedResources = copiedPage.Resources()!;
+      expect(copiedResources).toBeInstanceOf(PDFDict);
+
+      const copiedFonts = copiedResources.lookup(PDFName.Font, PDFDict);
+      expect(copiedFonts.get(PDFName.of('F1'))).toBeDefined(); // Used
+      expect(copiedFonts.get(PDFName.of('F2'))).toBeUndefined(); // Not used
+
+      const copiedXObjects = copiedResources.lookup(PDFName.XObject, PDFDict);
+      expect(copiedXObjects.get(PDFName.of('Im1'))).toBeDefined(); // Used
+      expect(copiedXObjects.get(PDFName.of('Im2'))).toBeUndefined(); // Not used
+    });
+
+    it('copies all resources when optimizeResources is false (default)', () => {
+      // Arrange
+      const src = PDFContext.create();
+
+      // Create fonts
+      const font1 = src.obj({ Type: 'Font', BaseFont: 'Helvetica' });
+      const font1Ref = PDFRef.of(10);
+      src.assign(font1Ref, font1);
+
+      const font2 = src.obj({ Type: 'Font', BaseFont: 'Times-Roman' });
+      const font2Ref = PDFRef.of(11);
+      src.assign(font2Ref, font2);
+
+      const fontDict = src.obj({});
+      fontDict.set(PDFName.of('F1'), font1Ref);
+      fontDict.set(PDFName.of('F2'), font2Ref);
+
+      const resources = src.obj({});
+      resources.set(PDFName.Font, fontDict);
+      const resourcesRef = PDFRef.of(20);
+      src.assign(resourcesRef, resources);
+
+      // Create page tree
+      const pageTreeRef = src.nextRef();
+      const pageTree = PDFPageTree.withContext(src);
+      pageTree.set(PDFName.Resources, resourcesRef);
+      src.assign(pageTreeRef, pageTree);
+
+      // Create page with content that only uses F1
+      const contentData = new TextEncoder().encode('BT /F1 12 Tf ET');
+      const contentStream = PDFRawStream.of(src.obj({}), contentData);
+      const contentRef = src.register(contentStream);
+
+      const page = PDFPageLeaf.withContextAndParent(src, pageTreeRef);
+      page.set(PDFName.Contents, src.obj([contentRef]));
+      page.delete(PDFName.Resources);
+
+      const dest = PDFContext.create();
+
+      // Act - copy without optimizeResources (default)
+      const copiedPage = PDFObjectCopier.for(src, dest).copy(page);
+
+      // Assert - both fonts should be copied
+      const copiedResources = copiedPage.Resources()!;
+      const copiedFonts = copiedResources.lookup(PDFName.Font, PDFDict);
+      expect(copiedFonts.get(PDFName.of('F1'))).toBeDefined();
+      expect(copiedFonts.get(PDFName.of('F2'))).toBeDefined();
+    });
+  });
 });

@@ -40,7 +40,10 @@ export { default as PDFString } from './objects/PDFString.js';
 export { default as PDFOperator } from './operators/PDFOperator.js';
 export { default as PDFOperatorNames } from './operators/PDFOperatorNames.js';
 export { default as PDFContext } from './PDFContext.js';
-export { default as PDFObjectCopier } from './PDFObjectCopier.js';
+export {
+  type CopyOptions,
+  default as PDFObjectCopier,
+} from './PDFObjectCopier.js';
 export { default as PDFObjectParser } from './parser/PDFObjectParser.js';
 export { default as PDFObjectStreamParser } from './parser/PDFObjectStreamParser.js';
 export { default as PDFParser } from './parser/PDFParser.js';

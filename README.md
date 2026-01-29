@@ -70,6 +70,23 @@ if (orientation === 6) {
 }
 ```
 
+### Optimized page copying
+
+When copying pages from documents with many shared resources (fonts, images), use `optimizeResources` to only copy resources that are actually used:
+
+```ts
+const srcDoc = await PDFDocument.load(largeDocBytes);
+const destDoc = await PDFDocument.create();
+
+// Without optimization - copies ALL resources from source, even unused ones
+const [page] = await destDoc.copyPages(srcDoc, [0]);
+
+// With optimization - only copies resources used by the page
+const [optimizedPage] = await destDoc.copyPages(srcDoc, [0], { optimizeResources: true });
+```
+
+This can significantly reduce file size when copying pages from documents where pages share a large resource pool (common with scanned documents or documents created by merging tools).
+
 ## Docs
 
 See [pdf-lib.js.org](https://pdf-lib.js.org/) for upstream documentation.

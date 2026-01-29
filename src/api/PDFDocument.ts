@@ -9,6 +9,7 @@ import FileEmbedder, {
 } from '../core/embedders/FileEmbedder.js';
 import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
 import {
+  type CopyOptions,
   CustomFontEmbedder,
   CustomFontSubsetEmbedder,
   decodePDFRawStream,
@@ -826,11 +827,25 @@ export default class PDFDocument {
    * pdfDoc.insertPage(0, ninetiethPage)
    * pdfDoc.addPage(firstPage)
    * ```
+   *
+   * To optimize file size when copying from documents with many shared resources:
+   * ```js
+   * const copiedPages = await pdfDoc.copyPages(srcDoc, [0], { optimizeResources: true })
+   * ```
+   *
    * @param srcDoc The document from which pages should be copied.
    * @param indices The indices of the pages that should be copied.
+   * @param options Optional settings for the copy operation.
+   * @param options.optimizeResources When true, analyzes content streams to copy
+   *        only resources that are actually used by the page. This can significantly
+   *        reduce file size when copying from documents with many shared resources.
    * @returns Resolves with an array of pages copied into this document.
    */
-  async copyPages(srcDoc: PDFDocument, indices: number[]): Promise<PDFPage[]> {
+  async copyPages(
+    srcDoc: PDFDocument,
+    indices: number[],
+    options?: CopyOptions,
+  ): Promise<PDFPage[]> {
     assertIs(srcDoc, 'srcDoc', [[PDFDocument, 'PDFDocument']]);
     assertIs(indices, 'indices', [Array]);
 
@@ -840,7 +855,7 @@ export default class PDFDocument {
     }
 
     await srcDoc.flush();
-    const copier = PDFObjectCopier.for(srcDoc.context, this.context);
+    const copier = PDFObjectCopier.for(srcDoc.context, this.context, options);
     const srcPages = srcDoc.getPages();
     // Copy each page in a separate thread
     const copiedPages = indices
