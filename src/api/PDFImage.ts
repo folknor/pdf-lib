@@ -1,9 +1,12 @@
 import { JpegEmbedder, PDFRef, PngEmbedder } from '../core/index.js';
+import type { ExifOrientation } from '../core/embedders/JpegEmbedder.js';
 import { assertIs } from '../utils/index.js';
 import type Embeddable from './Embeddable.js';
 import PDFDocument from './PDFDocument.js';
 
 export type ImageEmbedder = JpegEmbedder | PngEmbedder;
+
+export type { ExifOrientation };
 
 /**
  * Represents an image that has been embedded in a [[PDFDocument]].
@@ -35,6 +38,23 @@ export default class PDFImage implements Embeddable {
   /** The height of this image in pixels. */
   readonly height: number;
 
+  /**
+   * The EXIF orientation of this image (JPEG only).
+   * Values 1-8 indicate how the image should be rotated/flipped for correct display:
+   * - 1: Normal (no transformation needed)
+   * - 2: Horizontal flip
+   * - 3: Rotate 180°
+   * - 4: Vertical flip
+   * - 5: Rotate 90° CW + horizontal flip
+   * - 6: Rotate 90° CW
+   * - 7: Rotate 90° CW + vertical flip
+   * - 8: Rotate 270° CW (90° CCW)
+   *
+   * Note: Orientations 5-8 swap width and height.
+   * Returns undefined for PNG images or JPEGs without EXIF orientation data.
+   */
+  readonly orientation: ExifOrientation;
+
   private embedder: ImageEmbedder | undefined;
   private embedTask: Promise<PDFRef> | undefined;
 
@@ -50,6 +70,8 @@ export default class PDFImage implements Embeddable {
     this.doc = doc;
     this.width = embedder.width;
     this.height = embedder.height;
+    this.orientation =
+      embedder instanceof JpegEmbedder ? embedder.orientation : undefined;
 
     this.embedder = embedder;
   }

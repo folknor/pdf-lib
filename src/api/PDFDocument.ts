@@ -57,6 +57,7 @@ import {
 } from '../utils/index.js';
 import type Embeddable from './Embeddable.js';
 import {
+  EncryptedPDFCopyError,
   EncryptedPDFError,
   FontkitNotRegisteredError,
   ForeignPageError,
@@ -832,6 +833,12 @@ export default class PDFDocument {
   async copyPages(srcDoc: PDFDocument, indices: number[]): Promise<PDFPage[]> {
     assertIs(srcDoc, 'srcDoc', [[PDFDocument, 'PDFDocument']]);
     assertIs(indices, 'indices', [Array]);
+
+    // Check if source is encrypted but not decrypted (fixes #1390)
+    if (srcDoc.isEncrypted && !srcDoc.context.isDecrypted) {
+      throw new EncryptedPDFCopyError();
+    }
+
     await srcDoc.flush();
     const copier = PDFObjectCopier.for(srcDoc.context, this.context);
     const srcPages = srcDoc.getPages();

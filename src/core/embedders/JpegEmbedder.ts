@@ -20,6 +20,110 @@ const ChannelToColorSpace: { [idx: number]: ColorSpace | undefined } = {
 };
 
 /**
+ * EXIF orientation values:
+ * 1: Normal (no transformation)
+ * 2: Horizontal flip
+ * 3: Rotate 180 degrees
+ * 4: Vertical flip
+ * 5: Rotate 90 CW + horizontal flip
+ * 6: Rotate 90 CW
+ * 7: Rotate 90 CW + vertical flip
+ * 8: Rotate 270 CW (90 CCW)
+ */
+export type ExifOrientation = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | undefined;
+
+const APP1_MARKER = 0xffe1;
+const EXIF_HEADER = 0x45786966; // "Exif"
+const ORIENTATION_TAG = 0x0112;
+
+/**
+ * Parse EXIF orientation from JPEG data.
+ * Returns undefined if no EXIF orientation is found.
+ */
+function parseExifOrientation(dataView: DataView): ExifOrientation {
+  let pos = 2; // Skip SOI marker
+
+  while (pos < dataView.byteLength - 4) {
+    const marker = dataView.getUint16(pos);
+
+    // Stop at SOS (Start of Scan) - no more metadata after this
+    if (marker === 0xffda) break;
+
+    // Skip non-marker bytes
+    if ((marker & 0xff00) !== 0xff00) {
+      pos++;
+      continue;
+    }
+
+    const segmentLength = dataView.getUint16(pos + 2);
+
+    if (marker === APP1_MARKER) {
+      // Check for "Exif\0\0" identifier
+      if (
+        pos + 10 < dataView.byteLength &&
+        dataView.getUint32(pos + 4) === EXIF_HEADER &&
+        dataView.getUint16(pos + 8) === 0x0000
+      ) {
+        const tiffOffset = pos + 10;
+
+        // Read byte order (II = little endian, MM = big endian)
+        const byteOrder = dataView.getUint16(tiffOffset);
+        const isLittleEndian = byteOrder === 0x4949;
+
+        // Validate TIFF magic number (42)
+        const magic = isLittleEndian
+          ? dataView.getUint16(tiffOffset + 2, true)
+          : dataView.getUint16(tiffOffset + 2, false);
+        if (magic !== 42) {
+          pos += 2 + segmentLength;
+          continue;
+        }
+
+        // Get offset to IFD0
+        const ifdOffset = isLittleEndian
+          ? dataView.getUint32(tiffOffset + 4, true)
+          : dataView.getUint32(tiffOffset + 4, false);
+
+        const ifdStart = tiffOffset + ifdOffset;
+        if (ifdStart + 2 > dataView.byteLength) {
+          pos += 2 + segmentLength;
+          continue;
+        }
+
+        // Read number of IFD entries
+        const numEntries = isLittleEndian
+          ? dataView.getUint16(ifdStart, true)
+          : dataView.getUint16(ifdStart, false);
+
+        // Search for orientation tag
+        for (let i = 0; i < numEntries; i++) {
+          const entryOffset = ifdStart + 2 + i * 12;
+          if (entryOffset + 12 > dataView.byteLength) break;
+
+          const tag = isLittleEndian
+            ? dataView.getUint16(entryOffset, true)
+            : dataView.getUint16(entryOffset, false);
+
+          if (tag === ORIENTATION_TAG) {
+            const value = isLittleEndian
+              ? dataView.getUint16(entryOffset + 8, true)
+              : dataView.getUint16(entryOffset + 8, false);
+
+            if (value >= 1 && value <= 8) {
+              return value as ExifOrientation;
+            }
+          }
+        }
+      }
+    }
+
+    pos += 2 + segmentLength;
+  }
+
+  return undefined;
+}
+
+/**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
  * this class borrows from:
  *   https://github.com/foliojs/pdfkit/blob/a6af76467ce06bd6a2af4aa7271ccac9ff152a7d/lib/image/jpeg.js
@@ -62,12 +166,16 @@ class JpegEmbedder {
 
     const colorSpace = channelName;
 
+    // Parse EXIF orientation
+    const orientation = parseExifOrientation(dataView);
+
     return new JpegEmbedder(
       imageData,
       bitsPerComponent,
       width,
       height,
       colorSpace,
+      orientation,
     );
   }
 
@@ -75,6 +183,7 @@ class JpegEmbedder {
   readonly height: number;
   readonly width: number;
   readonly colorSpace: ColorSpace;
+  readonly orientation: ExifOrientation;
 
   private readonly imageData: Uint8Array;
 
@@ -84,12 +193,14 @@ class JpegEmbedder {
     width: number,
     height: number,
     colorSpace: ColorSpace,
+    orientation: ExifOrientation,
   ) {
     this.imageData = imageData;
     this.bitsPerComponent = bitsPerComponent;
     this.width = width;
     this.height = height;
     this.colorSpace = colorSpace;
+    this.orientation = orientation;
   }
 
   async embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {

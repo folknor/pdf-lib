@@ -11,6 +11,7 @@ export * from './PDFDocumentOptions.js';
 export { default as PDFEmbeddedPage } from './PDFEmbeddedPage.js';
 export { default as PDFFont } from './PDFFont.js';
 export { default as PDFImage } from './PDFImage.js';
+export type { ExifOrientation } from './PDFImage.js';
 export { default as PDFJavaScript } from './PDFJavaScript.js';
 export { default as PDFPage } from './PDFPage.js';
 export * from './PDFPageOptions.js';

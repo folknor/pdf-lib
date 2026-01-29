@@ -49,6 +49,27 @@ const pdfDoc = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
 const pdfBytes = await pdfDoc.save(); // preserves original bytes
 ```
 
+### JPEG EXIF orientation
+
+Read EXIF orientation from JPEG images:
+
+```ts
+const image = await pdfDoc.embedJpg(jpgBytes);
+const orientation = image.orientation; // 1-8 or undefined
+
+// Apply rotation based on orientation:
+// 1=normal, 3=180°, 6=90°CW, 8=90°CCW
+// 5-8 also swap width/height
+if (orientation === 6) {
+  page.drawImage(image, {
+    x, y,
+    width: image.height, // swapped
+    height: image.width,
+    rotate: degrees(90),
+  });
+}
+```
+
 ## Docs
 
 See [pdf-lib.js.org](https://pdf-lib.js.org/) for upstream documentation.

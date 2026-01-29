@@ -78,6 +78,13 @@ class PDFContext {
 
   private readonly indirectObjects: Map<PDFRef, PDFObject>;
 
+  /**
+   * Tracks whether new objects have been created (via nextRef/register).
+   * When true, enumerateIndirectObjects() will sort by object number.
+   * When false, preserves insertion order from parser (fixes #951).
+   */
+  private needsReordering = false;
+
   private pushGraphicsStateContentStreamRef?: PDFRef;
   private popGraphicsStateContentStreamRef?: PDFRef;
 
@@ -109,6 +116,7 @@ class PDFContext {
 
   nextRef(): PDFRef {
     this.largestObjectNumber += 1;
+    this.needsReordering = true; // New objects added, will need sorting
     const ref = PDFRef.of(this.largestObjectNumber);
     if (this.snapshot) this.snapshot.markRefForSave(ref);
     return ref;
@@ -216,9 +224,13 @@ class PDFContext {
   }
 
   enumerateIndirectObjects(): [PDFRef, PDFObject][] {
-    return Array.from(this.indirectObjects.entries()).sort(
-      byAscendingObjectNumber,
-    );
+    const entries = Array.from(this.indirectObjects.entries());
+    // Only sort when new objects have been added (fixes #951 - corrupted PDFs)
+    // Preserving insertion order is critical for PDFs with incremental updates
+    if (this.needsReordering) {
+      return entries.sort(byAscendingObjectNumber);
+    }
+    return entries;
   }
 
   obj(literal: null | undefined): typeof PDFNull;

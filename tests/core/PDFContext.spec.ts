@@ -249,4 +249,40 @@ describe('PDFContext', () => {
     expect(ref1).toBe(ref2);
     expect(context.lookup(ref1)).toBeInstanceOf(PDFContentStream);
   });
+
+  describe('object ordering (issue #951)', () => {
+    it('preserves insertion order when no new objects are created via nextRef', () => {
+      const context = PDFContext.create();
+
+      // Simulate parser behavior: assign objects in non-sequential order
+      context.assign(PDFRef.of(5), PDFBool.True);
+      context.assign(PDFRef.of(2), PDFNumber.of(42));
+      context.assign(PDFRef.of(8), PDFString.of('test'));
+
+      // Without calling nextRef, should preserve insertion order
+      const objects = context.enumerateIndirectObjects();
+      expect(objects[0]![0]).toEqual(PDFRef.of(5));
+      expect(objects[1]![0]).toEqual(PDFRef.of(2));
+      expect(objects[2]![0]).toEqual(PDFRef.of(8));
+    });
+
+    it('sorts by object number after nextRef is called', () => {
+      const context = PDFContext.create();
+
+      // Simulate parser behavior: assign objects in non-sequential order
+      context.assign(PDFRef.of(5), PDFBool.True);
+      context.assign(PDFRef.of(2), PDFNumber.of(42));
+      context.assign(PDFRef.of(8), PDFString.of('test'));
+
+      // Create a new object - should trigger sorting
+      context.register(PDFName.of('NewObject'));
+
+      const objects = context.enumerateIndirectObjects();
+      // Should now be sorted by object number
+      expect(objects[0]![0]).toEqual(PDFRef.of(2));
+      expect(objects[1]![0]).toEqual(PDFRef.of(5));
+      expect(objects[2]![0]).toEqual(PDFRef.of(8));
+      expect(objects[3]![0]).toEqual(PDFRef.of(9)); // The new object
+    });
+  });
 });

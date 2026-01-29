@@ -117,3 +117,13 @@ export class InvalidMaxLengthError extends Error {
     super(msg);
   }
 }
+
+export class EncryptedPDFCopyError extends Error {
+  constructor() {
+    const msg =
+      'Cannot copy pages from an encrypted PDF that was loaded with `ignoreEncryption: true`. ' +
+      'The content streams remain encrypted and will appear blank. ' +
+      'Please provide the password when loading: `PDFDocument.load(bytes, { password: "..." })`';
+    super(msg);
+  }
+}
