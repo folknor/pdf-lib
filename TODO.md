@@ -54,11 +54,9 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - [x] **#1482 #1757 - Error 14 after flatten with cross-page fields** — Fixed: `flatten()` now removes `/CO` (calculation order) and `/NeedAppearances` from AcroForm dict after flattening. These arrays could contain refs to deleted fields, causing Adobe's "Expected a dict object" error.
 
-### Flatten Bugs (Medium Priority)
+- [x] **#1519 - Runtime crash on certain PDFs** — Fixed: Changed `lookup()` to `lookupMaybe()` for FT attribute in `createPDFAcroTerminal()` to gracefully handle malformed PDFs with missing or invalid field types.
 
-- [ ] **#1519 - Runtime crash on certain PDFs** — `findWidgetPage()` returns undefined for some PDF structures (Canadian government forms), causing crash in `removeField()`.
-
-- [ ] **#1574 - Checkbox marks disappear after flatten** — `findWidgetAppearanceRef()` falls back to "Off" appearance when checkbox "on" value doesn't match appearance dictionary keys.
+- [x] **#1574 - Checkbox marks disappear after flatten** — Fixed: `findWidgetAppearanceRef()` now uses widget's appearance state (`/AS`) first before falling back to field value (`/V`), ensuring correct appearance is used when these values differ.
 
 ### Completed
 
@@ -69,6 +67,14 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 - [x] **PDFPage resource reuse** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: Added `getOrCreateFontDictionary`, `getOrCreateXObject`, `getOrCreateExtGState` methods that look up existing refs before creating new entries. Updated PDFPage to use these methods.
 
 - [x] **PDFName static properties** — Added: `Filter`, `Subtype`, `Kids`, `Count`, `Catalog`, `Pages`, `ColorSpace`, `Pattern`, `Shading`, `Properties`, `Form`, `Image`, `Off`, `Yes`, `Opt`, `Names`, `EmbeddedFiles`.
+
+---
+
+## Consider Implementing
+
+- [ ] **#1388 - Prevent xref fragmentation** — Important for digital signature workflows. Adobe invalidates signatures when xref has gaps. Fix: fill gaps with deleted ('f') entries instead of creating new subsections. https://github.com/Hopding/pdf-lib/issues/1388
+
+- [ ] **#1230 - Copy fields for printing** — Users want to extract form field data for printing. Phase 1: expose internal `getFontSize()` and `getFontColor()` getters that already exist internally. Phase 2: proper field cloning. https://github.com/Hopding/pdf-lib/issues/1230
 
 ---
 

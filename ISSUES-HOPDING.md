@@ -22,9 +22,7 @@
 - #1103: Failed to parse PDF document (line:2 col:630 offset=354): No PDF header found
 - #1136: TypeError: _this.catalog.Pages(...).traverse is not a function
 - #1520: Some pages (PageLeaf) missing once the pdf is loaded
-- #1497: Problems to edit a pdf version 2.0 of acrobat
 - #1294: Unable to get correct information like pages or form fields from high version PDF file
-- #1751: Badly parsed JavaScript in AcroForm field
 
 ### Forms / AcroFields
 **Field detection:**
@@ -40,17 +38,10 @@
 - #1268: Getting correct widget ref to be removed
 
 **Manipulation:**
-- #1748: add the option to rename AcroForm field
-- #1652: Trying to add two fields with the same name generates an error
-- #1553: Unable to print the document which is filled with same text field twice.
 - #1548: Text size shrinking and expanding in Text Fields as per text length.
 - #1538: Original font is not mantained when a form is filled
 - #1504: PDFDocument method pdfDoc.saveAsBase64({dataUri: true}) returning same contents even after modifying the fillable PDF.
-- #1488: Field with diacritics cannot be filled
-- #1240: Duplicate field names after copying & adding pages
-- #1077: setText method removes border & combing
 - #1104: PDF form field not filled according to field font
-- #1112: Filling PDF causes styles of filled fields to be reset
 
 **Styling:**
 - #1597: .setText() on a form field keeps font-size but overwrites pre-set font and font-color
@@ -81,37 +72,21 @@
 - #1754: Kerning and style set 2 are not respected in the configuration
 - #1649: PDFString supports only one-byte characters
 - #1528: Improve unicode support
-- #1492: Resaving document with fontkit after adding text results in error
-- #1429: a problem while using embedFont to write Chinese characters
-- #1409: Space issue with embedded Hindi Font
-- #1398: Drawing text with glyphless font results in garbled output
 - #1396: Embed font: subset breaks if text contains a dash
 - #1395: embedFont: woff2 font not recognized by Acrobat Reader?
-- #1325: Fix character spacing in fonts using ligatures
-- #1297: Unicode fraction slash not working
-- #1275: Some fonts splits words
-- #1232: Some characters in Japanese (and likely other languages) don't show up when a font is embedded with subset: true
-- #1147: Cannot encode charset, which is supported by the font
-- #1665: Using multiple Standard Fonts for a single textfield (i.e. Merging Unicode code points)
 
 **Errors:**
 - #1506: pdf.drawText is not supporting with custom font
 
 **Rendering:**
-- #1750: MacOS preview doesn't show the correct font size
-- #1450: Arabic text with numbers, numbers gets reversed.
 - #1272: drawText Does not support text style like text decoration
 - #1169: Scrambled Text when pdfs are viewed in acrobat
 
 ### Images
-- #1760: embedding files via attach() should not compress by default or at least mark it as such
 - #1634: embedJpg is writing a jpeg image to pdf as text not as an image
 - #1529: Set BoundingBox for Images
-- #1472: The method `embedPng()` on the ios takes too long to run ,but it works fine on the android
 - #1404: File size increased exponentially after embedded png to pdf-doc
-- #1341: drawImage not working with big rotated pdf
 - #1146: embedPng stuck in infinity loop
-- #784: JPG images with embedded CMYK profile show inverted in Illustrator
 
 ### Pages / Copy
 - #1772: Fix: Resolve visual corruption in PDFs (#951)
