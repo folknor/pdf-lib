@@ -647,6 +647,29 @@ describe('PDFObjectParser', () => {
       object.copyBytesInto(buffer, 0);
       expect(buffer).toEqual(typedArrayFor(output));
     });
+
+    it('does not incorrectly match "stream" within words like "bitstream"', () => {
+      // This tests the fix for issue #1215/#1206
+      // Font license text containing "bitstream" was incorrectly counted as
+      // a nested stream, causing incorrect Length calculations
+      const input = '<<>>\nstream\nThis is a bitstream font license text\nendstream';
+      const object = parse(input);
+      expect(object).toBeInstanceOf(PDFRawStream);
+      expect(String(object)).toBe(
+        '<<\n/Length 37\n>>\nstream\nThis is a bitstream font license text\nendstream',
+      );
+    });
+
+    it('handles streams containing multiple embedded "stream" words', () => {
+      // Multiple occurrences of "stream" within words should not affect parsing
+      const input =
+        '<<>>\nstream\nbitstream upstream downstream mainstream\nendstream';
+      const object = parse(input);
+      expect(object).toBeInstanceOf(PDFRawStream);
+      expect(String(object)).toBe(
+        '<<\n/Length 40\n>>\nstream\nbitstream upstream downstream mainstream\nendstream',
+      );
+    });
   });
 
   describe('when parsing null', () => {

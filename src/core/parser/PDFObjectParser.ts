@@ -289,7 +289,9 @@ class PDFObjectParser extends BaseParser {
     while (!this.bytes.done()) {
       end = this.bytes.offset();
 
-      if (this.matchKeyword(Keywords.stream)) {
+      // Only match "stream" if it's preceded by a valid delimiter character
+      // This prevents matching words like "bitstream" as a stream keyword
+      if (this.matchPrefixedKeyword(Keywords.stream)) {
         nestingLvl += 1;
       } else if (
         this.matchKeyword(Keywords.EOF1endstream) ||
@@ -308,6 +310,41 @@ class PDFObjectParser extends BaseParser {
     if (nestingLvl !== 0) throw new PDFStreamParsingError(startPos);
 
     return end;
+  }
+
+  /**
+   * Match a keyword only if it's preceded by a valid delimiter character.
+   * This prevents matching keywords that appear within longer words
+   * (e.g., "bitstream" should not match "stream").
+   */
+  private matchPrefixedKeyword(keyword: number[]): boolean {
+    const currentOffset = this.bytes.offset();
+
+    // Check if the previous character is a valid delimiter
+    if (currentOffset > 0) {
+      const prevByte = this.bytes.peekAt(currentOffset - 1);
+      if (prevByte === undefined) {
+        return false;
+      }
+      // Valid delimiters before "stream": whitespace, newline, carriage return,
+      // tab, or PDF delimiter characters like < > ( ) [ ] / %
+      const isValidPrefix =
+        IsWhitespace[prevByte] ||
+        prevByte === CharCodes.LessThan ||
+        prevByte === CharCodes.GreaterThan ||
+        prevByte === CharCodes.LeftParen ||
+        prevByte === CharCodes.RightParen ||
+        prevByte === CharCodes.LeftSquareBracket ||
+        prevByte === CharCodes.RightSquareBracket ||
+        prevByte === CharCodes.ForwardSlash ||
+        prevByte === CharCodes.Percent;
+
+      if (!isValidPrefix) {
+        return false;
+      }
+    }
+
+    return this.matchKeyword(keyword);
   }
 }
 
