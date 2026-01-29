@@ -34,15 +34,14 @@ Implements incremental PDF updates for PAdES/LTV digital signature compliance.
 #### #122 - CIDSystemInfo Not Set in Password-Protected PDFs
 Registry and Ordering fields in CIDFont CIDSystemInfo structure are not properly handled during PDFObjectCopier for password-protected PDFs. After decryption, these fields remain as encrypted binary data instead of being decrypted.
 - **Symptoms**: Text doesn't display in regenerated password-protected PDFs
-- **Root cause**: PDFObjectCopier copies encrypted values as-is instead of decrypting them
-- **Workaround**: Force set `Registry: "Adobe"` and `Ordering: "Identity"`
+- **Root cause**: Encrypted literal strings weren't being decrypted properly - the old code used `decryptString()` which didn't handle escape sequences correctly
 - **Related**: #120 (same root cause)
-- **Status**: **POTENTIALLY FIXED** - The PR #130 literal string decryption fix we implemented may resolve this issue, as it fixes how encrypted literal strings are decrypted (using `decryptBytes()` with proper byte conversion instead of `decryptString()`). The parser correctly passes the parent object's `ref` down to nested dictionaries for decryption. Needs verification with a test PDF that exhibits this issue.
+- **Status**: **LIKELY FIXED** - PR #130 (in this fork) fixes literal string decryption by using `PDFString.asBytes()` for proper escape sequence handling before calling `decryptBytes()`. Strings are now decrypted during parsing, so `PDFObjectCopier` copies already-decrypted values. Needs verification with a test PDF.
 
 #### #120 - Text Missing After Saving PDF
 Text disappears after saving certain PDFs.
 - **Related to**: #122 (CIDSystemInfo issue)
-- **Status**: Linked to same root cause
+- **Status**: **LIKELY FIXED** - Same root cause as #122, addressed by PR #130
 
 #### #86 - Form Field Content Lost After Flatten
 When flattening PDFs filled by external applications (like Adobe Acrobat), field values may not appear.
@@ -51,14 +50,41 @@ When flattening PDFs filled by external applications (like Adobe Acrobat), field
 
 #### #55 - Form Field setText Not Respecting Embedded Fonts
 Text set via setText() doesn't use the font embedded in the PDF form field.
-- **Root cause**: Font descriptor parsing may not match pdf-lib expectations
-- **Status**: Needs investigation
+- **Root cause**: pdf-lib always defaults to Helvetica when regenerating form field appearances. The DA (Default Appearance) string is parsed for font size/color, but the **font name is never used to look up existing fonts**.
+- **Missing functionality**: No mechanism to retrieve fonts already embedded in the PDF from the DR (Default Resources) dictionary
+- **Complexity**: HIGH - Would require:
+  1. Add DR dictionary access to PDFAcroForm
+  2. Create font lookup/retrieval mechanism from PDF resources
+  3. Handle subsetted fonts (may not contain all needed glyphs)
+  4. Modify appearance update logic to resolve fonts from DA
+- **Workaround**: Embed matching font externally and pass to `updateAppearances(font)`
+- **Status**: Architecture limitation, significant work needed
+
+### Encryption / Cloning Issues
+
+#### #69 - Images Corrupted in Encrypted PDF Clone
+Image objects get corrupted when cloning/saving encrypted PDFs.
+- **Root cause**: **Architecture issue** - Streams are decrypted during parsing using the original object reference's encryption key. When saved, objects may have different reference numbers, causing re-encryption with wrong keys.
+- **Key insight**: PDF encryption keys are derived per-object based on object number + generation number
+- **Complexity**: HIGH - Would need to track decryption state per-stream or maintain original object references
+- **Workaround**: Use `qpdf --decrypt input.pdf output.pdf` before processing
+- **Status**: Requires architectural changes
+
+#### #65 - Deep Clone Decrypted PDFDocument Error
+Error when creating deep clone of decrypted PDFDocument object (`this.catalog.Pages is not a function`).
+- **Root cause**: Related to #69 - when decryption fails for certain objects, they become `PDFInvalidObject`. The `PDFDocument` constructor blindly casts to `PDFCatalog` without validation.
+- **Contributing factors**:
+  1. Decryption failure creates invalid objects
+  2. No validation of catalog type in constructor
+- **Complexity**: MEDIUM - Could add validation and better error messages
+- **Workaround**: Use `qpdf --decrypt` before processing
+- **Status**: Related to #69 encryption architecture
 
 ### Build / Module Issues
 
 #### #132 - TypeScript >= 5.9 Compatibility
 TypeScript 5.9 changed Uint8Array type handling causing compile errors.
-- **Status**: Has draft PR #133
+- **Status**: **FIXED IN THIS FORK** - See PR #133 above
 
 #### #85 - UPNG.decode Error with ESM
 `UPNG.decode is not a function` error when using ESM modules.
@@ -73,6 +99,26 @@ Same root cause as #85 - ESM/CommonJS interop issue with UPNG.
 #### #24 - Update Pako Dependency
 Request to update pako to ^2.0.2 for better tree shaking.
 - **Status**: Open, would help with bundle size
+
+### Quick Wins
+
+#### #128 - Missing Page Index for Acrofield Widget
+Cannot get page index for form field widgets.
+- **Root cause**: Core functionality exists (`findWidgetPage` in PDFForm) but is **private**
+- **Solution**: Expose public API on `PDFField`:
+  - `getWidgetPage(widgetIndex?: number): PDFPage | undefined`
+  - `getWidgetPageIndex(widgetIndex?: number): number | undefined`
+  - `getWidgets(): PDFWidgetAnnotation[]`
+- **Complexity**: LOW - Just needs API exposure, 4-8 hours with tests
+- **Status**: Easy fix, should implement
+
+#### #89 - Attachment Names Cause Acrobat Error
+Some attachment names cause errors in Acrobat Reader.
+- **Root cause**: PDF spec requires EmbeddedFiles Names array to be **lexically sorted**. Current code just `push()`es to the end without maintaining sort order. Acrobat uses binary search on the Names array.
+- **Solution**: Insert attachments at correct position to maintain lexical sort order
+- **Complexity**: LOW - Simple fix in `PDFEmbeddedFile.embed()`
+- **Workaround**: Add attachments in lexical order (e.g., `1.jpg`, `10.jpg`, `2.jpg`)
+- **Status**: Easy fix, should implement
 
 ### Feature Requests
 
@@ -102,21 +148,11 @@ Feature request for PDF file compression.
 Feature request for stream deflation/compression.
 - **Status**: Help wanted
 
-### Parsing / Encryption Issues
+### Parsing Issues
 
 #### #96 - PDFNull Instead of PDFDict
 Error: "Expected instance of PDFDict, but got instance of PDFNull"
 - **Status**: **FIXED IN THIS FORK** - Multiple locations now use `lookupMaybe()` instead of `lookup()` with graceful undefined handling. Fixed in: PDFAcroTerminal.getWidgets(), PDFForm.findWidgetAppearanceRef(), PDFDocument.getRawAttachments(), PDFDocument.getSavedAttachments(), PDFAnnotation.getAppearances(), PDFEmbeddedFile.embedIntoContext().
-
-#### #69 - Images Corrupted in Encrypted PDF Clone
-Image objects get corrupted when cloning/saving encrypted PDFs.
-- **Workaround**: Use qpdf CLI for decryption before processing
-- **Status**: Help wanted
-
-#### #65 - Deep Clone Decrypted PDFDocument Error
-Error when creating deep clone of decrypted PDFDocument object.
-- **Workaround**: Use qpdf for decryption
-- **Status**: Help wanted
 
 #### #64 - Failed to Parse Number
 Parsing error at specific file offset.
@@ -127,10 +163,6 @@ Generic parsing failure.
 - **Status**: Needs investigation with repro file
 
 ### Minor Issues
-
-#### #128 - Missing Page Index for Acrofield Widget
-Cannot get page index for form field widgets.
-- **Status**: Bug, needs triage
 
 #### #118 - Remove Form Fields and Comments
 User question about removing form fields and annotations.
@@ -144,11 +176,6 @@ Attachments missing the description field caused errors.
 Catalog not present when saving PDF in Next.js client-side.
 - **Root cause**: Environment-specific issue, works on server side
 - **Status**: User confirmed works server-side
-
-#### #89 - Attachment Names Cause Acrobat Error
-Some attachment names cause errors in Acrobat Reader.
-- **Workaround**: Add attachments in lexical order (1.jpg, 10.jpg, 2.jpg)
-- **Status**: Help wanted
 
 #### #71 - Save to Specific File Path
 Feature request for `save(filePath)` method.
@@ -179,10 +206,13 @@ Request for better handling of non-compliant PDFs.
 - **PR #121** - Text markup annotations ✓
 - **PR #111** - Incremental updates for digital signatures ✓
 - **PR #133** - TypeScript 5.9 compatibility ✓
+- **#122/#120** - CIDSystemInfo/text missing (likely fixed by PR #130, needs verification) ✓
 
-### Should Investigate/Fix
-1. **#122/#120** - CIDSystemInfo encryption issue (potentially fixed by PR #130, needs verification)
-2. **#55** - setText font handling
+### Quick Wins (Should Implement)
+1. **#128** - Widget page index API (LOW effort, HIGH value)
+2. **#89** - Attachment name sorting for Acrobat compatibility (LOW effort)
 
-### Consider for Future
-1. **#95** - SVG pattern support
+### Complex Issues (Future Consideration)
+1. **#55** - setText font handling (HIGH effort - architecture limitation)
+2. **#69/#65** - Encrypted PDF cloning (HIGH effort - requires architectural changes)
+3. **#95** - SVG pattern support (MEDIUM-HIGH effort)
