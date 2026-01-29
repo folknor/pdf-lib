@@ -1,4 +1,5 @@
 import type { Space, TransformationMatrix } from '../types/index.js';
+import type { AnnotationTypes } from '../core/annotation/AnnotationTypes.js';
 import type { Color } from './colors.js';
 import type { FillRule, LineCapStyle, TextRenderingMode } from './operators.js';
 import type PDFFont from './PDFFont.js';
@@ -177,4 +178,45 @@ export interface PDFPageDrawSVGElementOptions {
   fontSize?: number;
   fonts?: { [fontName: string]: PDFFont };
   blendMode?: BlendMode;
+}
+
+/**
+ * Options for adding an annotation to a PDF page.
+ */
+export interface PDFPageAddAnnotationOptions {
+  subtype: AnnotationTypes;
+  rect: { x: number; y: number; width: number; height: number };
+  contents?: string;
+  name?: string;
+  flags?: number;
+  color?: number[];
+  border?: number[];
+  modificationDate?: Date;
+}
+
+/**
+ * Options for adding a markup annotation to a PDF page.
+ *
+ * Markup annotations refers:
+ * - Highlight
+ * - Underline
+ * - Squiggly
+ * - StrikeOut
+ * annotations.
+ */
+export interface PDFPageAddTextMarkupAnnotationOptions
+  extends PDFPageAddAnnotationOptions {
+  /**
+   * The quad points that define the region(s) to be marked up.
+   */
+  quadPoints: {
+    lefttopX: number;
+    lefttopY: number;
+    righttopX: number;
+    righttopY: number;
+    rightbottomX: number;
+    rightbottomY: number;
+    leftbottomX: number;
+    leftbottomY: number;
+  };
 }

@@ -40,7 +40,7 @@ class PDFWidgetAnnotation extends PDFAnnotation {
     return undefined;
   }
 
-  P(): PDFRef | undefined {
+  override P(): PDFRef | undefined {
     const P = this.dict.get(PDFName.of('P'));
     if (P instanceof PDFRef) return P;
     return undefined;

@@ -13,20 +13,11 @@ This is the upstream fork we're based on. It's an actively maintained fork of Ho
 Restricts Uint8Array types from `Uint8Array<ArrayBufferLike>` to `Uint8Array<ArrayBuffer>` for TypeScript 5.9+ compatibility.
 - **Status**: Draft, linked to issue #132
 - **Impact**: Breaking change for TypeScript 5.9+ users
-
-### PR #130 - Fix Literal String Decryption
-Fixes decryption of literal strings in encrypted PDFs.
-- **Status**: **IMPLEMENTED IN THIS FORK** - Fixed two bugs: (1) PDFString.asBytes() typo checking Backspace instead of BackSlash for escaped backslashes, (2) PDFObjectParser.parseString() now uses decryptBytes() with proper byte conversion instead of decryptString().
-- **Impact**: Encryption reliability
-
-### PR #129 - XFA Forms Support
-Working with XFA (XML Forms Architecture) forms.
-- **Status**: Open
-- **Impact**: Support for Adobe LiveCycle forms (complex feature)
+- **Note**: We already use TypeScript 5.9.3 - may need to verify if we're affected
 
 ### PR #121 - Text Markup Annotations
 Adds support for text markup annotations (highlight, underline, strikeout, squiggly).
-- **Status**: Open, needs review
+- **Status**: **IMPLEMENTED IN THIS FORK** - Added `AnnotationTypes` enum, `AnnotationFactory`, `PDFTextMarkupAnnotation` class, and `PDFPage.annotations()` / `PDFPage.addTextMarkupAnnotation()` methods.
 - **Impact**: New annotation features
 
 ### PR #111 - Incremental Update Implementation
@@ -35,17 +26,6 @@ Implements incremental PDF updates for PAdES/LTV digital signature compliance.
 - **Impact**: Critical for digital signature workflows; preserves original PDF bytes
 - **Complexity**: High - requires careful handling of object numbering and cross-reference tables
 - **Use case**: Required for long-term validation (LTV) signatures
-
-### PR #87 - Save to Target Path
-Adds `saveToTargetPath()` method for direct file writing.
-- **Status**: Open, stalled (memory issues being worked out)
-- **Issue**: Cross-platform compatibility (Node vs browser)
-- **Suggestion**: Use Web Streams API for better compatibility
-
-### PR #66 - Remove Unnecessary Async
-Refactors to remove unnecessary async from embed functions.
-- **Status**: Stale, changes requested (remove yarn/package-lock changes)
-- **Note**: Async was intentionally added for performance (allows event loop breathing)
 
 ---
 
@@ -174,7 +154,7 @@ Some attachment names cause errors in Acrobat Reader.
 
 #### #71 - Save to Specific File Path
 Feature request for `save(filePath)` method.
-- **Status**: Has PR #87
+- **Status**: Open
 
 #### #67 - Add packageManager Field
 Request to add packageManager field to package.json for reliable dependency management.
@@ -198,16 +178,15 @@ Request for better handling of non-compliant PDFs.
 - **PR #130** - Literal string decryption fix ✓
 - **#96** - PDFNull graceful handling ✓
 - **#86** - Auto-dirty fields before flatten ✓
+- **PR #121** - Text markup annotations ✓
 
 ### Should Investigate/Fix
 1. **#122/#120** - CIDSystemInfo encryption issue (potentially fixed by PR #130, needs verification)
 2. **#55** - setText font handling
 
 ### Should Merge
-1. **PR #121** - Text markup annotations
-2. **PR #133** - TypeScript 5.9 compatibility (when ready)
+1. **PR #111** - Incremental updates (NEXT PRIORITY - critical for digital signatures)
 
 ### Consider for Future
-1. **PR #111** - Incremental updates (complex but valuable)
-2. **PR #129** - XFA support (complex)
-3. **#95** - SVG pattern support
+1. **PR #133** - TypeScript 5.9 compatibility (verify if we're affected first)
+2. **#95** - SVG pattern support

@@ -1,4 +1,6 @@
 import {
+  AnnotationFactory,
+  PDFAnnotation,
   PDFArray,
   PDFContentStream,
   PDFDict,
@@ -7,6 +9,7 @@ import {
   PDFOperator,
   PDFPageLeaf,
   PDFRef,
+  PDFTextMarkupAnnotation,
 } from '../core/index.js';
 import {
   assertEachIs,
@@ -44,6 +47,7 @@ import PDFFont from './PDFFont.js';
 import PDFImage from './PDFImage.js';
 import {
   BlendMode,
+  type PDFPageAddTextMarkupAnnotationOptions,
   type PDFPageDrawCircleOptions,
   type PDFPageDrawEllipseOptions,
   type PDFPageDrawImageOptions,
@@ -1739,6 +1743,55 @@ export default class PDFPage {
     const key = this.node.newExtGState('GS', graphicsState);
 
     return key;
+  }
+
+  /**
+   * Read the annotation dictionaries from this page and convert to PDFAnnotation class instances.
+   * @returns {PDFAnnotation[]} The annotations on this page
+   */
+  annotations(): PDFAnnotation[] {
+    const annotsArray = this.node.Annots();
+
+    // if there are no annotations...
+    if (!annotsArray || !(annotsArray instanceof PDFArray)) {
+      // ...return an empty array
+      return [];
+    }
+
+    // convert the annotation dictionaries to PDFAnnotation instances
+    const annotations: PDFAnnotation[] = [];
+    for (let i = 0; i < annotsArray.size(); i++) {
+      const annotDict = annotsArray.lookup(i);
+      if (annotDict instanceof PDFDict) {
+        const pdfAnnotation = AnnotationFactory.fromDict(annotDict);
+        annotations.push(pdfAnnotation);
+      }
+    }
+    return annotations;
+  }
+
+  /**
+   * Add a text markup annotation to this page (highlight, underline, strikeout, squiggly).
+   * @param options The options for the text markup annotation.
+   * @returns The created PDFTextMarkupAnnotation instance.
+   */
+  addTextMarkupAnnotation(
+    options: PDFPageAddTextMarkupAnnotationOptions,
+  ): PDFTextMarkupAnnotation {
+    const context = this.doc.context;
+    const page = this.node;
+
+    // convert to PDFDict
+    const annotation = PDFTextMarkupAnnotation.create(context, page, options);
+    const dict = annotation.dict;
+
+    // register PDF object into the PDF
+    const ref = context.register(dict);
+
+    // add the annotation to the page's Annots array
+    page.addAnnot(ref);
+
+    return annotation;
   }
 
   private scaleAnnot(annot: PDFDict, x: number, y: number) {
