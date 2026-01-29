@@ -34,23 +34,55 @@ class PDFName extends PDFObject {
   };
 
   /* tslint:disable member-ordering */
+  // Stream
   static readonly Length = PDFName.of('Length');
+  static readonly Filter = PDFName.of('Filter');
   static readonly FlateDecode = PDFName.of('FlateDecode');
+
+  // Document structure
+  static readonly Type = PDFName.of('Type');
+  static readonly Subtype = PDFName.of('Subtype');
+  static readonly Parent = PDFName.of('Parent');
+  static readonly Kids = PDFName.of('Kids');
+  static readonly Count = PDFName.of('Count');
+  static readonly Catalog = PDFName.of('Catalog');
+  static readonly Pages = PDFName.of('Pages');
+  static readonly Page = PDFName.of('Page');
+
+  // Page
+  static readonly Contents = PDFName.of('Contents');
   static readonly Resources = PDFName.of('Resources');
+  static readonly MediaBox = PDFName.of('MediaBox');
+  static readonly CropBox = PDFName.of('CropBox');
+  static readonly BleedBox = PDFName.of('BleedBox');
+  static readonly TrimBox = PDFName.of('TrimBox');
+  static readonly ArtBox = PDFName.of('ArtBox');
+  static readonly Rotate = PDFName.of('Rotate');
+  static readonly Annots = PDFName.of('Annots');
+
+  // Resources
   static readonly Font = PDFName.of('Font');
   static readonly XObject = PDFName.of('XObject');
   static readonly ExtGState = PDFName.of('ExtGState');
-  static readonly Contents = PDFName.of('Contents');
-  static readonly Type = PDFName.of('Type');
-  static readonly Parent = PDFName.of('Parent');
-  static readonly MediaBox = PDFName.of('MediaBox');
-  static readonly Page = PDFName.of('Page');
-  static readonly Annots = PDFName.of('Annots');
-  static readonly TrimBox = PDFName.of('TrimBox');
-  static readonly ArtBox = PDFName.of('ArtBox');
-  static readonly BleedBox = PDFName.of('BleedBox');
-  static readonly CropBox = PDFName.of('CropBox');
-  static readonly Rotate = PDFName.of('Rotate');
+  static readonly ColorSpace = PDFName.of('ColorSpace');
+  static readonly Pattern = PDFName.of('Pattern');
+  static readonly Shading = PDFName.of('Shading');
+  static readonly Properties = PDFName.of('Properties');
+
+  // XObject subtypes
+  static readonly Form = PDFName.of('Form');
+  static readonly Image = PDFName.of('Image');
+
+  // Form fields
+  static readonly Off = PDFName.of('Off');
+  static readonly Yes = PDFName.of('Yes');
+  static readonly Opt = PDFName.of('Opt');
+
+  // Names / Embedded files
+  static readonly Names = PDFName.of('Names');
+  static readonly EmbeddedFiles = PDFName.of('EmbeddedFiles');
+
+  // Metadata
   static readonly Title = PDFName.of('Title');
   static readonly Author = PDFName.of('Author');
   static readonly Subject = PDFName.of('Subject');

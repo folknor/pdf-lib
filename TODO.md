@@ -84,6 +84,26 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ---
 
+## Code Issues & Improvements
+
+### Potential Bugs
+
+- [x] **PDFPageLeaf inherited resource mutation** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: `normalize()` now clones inherited Resources, Font, XObject, and ExtGState dictionaries to prevent mutation of shared parent dictionaries.
+
+- [ ] **PDFFont orphan cleanup** (`src/api/PDFFont.ts:153`) — Embedding the same font multiple times creates orphan objects that bloat the PDF. TODO in code says "Cleanup orphan embedded objects if a font is embedded multiple times..."
+
+- [ ] **PDFPage resource reuse** (`src/api/PDFPage.ts:707, 1077, 1153`) — Drawing the same image/font/embeddedPage multiple times creates duplicate resource entries instead of reusing existing names.
+
+### Consistency Improvements
+
+- [x] **PDFName static properties** — Added: `Filter`, `Subtype`, `Kids`, `Count`, `Catalog`, `Pages`, `ColorSpace`, `Pattern`, `Shading`, `Properties`, `Form`, `Image`, `Off`, `Yes`, `Opt`, `Names`, `EmbeddedFiles`.
+
+### Housekeeping
+
+- [x] **Delete stale `.plans/` directory** — Deleted.
+
+---
+
 ## Final Checklist
 - [x] `pnpm build && pnpm test && pnpm lint` passes
 - [ ] Delete this file

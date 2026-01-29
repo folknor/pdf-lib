@@ -153,8 +153,8 @@ function analyzeFormXObject(
             visitedRefs.add(refKey);
             const nestedXObject = context.lookup(ref);
             if (nestedXObject instanceof PDFStream) {
-              const subtype = nestedXObject.dict.get(PDFName.of('Subtype'));
-              if (subtype === PDFName.of('Form')) {
+              const subtype = nestedXObject.dict.get(PDFName.Subtype);
+              if (subtype === PDFName.Form) {
                 analyzeFormXObject(nestedXObject, context, used, visitedRefs);
               }
             }
@@ -228,8 +228,8 @@ export function analyzePageResources(
             visitedRefs.add(refKey);
             const xobject = context.lookup(ref);
             if (xobject instanceof PDFStream) {
-              const subtype = xobject.dict.get(PDFName.of('Subtype'));
-              if (subtype === PDFName.of('Form')) {
+              const subtype = xobject.dict.get(PDFName.Subtype);
+              if (subtype === PDFName.Form) {
                 analyzeFormXObject(xobject, context, used, visitedRefs);
               }
             }
@@ -257,19 +257,19 @@ export function filterResources(
 ): PDFDict {
   const filtered = context.obj({});
 
-  // Resource category names in PDF
-  const categories: Array<{ pdfName: string; key: keyof UsedResources }> = [
-    { pdfName: 'Font', key: 'Font' },
-    { pdfName: 'XObject', key: 'XObject' },
-    { pdfName: 'ExtGState', key: 'ExtGState' },
-    { pdfName: 'ColorSpace', key: 'ColorSpace' },
-    { pdfName: 'Pattern', key: 'Pattern' },
-    { pdfName: 'Shading', key: 'Shading' },
-    { pdfName: 'Properties', key: 'Properties' },
+  // Resource category mapping: PDFName static -> UsedResources key
+  const categories: Array<{ pdfName: PDFName; key: keyof UsedResources }> = [
+    { pdfName: PDFName.Font, key: 'Font' },
+    { pdfName: PDFName.XObject, key: 'XObject' },
+    { pdfName: PDFName.ExtGState, key: 'ExtGState' },
+    { pdfName: PDFName.ColorSpace, key: 'ColorSpace' },
+    { pdfName: PDFName.Pattern, key: 'Pattern' },
+    { pdfName: PDFName.Shading, key: 'Shading' },
+    { pdfName: PDFName.Properties, key: 'Properties' },
   ];
 
   for (const { pdfName, key } of categories) {
-    const categoryDict = resources.lookup(PDFName.of(pdfName));
+    const categoryDict = resources.lookup(pdfName);
     if (categoryDict instanceof PDFDict && used[key].size > 0) {
       const filteredCategory = context.obj({});
       for (const name of used[key]) {
@@ -279,7 +279,7 @@ export function filterResources(
         }
       }
       if (filteredCategory.entries().length > 0) {
-        filtered.set(PDFName.of(pdfName), filteredCategory);
+        filtered.set(pdfName, filteredCategory);
       }
     }
   }

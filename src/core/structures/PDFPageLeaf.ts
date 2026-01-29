@@ -217,25 +217,34 @@ class PDFPageLeaf extends PDFDict {
       );
     }
 
-    // TODO: Clone `Resources` if it is inherited
-    const dictOrRef = this.getInheritableAttribute(PDFName.Resources);
-    const Resources =
-      context.lookupMaybe(dictOrRef, PDFDict) || context.obj({});
+    // Clone Resources if it is inherited to avoid mutating shared dictionaries
+    const ownResources = this.get(PDFName.Resources);
+    const inheritedResources = this.getInheritableAttribute(PDFName.Resources);
+    const isInherited = !ownResources && inheritedResources;
+    const resolvedResources = context.lookupMaybe(inheritedResources, PDFDict);
+
+    const Resources = isInherited
+      ? resolvedResources?.clone(context) || context.obj({})
+      : resolvedResources || context.obj({});
     this.set(PDFName.Resources, Resources);
 
-    // TODO: Clone `Font` if it is inherited
-    const Font =
-      Resources.lookupMaybe(PDFName.Font, PDFDict) || context.obj({});
+    // Clone Font/XObject/ExtGState if they came from inherited Resources
+    const Font = isInherited
+      ? Resources.lookupMaybe(PDFName.Font, PDFDict)?.clone(context) ||
+        context.obj({})
+      : Resources.lookupMaybe(PDFName.Font, PDFDict) || context.obj({});
     Resources.set(PDFName.Font, Font);
 
-    // TODO: Clone `XObject` if it is inherited
-    const XObject =
-      Resources.lookupMaybe(PDFName.XObject, PDFDict) || context.obj({});
+    const XObject = isInherited
+      ? Resources.lookupMaybe(PDFName.XObject, PDFDict)?.clone(context) ||
+        context.obj({})
+      : Resources.lookupMaybe(PDFName.XObject, PDFDict) || context.obj({});
     Resources.set(PDFName.XObject, XObject);
 
-    // TODO: Clone `ExtGState` if it is inherited
-    const ExtGState =
-      Resources.lookupMaybe(PDFName.ExtGState, PDFDict) || context.obj({});
+    const ExtGState = isInherited
+      ? Resources.lookupMaybe(PDFName.ExtGState, PDFDict)?.clone(context) ||
+        context.obj({})
+      : Resources.lookupMaybe(PDFName.ExtGState, PDFDict) || context.obj({});
     Resources.set(PDFName.ExtGState, ExtGState);
 
     const Annots = this.Annots() || context.obj([]);

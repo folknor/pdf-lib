@@ -210,14 +210,66 @@ describe('PDFPageLeaf', () => {
     const { Resources, Font, XObject } = pageLeaf.normalizedEntries();
 
     expect(pageLeaf.Parent()).toBe(parent);
-    expect(pageLeaf.Resources()).toBe(resources);
     expect(pageLeaf.MediaBox()).toBe(mediaBox);
     expect(pageLeaf.CropBox()).toBe(cropBox);
     expect(pageLeaf.Rotate()).toBe(rotate);
 
-    expect(Resources).toBe(resources);
-    expect(Font).toBe(resources.get(PDFName.Font));
-    expect(XObject).toBe(resources.get(PDFName.XObject));
+    // Inherited Resources should be cloned to avoid mutation bugs
+    // The cloned Resources should NOT be the same object as the original
+    expect(pageLeaf.Resources()).not.toBe(resources);
+    expect(Resources).not.toBe(resources);
+
+    // But should have equivalent structure
+    expect(Resources.get(PDFName.Font)?.toString()).toBe(
+      resources.get(PDFName.Font)?.toString(),
+    );
+    expect(Resources.get(PDFName.XObject)?.toString()).toBe(
+      resources.get(PDFName.XObject)?.toString(),
+    );
+
+    // Font and XObject should also be clones, not the same objects
+    expect(Font).not.toBe(resources.get(PDFName.Font));
+    expect(XObject).not.toBe(resources.get(PDFName.XObject));
+  });
+
+  it('cloning inherited resources prevents mutation of shared dictionaries', () => {
+    const context = PDFContext.create();
+
+    // Create shared resources on parent
+    const sharedResources = context.obj({
+      Font: { F1: PDFRef.of(100) },
+    });
+    const sharedResourcesRef = context.register(sharedResources);
+
+    const parent = PDFPageTree.withContext(context);
+    const parentRef = context.register(parent);
+    parent.set(PDFName.of('Resources'), sharedResourcesRef);
+    parent.set(PDFName.of('MediaBox'), context.obj([0, 0, 612, 792]));
+
+    // Create two pages that inherit from the same parent
+    const page1 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    page1.delete(PDFName.of('Resources'));
+    const page1Ref = context.register(page1);
+    parent.pushLeafNode(page1Ref);
+
+    const page2 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    page2.delete(PDFName.of('Resources'));
+    const page2Ref = context.register(page2);
+    parent.pushLeafNode(page2Ref);
+
+    // Normalize both pages (triggers resource cloning)
+    const { Font: font1 } = page1.normalizedEntries();
+    const { Font: font2 } = page2.normalizedEntries();
+
+    // Add a font to page1's resources
+    font1.set(PDFName.of('F2'), PDFRef.of(200));
+
+    // Page2's resources should NOT be affected
+    expect(font2.get(PDFName.of('F2'))).toBeUndefined();
+
+    // Original shared resources should NOT be affected
+    const originalFont = sharedResources.lookup(PDFName.Font, PDFDict);
+    expect(originalFont.get(PDFName.of('F2'))).toBeUndefined();
   });
 
   it('can set its Parent', () => {
