@@ -1093,4 +1093,89 @@ describe('PDFTextField', () => {
       expect(field.getDefaultAppearanceFontSize()).toBe(14);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Border Styles
+  // ---------------------------------------------------------------------------
+  describe('borderStyles', () => {
+    it('preserves border style when regenerating appearances', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('border.style');
+      field.addToPage(page);
+
+      // Get the widget and set a border style
+      const widgets = field.getWidgets();
+      const bs = widgets[0].getOrCreateBorderStyle();
+      bs.setStyle('D'); // Dashed
+      bs.setDashPattern([3, 2]);
+
+      // Update appearances
+      const helvetica = await pdfDoc.embedFont('Helvetica');
+      field.setText('Test');
+      field.updateAppearances(helvetica);
+
+      // Verify the border style is preserved
+      const bsAfter = widgets[0].getBorderStyle();
+      expect(bsAfter?.getStyle()).toBe('D');
+      expect(bsAfter?.getDashPattern()).toEqual([3, 2]);
+    });
+
+    it('supports solid border style (default)', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('border.solid');
+      field.addToPage(page);
+
+      const widgets = field.getWidgets();
+      const bs = widgets[0].getBorderStyle();
+
+      // Default should be solid
+      expect(bs?.getStyle()).toBe('S');
+    });
+
+    it('can set beveled border style', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('border.beveled');
+      field.addToPage(page);
+
+      const widgets = field.getWidgets();
+      const bs = widgets[0].getOrCreateBorderStyle();
+      bs.setStyle('B');
+
+      expect(bs.getStyle()).toBe('B');
+    });
+
+    it('can set inset border style', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('border.inset');
+      field.addToPage(page);
+
+      const widgets = field.getWidgets();
+      const bs = widgets[0].getOrCreateBorderStyle();
+      bs.setStyle('I');
+
+      expect(bs.getStyle()).toBe('I');
+    });
+
+    it('can set underline border style', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('border.underline');
+      field.addToPage(page);
+
+      const widgets = field.getWidgets();
+      const bs = widgets[0].getOrCreateBorderStyle();
+      bs.setStyle('U');
+
+      expect(bs.getStyle()).toBe('U');
+    });
+  });
 });

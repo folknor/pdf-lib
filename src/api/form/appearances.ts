@@ -435,6 +435,8 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   const text = textField.getText() ?? '';
 
   const borderWidth = bs?.getWidth() ?? 0;
+  const borderStyle = bs?.getStyle() ?? 'S';
+  const borderDashPattern = bs?.getDashPattern();
   const rotation = reduceRotation(ap?.getRotation());
   const { width, height } = adjustDimsForRotation(rectangle, rotation);
 
@@ -499,6 +501,8 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
     height: height - borderWidth,
     borderWidth: borderWidth ?? 0,
     borderColor,
+    borderStyle: borderStyle as 'S' | 'D' | 'B' | 'I' | 'U',
+    ...(borderDashPattern && { borderDashArray: borderDashPattern }),
     textColor,
     font: font.name,
     fontSize,
@@ -525,6 +529,8 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   const text = dropdown.getSelected()[0] ?? '';
 
   const borderWidth = bs?.getWidth() ?? 0;
+  const borderStyle = bs?.getStyle() ?? 'S';
+  const borderDashPattern = bs?.getDashPattern();
   const rotation = reduceRotation(ap?.getRotation());
   const { width, height } = adjustDimsForRotation(rectangle, rotation);
 
@@ -564,6 +570,8 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
     height: height - borderWidth,
     borderWidth: borderWidth ?? 0,
     borderColor,
+    borderStyle: borderStyle as 'S' | 'D' | 'B' | 'I' | 'U',
+    ...(borderDashPattern && { borderDashArray: borderDashPattern }),
     textColor,
     font: font.name,
     fontSize,

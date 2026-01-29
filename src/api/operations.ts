@@ -6,7 +6,12 @@ import type {
 } from '../core/index.js';
 import type { Space, TransformationMatrix } from '../types/index.js';
 import { identityMatrix } from '../types/matrix.js';
-import { type Color, setFillingColor, setStrokingColor } from './colors.js';
+import {
+  type Color,
+  rgb,
+  setFillingColor,
+  setStrokingColor,
+} from './colors.js';
 import { asNumber } from './objects.js';
 import {
   beginMarkedContent,
@@ -669,6 +674,9 @@ export const drawTextField = (options: {
   font: string | PDFName;
   fontSize: number | PDFNumber;
   padding: number | PDFNumber;
+  borderDashArray?: (number | PDFNumber)[];
+  borderDashPhase?: number | PDFNumber;
+  borderStyle?: 'S' | 'D' | 'B' | 'I' | 'U';
 }) => {
   const x = asNumber(options.x);
   const y = asNumber(options.y);
@@ -676,6 +684,7 @@ export const drawTextField = (options: {
   const height = asNumber(options.height);
   const borderWidth = asNumber(options.borderWidth);
   const padding = asNumber(options.padding);
+  const borderStyle = options.borderStyle ?? 'S';
 
   const clipX = x + borderWidth / 2 + padding;
   const clipY = y + borderWidth / 2 + padding;
@@ -692,18 +701,73 @@ export const drawTextField = (options: {
     endPath(),
   ];
 
-  const background = drawRectangle({
-    x,
-    y,
-    width,
-    height,
-    borderWidth: options.borderWidth,
-    color: options.color,
-    borderColor: options.borderColor,
-    rotate: degrees(0),
-    xSkew: degrees(0),
-    ySkew: degrees(0),
-  });
+  // For underline style, only draw the bottom border
+  let background: PDFOperator[];
+  if (borderStyle === 'U') {
+    // Underline style: fill background + draw only bottom line
+    const bgOps: PDFOperator[] = [];
+    if (options.color) {
+      bgOps.push(
+        ...drawRectangle({
+          x,
+          y,
+          width,
+          height,
+          borderWidth: 0,
+          color: options.color,
+          borderColor: undefined,
+          rotate: degrees(0),
+          xSkew: degrees(0),
+          ySkew: degrees(0),
+        }),
+      );
+    }
+    if (options.borderColor && borderWidth > 0) {
+      bgOps.push(
+        ...drawLine({
+          start: { x, y },
+          end: { x: x + width, y },
+          thickness: borderWidth,
+          color: options.borderColor,
+          ...(options.borderDashArray && { dashArray: options.borderDashArray }),
+          ...(options.borderDashPhase !== undefined && {
+            dashPhase: options.borderDashPhase,
+          }),
+        }),
+      );
+    }
+    background = bgOps;
+  } else if (borderStyle === 'B' || borderStyle === 'I') {
+    // Beveled or Inset: draw 3D-style border
+    background = drawBeveledRectangle({
+      x,
+      y,
+      width,
+      height,
+      borderWidth,
+      color: options.color,
+      borderColor: options.borderColor,
+      inset: borderStyle === 'I',
+    });
+  } else {
+    // Solid or Dashed
+    background = drawRectangle({
+      x,
+      y,
+      width,
+      height,
+      borderWidth: options.borderWidth,
+      color: options.color,
+      borderColor: options.borderColor,
+      ...(options.borderDashArray && { borderDashArray: options.borderDashArray }),
+      ...(options.borderDashPhase !== undefined && {
+        borderDashPhase: options.borderDashPhase,
+      }),
+      rotate: degrees(0),
+      xSkew: degrees(0),
+      ySkew: degrees(0),
+    });
+  }
 
   const lines = drawTextLines(options.textLines, {
     color: options.textColor,
@@ -729,6 +793,109 @@ export const drawTextField = (options: {
     ...markedContent,
     popGraphicsState(),
   ];
+};
+
+/**
+ * Draw a rectangle with a 3D beveled or inset border effect.
+ * Beveled: appears raised (light on top/left, dark on bottom/right)
+ * Inset: appears depressed (dark on top/left, light on bottom/right)
+ */
+const drawBeveledRectangle = (options: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  borderWidth: number;
+  color: Color | undefined;
+  borderColor: Color | undefined;
+  inset: boolean;
+}): PDFOperator[] => {
+  const { x, y, width, height, borderWidth, color, borderColor, inset } =
+    options;
+  const ops: PDFOperator[] = [];
+
+  // Background fill
+  if (color) {
+    ops.push(
+      ...drawRectangle({
+        x,
+        y,
+        width,
+        height,
+        borderWidth: 0,
+        color,
+        borderColor: undefined,
+        rotate: degrees(0),
+        xSkew: degrees(0),
+        ySkew: degrees(0),
+      }),
+    );
+  }
+
+  if (borderColor && borderWidth > 0) {
+    // For 3D effect, we need light and dark versions of the border color
+    // Light color for raised edges, dark for shadowed edges
+    const lightColor = rgb(1, 1, 1); // White for highlights
+    const darkColor = rgb(0.5, 0.5, 0.5); // Gray for shadows
+
+    const topLeftColor = inset ? darkColor : lightColor;
+    const bottomRightColor = inset ? lightColor : darkColor;
+
+    // Draw the four border edges as triangular polygons
+    // Top edge (light for beveled, dark for inset)
+    ops.push(
+      pushGraphicsState(),
+      setFillingColor(topLeftColor),
+      moveTo(x, y + height),
+      lineTo(x + width, y + height),
+      lineTo(x + width - borderWidth, y + height - borderWidth),
+      lineTo(x + borderWidth, y + height - borderWidth),
+      closePath(),
+      fill(),
+      popGraphicsState(),
+    );
+
+    // Left edge (light for beveled, dark for inset)
+    ops.push(
+      pushGraphicsState(),
+      setFillingColor(topLeftColor),
+      moveTo(x, y),
+      lineTo(x, y + height),
+      lineTo(x + borderWidth, y + height - borderWidth),
+      lineTo(x + borderWidth, y + borderWidth),
+      closePath(),
+      fill(),
+      popGraphicsState(),
+    );
+
+    // Bottom edge (dark for beveled, light for inset)
+    ops.push(
+      pushGraphicsState(),
+      setFillingColor(bottomRightColor),
+      moveTo(x, y),
+      lineTo(x + borderWidth, y + borderWidth),
+      lineTo(x + width - borderWidth, y + borderWidth),
+      lineTo(x + width, y),
+      closePath(),
+      fill(),
+      popGraphicsState(),
+    );
+
+    // Right edge (dark for beveled, light for inset)
+    ops.push(
+      pushGraphicsState(),
+      setFillingColor(bottomRightColor),
+      moveTo(x + width, y),
+      lineTo(x + width, y + height),
+      lineTo(x + width - borderWidth, y + height - borderWidth),
+      lineTo(x + width - borderWidth, y + borderWidth),
+      closePath(),
+      fill(),
+      popGraphicsState(),
+    );
+  }
+
+  return ops;
 };
 
 export const drawOptionList = (options: {
