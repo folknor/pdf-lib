@@ -421,6 +421,7 @@ limitations, or are design issues that require architectural changes.
 
 - **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) — fixed by changing `PDFAcroForm.getFields()` to skip invalid field entries instead of throwing. Uses same graceful degradation pattern as `createPDFAcroFields()` helper.
 - **#1287** - Examples using constructor.name break after minification — replaced examples in getFields() and getForm() with instanceof checks
+- **#1443** - SVG path command T does not update control point correctly — already fixed, test exists at tests/api/svgPath.spec.ts:143-152
 - **#1703** - Stale method comment on markFieldAsClean — fixed typo in JSDoc comment that said "dirty" instead of "clean"
 - **#1744** - Not possible to use setAuthor with German umlauts — works correctly in current version (reported for v1.4.0). Test added to verify UTF-16 encoding handles umlauts properly through save/load cycle.
 - **#1407** - Make pdf-lib more graceful (10 comments) — fixed (commit `6fcae096`); `findWidgetPage` now returns undefined instead of throwing when page cannot be found, and callers skip orphaned widgets gracefully. Also fixes #967, #1281, #1349.
