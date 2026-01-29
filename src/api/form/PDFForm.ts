@@ -670,7 +670,7 @@ export default class PDFForm {
   }
 
   /**
-   * Mark a field as dirty. This will cause its appearance streams to not be
+   * Mark a field as clean. This will cause its appearance streams to be
    * updated by [[PDFForm.updateFieldAppearances]].
    * ```js
    * const form = pdfDoc.getForm()
