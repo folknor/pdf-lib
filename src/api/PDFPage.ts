@@ -704,10 +704,9 @@ export default class PDFPage {
    * @param font The default font to be used when drawing text on this page.
    */
   setFont(font: PDFFont): void {
-    // TODO: Reuse image Font name if we've already added this image to Resources.Fonts
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.font = font;
-    this.fontKey = this.node.newFontDictionary(this.font.name, this.font.ref);
+    this.fontKey = this.node.getOrCreateFontDictionary(this.font.name, this.font.ref);
   }
 
   /**
@@ -1074,7 +1073,6 @@ export default class PDFPage {
    * @param options The options to be used when drawing the image.
    */
   drawImage(image: PDFImage, options: PDFPageDrawImageOptions = {}): void {
-    // TODO: Reuse image XObject name if we've already added this image to Resources.XObjects
     assertIs(image, 'image', [[PDFImage, 'PDFImage']]);
     assertOrUndefined(options.x, 'options.x', ['number']);
     assertOrUndefined(options.y, 'options.y', ['number']);
@@ -1086,7 +1084,7 @@ export default class PDFPage {
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
 
-    const xObjectKey = this.node.newXObject('Image', image.ref);
+    const xObjectKey = this.node.getOrCreateXObject('Image', image.ref);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
@@ -1150,7 +1148,6 @@ export default class PDFPage {
     embeddedPage: PDFEmbeddedPage,
     options: PDFPageDrawPageOptions = {},
   ): void {
-    // TODO: Reuse embeddedPage XObject name if we've already added this embeddedPage to Resources.XObjects
     assertIs(embeddedPage, 'embeddedPage', [
       [PDFEmbeddedPage, 'PDFEmbeddedPage'],
     ]);
@@ -1166,7 +1163,7 @@ export default class PDFPage {
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
 
-    const xObjectKey = this.node.newXObject(
+    const xObjectKey = this.node.getOrCreateXObject(
       'EmbeddedPdfPage',
       embeddedPage.ref,
     );

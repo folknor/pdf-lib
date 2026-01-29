@@ -155,10 +155,24 @@ class PDFPageLeaf extends PDFDict {
     return Font.uniqueKey(tag);
   }
 
+  /** Find existing key for a font ref, or return undefined */
+  findFontKey(fontDictRef: PDFRef): PDFName | undefined {
+    const { Font } = this.normalizedEntries();
+    for (const [key, value] of Font.entries()) {
+      if (value === fontDictRef) return key;
+    }
+    return undefined;
+  }
+
   newFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
     const key = this.newFontDictionaryKey(tag);
     this.setFontDictionary(key, fontDictRef);
     return key;
+  }
+
+  /** Get existing key for font ref, or create new entry */
+  getOrCreateFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
+    return this.findFontKey(fontDictRef) ?? this.newFontDictionary(tag, fontDictRef);
   }
 
   setXObject(name: PDFName, xObjectRef: PDFRef): void {
@@ -171,10 +185,24 @@ class PDFPageLeaf extends PDFDict {
     return XObject.uniqueKey(tag);
   }
 
+  /** Find existing key for an XObject ref, or return undefined */
+  findXObjectKey(xObjectRef: PDFRef): PDFName | undefined {
+    const { XObject } = this.normalizedEntries();
+    for (const [key, value] of XObject.entries()) {
+      if (value === xObjectRef) return key;
+    }
+    return undefined;
+  }
+
   newXObject(tag: string, xObjectRef: PDFRef): PDFName {
     const key = this.newXObjectKey(tag);
     this.setXObject(key, xObjectRef);
     return key;
+  }
+
+  /** Get existing key for XObject ref, or create new entry */
+  getOrCreateXObject(tag: string, xObjectRef: PDFRef): PDFName {
+    return this.findXObjectKey(xObjectRef) ?? this.newXObject(tag, xObjectRef);
   }
 
   setExtGState(name: PDFName, extGStateRef: PDFRef | PDFDict): void {
@@ -187,10 +215,24 @@ class PDFPageLeaf extends PDFDict {
     return ExtGState.uniqueKey(tag);
   }
 
+  /** Find existing key for an ExtGState ref, or return undefined */
+  findExtGStateKey(extGStateRef: PDFRef | PDFDict): PDFName | undefined {
+    const { ExtGState } = this.normalizedEntries();
+    for (const [key, value] of ExtGState.entries()) {
+      if (value === extGStateRef) return key;
+    }
+    return undefined;
+  }
+
   newExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {
     const key = this.newExtGStateKey(tag);
     this.setExtGState(key, extGStateRef);
     return key;
+  }
+
+  /** Get existing key for ExtGState ref, or create new entry */
+  getOrCreateExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {
+    return this.findExtGStateKey(extGStateRef) ?? this.newExtGState(tag, extGStateRef);
   }
 
   ascend(visitor: (node: PDFPageTree | PDFPageLeaf) => any): void {

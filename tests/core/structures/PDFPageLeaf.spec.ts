@@ -404,4 +404,75 @@ describe('PDFPageLeaf', () => {
       '<<\n/Font <<\n>>\n/XObject <<\n>>\n/ExtGState <<\n>>\n>>',
     );
   });
+
+  describe('resource reuse (getOrCreate methods)', () => {
+    it('reuses font key when same ref is added multiple times', () => {
+      const context = PDFContext.create();
+      const parentRef = PDFRef.of(1);
+      const page = PDFPageLeaf.withContextAndParent(context, parentRef);
+
+      const fontRef = PDFRef.of(100);
+
+      // First call creates new entry
+      const key1 = page.getOrCreateFontDictionary('F', fontRef);
+      expect(key1).toBeDefined();
+
+      // Second call with same ref should return same key
+      const key2 = page.getOrCreateFontDictionary('F', fontRef);
+      expect(key2).toBe(key1);
+
+      // Resources should only have one font entry
+      const { Font } = page.normalizedEntries();
+      expect(Font.entries().length).toBe(1);
+    });
+
+    it('creates different keys for different font refs', () => {
+      const context = PDFContext.create();
+      const parentRef = PDFRef.of(1);
+      const page = PDFPageLeaf.withContextAndParent(context, parentRef);
+
+      const fontRef1 = PDFRef.of(100);
+      const fontRef2 = PDFRef.of(101);
+
+      const key1 = page.getOrCreateFontDictionary('F', fontRef1);
+      const key2 = page.getOrCreateFontDictionary('F', fontRef2);
+
+      expect(key1).not.toBe(key2);
+
+      const { Font } = page.normalizedEntries();
+      expect(Font.entries().length).toBe(2);
+    });
+
+    it('reuses XObject key when same ref is added multiple times', () => {
+      const context = PDFContext.create();
+      const parentRef = PDFRef.of(1);
+      const page = PDFPageLeaf.withContextAndParent(context, parentRef);
+
+      const imageRef = PDFRef.of(200);
+
+      const key1 = page.getOrCreateXObject('Im', imageRef);
+      const key2 = page.getOrCreateXObject('Im', imageRef);
+
+      expect(key2).toBe(key1);
+
+      const { XObject } = page.normalizedEntries();
+      expect(XObject.entries().length).toBe(1);
+    });
+
+    it('reuses ExtGState key when same ref is added multiple times', () => {
+      const context = PDFContext.create();
+      const parentRef = PDFRef.of(1);
+      const page = PDFPageLeaf.withContextAndParent(context, parentRef);
+
+      const gsRef = PDFRef.of(300);
+
+      const key1 = page.getOrCreateExtGState('GS', gsRef);
+      const key2 = page.getOrCreateExtGState('GS', gsRef);
+
+      expect(key2).toBe(key1);
+
+      const { ExtGState } = page.normalizedEntries();
+      expect(ExtGState.entries().length).toBe(1);
+    });
+  });
 });

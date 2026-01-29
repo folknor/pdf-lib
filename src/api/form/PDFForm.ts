@@ -600,7 +600,7 @@ export default class PDFForm {
 
         if (!page || !widgetRef) continue;
 
-        const xObjectKey = page.node.newXObject('FlatWidget', widgetRef);
+        const xObjectKey = page.node.getOrCreateXObject('FlatWidget', widgetRef);
 
         const rectangle = widget.getRectangle();
         const operators = [

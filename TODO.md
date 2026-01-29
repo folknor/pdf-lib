@@ -92,7 +92,7 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - [x] **PDFFont orphan cleanup** (`src/core/embedders/CustomFontEmbedder.ts`) — Fixed: Embedder now tracks refs to child objects (CID font dict, font descriptor, font stream, unicode cmap) and reuses them on re-embedding instead of creating new orphan objects.
 
-- [ ] **PDFPage resource reuse** (`src/api/PDFPage.ts:707, 1077, 1153`) — Drawing the same image/font/embeddedPage multiple times creates duplicate resource entries instead of reusing existing names.
+- [x] **PDFPage resource reuse** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: Added `getOrCreateFontDictionary`, `getOrCreateXObject`, `getOrCreateExtGState` methods that look up existing refs before creating new entries. Updated PDFPage to use these methods.
 
 ### Consistency Improvements
 
