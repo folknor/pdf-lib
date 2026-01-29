@@ -791,8 +791,17 @@ export default class PDFForm {
         refOrDict = lookedUp;
       }
       if (refOrDict instanceof PDFDict) {
-        const value = field.acroField.getValue();
-        const ref = refOrDict.get(value) ?? refOrDict.get(PDFName.of('Off'));
+        // Use the widget's appearance state (/AS) if available, otherwise
+        // fall back to the field value (/V). The /AS value is the key in
+        // the /AP/N dict that specifies which appearance to show.
+        // This fixes #1574 where checkmarks disappeared because /V and /AS
+        // might have different values (e.g., /V=/Yes but /AS=/1)
+        const appearanceState = widget.getAppearanceState();
+        const fieldValue = field.acroField.getValue();
+        const ref =
+          (appearanceState && refOrDict.get(appearanceState)) ??
+          refOrDict.get(fieldValue) ??
+          refOrDict.get(PDFName.of('Off'));
 
         if (ref instanceof PDFRef) {
           refOrDict = ref;
