@@ -1,3 +1,4 @@
+import type { PDFPageAddAnnotationOptions } from '../../api/PDFPageOptions.js';
 import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
@@ -5,10 +6,9 @@ import PDFNumber from '../objects/PDFNumber.js';
 import PDFRef from '../objects/PDFRef.js';
 import PDFStream from '../objects/PDFStream.js';
 import PDFString from '../objects/PDFString.js';
-import PDFContext from '../PDFContext.js';
+import type PDFContext from '../PDFContext.js';
 import PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import { AnnotationTypes } from './AnnotationTypes.js';
-import type { PDFPageAddAnnotationOptions } from '../../api/PDFPageOptions.js';
+import type { AnnotationTypes } from './AnnotationTypes.js';
 
 class PDFAnnotation {
   readonly dict: PDFDict;

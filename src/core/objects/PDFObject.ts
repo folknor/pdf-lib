@@ -13,7 +13,10 @@ class PDFObject {
    * need to implement this as they cannot be modified after creation.
    */
   registerChange(): void {
-    throw new MethodNotImplementedError(this.constructor.name, 'registerChange');
+    throw new MethodNotImplementedError(
+      this.constructor.name,
+      'registerChange',
+    );
   }
 
   clone(_context?: PDFContext): PDFObject {

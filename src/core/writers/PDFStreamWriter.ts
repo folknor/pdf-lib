@@ -1,5 +1,5 @@
-import { defaultDocumentSnapshot } from '../../api/snapshot/index.js';
 import type { DocumentSnapshot } from '../../api/snapshot/index.js';
+import { defaultDocumentSnapshot } from '../../api/snapshot/index.js';
 import { last, waitForTick } from '../../utils/index.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFDict from '../objects/PDFDict.js';

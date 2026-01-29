@@ -4,9 +4,9 @@ import PDFName from '../objects/PDFName.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFStream from '../objects/PDFStream.js';
 import type PDFContext from '../PDFContext.js';
+import { decodePDFRawStream } from '../streams/decode.js';
 import PDFContentStream from '../structures/PDFContentStream.js';
 import type PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import { decodePDFRawStream } from '../streams/decode.js';
 
 /**
  * Resource categories that can be referenced in PDF content streams.
@@ -49,35 +49,35 @@ const RESOURCE_PATTERNS: Array<{
   category: keyof UsedResources;
 }> = [
   // /FontName fontSize Tf - Text font
-  { pattern: /\/([^\s/\[\]<>()]+)\s+[\d.-]+\s+Tf\b/g, category: 'Font' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+[\d.-]+\s+Tf\b/g, category: 'Font' },
 
   // /XObjectName Do - XObject (images, forms)
-  { pattern: /\/([^\s/\[\]<>()]+)\s+Do\b/g, category: 'XObject' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+Do\b/g, category: 'XObject' },
 
   // /ExtGStateName gs - Extended graphics state
-  { pattern: /\/([^\s/\[\]<>()]+)\s+gs\b/g, category: 'ExtGState' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+gs\b/g, category: 'ExtGState' },
 
   // /ColorSpaceName cs - Set color space (non-stroking)
-  { pattern: /\/([^\s/\[\]<>()]+)\s+cs\b/g, category: 'ColorSpace' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+cs\b/g, category: 'ColorSpace' },
 
   // /ColorSpaceName CS - Set color space (stroking)
-  { pattern: /\/([^\s/\[\]<>()]+)\s+CS\b/g, category: 'ColorSpace' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+CS\b/g, category: 'ColorSpace' },
 
   // /PatternName scn - Set color with pattern (non-stroking)
   // Pattern name is the last operand before scn
-  { pattern: /\/([^\s/\[\]<>()]+)\s+scn\b/g, category: 'Pattern' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+scn\b/g, category: 'Pattern' },
 
   // /PatternName SCN - Set color with pattern (stroking)
-  { pattern: /\/([^\s/\[\]<>()]+)\s+SCN\b/g, category: 'Pattern' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+SCN\b/g, category: 'Pattern' },
 
   // /ShadingName sh - Paint shading
-  { pattern: /\/([^\s/\[\]<>()]+)\s+sh\b/g, category: 'Shading' },
+  { pattern: /\/([^\s/[\]<>()]+)\s+sh\b/g, category: 'Shading' },
 
   // /PropertiesName BDC - Begin marked content with properties
-  { pattern: /\/\w+\s+\/([^\s/\[\]<>()]+)\s+BDC\b/g, category: 'Properties' },
+  { pattern: /\/\w+\s+\/([^\s/[\]<>()]+)\s+BDC\b/g, category: 'Properties' },
 
   // /PropertiesName DP - Define marked content point with properties
-  { pattern: /\/\w+\s+\/([^\s/\[\]<>()]+)\s+DP\b/g, category: 'Properties' },
+  { pattern: /\/\w+\s+\/([^\s/[\]<>()]+)\s+DP\b/g, category: 'Properties' },
 ];
 
 /**

@@ -65,7 +65,10 @@ export default class PDFEmbeddedFile implements Embeddable {
         this.doc.catalog.set(PDFName.of('Names'), Names);
       }
 
-      let EmbeddedFiles = Names.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
+      let EmbeddedFiles = Names.lookupMaybe(
+        PDFName.of('EmbeddedFiles'),
+        PDFDict,
+      );
       if (!EmbeddedFiles) {
         EmbeddedFiles = this.doc.context.obj({});
         Names.set(PDFName.of('EmbeddedFiles'), EmbeddedFiles);

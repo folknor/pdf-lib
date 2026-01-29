@@ -77,8 +77,6 @@ import {
   type SaveOptions,
   type SetTitleOptions,
 } from './PDFDocumentOptions.js';
-import { IncrementalDocumentSnapshot } from './snapshot/index.js';
-import type { DocumentSnapshot } from './snapshot/index.js';
 import PDFEmbeddedFile from './PDFEmbeddedFile.js';
 import PDFEmbeddedPage from './PDFEmbeddedPage.js';
 import PDFFont from './PDFFont.js';
@@ -88,6 +86,8 @@ import PDFPage from './PDFPage.js';
 import PDFSvg from './PDFSvg.js';
 import type { StandardFonts } from './StandardFonts.js';
 import { PageSizes } from './sizes.js';
+import type { DocumentSnapshot } from './snapshot/index.js';
+import { IncrementalDocumentSnapshot } from './snapshot/index.js';
 
 export type BasePDFAttachment = {
   name: string;
@@ -1039,7 +1039,10 @@ export default class PDFDocument {
     const Names = this.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
     if (!Names) return [];
 
-    const EmbeddedFiles = Names.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
+    const EmbeddedFiles = Names.lookupMaybe(
+      PDFName.of('EmbeddedFiles'),
+      PDFDict,
+    );
     if (!EmbeddedFiles) return [];
 
     const EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
@@ -1120,7 +1123,9 @@ export default class PDFDocument {
       return [
         {
           name: fileName.decodeText(),
-          data: decodePDFRawStream(stream as PDFRawStream).decode() as Uint8Array<ArrayBuffer>,
+          data: decodePDFRawStream(
+            stream as PDFRawStream,
+          ).decode() as Uint8Array<ArrayBuffer>,
           mimeType: mimeType?.replace(/#([0-9A-Fa-f]{2})/g, (_, hex) =>
             String.fromCharCode(parseInt(hex, 16)),
           ),
@@ -1787,7 +1792,9 @@ export default class PDFDocument {
    * @param options The options to be used when committing changes.
    * @returns Resolves with the complete PDF bytes including all updates.
    */
-  async commit(options: IncrementalSaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
+  async commit(
+    options: IncrementalSaveOptions = {},
+  ): Promise<Uint8Array<ArrayBuffer>> {
     if (!this.context.snapshot || !this.context.pdfFileDetails.originalBytes) {
       throw new Error(
         'commit() requires the document to be loaded with forIncrementalUpdate: true',

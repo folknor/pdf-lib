@@ -1,12 +1,12 @@
 import pako from 'pako';
+import type { DocumentSnapshot } from '../../api/snapshot/index.js';
 import {
   DefaultDocumentSnapshot,
   defaultDocumentSnapshot,
 } from '../../api/snapshot/index.js';
-import type { DocumentSnapshot } from '../../api/snapshot/index.js';
 import { copyStringIntoBuffer, waitForTick } from '../../utils/index.js';
 import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
-import PDFHeader from '../document/PDFHeader.js';
+import type PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFTrailerDict from '../document/PDFTrailerDict.js';
 import type PDFDict from '../objects/PDFDict.js';
@@ -35,7 +35,8 @@ class PDFWriter {
     context: PDFContext,
     objectsPerTick: number,
     compress = false,
-  ) => new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
+  ) =>
+    new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
 
   static forContextWithSnapshot = (
     context: PDFContext,

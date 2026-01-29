@@ -1,8 +1,8 @@
-import PDFDict from '../objects/PDFDict.js';
+import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
+import { AnnotationTypes } from './AnnotationTypes.js';
 import PDFAnnotation from './PDFAnnotation.js';
 import PDFTextMarkupAnnotation from './PDFTextMarkupAnnotation.js';
-import { AnnotationTypes } from './AnnotationTypes.js';
 
 export default class AnnotationFactory {
   static fromDict = (dict: PDFDict): PDFAnnotation => {

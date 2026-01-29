@@ -1,5 +1,5 @@
-import type { Space, TransformationMatrix } from '../types/index.js';
 import type { AnnotationTypes } from '../core/annotation/AnnotationTypes.js';
+import type { Space, TransformationMatrix } from '../types/index.js';
 import type { Color } from './colors.js';
 import type { FillRule, LineCapStyle, TextRenderingMode } from './operators.js';
 import type PDFFont from './PDFFont.js';

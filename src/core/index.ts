@@ -10,8 +10,8 @@ export {
   AFRelationship,
   default as FileEmbedder,
 } from './embedders/FileEmbedder.js';
-export { default as JpegEmbedder } from './embedders/JpegEmbedder.js';
 export type { ExifOrientation } from './embedders/JpegEmbedder.js';
+export { default as JpegEmbedder } from './embedders/JpegEmbedder.js';
 export type { PageBoundingBox } from './embedders/PDFPageEmbedder.js';
 export { default as PDFPageEmbedder } from './embedders/PDFPageEmbedder.js';
 export { default as PngEmbedder } from './embedders/PngEmbedder.js';

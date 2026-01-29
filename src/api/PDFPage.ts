@@ -1,6 +1,6 @@
 import {
   AnnotationFactory,
-  PDFAnnotation,
+  type PDFAnnotation,
   PDFArray,
   PDFContentStream,
   PDFDict,
@@ -706,7 +706,10 @@ export default class PDFPage {
   setFont(font: PDFFont): void {
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     this.font = font;
-    this.fontKey = this.node.getOrCreateFontDictionary(this.font.name, this.font.ref);
+    this.fontKey = this.node.getOrCreateFontDictionary(
+      this.font.name,
+      this.font.ref,
+    );
   }
 
   /**

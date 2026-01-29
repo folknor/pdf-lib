@@ -172,7 +172,9 @@ class PDFPageLeaf extends PDFDict {
 
   /** Get existing key for font ref, or create new entry */
   getOrCreateFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
-    return this.findFontKey(fontDictRef) ?? this.newFontDictionary(tag, fontDictRef);
+    return (
+      this.findFontKey(fontDictRef) ?? this.newFontDictionary(tag, fontDictRef)
+    );
   }
 
   setXObject(name: PDFName, xObjectRef: PDFRef): void {
@@ -232,7 +234,10 @@ class PDFPageLeaf extends PDFDict {
 
   /** Get existing key for ExtGState ref, or create new entry */
   getOrCreateExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {
-    return this.findExtGStateKey(extGStateRef) ?? this.newExtGState(tag, extGStateRef);
+    return (
+      this.findExtGStateKey(extGStateRef) ??
+      this.newExtGState(tag, extGStateRef)
+    );
   }
 
   ascend(visitor: (node: PDFPageTree | PDFPageLeaf) => any): void {
