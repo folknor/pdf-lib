@@ -377,6 +377,21 @@ export default class PDFForm {
   }
 
   /**
+   * Get or create a button field with the given name.
+   * @param name The fully qualified name for the button.
+   * @returns The existing or newly created button field.
+   */
+  getOrCreateButton(name: string): PDFButton {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFButton) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFButton, existing);
+    }
+    return this.createButton(name);
+  }
+
+  /**
    * Create a new check box field in this [[PDFForm]] with the given name.
    * For example:
    * ```js
@@ -404,6 +419,21 @@ export default class PDFForm {
     addFieldToParent(parent, [checkBox, checkBox.ref], nameParts.terminal!);
 
     return PDFCheckBox.of(checkBox, checkBox.ref, this.doc);
+  }
+
+  /**
+   * Get or create a check box field with the given name.
+   * @param name The fully qualified name for the check box.
+   * @returns The existing or newly created check box field.
+   */
+  getOrCreateCheckBox(name: string): PDFCheckBox {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFCheckBox) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFCheckBox, existing);
+    }
+    return this.createCheckBox(name);
   }
 
   /**
@@ -437,6 +467,21 @@ export default class PDFForm {
   }
 
   /**
+   * Get or create a dropdown field with the given name.
+   * @param name The fully qualified name for the dropdown.
+   * @returns The existing or newly created dropdown field.
+   */
+  getOrCreateDropdown(name: string): PDFDropdown {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFDropdown) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFDropdown, existing);
+    }
+    return this.createDropdown(name);
+  }
+
+  /**
    * Create a new option list field in this [[PDFForm]] with the given name.
    * For example:
    * ```js
@@ -464,6 +509,21 @@ export default class PDFForm {
     addFieldToParent(parent, [listBox, listBox.ref], nameParts.terminal!);
 
     return PDFOptionList.of(listBox, listBox.ref, this.doc);
+  }
+
+  /**
+   * Get or create an option list field with the given name.
+   * @param name The fully qualified name for the option list.
+   * @returns The existing or newly created option list field.
+   */
+  getOrCreateOptionList(name: string): PDFOptionList {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFOptionList) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFOptionList, existing);
+    }
+    return this.createOptionList(name);
   }
 
   /**
@@ -502,6 +562,21 @@ export default class PDFForm {
   }
 
   /**
+   * Get or create a radio group field with the given name.
+   * @param name The fully qualified name for the radio group.
+   * @returns The existing or newly created radio group field.
+   */
+  getOrCreateRadioGroup(name: string): PDFRadioGroup {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFRadioGroup) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFRadioGroup, existing);
+    }
+    return this.createRadioGroup(name);
+  }
+
+  /**
    * Create a new text field in this [[PDFForm]] with the given name.
    * For example:
    * ```js
@@ -529,6 +604,41 @@ export default class PDFForm {
     addFieldToParent(parent, [text, text.ref], nameParts.terminal!);
 
     return PDFTextField.of(text, text.ref, this.doc);
+  }
+
+  /**
+   * Get or create a text field with the given name. If a text field with the
+   * specified name already exists, it will be returned. Otherwise, a new text
+   * field will be created.
+   *
+   * This is useful when you want to add multiple widgets (visual instances) of
+   * the same field. In PDF, all widgets of a field share the same value - when
+   * you type in one widget, all others update automatically.
+   *
+   * For example:
+   * ```js
+   * const form = pdfDoc.getForm()
+   *
+   * // Create field and add first widget
+   * const customerName = form.getOrCreateTextField('customer_name')
+   * customerName.addToPage(page1, { x: 50, y: 700, width: 200, height: 20 })
+   *
+   * // Add second widget to same field (values will be linked)
+   * const sameField = form.getOrCreateTextField('customer_name')
+   * sameField.addToPage(page2, { x: 50, y: 700, width: 200, height: 20 })
+   * ```
+   *
+   * @param name The fully qualified name for the text field.
+   * @returns The existing or newly created text field.
+   */
+  getOrCreateTextField(name: string): PDFTextField {
+    assertIs(name, 'name', ['string']);
+    const existing = this.getFieldMaybe(name);
+    if (existing) {
+      if (existing instanceof PDFTextField) return existing;
+      throw new UnexpectedFieldTypeError(name, PDFTextField, existing);
+    }
+    return this.createTextField(name);
   }
 
   /**

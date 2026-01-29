@@ -1798,6 +1798,62 @@ describe('PDFForm', () => {
     });
   });
 
+  describe('getOrCreateTextField', () => {
+    it('creates a new field when one does not exist', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const field = form.getOrCreateTextField('newField');
+      expect(field).toBeInstanceOf(PDFTextField);
+      expect(field.getName()).toBe('newField');
+    });
+
+    it('returns existing field when one exists', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      const field1 = form.createTextField('existingField');
+      field1.setText('hello');
+
+      const field2 = form.getOrCreateTextField('existingField');
+      expect(field2.ref).toBe(field1.ref);
+      expect(field2.getText()).toBe('hello');
+    });
+
+    it('throws if existing field is wrong type', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      form.createCheckBox('wrongType');
+
+      expect(() => form.getOrCreateTextField('wrongType')).toThrow(
+        'Expected field "wrongType" to be of type PDFTextField',
+      );
+    });
+
+    it('allows adding multiple widgets to the same field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // This pattern should work for linked fields
+      const field1 = form.getOrCreateTextField('linked');
+      field1.addToPage(page1, { x: 50, y: 700, width: 200, height: 20 });
+
+      const field2 = form.getOrCreateTextField('linked');
+      field2.addToPage(page2, { x: 50, y: 700, width: 200, height: 20 });
+
+      // Should be the same field with two widgets
+      expect(field1.ref).toBe(field2.ref);
+      expect(field1.acroField.getWidgets().length).toBe(2);
+
+      // Setting text should affect both
+      field1.setText('Shared');
+      expect(field2.getText()).toBe('Shared');
+    });
+  });
+
   describe('PDFField.rename()', () => {
     it('can rename a root-level field', async () => {
       const pdfDoc = await PDFDocument.create();
