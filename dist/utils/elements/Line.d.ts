@@ -1,0 +1,24 @@
+import type { Coordinates } from '../../types/index.js';
+import GraphElement from './GraphElement.js';
+import Point from './Point.js';
+export default class Line extends GraphElement {
+    origin(): Point;
+    dirVect(): Coordinates;
+    A: Point;
+    B: Point;
+    constructor(A?: Point, B?: Point);
+    /** Line equation */
+    y(x: number): number;
+    /** The slope */
+    a(): number;
+    /** Origin y coordinate */
+    b(): number;
+    isEqual(element: GraphElement): boolean;
+    /** Reversed line equation */
+    x(y: number): number;
+    includes(P: Point): boolean;
+    /** This is used to standarsize type Segment | HalfLine | Line */
+    getLine(): Line;
+    orthoProjection(P: Point): Point;
+}
+//# sourceMappingURL=Line.d.ts.map

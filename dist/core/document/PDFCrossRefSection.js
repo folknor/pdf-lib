@@ -1,0 +1,227 @@
+import { copyStringIntoBuffer, padStart } from '../../utils/index.js';
+import PDFRef from '../objects/PDFRef.js';
+import CharCodes from '../syntax/CharCodes.js';
+/**
+ * Entries should be added using the [[addEntry]] and [[addDeletedEntry]]
+ * methods.
+ */
+class PDFCrossRefSection {
+    static create = () => new PDFCrossRefSection({
+        ref: PDFRef.of(0, 65535),
+        offset: 0,
+        deleted: true,
+    });
+    static createEmpty = () => new PDFCrossRefSection();
+    subsections;
+    chunkIdx;
+    chunkLength;
+    constructor(firstEntry) {
+        this.subsections = firstEntry ? [[firstEntry]] : [];
+        this.chunkIdx = 0;
+        this.chunkLength = firstEntry ? 1 : 0;
+    }
+    addEntry(ref, offset) {
+        this.append({ ref, offset, deleted: false });
+    }
+    addDeletedEntry(ref, nextFreeObjectNumber) {
+        // Fix the first entry if required
+        if (!this.subsections.length) {
+            this.subsections = [
+                [
+                    {
+                        ref: PDFRef.of(0, 65535),
+                        offset: ref.objectNumber,
+                        deleted: true,
+                    },
+                ],
+            ];
+            this.chunkIdx = 0;
+            this.chunkLength = 1;
+        }
+        else if (!this.subsections[0][0].offset) {
+            this.subsections[0][0].offset = ref.objectNumber;
+        }
+        this.append({ ref, offset: nextFreeObjectNumber, deleted: true });
+    }
+    /**
+     * Fills gaps between subsections with deleted ('f') entries, creating a
+     * single contiguous xref section. This prevents xref fragmentation which
+     * can cause Adobe Reader to invalidate digital signatures.
+     *
+     * For example, if there are entries for objects 0-5 and 10-15, this method
+     * adds deleted entries for objects 6-9, resulting in a single section 0-15.
+     */
+    fillGaps() {
+        if (this.subsections.length <= 1)
+            return;
+        // Merge all subsections into one, filling gaps with deleted entries
+        const merged = [];
+        let nextExpectedObjNum = 0;
+        for (const subsection of this.subsections) {
+            for (const entry of subsection) {
+                // Fill any gap before this entry with deleted entries
+                while (nextExpectedObjNum < entry.ref.objectNumber) {
+                    merged.push({
+                        ref: PDFRef.of(nextExpectedObjNum, 0),
+                        offset: 0,
+                        deleted: true,
+                    });
+                    nextExpectedObjNum++;
+                }
+                merged.push(entry);
+                nextExpectedObjNum = entry.ref.objectNumber + 1;
+            }
+        }
+        // Update first deleted entry (object 0) to point to next free object
+        // as per PDF spec: first entry in free list points to next free object
+        if (merged.length > 0 && merged[0].deleted) {
+            // Find next free object number in the chain
+            let nextFree = 0;
+            for (let i = 1; i < merged.length; i++) {
+                if (merged[i].deleted) {
+                    nextFree = merged[i].ref.objectNumber;
+                    break;
+                }
+            }
+            merged[0].offset = nextFree;
+        }
+        // Build the free object linked list
+        // Each free entry's offset should point to the next free object
+        const freeIndices = [];
+        for (let i = 0; i < merged.length; i++) {
+            if (merged[i].deleted)
+                freeIndices.push(i);
+        }
+        for (let i = 0; i < freeIndices.length; i++) {
+            const nextFreeIdx = freeIndices[i + 1];
+            const nextFreeObjNum = nextFreeIdx !== undefined ? merged[nextFreeIdx].ref.objectNumber : 0;
+            merged[freeIndices[i]].offset = nextFreeObjNum;
+        }
+        this.subsections = [merged];
+        this.chunkIdx = 0;
+        this.chunkLength = merged.length;
+    }
+    toString() {
+        let section = 'xref\n';
+        for (let rangeIdx = 0, rangeLen = this.subsections.length; rangeIdx < rangeLen; rangeIdx++) {
+            const range = this.subsections[rangeIdx];
+            section += `${range[0].ref.objectNumber} ${range.length}\n`;
+            for (let entryIdx = 0, entryLen = range.length; entryIdx < entryLen; entryIdx++) {
+                const entry = range[entryIdx];
+                section += padStart(String(entry.offset), 10, '0');
+                section += ' ';
+                section += padStart(String(entry.ref.generationNumber), 5, '0');
+                section += ' ';
+                section += entry.deleted ? 'f' : 'n';
+                section += ' \n';
+            }
+        }
+        return section;
+    }
+    sizeInBytes() {
+        let size = 5;
+        for (let idx = 0, len = this.subsections.length; idx < len; idx++) {
+            const subsection = this.subsections[idx];
+            const subsectionLength = subsection.length;
+            const [firstEntry] = subsection;
+            size += 2;
+            size += String(firstEntry.ref.objectNumber).length;
+            size += String(subsectionLength).length;
+            size += 20 * subsectionLength;
+        }
+        return size;
+    }
+    copyBytesInto(buffer, offset) {
+        const initialOffset = offset;
+        buffer[offset++] = CharCodes.x;
+        buffer[offset++] = CharCodes.r;
+        buffer[offset++] = CharCodes.e;
+        buffer[offset++] = CharCodes.f;
+        buffer[offset++] = CharCodes.Newline;
+        offset += this.copySubsectionsIntoBuffer(this.subsections, buffer, offset);
+        return offset - initialOffset;
+    }
+    copySubsectionsIntoBuffer(subsections, buffer, offset) {
+        const initialOffset = offset;
+        const length = subsections.length;
+        for (let idx = 0; idx < length; idx++) {
+            const subsection = this.subsections[idx];
+            const firstObjectNumber = String(subsection[0].ref.objectNumber);
+            offset += copyStringIntoBuffer(firstObjectNumber, buffer, offset);
+            buffer[offset++] = CharCodes.Space;
+            const rangeLength = String(subsection.length);
+            offset += copyStringIntoBuffer(rangeLength, buffer, offset);
+            buffer[offset++] = CharCodes.Newline;
+            offset += this.copyEntriesIntoBuffer(subsection, buffer, offset);
+        }
+        return offset - initialOffset;
+    }
+    copyEntriesIntoBuffer(entries, buffer, offset) {
+        const length = entries.length;
+        for (let idx = 0; idx < length; idx++) {
+            const entry = entries[idx];
+            const entryOffset = padStart(String(entry.offset), 10, '0');
+            offset += copyStringIntoBuffer(entryOffset, buffer, offset);
+            buffer[offset++] = CharCodes.Space;
+            const entryGen = padStart(String(entry.ref.generationNumber), 5, '0');
+            offset += copyStringIntoBuffer(entryGen, buffer, offset);
+            buffer[offset++] = CharCodes.Space;
+            buffer[offset++] = entry.deleted ? CharCodes.f : CharCodes.n;
+            buffer[offset++] = CharCodes.Space;
+            buffer[offset++] = CharCodes.Newline;
+        }
+        return 20 * length;
+    }
+    append(currEntry) {
+        if (this.chunkLength === 0) {
+            this.subsections.push([currEntry]);
+            this.chunkIdx = 0;
+            this.chunkLength = 1;
+            return;
+        }
+        const chunk = this.subsections[this.chunkIdx];
+        const prevEntry = chunk[this.chunkLength - 1];
+        if (currEntry.ref.objectNumber - prevEntry.ref.objectNumber !== 1) {
+            // The current chunk is not the right chunk, find the right one, or create a new one
+            for (let c = 0; c < this.subsections.length; c++) {
+                const first = this.subsections[c][0];
+                const last = this.subsections[c][this.subsections[c].length - 1];
+                if (first.ref.objectNumber > currEntry.ref.objectNumber) {
+                    // Goes before this subsection, or at the start of it
+                    if (first.ref.objectNumber - currEntry.ref.objectNumber === 1) {
+                        // First element of subsection
+                        this.subsections[c].unshift(currEntry);
+                        if (c === this.chunkIdx)
+                            this.chunkLength += 1;
+                        return;
+                    }
+                    else {
+                        // Create subsection
+                        this.subsections.splice(c, 0, [currEntry]);
+                        this.chunkIdx++;
+                        return;
+                    }
+                }
+                else if (last.ref.objectNumber > currEntry.ref.objectNumber) {
+                    // Goes in this subsection, find its place
+                    const cep = this.subsections[c].findIndex((ee) => ee.ref.objectNumber > currEntry.ref.objectNumber);
+                    this.subsections[c].splice(cep, 0, currEntry);
+                    if (c === this.chunkIdx)
+                        this.chunkLength += 1;
+                    return;
+                }
+                // Bigger, keep looking
+            }
+            // If got to here, then a new subsection is required
+            this.subsections.push([currEntry]);
+            this.chunkIdx += 1;
+            this.chunkLength = 1;
+        }
+        else {
+            chunk.push(currEntry);
+            this.chunkLength += 1;
+        }
+    }
+}
+export default PDFCrossRefSection;
+//# sourceMappingURL=PDFCrossRefSection.js.map

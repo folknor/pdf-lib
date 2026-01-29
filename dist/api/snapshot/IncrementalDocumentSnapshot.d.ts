@@ -1,0 +1,22 @@
+import type { PDFContext, PDFObject, PDFRef } from '../../core/index.js';
+import type { DocumentSnapshot } from './DocumentSnapshot.js';
+export declare class IncrementalDocumentSnapshot implements DocumentSnapshot {
+    pdfSize: number;
+    prevStartXRef: number;
+    deletedCount: number;
+    private deleted;
+    private deletedObjectNumbers;
+    private lastObjectNumber;
+    private changedObjects;
+    context: PDFContext;
+    constructor(lastObjectNumber: number, indirectObjects: number[], pdfSize: number, prevStartXRef: number, context: PDFContext);
+    shouldSave(objectNumber: number): boolean;
+    markRefForSave(ref: PDFRef): void;
+    markRefsForSave(refs: PDFRef[]): void;
+    markObjForSave(obj: PDFObject): void;
+    markObjsForSave(objs: PDFObject[]): void;
+    markDeletedRef(ref: PDFRef): void;
+    markDeletedObj(obj: PDFObject): void;
+    deletedRef(index: number): PDFRef | undefined;
+}
+//# sourceMappingURL=IncrementalDocumentSnapshot.d.ts.map

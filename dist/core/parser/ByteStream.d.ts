@@ -1,0 +1,27 @@
+import type PDFRawStream from '../objects/PDFRawStream.js';
+declare class ByteStream {
+    static of: (bytes: Uint8Array) => ByteStream;
+    static fromPDFRawStream: (rawStream: PDFRawStream) => ByteStream;
+    private readonly bytes;
+    private readonly length;
+    private idx;
+    private line;
+    private column;
+    constructor(bytes: Uint8Array);
+    moveTo(offset: number): void;
+    next(): number;
+    assertNext(expected: number): number;
+    peek(): number;
+    peekAhead(steps: number): number | undefined;
+    peekAt(offset: number): number | undefined;
+    done(): boolean;
+    offset(): number;
+    slice(start: number, end: number): Uint8Array;
+    position(): {
+        line: number;
+        column: number;
+        offset: number;
+    };
+}
+export default ByteStream;
+//# sourceMappingURL=ByteStream.d.ts.map
