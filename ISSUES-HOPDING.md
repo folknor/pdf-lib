@@ -8,15 +8,10 @@
 These issues have 10+ comments indicating widespread problems:
 
 - **#951** - Corrupted PDF (22 comments) - object stream issue, needs investigation
-- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) - **FIXED** (cantoo-scribe PR #56)
-- **#1407** - Make pdf-lib more graceful like other pdf software (10 comments) - **IMPROVED** (PDFNull handling)
 - **#1338** - File size problem: 433mb generated from a 15mb document (10 comments) - open
-- **#1390** - Copying encrypted PDF results in blank pages (16 comments) - potentially improved by PR #130 fix
-- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) - **IMPROVED** (PDFNull handling)
+- **#1390** - Copying encrypted PDF results in blank pages (16 comments) - architectural issue
 - **#1284** - Issue with Jpeg's Orientation Exif when embedding in pdf (16 comments) - open
-- **#1069** - drawSvgPath doesn't work (10 comments) - **FIXED** (cantoo-scribe SVG fixes)
 - **#1010** - page.drawText() inserts spaces when using Thai font (11 comments) - open (fontkit/OpenType shaping)
-- **#1015** - Dev/doc encrypt (43 comments) - **FIXED** (cantoo-scribe encryption support)
 
 ---
 
@@ -37,7 +32,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1355** - Expected instance of PDFDict or PDFStream, but got instance of undefined (5 comments)
 - **#1361** - Expected instance of PDFName2, but got instance of undefined
 - **#1274** - Trying to parse invalid object (3 comments)
-- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) - HIGH ENGAGEMENT
 - **#1192** - Expected instance of PDFArray, but got instance of PDFDict
 - **#1189** - Splitting a PDF into many new PDFs - foreign PDF document error (2 comments)
 - **#1160** - Failed to load of Read-only permission PDF
@@ -93,7 +87,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1685** - Improve acro checkbox set value (3 comments)
 - **#1574** - On pdf.flatten() check mark getting removed from flattened pdf
-- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) - HIGH ENGAGEMENT
 - **#1546** - Unexpected Checkbox Borders on Print After Editing PDF with pdf-lib
 
 **Form flattening**
@@ -118,7 +111,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1759** - Standard fonts in pdf-lib cannot encode certain characters outside WinAnsi
 - **#1754** - Kerning and style set 2 are not respected in the configuration
-- **#1744** - Not possible to use setAuthor with german umlauts
 - **#1649** - PDFString supports only one-byte characters (2 comments)
 - **#1528** - Improve unicode support (2 comments)
 - **#1492** - Resaving document with fontkit after adding text results in error
@@ -132,12 +124,10 @@ These issues have 10+ comments indicating widespread problems:
 - **#1275** - Some fonts split words
 - **#1232** - Some characters in Japanese (and likely other languages) don't show up when a font is embedded with subset: true (4 comments)
 - **#1147** - Cannot encode charset, which is supported by the font
-- **#1010** - page.drawText() inserts spaces when using Thai font (11 comments) - HIGH ENGAGEMENT
 - **#1665** - Using multiple Standard Fonts for a single textfield (proposal)
 
 **Font errors**
 
-- **#1544** - getCreationDate has issues parsing some dates (fontkit.create is not a function) (2 comments)
 - **#1506** - pdf.drawText is not supporting with custom font
 
 **Text rendering**
@@ -159,7 +149,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1472** - The method `embedPng()` on iOS takes too long to run, but it works fine on Android
 - **#1404** - File size increased exponentially after embedded png to pdf-doc
 - **#1341** - drawImage not working with big rotated pdf
-- **#1284** - Issue with Jpeg's Orientation Exif when embedding in pdf (16 comments) - HIGH ENGAGEMENT
 - **#1146** - embedPng stuck in infinity loop (2 comments)
 - **#784** - JPG images with embedded CMYK profile show inverted in Illustrator (3 comments)
 
@@ -172,14 +161,12 @@ These issues have 10+ comments indicating widespread problems:
 - **#1772** - Fix: Resolve visual corruption in PDFs (#951)
 - **#1769** - fix: Preserve object order for PDFs with incremental updates (#951)
 - **#1755** - fix issue #951 - Introduced logic for output reordering of indirect objects
-- **#951** - Corrupted PDF (22 comments) - CRITICAL HIGH ENGAGEMENT
 - **#1701** - Copying Pages which include Tables
 - **#1662** - Copying pages to a new PDF document brings over all images in Resources/XObject, even those not used on the page (6 comments)
 - **#1639** - PDF Pages Appear Blank After Processing with pdf-lib (3 comments)
 - **#1615** - Filled fields in additional pages do not render in Acrobat, but work fine in chrome (3 comments)
 - **#1587** - copyPages with forms inside of it (3 comments)
 - **#1486** - Copying pages multiple times does not work in Chrome, but does in Safari
-- **#1390** - Copying encrypted PDF results in blank pages in the new PDF document (16 comments) - HIGH ENGAGEMENT
 - **#1389** - Error while trying to add page from a copy (3 comments)
 - **#1362** - drawPage of embedded pages produces non-functional hyperlinks (2 comments)
 - **#1349** - Error: Could not find page for PDFRef 270 0 R
@@ -210,20 +197,17 @@ These issues have 10+ comments indicating widespread problems:
 - **#1643** - Embed digital signature (pkcs7) to pdf
 - **#1680** - Encrypt PDF
 - **#1601** - Render Encrypted Documents using pdf-lib js library (6 comments)
-- **#1390** - Copying encrypted PDF results in blank pages (16 comments) - HIGH ENGAGEMENT
 - **#1343** - Purple ribbon message issue on a signed PDF
 - **#1326** - Pdf-lib: support encrypted documents (proposal)
 - **#1315** - Differentiate between document open password and permission password (proposal)
 - **#1296** - Cannot Load Encrypted/Restricted PDF Document (8 comments)
 - **#1530** - How to decrypt a pdf doc by using pdf-lib (proposal)
-- **#1015** - Dev/doc encrypt (43 comments) - HIGHEST ENGAGEMENT
 
 ---
 
 ## Metadata
 
 - **#1761** - Fix Set Producer metadata on saved document when provided
-- **#1744** - Not possible to use setAuthor with german umlauts
 
 ---
 
@@ -306,9 +290,7 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1578** - Having problem with SVG path
 - **#1444** - Fix bug in SVG path command T #1443 (4 comments)
-- **#1443** - SVG path command `T` does not update the control point correctly
 - **#1431** - Gradient issue, with strokeWidth, scaling
-- **#1069** - drawSvgPath doesn't work for me (10 comments) - HIGH ENGAGEMENT
 
 ---
 
@@ -319,7 +301,6 @@ These issues have 10+ comments indicating widespread problems:
 - **#1772** - Fix: Resolve visual corruption in PDFs (#951)
 - **#1769** - fix: Preserve object order for PDFs with incremental updates (#951)
 - **#1755** - fix issue #951 - Introduced logic for output reordering of indirect objects
-- **#951** - Corrupted PDF (22 comments) - CRITICAL HIGH ENGAGEMENT
 - **#1767** - Merge pdf - getting error while viewing the pdf in acrobat reader and content is blank
 - **#1639** - PDF Pages Appear Blank After Processing with pdf-lib (3 comments)
 - **#1615** - Filled fields in additional pages do not render in Acrobat, but work fine in chrome (3 comments)
@@ -331,7 +312,6 @@ These issues have 10+ comments indicating widespread problems:
 
 **File size issues**
 
-- **#1338** - File size problem: 433mb generated from a 15mb document (10 comments) - HIGH ENGAGEMENT
 - **#1404** - File size increased exponentially after embedded png to pdf-doc
 - **#1306** - File Size increasing after modifying
 - **#1204** - While splitting large documents the new file saved has large size (2 comments)
@@ -357,11 +337,6 @@ These issues have 10+ comments indicating widespread problems:
 
 - **#1437** - Reduce memory footprint
 
-**Validation and error handling**
-
-- **#1481** - TypeError: Cannot read properties of undefined (reading 'length') in PDFString.js
-- **#1407** - Make pdf-lib more graceful like other pdf software (10 comments) - HIGH ENGAGEMENT
-
 **JavaScript execution**
 
 - **#1751** - Badly parsed JavaScript in AcroForm field
@@ -371,109 +346,43 @@ These issues have 10+ comments indicating widespread problems:
 
 ---
 
-## Documentation / Examples
+## Triaged — Design Issues / Architectural Limitations
 
-- **#1560** - Update README.md
-- **#1358** - Update PDF specification URL in CONTRIBUTING.md
-- **#1350** - Update link to Prior Art labelmake to actively developed pdfme
-- **#1301** - Update README.md
-- **#1287** - Remove examples that suggest getting type from `field.constructor.name`
-- **#1200** - Update CONTRIBUTING.md
-- **#1178** - Update README.md
-- **#1703** - Stale method comment
+Issues investigated and determined to require architectural changes or have fundamental limitations.
 
----
-
-## Triaged / Investigated — Not Fixable or Not Bugs
-
-Issues we investigated and determined are not library bugs, are fundamental
-limitations, or are design issues that require architectural changes.
-
-**Not bugs (user error / environment):**
-
-- **#1324** - Error in PDFName.of() — user's TypeScript/AdonisJS module resolution config issue, not a library bug
-- **#1426** - Cannot make "setKeywords" work — environment-specific (Node-Red); `setKeywords` code is correct, `assertIs` validation works as expected
-- **#1310** - getAuthor() only returns first author — not a bug; PDF spec stores Author as a single string, library returns it correctly; users should split on `;` or `,` themselves
-- **#1454** - setting viewerPrefs does not change viewer — code is correct; user likely not calling `save()` after setting preferences, or PDF reader ignores preferences
-- **#1461** - Invalid typed array length: 5310707417 — user code issue; copying all pages in a loop (`copyPages` with all indices, then adding one) creates exponential object duplication and size growth
-- **#1638** - TypeError: PDFDocument.registerFontkit is not a function — not a library bug; user's bundler/caching issue in Next.js, `registerFontkit` exists and works correctly
-- **#1283** - PDF load not loading pdf version 1.3 — not a version parsing issue; the PDF header version is parsed correctly; the real problem is likely invalid objects in old PDFs, not version detection
-- **#1692** - Failure Exception: Converting circular structure to JSON — user error; `PDFForm`/`PDFArray` objects contain circular references to `PDFContext` by design; users cannot `JSON.stringify()` them directly
-
-**Fundamental limitations (no simple fix):**
-
-- **#1263** - Saving PDF with number that is too large — fundamental JavaScript limitation; numbers beyond `Number.MAX_SAFE_INTEGER` lose precision in float64, and the reconstructed decimal string has incorrect trailing digits. Would require storing original string representations from the parser, which is a major refactor
-- **#1365** - Dash in between alphanumeric adds additional space — likely a font metrics/kerning issue; unclear root cause, needs font-specific debugging with a repro PDF
-
-**Design issues (require architectural changes):**
-
-- **#951** - Corrupted PDF (22 comments) — object ordering during page copying with incremental updates. Multiple PRs exist (#1772, #1769, #1755) but the fix is complex. Root cause is in `PDFContext.enumerateIndirectObjects()` always sorting by ascending object number, which can break reference chains in incrementally-updated PDFs. Safe fix would require preserving original object ordering from the parser.
-- **#1338** - File size problem: 433mb from 15mb document (10 comments) — `PDFObjectCopier` copies ALL resources recursively from inherited Resource dictionaries, including unused fonts/images/XObjects. Proper fix requires analyzing content streams to determine which resources are actually used (TODOs exist in PDFPageLeaf.ts for this). Workaround: post-process with Ghostscript. Related: #1662, #1404, #1306.
-- **#1390** - Copying encrypted PDF results in blank pages (16 comments) — content is decrypted during parsing but resource references may not resolve correctly when copying from encrypted sources. The copier has no special handling for encrypted document structures. Not the simple clone() issue originally suspected.
-- **#1481** - TypeError: Cannot read properties of undefined (reading 'length') in PDFString.js — occurs during save() when a PDFString has undefined value. May be caused by malformed PDFs, encryption issues, or corrupted form field data. Hard to fix without reproduction case.
-- **#1146** - PNG embedding hangs with certain images — issue with malformed/corrupted PNGs causing apparent hang. The splitAlphaChannel loop is correct; issue likely stems from UPNG library producing invalid buffer sizes from corrupted PNG headers.
-- **#1069** - drawSvgPath doesn't work (10 comments) — SVG arc commands (A/a) have issues in the arc-to-bezier conversion math. The implementation uses complex trigonometric transformations that may have edge cases. Workaround: split paths to avoid arc commands.
-- **#1010** - page.drawText() inserts spaces with Thai font (11 comments) — architectural issue with fontkit integration. Width calculation uses `glyphsForString()` (no OpenType shaping) while encoding uses `font.layout()` (full shaping), causing mismatch for complex scripts. Workaround: use `subset: true` or `features: { liga: false }`.
-- **#1284** - JPEG EXIF orientation not handled (16 comments) — feature request, not a bug. JpegEmbedder only parses SOF markers for dimensions/colorspace, doesn't parse APP1 segment for EXIF orientation. Would require either auto-rotating pixels (complex) or exposing orientation for user handling.
-- **#784** - CMYK JPEG shows inverted in Illustrator (3 comments) — JpegEmbedder unconditionally applies `Decode: [1,0,1,0,1,0,1,0]` to all CMYK JPEGs as a "hedge". Some JPEGs don't need this inversion. Proper fix requires parsing ICC profile data to detect encoding convention.
-- **#1295** - Text overlaps itself when drawText is used inside for loop — copied pages may share content stream references; `translateContent` wraps all streams cumulatively. Would require deep-cloning content streams during page copy
-- **#1420** - Can't call translateContent multiple times per page — by design, `translateContent` wraps ALL content streams (not just new ones), so each call shifts all previous content. Would need a scoped translation API
-- **#1622** - enableReadOnly() does not work for checkboxes — the ReadOnly flag is set correctly in memory (`isReadOnly()` returns true), but may not be properly respected by PDF viewers during save/render for checkbox widgets specifically
-- **#1391** - Cannot read checkbox value correctly — checkbox `/V` (value) and `/AS` (appearance state) can be out of sync when toggled in external PDF viewers; `isChecked()` compares field value to appearance-derived on-value, which fails when they diverge
-
-**Already fixed in this fork:**
-
-- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) — fixed by changing `PDFAcroForm.getFields()` to skip invalid field entries instead of throwing. Uses same graceful degradation pattern as `createPDFAcroFields()` helper.
-- **#1287** - Examples using constructor.name break after minification — replaced examples in getFields() and getForm() with instanceof checks
-- **#1443** - SVG path command T does not update control point correctly — already fixed, test exists at tests/api/svgPath.spec.ts:143-152
-- **#1703** - Stale method comment on markFieldAsClean — fixed typo in JSDoc comment that said "dirty" instead of "clean"
-- **#1744** - Not possible to use setAuthor with German umlauts — works correctly in current version (reported for v1.4.0). Test added to verify UTF-16 encoding handles umlauts properly through save/load cycle.
-- **#1407** - Make pdf-lib more graceful (10 comments) — fixed (commit `6fcae096`); `findWidgetPage` now returns undefined instead of throwing when page cannot be found, and callers skip orphaned widgets gracefully. Also fixes #967, #1281, #1349.
-- **#1544** - fontkit.create is not a function — fixed by adding validation in `registerFontkit()` that throws `InvalidFontkitError` with a helpful message explaining how to install and register fontkit correctly
-- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) — already fixed (commit `ff78ea2f`); the code now correctly dereferences PDFRef to PDFDict before extracting appearance states for checkboxes and radio groups
+- **#951** - Corrupted PDF (22 comments) — object ordering during page copying with incremental updates. Multiple PRs exist (#1772, #1769, #1755) but complex. Root cause: `PDFContext.enumerateIndirectObjects()` always sorts by ascending object number, breaking reference chains in incrementally-updated PDFs.
+- **#1338** - File size problem: 433mb from 15mb (10 comments) — `PDFObjectCopier` copies ALL resources recursively, including unused. Proper fix requires analyzing content streams for actual usage.
+- **#1390** - Copying encrypted PDF results in blank pages (16 comments) — content decrypted during parsing but resource references may not resolve correctly. Copier has no special handling for encrypted structures.
+- **#1146** - PNG embedding hangs — issue with malformed/corrupted PNGs causing hang. UPNG library may produce invalid buffer sizes from corrupted headers.
+- **#1010** - Thai font spacing (11 comments) — width calculation uses `glyphsForString()` (no shaping) while encoding uses `font.layout()` (full shaping), causing mismatch for complex scripts.
+- **#1284** - JPEG EXIF orientation (16 comments) — JpegEmbedder only parses SOF markers, doesn't parse APP1 for EXIF orientation. Would require auto-rotating pixels or exposing orientation.
+- **#784** - CMYK JPEG inverted in Illustrator — unconditionally applies decode inversion to all CMYK. Proper fix requires parsing ICC profile.
+- **#1295** - Text overlaps in loop — copied pages share content stream references; `translateContent` wraps all streams cumulatively.
+- **#1420** - Can't call translateContent multiple times — by design wraps ALL content streams, so shifts all previous content.
+- **#1622** - enableReadOnly() doesn't work for checkboxes — flag set correctly but may not be respected by viewers for checkbox widgets.
+- **#1391** - Cannot read checkbox value correctly — `/V` and `/AS` can be out of sync when toggled in external viewers.
 
 ---
 
-## Not Issues / Duplicates / Noise Filtered Out
+## Summary
 
-Support questions, React Native issues, spam, vague/unclear reports, duplicates, and meta posts:
+**Priority Issues (architectural, high engagement)**:
 
-#822, #1102, #1117, #1138, #1142, #1152, #1154, #1162, #1176, #1187, #1188, #1193, #1208, #1211, #1253, #1265, #1279, #1293, #1302, #1303, #1313, #1316, #1340, #1344, #1384, #1423, #1428, #1502, #1508, #1523, #1535, #1536, #1539, #1555, #1561, #1566, #1577, #1600, #1607, #1612, #1616, #1637, #1648, #1650, #1657, #1658, #1659, #1668, #1675, #1676, #1710, #1719, #1720, #1737, #1766, #1768, #1771
+1. **#951** - Core PDF corruption (22 comments) - Multiple PRs attempting fixes
+2. **#1390** - Copying encrypted PDFs (16 comments) - architectural
+3. **#1284** - JPEG orientation (16 comments) - feature request
+4. **#1338** - Massive file size (10 comments) - resource copying
+5. **#1010** - Thai font spacing (11 comments) - fontkit integration
 
----
+**Already Fixed in This Fork**:
 
-## Summary Statistics
-
-**By Category (Legitimate Issues Only)**:
-
-- Parsing / Loading: ~40 issues
-- Forms / AcroFields: ~50 issues (largest category)
-- Text / Fonts: ~35 issues
-- Images: ~10 issues
-- Pages / Copy: ~25 issues
-- Encryption / Signing: ~12 issues
-- Metadata: ~7 issues
-- Build / Integration: ~20 issues
-- API / Features: ~30 issues
-- Corruption / Save: ~25 issues
-
-**Priority Issues for Fork Maintainers**:
-
-1. **#951** - Core PDF corruption issue (22 comments) - Multiple PRs attempting fixes
-2. **#1015** - Encryption support (43 comments)
-3. **#1390** - Copying encrypted PDFs results in blank pages (16 comments)
-4. **#1284** - JPEG orientation EXIF issues (16 comments)
-5. **#1260** - PDFDict parsing error (15 comments)
-6. **#1338** - Massive file size increase (10 comments)
-7. **#1549** - Flatten removing checkboxes/radio buttons (10 comments)
-8. **#1069** - drawSvgPath broken (10 comments)
-9. **#1407** - General graceful degradation (10 comments)
-10. **#1010** - Thai font spacing issues (11 comments)
-
-**Areas Needing Most Attention**:
-
-1. Form field handling and flattening (many bugs, high engagement)
-2. PDF parsing robustness (many edge cases failing)
-3. Font encoding and Unicode support (widespread issues)
-4. Page copying with forms/encryption (corrupts data)
-5. File size optimization (exponential growth issues)
+- #1260 - PDFDict undefined (graceful degradation)
+- #1287 - constructor.name examples (instanceof checks)
+- #1443 - SVG T command (test exists)
+- #1703 - Stale comment typo
+- #1744 - German umlauts (UTF-16 works)
+- #1407 - Graceful degradation (findWidgetPage)
+- #1544 - fontkit.create error (InvalidFontkitError)
+- #1549 - Flatten checkboxes/radios (PDFRef dereference)
+- #1069 - drawSvgPath (cantoo SVG fixes)
+- #1015 - Encryption support (cantoo)
