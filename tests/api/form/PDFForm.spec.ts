@@ -1735,4 +1735,119 @@ describe('PDFForm', () => {
       expect(retrievedFields).toEqual([]);
     });
   });
+
+  describe('PDFField.rename()', () => {
+    it('can rename a root-level field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('oldName');
+      field.setText('test value');
+
+      expect(field.getName()).toBe('oldName');
+      field.rename('newName');
+      expect(field.getName()).toBe('newName');
+      expect(field.getText()).toBe('test value'); // Value preserved
+    });
+
+    it('can rename a nested field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('person.name.first');
+
+      expect(field.getName()).toBe('person.name.first');
+      field.rename('given');
+      expect(field.getName()).toBe('person.name.given');
+    });
+
+    it('throws if new name contains a period', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('myField');
+
+      expect(() => field.rename('new.name')).toThrow(
+        'Field name contains invalid component',
+      );
+    });
+
+    it('throws if new name is empty', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('myField');
+
+      expect(() => field.rename('')).toThrow('Field name must not be empty');
+    });
+
+    it('throws if a sibling field already has the same name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('fieldA');
+      const fieldB = form.createTextField('fieldB');
+
+      expect(() => fieldB.rename('fieldA')).toThrow(
+        'A field already exists with the specified name',
+      );
+    });
+
+    it('throws if renaming would conflict with nested sibling', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      form.createTextField('parent.child1');
+      const field = form.createTextField('parent.child2');
+
+      expect(() => field.rename('child1')).toThrow(
+        'A field already exists with the specified name',
+      );
+    });
+
+    it('throws if renaming would conflict with a non-terminal field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      // Creates non-terminal 'person' containing terminal 'person.name'
+      form.createTextField('person.name');
+      const field = form.createTextField('otherField');
+
+      // Renaming to 'person' should fail because 'person' exists as non-terminal
+      expect(() => field.rename('person')).toThrow(
+        'A field already exists with the specified name',
+      );
+    });
+
+    it('no-ops if renaming to the same name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('myField');
+
+      // Should not throw
+      field.rename('myField');
+      expect(field.getName()).toBe('myField');
+    });
+
+    it('preserves field properties after rename', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('original');
+      field.setText('Hello World');
+      field.enableReadOnly();
+      field.enableRequired();
+
+      field.rename('renamed');
+
+      expect(field.getName()).toBe('renamed');
+      expect(field.getText()).toBe('Hello World');
+      expect(field.isReadOnly()).toBe(true);
+      expect(field.isRequired()).toBe(true);
+    });
+
+    it('allows the renamed field to be retrieved by new name', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('oldName');
+
+      field.rename('newName');
+
+      expect(() => form.getField('oldName')).toThrow();
+      // getField returns a new wrapper, so compare by ref
+      expect(form.getField('newName').ref).toBe(field.ref);
+    });
+  });
 });

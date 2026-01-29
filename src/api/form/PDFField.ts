@@ -15,6 +15,10 @@ import {
   assertOrUndefined,
 } from '../../utils/index.js';
 import { type Color, colorToComponents, setFillingColor } from '../colors.js';
+import {
+  FieldAlreadyExistsError,
+  InvalidFieldNamePartError,
+} from '../errors.js';
 import { ImageAlignment } from '../image/index.js';
 import { drawImage, rotateInPlace } from '../operations.js';
 import PDFDocument from '../PDFDocument.js';
@@ -131,6 +135,73 @@ export default class PDFField {
    */
   getName(): string {
     return this.acroField.getFullyQualifiedName() ?? '';
+  }
+
+  /**
+   * Rename this field by changing its partial name. The partial name is the
+   * last component of the fully qualified name.
+   *
+   * For example, if a field's fully qualified name is `person.name.first`
+   * and you call `rename('given')`, the new fully qualified name will be
+   * `person.name.given`.
+   *
+   * ```js
+   * const field = form.getField('employee.name')
+   * console.log(field.getName()) // 'employee.name'
+   * field.rename('fullName')
+   * console.log(field.getName()) // 'employee.fullName'
+   * ```
+   *
+   * Note: this only changes the partial name, not the field's position in
+   * the hierarchy. To move a field to a different parent, you would need to
+   * create a new field and copy its properties.
+   *
+   * @param newPartialName The new partial name for this field.
+   * @throws `InvalidFieldNamePartError` if the name contains periods.
+   * @throws `FieldAlreadyExistsError` if a sibling field already has this name.
+   */
+  rename(newPartialName: string): void {
+    assertIs(newPartialName, 'newPartialName', ['string']);
+
+    if (newPartialName.length === 0) {
+      throw new Error('Field name must not be empty');
+    }
+
+    if (newPartialName.includes('.')) {
+      throw new InvalidFieldNamePartError(newPartialName);
+    }
+
+    const currentName = this.getName();
+    const parent = this.acroField.getParent();
+    const parentFullName = parent?.getFullyQualifiedName();
+    const newFullName = parentFullName
+      ? `${parentFullName}.${newPartialName}`
+      : newPartialName;
+
+    // If name isn't changing, nothing to do
+    if (newFullName === currentName) return;
+
+    const form = this.doc.getForm();
+
+    // Check for conflict with existing terminal field
+    const existingField = form.getFieldMaybe(newFullName);
+    if (existingField) {
+      throw new FieldAlreadyExistsError(newFullName);
+    }
+
+    // Check for conflict with existing non-terminal (container) field.
+    // A non-terminal with this name exists if any field's fully qualified
+    // name starts with the new name followed by a period.
+    const prefix = newFullName + '.';
+    const allFields = form.getFields();
+    for (let i = 0, len = allFields.length; i < len; i++) {
+      if (allFields[i]!.getName().startsWith(prefix)) {
+        throw new FieldAlreadyExistsError(newFullName);
+      }
+    }
+
+    // All checks passed - rename the field
+    this.acroField.setPartialName(newPartialName);
   }
 
   /**
