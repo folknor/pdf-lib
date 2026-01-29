@@ -992,6 +992,48 @@ describe('PDFForm', () => {
       expect(reloadedForm.getFields().length).toBe(0);
     });
 
+    it('clears page Annots after flattening loaded PDF', async () => {
+      const pdfDoc = await PDFDocument.load(fancyFieldsPdfBytes);
+      const form = pdfDoc.getForm();
+
+      // Get all pages and count their annotations before flatten
+      const pages = pdfDoc.getPages();
+      const annotCountsBefore = pages.map((p) => p.node.Annots()?.size() ?? 0);
+      const totalAnnotsBefore = annotCountsBefore.reduce((a, b) => a + b, 0);
+
+      // Should have some annotations (widgets) before flatten
+      expect(totalAnnotsBefore).toBeGreaterThan(0);
+
+      form.flatten();
+
+      // After flatten, all widget annotations should be removed
+      const annotCountsAfter = pages.map((p) => p.node.Annots()?.size() ?? 0);
+      const totalAnnotsAfter = annotCountsAfter.reduce((a, b) => a + b, 0);
+
+      // All annotations should be removed (fancy_fields only has widget annotations)
+      expect(totalAnnotsAfter).toBe(0);
+
+      // Save and reload to verify the PDF is valid
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(pages.length);
+    });
+
+    it('removes all widget annotation objects from context after flattening loaded PDF', async () => {
+      const pdfDoc = await PDFDocument.load(fancyFieldsPdfBytes);
+
+      // Count widget annotation objects before flatten
+      const widgetsBefore = getWidgets(pdfDoc);
+      expect(widgetsBefore.length).toBeGreaterThan(0);
+
+      const form = pdfDoc.getForm();
+      form.flatten();
+
+      // All widget annotation objects should be deleted from context
+      const widgetsAfter = getWidgets(pdfDoc);
+      expect(widgetsAfter.length).toBe(0);
+    });
+
     it('marks fields dirty by default when flattening with updateFieldAppearances: true', async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
@@ -1044,6 +1086,79 @@ describe('PDFForm', () => {
       form.flatten({ updateFieldAppearances: false });
 
       expect(form.getFields().length).toBe(0);
+    });
+
+    it('leaves no orphan annotation refs in page Annots after flatten', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // Create multiple field types
+      const tf = form.createTextField('orphanTestText');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      const cb = form.createCheckBox('orphanTestCheck');
+      cb.addToPage(page);
+      cb.check();
+
+      const dd = form.createDropdown('orphanTestDropdown');
+      dd.setOptions(['A', 'B', 'C']);
+      dd.select('B');
+      dd.addToPage(page);
+
+      // Verify Annots has entries before flatten
+      const annotsBefore = page.node.Annots();
+      expect(annotsBefore).toBeDefined();
+      expect(annotsBefore!.size()).toBe(3);
+
+      form.flatten();
+
+      // After flatten, Annots should be empty (no widget annotations left)
+      const annotsAfter = page.node.Annots();
+      expect(annotsAfter!.size()).toBe(0);
+
+      // Verify document can be saved and reloaded
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(1);
+
+      // Reloaded page should also have no annotations
+      const reloadedPage = reloaded.getPage(0);
+      const reloadedAnnots = reloadedPage.node.Annots();
+      // Annots may be undefined or empty array after reload
+      expect(reloadedAnnots?.size() ?? 0).toBe(0);
+    });
+
+    it('does not leave dangling refs to deleted widget objects', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('danglingRefTest');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      // Get the widget ref before flattening
+      const widgets = tf.acroField.getWidgets();
+      const widgetRef = pdfDoc.context.getObjectRef(widgets[0]!.dict);
+      expect(widgetRef).toBeDefined();
+
+      // Widget should exist in context before flatten
+      expect(pdfDoc.context.lookup(widgetRef!)).toBeDefined();
+
+      form.flatten();
+
+      // Widget should be deleted from context after flatten
+      expect(pdfDoc.context.lookup(widgetRef!)).toBeUndefined();
+
+      // But the appearance stream should still exist (it's referenced by the page's XObject)
+      const xobjectDict = page.node
+        .normalizedEntries()
+        .Resources.lookup(PDFName.of('XObject'), PDFDict);
+      expect(xobjectDict).toBeDefined();
+      // Should have at least one XObject (the flattened appearance)
+      expect(xobjectDict.entries().length).toBeGreaterThan(0);
     });
   });
 
@@ -1285,6 +1400,50 @@ describe('PDFForm', () => {
       form.flatten({ updateFieldAppearances: true });
 
       expect(form.getFields().length).toBe(0);
+    });
+  });
+
+  describe('removeField orphan prevention', () => {
+    it('removes widget from Annots even when widget.P() returns undefined', async () => {
+      // This tests the fix for #1267/#1387 where orphan annotation refs
+      // were left in Annots when findWidgetPage failed
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const tf = form.createTextField('orphanPrevention');
+      tf.setText('test');
+      tf.addToPage(page);
+
+      // Get the widget and clear its P (page) reference to simulate
+      // the case where findWidgetPage would return undefined
+      const widgets = tf.acroField.getWidgets();
+      const widget = widgets[0]!;
+      widget.dict.delete(PDFName.of('P'));
+
+      // Verify widget is in Annots before removal
+      const annotsBefore = page.node.Annots();
+      expect(annotsBefore!.size()).toBe(1);
+
+      // Remove the field
+      form.removeField(tf);
+
+      // Verify Annots is cleared even though widget.P() was undefined
+      const annotsAfter = page.node.Annots();
+      expect(annotsAfter!.size()).toBe(0);
+
+      // Verify widget object is deleted from context
+      const widgetRef = pdfDoc.context.getObjectRef(widget.dict);
+      // Widget should be deleted (getObjectRef returns undefined for deleted objects)
+      // Actually, getObjectRef looks up by object identity, so we need a different check
+      // The field should be gone
+      expect(form.getFields().length).toBe(0);
+
+      // Document should save without issues
+      const savedBytes = await pdfDoc.save();
+      const reloaded = await PDFDocument.load(savedBytes);
+      expect(reloaded.getPageCount()).toBe(1);
+      expect(reloaded.getForm().getFields().length).toBe(0);
     });
   });
 

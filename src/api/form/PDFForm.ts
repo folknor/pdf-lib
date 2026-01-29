@@ -600,7 +600,10 @@ export default class PDFForm {
 
         if (!page || !widgetRef) continue;
 
-        const xObjectKey = page.node.getOrCreateXObject('FlatWidget', widgetRef);
+        const xObjectKey = page.node.getOrCreateXObject(
+          'FlatWidget',
+          widgetRef,
+        );
 
         const rectangle = widget.getRectangle();
         const operators = [
@@ -630,22 +633,28 @@ export default class PDFForm {
    */
   removeField(field: PDFField) {
     const widgets = field.acroField.getWidgets();
-    const pages: Set<PDFPage> = new Set();
+    const allPages = this.doc.getPages();
 
+    // Collect all widget refs that need to be removed from page Annots
+    const widgetRefs: PDFRef[] = [];
     for (let i = 0, len = widgets.length; i < len; i++) {
       const widget = widgets[i]!;
       const widgetRef = this.doc.context.getObjectRef(widget.dict);
-      const page = this.findWidgetPage(widget);
-
-      if (!page) continue;
-      pages.add(page);
-
       if (widgetRef !== undefined) {
-        page.node.removeAnnot(widgetRef);
+        widgetRefs.push(widgetRef);
       }
     }
 
-    for (const page of pages) page.node.removeAnnot(field.ref);
+    // Remove widget refs and field ref from ALL pages' Annots arrays
+    // This ensures no orphan refs are left even if findWidgetPage fails
+    for (let i = 0, len = allPages.length; i < len; i++) {
+      const page = allPages[i]!;
+      for (let j = 0, wlen = widgetRefs.length; j < wlen; j++) {
+        page.node.removeAnnot(widgetRefs[j]!);
+      }
+      page.node.removeAnnot(field.ref);
+    }
+
     this.acroForm.removeField(field.acroField);
     const fieldKids = field.acroField.normalizedEntries().Kids;
     const kidsCount = fieldKids.size();

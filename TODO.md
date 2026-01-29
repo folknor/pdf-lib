@@ -1,43 +1,5 @@
 # TODO for @folknor/pdf-lib
 
-## Completed
-
-### TypeScript Strict Flags
-- [x] `noImplicitOverride` (~110 methods)
-- [x] `noPropertyAccessFromIndexSignature` (~55 bracket notations)
-- [x] `noUncheckedIndexedAccess` (582 errors fixed)
-- [x] `exactOptionalPropertyTypes`
-
-### Biome Rules Enabled
-- [x] `noBannedTypes` - replaced `Function` type
-- [x] `noForEach` - use `for...of`
-- [x] `noDoubleEquals` - require `===`
-- [x] `noFloatingPromises` - handle promises
-- [x] `noMisusedPromises` - correct promise usage
-- [x] `noShadow` - no variable shadowing
-- [x] `noUselessStringConcat` - clean concatenation
-- [x] `noUselessCatchBinding` - clean catch blocks
-- [x] `noUnusedExpressions` - no dead code
-- [x] `useConsistentArrowReturn` - consistent arrows
-- [x] `useArraySortCompare` - explicit sort comparators
-- [x] `useErrorMessage` - error messages required
-- [x] `useImportType` - type-only imports
-
-### Infrastructure
-- [x] Migrate yarn → pnpm
-- [x] ESM-only output (no CJS/UMD)
-- [x] TypeScript 5.9.3 with ES2022 target
-- [x] `nodenext` moduleResolution with `.js` extensions
-- [x] Jest → Vitest
-- [x] ESLint+Prettier → Biome
-- [x] Remove husky/lint-staged
-- [x] Add `"sideEffects": false`
-- [x] Delete apps/, docs/, scratchpad/, .circleci/, .github/, .vscode/
-- [x] Release workflow with `release-it`
-- [x] Sub-path exports reviewed — not needed with `sideEffects: false`
-
----
-
 ## Intentionally Disabled (too noisy or conflicts with codebase)
 | Rule | Reason |
 |------|--------|
@@ -86,7 +48,19 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ## Code Issues & Improvements
 
-### Potential Bugs
+### Flatten Bugs (High Priority)
+
+- [x] **#1267 #1387 - Orphan annotation references after flatten** — Fixed: `removeField()` now removes widget refs from ALL pages' Annots arrays, not just pages where `findWidgetPage()` succeeds. This prevents orphan refs when widget's P (page) reference is missing.
+
+- [ ] **#1482 #1757 - Error 14 after flatten with cross-page fields** — Fields shared across pages or `copyPages()` after `flatten()` creates broken object references. Adobe shows "Expected a dict object".
+
+### Flatten Bugs (Medium Priority)
+
+- [ ] **#1519 - Runtime crash on certain PDFs** — `findWidgetPage()` returns undefined for some PDF structures (Canadian government forms), causing crash in `removeField()`.
+
+- [ ] **#1574 - Checkbox marks disappear after flatten** — `findWidgetAppearanceRef()` falls back to "Off" appearance when checkbox "on" value doesn't match appearance dictionary keys.
+
+### Completed
 
 - [x] **PDFPageLeaf inherited resource mutation** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: `normalize()` now clones inherited Resources, Font, XObject, and ExtGState dictionaries to prevent mutation of shared parent dictionaries.
 
@@ -94,13 +68,7 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - [x] **PDFPage resource reuse** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: Added `getOrCreateFontDictionary`, `getOrCreateXObject`, `getOrCreateExtGState` methods that look up existing refs before creating new entries. Updated PDFPage to use these methods.
 
-### Consistency Improvements
-
 - [x] **PDFName static properties** — Added: `Filter`, `Subtype`, `Kids`, `Count`, `Catalog`, `Pages`, `ColorSpace`, `Pattern`, `Shading`, `Properties`, `Form`, `Image`, `Off`, `Yes`, `Opt`, `Names`, `EmbeddedFiles`.
-
-### Housekeeping
-
-- [x] **Delete stale `.plans/` directory** — Deleted.
 
 ---
 
