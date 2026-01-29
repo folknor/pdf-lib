@@ -20,6 +20,7 @@ import { drawImage, rotateInPlace } from '../operations.js';
 import PDFDocument from '../PDFDocument.js';
 import type PDFFont from '../PDFFont.js';
 import type PDFImage from '../PDFImage.js';
+import type PDFPage from '../PDFPage.js';
 import {
   adjustDimsForRotation,
   degrees,
@@ -130,6 +131,77 @@ export default class PDFField {
    */
   getName(): string {
     return this.acroField.getFullyQualifiedName() ?? '';
+  }
+
+  /**
+   * Get all widgets for this field. Each widget represents a visual instance
+   * of the field on a page. Most fields have only one widget, but some fields
+   * (e.g., radio groups) may have multiple widgets across different pages.
+   *
+   * For example:
+   * ```js
+   * const field = form.getField('some.field')
+   * const widgets = field.getWidgets()
+   * console.log('Field appears in', widgets.length, 'locations')
+   * ```
+   *
+   * @returns An array of all widget annotations for this field.
+   */
+  getWidgets(): PDFWidgetAnnotation[] {
+    return this.acroField.getWidgets();
+  }
+
+  /**
+   * Get the page on which a specific widget of this field is rendered.
+   *
+   * For example:
+   * ```js
+   * const field = form.getField('some.field')
+   * const page = field.getWidgetPage()
+   * if (page) {
+   *   console.log('Field is on page', page.getSize())
+   * }
+   * ```
+   *
+   * @param widgetIndex The index of the widget (defaults to 0 for the first widget).
+   * @returns The page containing the widget, or undefined if not found.
+   */
+  getWidgetPage(widgetIndex: number = 0): PDFPage | undefined {
+    const widgets = this.acroField.getWidgets();
+    const widget = widgets[widgetIndex];
+    if (!widget) return undefined;
+
+    const pageRef = widget.P();
+    let page = this.doc.getPages().find((x) => x.ref === pageRef);
+
+    if (page === undefined) {
+      const widgetRef = this.doc.context.getObjectRef(widget.dict);
+      if (widgetRef === undefined) return undefined;
+      page = this.doc.findPageForAnnotationRef(widgetRef);
+    }
+
+    return page;
+  }
+
+  /**
+   * Get the zero-based index of the page on which a specific widget is rendered.
+   *
+   * For example:
+   * ```js
+   * const field = form.getField('some.field')
+   * const pageIndex = field.getWidgetPageIndex()
+   * if (pageIndex !== undefined) {
+   *   console.log('Field is on page', pageIndex + 1)
+   * }
+   * ```
+   *
+   * @param widgetIndex The index of the widget (defaults to 0 for the first widget).
+   * @returns The zero-based page index, or undefined if not found.
+   */
+  getWidgetPageIndex(widgetIndex: number = 0): number | undefined {
+    const page = this.getWidgetPage(widgetIndex);
+    if (!page) return undefined;
+    return this.doc.getPages().indexOf(page);
   }
 
   /**

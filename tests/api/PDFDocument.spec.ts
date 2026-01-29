@@ -661,6 +661,72 @@ describe('PDFDocument', () => {
 
       expect(savedDoc1).toEqual(savedDoc2);
     });
+
+    it('maintains lexical sort order for attachment names (Acrobat compatibility)', async () => {
+      // PDF spec requires EmbeddedFiles Names array to be lexically sorted.
+      // Acrobat Reader uses binary search, so unsorted names cause issues.
+      const pdfDoc = await PDFDocument.create();
+
+      // Add files in non-lexical order
+      await pdfDoc.attach(Buffer.from('content3'), 'zebra.txt', {
+        mimeType: 'text/plain',
+      });
+      await pdfDoc.attach(Buffer.from('content1'), 'alpha.txt', {
+        mimeType: 'text/plain',
+      });
+      await pdfDoc.attach(Buffer.from('content2'), 'middle.txt', {
+        mimeType: 'text/plain',
+      });
+
+      // Save and reload to ensure the sort order is persisted
+      const savedBytes = await pdfDoc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      // Get the Names array directly from the PDF structure
+      const Names = loadedDoc.catalog.lookup(PDFName.of('Names'), PDFDict);
+      const EmbeddedFiles = Names.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      const EFNames = EmbeddedFiles.lookup(PDFName.of('Names'), PDFArray);
+
+      // Extract names in order from the array (names are at even indices)
+      const names: string[] = [];
+      for (let i = 0; i < EFNames.size(); i += 2) {
+        const nameObj = EFNames.get(i);
+        if (nameObj instanceof PDFHexString) {
+          names.push(nameObj.decodeText());
+        }
+      }
+
+      // Verify the names are lexically sorted
+      expect(names).toEqual(['alpha.txt', 'middle.txt', 'zebra.txt']);
+    });
+
+    it('inserts attachments at correct sorted position', async () => {
+      const pdfDoc = await PDFDocument.create();
+
+      // Add files that test various positions
+      await pdfDoc.attach(Buffer.from('2'), '2.txt', { mimeType: 'text/plain' });
+      await pdfDoc.attach(Buffer.from('1'), '1.txt', { mimeType: 'text/plain' }); // Insert at beginning
+      await pdfDoc.attach(Buffer.from('10'), '10.txt', { mimeType: 'text/plain' }); // Lexically between "1" and "2"
+      await pdfDoc.attach(Buffer.from('3'), '3.txt', { mimeType: 'text/plain' }); // Insert at end
+
+      const savedBytes = await pdfDoc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+
+      const Names = loadedDoc.catalog.lookup(PDFName.of('Names'), PDFDict);
+      const EmbeddedFiles = Names.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      const EFNames = EmbeddedFiles.lookup(PDFName.of('Names'), PDFArray);
+
+      const names: string[] = [];
+      for (let i = 0; i < EFNames.size(); i += 2) {
+        const nameObj = EFNames.get(i);
+        if (nameObj instanceof PDFHexString) {
+          names.push(nameObj.decodeText());
+        }
+      }
+
+      // Lexical sort: "1.txt" < "10.txt" < "2.txt" < "3.txt"
+      expect(names).toEqual(['1.txt', '10.txt', '2.txt', '3.txt']);
+    });
   });
 
   describe('getAttachments() method', () => {

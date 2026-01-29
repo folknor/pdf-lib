@@ -109,16 +109,13 @@ Cannot get page index for form field widgets.
   - `getWidgetPage(widgetIndex?: number): PDFPage | undefined`
   - `getWidgetPageIndex(widgetIndex?: number): number | undefined`
   - `getWidgets(): PDFWidgetAnnotation[]`
-- **Complexity**: LOW - Just needs API exposure, 4-8 hours with tests
-- **Status**: Easy fix, should implement
+- **Status**: **FIXED IN THIS FORK** - Added all three methods to `PDFField` class
 
 #### #89 - Attachment Names Cause Acrobat Error
 Some attachment names cause errors in Acrobat Reader.
 - **Root cause**: PDF spec requires EmbeddedFiles Names array to be **lexically sorted**. Current code just `push()`es to the end without maintaining sort order. Acrobat uses binary search on the Names array.
 - **Solution**: Insert attachments at correct position to maintain lexical sort order
-- **Complexity**: LOW - Simple fix in `PDFEmbeddedFile.embed()`
-- **Workaround**: Add attachments in lexical order (e.g., `1.jpg`, `10.jpg`, `2.jpg`)
-- **Status**: Easy fix, should implement
+- **Status**: **FIXED IN THIS FORK** - `PDFEmbeddedFile.embed()` now inserts at correct sorted position
 
 ### Feature Requests
 
@@ -207,10 +204,8 @@ Request for better handling of non-compliant PDFs.
 - **PR #111** - Incremental updates for digital signatures ✓
 - **PR #133** - TypeScript 5.9 compatibility ✓
 - **#122/#120** - CIDSystemInfo/text missing (likely fixed by PR #130, needs verification) ✓
-
-### Quick Wins (Should Implement)
-1. **#128** - Widget page index API (LOW effort, HIGH value)
-2. **#89** - Attachment name sorting for Acrobat compatibility (LOW effort)
+- **#128** - Widget page index API (`getWidgets()`, `getWidgetPage()`, `getWidgetPageIndex()`) ✓
+- **#89** - Attachment name lexical sorting for Acrobat compatibility ✓
 
 ### Complex Issues (Future Consideration)
 1. **#55** - setText font handling (HIGH effort - architecture limitation)

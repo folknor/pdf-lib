@@ -1,6 +1,129 @@
-import { PDFDocument } from '../../../src/index';
+import { PDFDocument, PDFWidgetAnnotation } from '../../../src/index';
 
 describe('PDFField', () => {
+  describe('getWidgets()', () => {
+    it('returns all widgets for a field', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.widgets');
+      field.addToPage(page, { x: 50, y: 50, width: 200, height: 30 });
+
+      const widgets = field.getWidgets();
+      expect(widgets).toHaveLength(1);
+      expect(widgets[0]).toBeInstanceOf(PDFWidgetAnnotation);
+    });
+
+    it('returns empty array for field with no widgets', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.nowidgets');
+
+      const widgets = field.getWidgets();
+      expect(widgets).toHaveLength(0);
+    });
+  });
+
+  describe('getWidgetPage()', () => {
+    it('returns the page containing the widget', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const field1 = form.createTextField('test.page1');
+      field1.addToPage(page1, { x: 50, y: 50, width: 200, height: 30 });
+
+      const field2 = form.createTextField('test.page2');
+      field2.addToPage(page2, { x: 50, y: 50, width: 200, height: 30 });
+
+      expect(field1.getWidgetPage()).toBe(page1);
+      expect(field2.getWidgetPage()).toBe(page2);
+    });
+
+    it('returns undefined for invalid widget index', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.invalidindex');
+      field.addToPage(page, { x: 50, y: 50, width: 200, height: 30 });
+
+      expect(field.getWidgetPage(999)).toBeUndefined();
+    });
+
+    it('returns undefined for field with no widgets', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.nowidgets');
+
+      expect(field.getWidgetPage()).toBeUndefined();
+    });
+  });
+
+  describe('getWidgetPageIndex()', () => {
+    it('returns the zero-based page index', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const page3 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const field1 = form.createTextField('test.page1');
+      field1.addToPage(page1, { x: 50, y: 50, width: 200, height: 30 });
+
+      const field2 = form.createTextField('test.page2');
+      field2.addToPage(page2, { x: 50, y: 50, width: 200, height: 30 });
+
+      const field3 = form.createTextField('test.page3');
+      field3.addToPage(page3, { x: 50, y: 50, width: 200, height: 30 });
+
+      expect(field1.getWidgetPageIndex()).toBe(0);
+      expect(field2.getWidgetPageIndex()).toBe(1);
+      expect(field3.getWidgetPageIndex()).toBe(2);
+    });
+
+    it('returns undefined for invalid widget index', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.invalidindex');
+      field.addToPage(page, { x: 50, y: 50, width: 200, height: 30 });
+
+      expect(field.getWidgetPageIndex(999)).toBeUndefined();
+    });
+
+    it('returns undefined for field with no widgets', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('test.nowidgets');
+
+      expect(field.getWidgetPageIndex()).toBeUndefined();
+    });
+
+    it('works correctly after save and load', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page1 = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      const field1 = form.createTextField('test.page1');
+      field1.addToPage(page1, { x: 50, y: 50, width: 200, height: 30 });
+
+      const field2 = form.createTextField('test.page2');
+      field2.addToPage(page2, { x: 50, y: 50, width: 200, height: 30 });
+
+      const savedBytes = await pdfDoc.save();
+      const loadedDoc = await PDFDocument.load(savedBytes);
+      const loadedForm = loadedDoc.getForm();
+
+      const loadedField1 = loadedForm.getTextField('test.page1');
+      const loadedField2 = loadedForm.getTextField('test.page2');
+
+      expect(loadedField1.getWidgetPageIndex()).toBe(0);
+      expect(loadedField2.getWidgetPageIndex()).toBe(1);
+    });
+  });
+
   describe('getName()', () => {
     it('returns the fully qualified field name', async () => {
       const pdfDoc = await PDFDocument.create();
