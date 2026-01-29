@@ -34,14 +34,14 @@ Implements incremental PDF updates for PAdES/LTV digital signature compliance.
 #### #122 - CIDSystemInfo Not Set in Password-Protected PDFs
 Registry and Ordering fields in CIDFont CIDSystemInfo structure are not properly handled during PDFObjectCopier for password-protected PDFs. After decryption, these fields remain as encrypted binary data instead of being decrypted.
 - **Symptoms**: Text doesn't display in regenerated password-protected PDFs
-- **Root cause**: Encrypted literal strings weren't being decrypted properly - the old code used `decryptString()` which didn't handle escape sequences correctly
+- **Root cause**: Encrypted literal strings weren't being decrypted properly
 - **Related**: #120 (same root cause)
-- **Status**: **LIKELY FIXED** - PR #130 (in this fork) fixes literal string decryption by using `PDFString.asBytes()` for proper escape sequence handling before calling `decryptBytes()`. Strings are now decrypted during parsing, so `PDFObjectCopier` copies already-decrypted values. Needs verification with a test PDF.
+- **Status**: Unverified - no test PDF available
 
 #### #120 - Text Missing After Saving PDF
 Text disappears after saving certain PDFs.
 - **Related to**: #122 (CIDSystemInfo issue)
-- **Status**: **LIKELY FIXED** - Same root cause as #122, addressed by PR #130
+- **Status**: Unverified - no test PDF available
 
 #### #86 - Form Field Content Lost After Flatten
 When flattening PDFs filled by external applications (like Adobe Acrobat), field values may not appear.
@@ -98,7 +98,7 @@ Same root cause as #85 - ESM/CommonJS interop issue with UPNG.
 
 #### #24 - Update Pako Dependency
 Request to update pako to ^2.0.2 for better tree shaking.
-- **Status**: Open, would help with bundle size
+- **Status**: **FIXED IN THIS FORK**
 
 ### Quick Wins
 
@@ -180,7 +180,7 @@ Feature request for `save(filePath)` method.
 
 #### #67 - Add packageManager Field
 Request to add packageManager field to package.json for reliable dependency management.
-- **Status**: Open
+- **Status**: **FIXED IN THIS FORK**
 
 #### #27 - Support Non PDF/A Compliant PDFs
 Request for better handling of non-compliant PDFs.
@@ -203,9 +203,10 @@ Request for better handling of non-compliant PDFs.
 - **PR #121** - Text markup annotations ✓
 - **PR #111** - Incremental updates for digital signatures ✓
 - **PR #133** - TypeScript 5.9 compatibility ✓
-- **#122/#120** - CIDSystemInfo/text missing (likely fixed by PR #130, needs verification) ✓
 - **#128** - Widget page index API (`getWidgets()`, `getWidgetPage()`, `getWidgetPageIndex()`) ✓
 - **#89** - Attachment name lexical sorting for Acrobat compatibility ✓
+- **#24** - Updated pako dependency ✓
+- **#67** - Added packageManager field to package.json ✓
 
 ### Complex Issues (Future Consideration)
 1. **#55** - setText font handling (HIGH effort - architecture limitation)
