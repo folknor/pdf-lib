@@ -89,7 +89,7 @@ import { PageSizes } from './sizes.js';
 
 export type BasePDFAttachment = {
   name: string;
-  data: Uint8Array;
+  data: Uint8Array<ArrayBuffer>;
   mimeType: string | undefined;
   afRelationship: AFRelationship | undefined;
   description: string | undefined;
@@ -165,7 +165,7 @@ export default class PDFDocument {
    * @returns Resolves with a document loaded from the input.
    */
   static async load(
-    pdf: string | Uint8Array | ArrayBuffer,
+    pdf: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
     options: LoadOptions = {},
   ) {
     const {
@@ -987,7 +987,7 @@ export default class PDFDocument {
    * @returns Resolves when the attachment is complete.
    */
   async attach(
-    attachment: string | Uint8Array | ArrayBuffer,
+    attachment: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
     name: string,
     options: AttachmentOptions = {},
   ): Promise<void> {
@@ -1098,7 +1098,7 @@ export default class PDFDocument {
       return [
         {
           name: fileName.decodeText(),
-          data: decodePDFRawStream(stream as PDFRawStream).decode(),
+          data: decodePDFRawStream(stream as PDFRawStream).decode() as Uint8Array<ArrayBuffer>,
           mimeType: mimeType?.replace(/#([0-9A-Fa-f]{2})/g, (_, hex) =>
             String.fromCharCode(parseInt(hex, 16)),
           ),
@@ -1119,7 +1119,7 @@ export default class PDFDocument {
       const embedder = file.getEmbedder();
       return {
         name: embedder.fileName,
-        data: embedder.getFileData(),
+        data: embedder.getFileData() as Uint8Array<ArrayBuffer>,
         description: embedder.options.description,
         mimeType: embedder.options.mimeType,
         afRelationship: embedder.options.afRelationship,
@@ -1217,7 +1217,7 @@ export default class PDFDocument {
    * @returns Resolves with the embedded font.
    */
   async embedFont(
-    font: StandardFonts | string | Uint8Array | ArrayBuffer,
+    font: StandardFonts | string | Uint8Array<ArrayBuffer> | ArrayBuffer,
     options: EmbedFontOptions = {},
   ): Promise<PDFFont> {
     const { subset = false, customName, features } = options;
@@ -1308,7 +1308,9 @@ export default class PDFDocument {
    * @param jpg The input data for a JPEG image.
    * @returns Resolves with the embedded image.
    */
-  async embedJpg(jpg: string | Uint8Array | ArrayBuffer): Promise<PDFImage> {
+  async embedJpg(
+    jpg: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
+  ): Promise<PDFImage> {
     assertIs(jpg, 'jpg', ['string', Uint8Array, ArrayBuffer]);
     const bytes = toUint8Array(jpg);
     const embedder = await JpegEmbedder.for(bytes);
@@ -1348,7 +1350,9 @@ export default class PDFDocument {
    * @param png The input data for a PNG image.
    * @returns Resolves with the embedded image.
    */
-  async embedPng(png: string | Uint8Array | ArrayBuffer): Promise<PDFImage> {
+  async embedPng(
+    png: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
+  ): Promise<PDFImage> {
     assertIs(png, 'png', ['string', Uint8Array, ArrayBuffer]);
     const bytes = toUint8Array(png);
     const embedder = await PngEmbedder.for(bytes);
@@ -1407,7 +1411,7 @@ export default class PDFDocument {
    * @returns Resolves with an array of the embedded pages.
    */
   async embedPdf(
-    pdf: string | Uint8Array | ArrayBuffer | PDFDocument,
+    pdf: string | Uint8Array<ArrayBuffer> | ArrayBuffer | PDFDocument,
     indices: number[] = [0],
   ): Promise<PDFEmbeddedPage[]> {
     assertIs(pdf, 'pdf', [
@@ -1577,7 +1581,7 @@ export default class PDFDocument {
    * @param options The options to be used when saving the document.
    * @returns Resolves with the bytes of the serialized document.
    */
-  async save(options: SaveOptions = {}): Promise<Uint8Array> {
+  async save(options: SaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
     // Check PDF version to determine default useObjectStreams
     const vparts = this.context.header.getVersionString().split('.');
     const uOS =
@@ -1649,7 +1653,7 @@ export default class PDFDocument {
   async saveIncremental(
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
-  ): Promise<Uint8Array> {
+  ): Promise<Uint8Array<ArrayBuffer>> {
     // Check PDF version
     const vparts = this.context.header.getVersionString().split('.');
     const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
@@ -1713,7 +1717,7 @@ export default class PDFDocument {
    * @param options The options to be used when committing changes.
    * @returns Resolves with the complete PDF bytes including all updates.
    */
-  async commit(options: IncrementalSaveOptions = {}): Promise<Uint8Array> {
+  async commit(options: IncrementalSaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
     if (!this.context.snapshot || !this.context.pdfFileDetails.originalBytes) {
       throw new Error(
         'commit() requires the document to be loaded with forIncrementalUpdate: true',

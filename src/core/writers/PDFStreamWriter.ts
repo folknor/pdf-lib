@@ -175,7 +175,7 @@ class PDFStreamWriter extends PDFWriter {
     return { size, header, indirectObjects: uncompressedObjects, trailer };
   }
 
-  override async serializeToBuffer(): Promise<Uint8Array> {
+  override async serializeToBuffer(): Promise<Uint8Array<ArrayBuffer>> {
     const buffer = await super.serializeToBuffer();
     // Delete xref stream created for saving
     this.context.delete(PDFRef.of(this.context.largestObjectNumber - 1));

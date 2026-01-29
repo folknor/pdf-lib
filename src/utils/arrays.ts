@@ -143,7 +143,9 @@ export const canBeConvertedToUint8Array = (
   input instanceof ArrayBuffer ||
   typeof input === 'string';
 
-export const toUint8Array = (input: string | ArrayBuffer | Uint8Array) => {
+export const toUint8Array = (
+  input: string | ArrayBuffer | Uint8Array<ArrayBuffer>,
+): Uint8Array<ArrayBuffer> => {
   if (typeof input === 'string') {
     return decodeFromBase64DataUri(input);
   } else if (input instanceof ArrayBuffer) {
@@ -152,7 +154,7 @@ export const toUint8Array = (input: string | ArrayBuffer | Uint8Array) => {
     return input;
   } else {
     throw new TypeError(
-      '`input` must be one of `string | ArrayBuffer | Uint8Array`',
+      '`input` must be one of `string | ArrayBuffer | Uint8Array<ArrayBuffer>`',
     );
   }
 };
