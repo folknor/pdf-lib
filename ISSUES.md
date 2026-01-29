@@ -11,16 +11,16 @@
 
 These issues have 10+ comments indicating widespread problems:
 
-- **#951** - Corrupted PDF (22 comments) - CRITICAL visual corruption issue
-- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments)
-- **#1407** - Make pdf-lib more graceful like other pdf software (10 comments)
-- **#1338** - File size problem: 433mb generated from a 15mb document (10 comments)
-- **#1390** - Copying encrypted PDF results in blank pages (16 comments)
-- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments)
-- **#1284** - Issue with Jpeg's Orientation Exif when embedding in pdf (16 comments)
-- **#1069** - drawSvgPath doesn't work (10 comments)
-- **#1010** - page.drawText() inserts spaces when using Thai font (11 comments)
-- **#1015** - Dev/doc encrypt (43 comments)
+- **#951** - Corrupted PDF (22 comments) - object stream issue, needs investigation
+- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) - **FIXED** (cantoo-scribe PR #56)
+- **#1407** - Make pdf-lib more graceful like other pdf software (10 comments) - **IMPROVED** (PDFNull handling)
+- **#1338** - File size problem: 433mb generated from a 15mb document (10 comments) - open
+- **#1390** - Copying encrypted PDF results in blank pages (16 comments) - potentially improved by PR #130 fix
+- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) - **IMPROVED** (PDFNull handling)
+- **#1284** - Issue with Jpeg's Orientation Exif when embedding in pdf (16 comments) - open
+- **#1069** - drawSvgPath doesn't work (10 comments) - **FIXED** (cantoo-scribe SVG fixes)
+- **#1010** - page.drawText() inserts spaces when using Thai font (11 comments) - open (fontkit/OpenType shaping)
+- **#1015** - Dev/doc encrypt (43 comments) - **FIXED** (cantoo-scribe encryption support)
 
 ---
 
@@ -495,51 +495,6 @@ This is an actively maintained fork of Hopding/pdf-lib with significant enhancem
 
 ---
 
-## Major Features Added (Merged PRs)
-
-### PDF Encryption (PR #54, v2.2.0)
-Full encryption support with password protection. Fixed Adobe Acrobat compatibility issue where encrypted PDFs couldn't be opened (fix: exclude catalog, page objects from object streams per PDF spec).
-
-### Browser Encryption Support (PR #92, v2.3.0)
-Made PDF encryption work in browser environments.
-
-### Checkbox/Radio Flatten Fix (PR #56, v2.1.6)
-Fixed `form.flatten()` removing CheckBox and RadioGroup content. The code now correctly dereferences PDFRef to PDFDict before extracting appearance states.
-
-### InputField Rendering Fix (PR #102, v2.4.0)
-Fixed form text fields only displaying when focused. Issue occurred when there was no border or color defined for the input field.
-
-### JPEG Embedder Fix (PR #114, v2.4.3)
-Fixed incorrect construction of DataView from Uint8Array in JpegEmbedder.
-
-### Flattened Forms Print Fix (PR #126)
-Fixed PDFs with flattened forms that couldn't be printed in Adobe Reader or Acrobat. Issue was incorrect widget ref removal.
-
-### Attachment Handling
-- **PR #117**: Implemented file detach functionality
-- **PR #103, #113**: Get attachments support, including handling attachments without descriptions
-
-### SVG Rendering Improvements (Multiple PRs)
-Extensive SVG support improvements:
-- **PR #50**: Fixed drawSvgPath y-coordinate handling
-- **PR #35**: Fixed elliptical arc parsing with axis scaling
-- **PR #36**: Added support for 'evenodd' fill rule
-- **PR #30**: Fixed SVG path command T duplicate adjustment
-- **PR #42, #43**: Refactored drawSvg for transformations and cropping
-- **PR #39**: Fixed matrix transformation for rotations
-- **PR #62, #81**: Fixed drawRectangle rotation handling
-
-### Other Notable Merges
-- **PR #79**: Full language support in document info
-- **PR #74**: Skip invalid xref entries gracefully
-- **PR #47**: Fixed PDFs with invalid key length in encryption
-- **PR #46**: Added conversion method from PDFObjects to TypeScript literals
-- **PR #52**: Text outline/stroke option
-- **PR #94**: Fixed fullPageBoundingBox mediabox handling
-- **PR #82**: Fixed drawSvg blendMode option passing
-
----
-
 ## Open Pull Requests (Actionable)
 
 ### PR #133 - TypeScript 5.9 Compatibility (DRAFT)
@@ -721,88 +676,26 @@ Request for better handling of non-compliant PDFs.
 
 ## Closed Issues (Already Fixed)
 
-### Fixed in cantoo-scribe Fork
-
-- **#131** - Optional /AF support for attachments (closed)
-- **#127** - UMD module single JS file (closed)
-- **#125** - WebSocket error (unrelated to pdf-lib)
-- **#116** - drawSvg path element not rendered (fixed in 2.4.x)
-- **#115** - Incremental saving (has PR #111)
-- **#108** - tslib as runtime dependency (fixed)
-- **#107** - Checkbox form not showing checked on flatten (fixed by PR #56)
-- **#104** - Missing tslib runtime dependency (fixed)
-- **#101** - Form text fields only display when focused (fixed by PR #102)
-- **#100** - XFA support (has PR #129)
-- **#97** - String attachments corrupted (fixed)
-- **#90** - Convert PDF to DOCX (out of scope)
-- **#76** - tslib in devDependencies (fixed)
-- **#75** - Encrypted PDF error even when readable (fixed by encryption support)
-- **#70** - text pdf (unclear, closed)
-- **#61** - drawRectangle rotation issue (fixed by PR #62)
-- **#59** - Strange MediaBox/CropBox (fixed)
-- **#58** - Clickable links (closed)
-- **#51** - Flatten leaves borders on checkboxes/radios (fixed)
-- **#49** - drawSvgPath upside-down (fixed by PR #50)
-- **#44** - Error if Length entry missing in encrypted PDF (fixed by PR #47)
-- **#41** - Check mark removed on flatten (fixed by PR #56)
-- **#40** - Too many "Trying to parse invalid object" warnings (closed)
-- **#34** - Error embedding SVGs (fixed)
-- **#33** - Error on embedPng (fixed)
-- **#32** - Check checkboxes by export value with same names (fixed)
-- **#29** - ESM broken (fixed)
-
----
-
-## Summary: What cantoo-scribe Adds Over Hopding/pdf-lib
-
-### Major Features
-1. **PDF Encryption** - Full password protection support
-2. **Enhanced SVG Rendering** - Many fixes for paths, arcs, transformations
-3. **Better Form Handling** - Flatten fixes for checkboxes/radios
-4. **Attachment API** - Get attachments, detach files
-5. **Bug Fixes** - More graceful parsing, better error handling
-
-### Key Differences
-- Actively maintained (vs abandoned Hopding repo)
-- Better TypeScript support
-- More robust SVG path handling
-- Encryption support
-- Form flattening fixes
-
-### Recommended for Use When
-- Need PDF encryption
-- Need SVG embedding
-- Need reliable form flattening
-- Need attachment handling
-- Need active maintenance
-
-### Still Missing (Compared to Needs)
-- Incremental updates (PR #111 in progress)
-- Text markup annotations (PR #121 in progress)
-- XFA forms (PR #129 in progress)
-- PDF/A conversion
-- Layer management
-- Pattern fill for SVG
+#29, #32, #33, #34, #40, #41, #44, #49, #51, #58, #59, #61, #70, #75, #76, #90, #97, #100, #101, #104, #107, #108, #115, #116, #125, #127, #131
 
 ---
 
 ## Priority Items for This Fork
 
-### Should Investigate/Fix
+### Done in This Fork
+- **PR #130** - Literal string decryption fix ✓
+- **#96** - PDFNull graceful handling ✓
+- **#86** - Auto-dirty fields before flatten ✓
 
-1. **#122/#120** - CIDSystemInfo encryption issue (text disappearing)
+### Should Investigate/Fix
+1. **#122/#120** - CIDSystemInfo encryption issue (potentially fixed by PR #130, needs verification)
 2. **#55** - setText font handling
-3. **#96** - PDFNull graceful handling
-4. **#86** - Auto-dirty fields before flatten (could be automatic)
 
 ### Should Merge
-
-1. **PR #130** - Literal string decryption fix
-2. **PR #121** - Text markup annotations
-3. **PR #133** - TypeScript 5.9 compatibility (when ready)
+1. **PR #121** - Text markup annotations
+2. **PR #133** - TypeScript 5.9 compatibility (when ready)
 
 ### Consider for Future
-
 1. **PR #111** - Incremental updates (complex but valuable)
 2. **PR #129** - XFA support (complex)
 3. **#95** - SVG pattern support
