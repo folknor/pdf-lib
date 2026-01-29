@@ -1396,6 +1396,20 @@ describe('PDFDocument', () => {
       expect(doc.getAuthor()).toBe('Jane Smith');
     });
 
+    it('setAuthor handles German umlauts correctly', async () => {
+      const doc = await PDFDocument.create();
+      doc.addPage();
+
+      const author = 'Hülögü Ätölü';
+      doc.setAuthor(author);
+      expect(doc.getAuthor()).toBe(author);
+
+      // Verify persistence through save/load cycle
+      const bytes = await doc.save();
+      const loaded = await PDFDocument.load(bytes);
+      expect(loaded.getAuthor()).toBe(author);
+    });
+
     it('setSubject / getSubject round-trips correctly', async () => {
       const doc = await PDFDocument.create();
       expect(doc.getSubject()).toBeUndefined();
