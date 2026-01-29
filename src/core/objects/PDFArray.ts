@@ -185,6 +185,16 @@ class PDFArray extends PDFObject {
     }
   }
 
+  translatePDFNumbers(x: number, y: number): void {
+    for (let idx = 0, len = this.size(); idx < len; idx++) {
+      const el = this.lookup(idx);
+      if (el instanceof PDFNumber) {
+        const offset = idx % 2 === 0 ? x : y;
+        this.set(idx, PDFNumber.of(el.asNumber() + offset));
+      }
+    }
+  }
+
   override registerChange(): void {
     this.context.registerObjectChange(this);
   }

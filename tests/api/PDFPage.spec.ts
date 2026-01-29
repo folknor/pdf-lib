@@ -975,6 +975,63 @@ describe('PDFDocument', () => {
     });
   });
 
+  describe('translate', () => {
+    it('moves content and annotations together', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([500, 500]);
+
+      // Add a link annotation at (100, 100)
+      page.drawLink({
+        url: 'https://example.com',
+        x: 100,
+        y: 100,
+        width: 50,
+        height: 20,
+      });
+
+      // Translate by (50, 30)
+      page.translate(50, 30);
+
+      // Check that the annotation was moved
+      const annots = page.node.Annots();
+      const annotDict = pdfDoc.context.lookup(annots!.get(0)) as any;
+      const rect = annotDict.get(PDFName.of('Rect'));
+
+      // Original was (100, 100, 150, 120), should now be (150, 130, 200, 150)
+      expect(rect.get(0).numberValue).toBe(150);
+      expect(rect.get(1).numberValue).toBe(130);
+      expect(rect.get(2).numberValue).toBe(200);
+      expect(rect.get(3).numberValue).toBe(150);
+    });
+
+    it('translateAnnotations moves only annotations', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([500, 500]);
+
+      // Add a link annotation
+      page.drawLink({
+        url: 'https://example.com',
+        x: 10,
+        y: 20,
+        width: 30,
+        height: 40,
+      });
+
+      // Translate only annotations
+      page.translateAnnotations(100, 200);
+
+      const annots = page.node.Annots();
+      const annotDict = pdfDoc.context.lookup(annots!.get(0)) as any;
+      const rect = annotDict.get(PDFName.of('Rect'));
+
+      // Original was (10, 20, 40, 60), should now be (110, 220, 140, 260)
+      expect(rect.get(0).numberValue).toBe(110);
+      expect(rect.get(1).numberValue).toBe(220);
+      expect(rect.get(2).numberValue).toBe(140);
+      expect(rect.get(3).numberValue).toBe(260);
+    });
+  });
+
   describe('drawLink', () => {
     it('adds a link annotation to the page', async () => {
       const pdfDoc = await PDFDocument.create();

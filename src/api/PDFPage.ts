@@ -578,6 +578,59 @@ export default class PDFPage {
   }
 
   /**
+   * Translate (move) the content and annotations of a page by a given amount.
+   * This moves both the page content and any annotations (comments, highlights,
+   * form fields, etc.) together, keeping them aligned.
+   *
+   * For example:
+   * ```js
+   * // Move everything on the page 50 units right and 100 units up
+   * page.translate(50, 100);
+   * ```
+   *
+   * See also: [[translateContent]], [[translateAnnotations]]
+   * @param x The amount to move horizontally (positive = right, negative = left).
+   * @param y The amount to move vertically (positive = up, negative = down).
+   */
+  translate(x: number, y: number): void {
+    assertIs(x, 'x', ['number']);
+    assertIs(y, 'y', ['number']);
+    this.translateContent(x, y);
+    this.translateAnnotations(x, y);
+  }
+
+  /**
+   * Translate (move) the annotations of a page by a given amount.
+   * This is useful if you've translated the content and need to move
+   * annotations to match.
+   *
+   * For example:
+   * ```js
+   * // Move content
+   * page.translateContent(50, 100);
+   *
+   * // Move annotations to match
+   * page.translateAnnotations(50, 100);
+   * ```
+   *
+   * See also: [[translate]], [[translateContent]]
+   * @param x The amount to move horizontally (positive = right, negative = left).
+   * @param y The amount to move vertically (positive = up, negative = down).
+   */
+  translateAnnotations(x: number, y: number): void {
+    assertIs(x, 'x', ['number']);
+    assertIs(y, 'y', ['number']);
+
+    const annots = this.node.Annots();
+    if (!annots) return;
+
+    for (let idx = 0; idx < annots.size(); idx++) {
+      const annot = annots.lookup(idx);
+      if (annot instanceof PDFDict) this.translateAnnot(annot, x, y);
+    }
+  }
+
+  /**
    * Scale the size, content, and annotations of a page.
    *
    * For example:
@@ -1881,6 +1934,22 @@ export default class PDFPage {
       for (let idx = 0, len = inkLists.size(); idx < len; idx++) {
         const arr = inkLists.lookup(idx);
         if (arr instanceof PDFArray) arr.scalePDFNumbers(x, y);
+      }
+    }
+  }
+
+  private translateAnnot(annot: PDFDict, x: number, y: number) {
+    const selectors = ['RD', 'CL', 'Vertices', 'QuadPoints', 'L', 'Rect'];
+    for (let idx = 0, len = selectors.length; idx < len; idx++) {
+      const list = annot.lookup(PDFName.of(selectors[idx]!));
+      if (list instanceof PDFArray) list.translatePDFNumbers(x, y);
+    }
+
+    const inkLists = annot.lookup(PDFName.of('InkList'));
+    if (inkLists instanceof PDFArray) {
+      for (let idx = 0, len = inkLists.size(); idx < len; idx++) {
+        const arr = inkLists.lookup(idx);
+        if (arr instanceof PDFArray) arr.translatePDFNumbers(x, y);
       }
     }
   }
