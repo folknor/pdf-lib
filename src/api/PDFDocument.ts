@@ -1776,6 +1776,7 @@ export default class PDFDocument {
       updateFieldAppearances = true,
       rewrite = false,
       compress = false,
+      fillXrefGaps = false,
     } = options;
 
     assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
@@ -1784,6 +1785,7 @@ export default class PDFDocument {
     assertIs(updateFieldAppearances, 'updateFieldAppearances', ['boolean']);
     assertIs(rewrite, 'rewrite', ['boolean']);
     assertIs(compress, 'compress', ['boolean']);
+    assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
 
     const incrementalUpdate =
       !rewrite &&
@@ -1827,12 +1829,14 @@ export default class PDFDocument {
       ).serializeToBuffer();
     } else {
       if (incrementalUpdate) {
-        const increment = await PDFWriter.forContextWithSnapshot(
+        const writer = PDFWriter.forContextWithSnapshot(
           this.context,
           objectsPerTick,
           this.context.snapshot!,
           compress,
-        ).serializeToBuffer();
+        );
+        writer.fillXrefGaps = fillXrefGaps;
+        const increment = await writer.serializeToBuffer();
         const result = new Uint8Array(
           this.context.pdfFileDetails.originalBytes!.byteLength +
             increment.byteLength,
@@ -1844,11 +1848,9 @@ export default class PDFDocument {
         );
         return result;
       }
-      return PDFWriter.forContext(
-        this.context,
-        objectsPerTick,
-        compress,
-      ).serializeToBuffer();
+      const writer = PDFWriter.forContext(this.context, objectsPerTick, compress);
+      writer.fillXrefGaps = fillXrefGaps;
+      return writer.serializeToBuffer();
     }
   }
 
@@ -1876,10 +1878,12 @@ export default class PDFDocument {
     // Check PDF version
     const vparts = this.context.header.getVersionString().split('.');
     const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
-    const { objectsPerTick = 50, compress = false } = options;
+    const { objectsPerTick = 50, compress = false, fillXrefGaps = false } =
+      options;
 
     assertIs(objectsPerTick, 'objectsPerTick', ['number']);
     assertIs(compress, 'compress', ['boolean']);
+    assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
 
     const saveOptions: SaveOptions = {
       useObjectStreams: uOS,
@@ -1899,12 +1903,14 @@ export default class PDFDocument {
         compress,
       ).serializeToBuffer();
     } else {
-      return PDFWriter.forContextWithSnapshot(
+      const writer = PDFWriter.forContextWithSnapshot(
         this.context,
         objectsPerTick,
         snapshot,
         compress,
-      ).serializeToBuffer();
+      );
+      writer.fillXrefGaps = fillXrefGaps;
+      return writer.serializeToBuffer();
     }
   }
 

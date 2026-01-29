@@ -87,4 +87,60 @@ describe('PDFCrossRefSection', () => {
       ),
     );
   });
+
+  describe('fillGaps', () => {
+    it('fills gaps between subsections with deleted entries', () => {
+      const xref = PDFCrossRefSection.create();
+      xref.addEntry(PDFRef.of(1), 100);
+      xref.addEntry(PDFRef.of(2), 200);
+      // Gap at object 3, 4
+      xref.addEntry(PDFRef.of(5), 500);
+      xref.addEntry(PDFRef.of(6), 600);
+
+      // Before fillGaps, should have multiple subsections
+      const beforeStr = String(xref);
+      expect(beforeStr).toContain('0 3\n'); // First subsection
+      expect(beforeStr).toContain('5 2\n'); // Second subsection
+
+      xref.fillGaps();
+
+      // After fillGaps, should have single contiguous subsection
+      const afterStr = String(xref);
+      expect(afterStr).toContain('0 7\n'); // Single subsection 0-6
+      expect(afterStr).not.toContain('5 2\n'); // No separate subsection
+
+      // Objects 3 and 4 should be marked as deleted (f)
+      expect(afterStr).toMatch(/00000 f/); // Deleted entries have 'f' marker
+    });
+
+    it('does nothing when there is only one subsection', () => {
+      const xref = PDFCrossRefSection.create();
+      xref.addEntry(PDFRef.of(1), 100);
+      xref.addEntry(PDFRef.of(2), 200);
+      xref.addEntry(PDFRef.of(3), 300);
+
+      const beforeStr = String(xref);
+      xref.fillGaps();
+      const afterStr = String(xref);
+
+      expect(afterStr).toBe(beforeStr);
+    });
+
+    it('preserves existing deleted entries', () => {
+      const xref = PDFCrossRefSection.create();
+      xref.addEntry(PDFRef.of(1), 100);
+      xref.addDeletedEntry(PDFRef.of(2, 1), 0); // Explicitly deleted
+      xref.addEntry(PDFRef.of(3), 300);
+      // Gap at object 4
+      xref.addEntry(PDFRef.of(5), 500);
+
+      xref.fillGaps();
+
+      const afterStr = String(xref);
+      // Should have single subsection
+      expect(afterStr).toContain('0 6\n');
+      // Object 2 should still be marked as deleted with generation 1
+      expect(afterStr).toMatch(/00001 f/);
+    });
+  });
 });

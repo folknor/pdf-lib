@@ -35,8 +35,7 @@ class PDFWriter {
     context: PDFContext,
     objectsPerTick: number,
     compress = false,
-  ) =>
-    new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
+  ) => new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
 
   static forContextWithSnapshot = (
     context: PDFContext,
@@ -50,6 +49,10 @@ class PDFWriter {
   protected readonly objectsPerTick: number;
   protected readonly snapshot: DocumentSnapshot;
   protected readonly shouldCompress: boolean;
+
+  /** Set to true to fill xref gaps with deleted entries (prevents fragmentation) */
+  public fillXrefGaps: boolean = false;
+
   private parsedObjects = 0;
 
   /**
@@ -234,6 +237,11 @@ class PDFWriter {
         PDFRef.of(dref.objectNumber, dref.generationNumber + 1),
         nextdref ? nextdref.objectNumber : 0,
       );
+    }
+
+    // Fill gaps in xref to prevent fragmentation (important for digital signatures)
+    if (this.fillXrefGaps) {
+      xref.fillGaps();
     }
 
     const xrefOffset = size;

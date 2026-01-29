@@ -19,6 +19,12 @@ export interface SaveOptions {
   rewrite?: boolean;
   /** Compress uncompressed streams using FlateDecode to reduce file size */
   compress?: boolean;
+  /**
+   * Fill gaps in xref table with deleted entries instead of creating multiple
+   * subsections. This prevents xref fragmentation which can cause Adobe Reader
+   * to invalidate digital signatures on incremental updates.
+   */
+  fillXrefGaps?: boolean;
 }
 
 export interface IncrementalSaveOptions {
@@ -26,6 +32,12 @@ export interface IncrementalSaveOptions {
   useObjectStreams?: boolean;
   /** Compress uncompressed streams using FlateDecode to reduce file size */
   compress?: boolean;
+  /**
+   * Fill gaps in xref table with deleted entries instead of creating multiple
+   * subsections. This prevents xref fragmentation which can cause Adobe Reader
+   * to invalidate digital signatures on incremental updates.
+   */
+  fillXrefGaps?: boolean;
 }
 
 export interface Base64SaveOptions extends SaveOptions {

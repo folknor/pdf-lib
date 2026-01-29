@@ -56,6 +56,68 @@ class PDFCrossRefSection {
     this.append({ ref, offset: nextFreeObjectNumber, deleted: true });
   }
 
+  /**
+   * Fills gaps between subsections with deleted ('f') entries, creating a
+   * single contiguous xref section. This prevents xref fragmentation which
+   * can cause Adobe Reader to invalidate digital signatures.
+   *
+   * For example, if there are entries for objects 0-5 and 10-15, this method
+   * adds deleted entries for objects 6-9, resulting in a single section 0-15.
+   */
+  fillGaps(): void {
+    if (this.subsections.length <= 1) return;
+
+    // Merge all subsections into one, filling gaps with deleted entries
+    const merged: Entry[] = [];
+    let nextExpectedObjNum = 0;
+
+    for (const subsection of this.subsections) {
+      for (const entry of subsection) {
+        // Fill any gap before this entry with deleted entries
+        while (nextExpectedObjNum < entry.ref.objectNumber) {
+          merged.push({
+            ref: PDFRef.of(nextExpectedObjNum, 0),
+            offset: 0,
+            deleted: true,
+          });
+          nextExpectedObjNum++;
+        }
+        merged.push(entry);
+        nextExpectedObjNum = entry.ref.objectNumber + 1;
+      }
+    }
+
+    // Update first deleted entry (object 0) to point to next free object
+    // as per PDF spec: first entry in free list points to next free object
+    if (merged.length > 0 && merged[0]!.deleted) {
+      // Find next free object number in the chain
+      let nextFree = 0;
+      for (let i = 1; i < merged.length; i++) {
+        if (merged[i]!.deleted) {
+          nextFree = merged[i]!.ref.objectNumber;
+          break;
+        }
+      }
+      merged[0]!.offset = nextFree;
+    }
+
+    // Build the free object linked list
+    // Each free entry's offset should point to the next free object
+    const freeIndices: number[] = [];
+    for (let i = 0; i < merged.length; i++) {
+      if (merged[i]!.deleted) freeIndices.push(i);
+    }
+    for (let i = 0; i < freeIndices.length; i++) {
+      const nextFreeIdx = freeIndices[i + 1];
+      const nextFreeObjNum = nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
+      merged[freeIndices[i]!]!.offset = nextFreeObjNum;
+    }
+
+    this.subsections = [merged];
+    this.chunkIdx = 0;
+    this.chunkLength = merged.length;
+  }
+
   toString(): string {
     let section = 'xref\n';
 
