@@ -16,6 +16,7 @@ export { default as PDFPage } from './PDFPage.js';
 export * from './PDFPageOptions.js';
 export { default as PDFSvg } from './PDFSvg.js';
 export * from './rotations.js';
+export * from './snapshot/index.js';
 export * from './StandardFonts.js';
 export * from './sizes.js';
 export * from './text/index.js';

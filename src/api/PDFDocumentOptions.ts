@@ -15,6 +15,13 @@ export interface SaveOptions {
   addDefaultPage?: boolean;
   objectsPerTick?: number;
   updateFieldAppearances?: boolean;
+  /** Force a full rewrite instead of incremental save (only applies when loaded with forIncrementalUpdate) */
+  rewrite?: boolean;
+}
+
+export interface IncrementalSaveOptions {
+  objectsPerTick?: number;
+  useObjectStreams?: boolean;
 }
 
 export interface Base64SaveOptions extends SaveOptions {
@@ -29,6 +36,8 @@ export interface LoadOptions {
   updateMetadata?: boolean;
   capNumbers?: boolean;
   password?: string;
+  /** Load document for incremental updates (preserves original bytes for digital signatures) */
+  forIncrementalUpdate?: boolean;
 }
 
 export interface CreateOptions {

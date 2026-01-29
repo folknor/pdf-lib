@@ -1,11 +1,19 @@
+import {
+  DefaultDocumentSnapshot,
+  defaultDocumentSnapshot,
+} from '../../api/snapshot/index.js';
+import type { DocumentSnapshot } from '../../api/snapshot/index.js';
 import { copyStringIntoBuffer, waitForTick } from '../../utils/index.js';
 import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
-import type PDFHeader from '../document/PDFHeader.js';
+import PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFTrailerDict from '../document/PDFTrailerDict.js';
 import type PDFDict from '../objects/PDFDict.js';
+import PDFName from '../objects/PDFName.js';
+import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
-import type PDFRef from '../objects/PDFRef.js';
+import PDFRawStream from '../objects/PDFRawStream.js';
+import PDFRef from '../objects/PDFRef.js';
 import PDFStream from '../objects/PDFStream.js';
 import type PDFContext from '../PDFContext.js';
 import type PDFSecurity from '../security/PDFSecurity.js';
@@ -23,31 +31,85 @@ export interface SerializationInfo {
 
 class PDFWriter {
   static forContext = (context: PDFContext, objectsPerTick: number) =>
-    new PDFWriter(context, objectsPerTick);
+    new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot);
+
+  static forContextWithSnapshot = (
+    context: PDFContext,
+    objectsPerTick: number,
+    snapshot: DocumentSnapshot,
+  ) => new PDFWriter(context, objectsPerTick, snapshot);
 
   protected readonly context: PDFContext;
 
   protected readonly objectsPerTick: number;
+  protected readonly snapshot: DocumentSnapshot;
   private parsedObjects = 0;
 
-  protected constructor(context: PDFContext, objectsPerTick: number) {
+  /**
+   * If PDF has an XRef Stream, then the last object will be probably be skipped on saving.
+   * If that's the case, this property will have that object number, and the PDF /Size can
+   * be corrected, to be accurate.
+   */
+  protected _largestSkippedObjectNum: number = 0;
+
+  protected constructor(
+    context: PDFContext,
+    objectsPerTick: number,
+    snapshot: DocumentSnapshot,
+  ) {
     this.context = context;
     this.objectsPerTick = objectsPerTick;
+    this.snapshot = snapshot;
+  }
+
+  /**
+   * For incremental saves, defers the decision to the snapshot.
+   * For full saves, checks that the object is not an XRef stream object.
+   * @param incremental If making an incremental save, or a full save of the PDF
+   * @param objNum Object number
+   * @param object PDFObject used to check if it is an XRef stream, when not 'incremental' saving
+   * @returns whether the object should be saved or not
+   */
+  protected shouldSave(
+    incremental: boolean,
+    objNum: number,
+    object: PDFObject,
+  ): boolean {
+    let should = true;
+    if (incremental) {
+      should = this.snapshot.shouldSave(objNum);
+    } else {
+      should = !(
+        object instanceof PDFRawStream &&
+        object.dict.lookup(PDFName.of('Type')) === PDFName.of('XRef')
+      );
+    }
+    if (!should && this._largestSkippedObjectNum < objNum) {
+      this._largestSkippedObjectNum = objNum;
+    }
+    return should;
   }
 
   async serializeToBuffer(): Promise<Uint8Array> {
+    const incremental = !(this.snapshot instanceof DefaultDocumentSnapshot);
     const { size, header, indirectObjects, xref, trailerDict, trailer } =
-      await this.computeBufferSize();
+      await this.computeBufferSize(incremental);
 
     let offset = 0;
     const buffer = new Uint8Array(size);
 
-    offset += header.copyBytesInto(buffer, offset);
-    buffer[offset++] = CharCodes.Newline;
+    if (!incremental) {
+      offset += header.copyBytesInto(buffer, offset);
+      buffer[offset++] = CharCodes.Newline;
+    }
     buffer[offset++] = CharCodes.Newline;
 
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
       const [ref, object] = indirectObjects[idx]!;
+
+      if (!this.shouldSave(incremental, ref.objectNumber, object)) {
+        continue;
+      }
 
       const objectNumber = String(ref.objectNumber);
       offset += copyStringIntoBuffer(objectNumber, buffer, offset);
@@ -104,20 +166,38 @@ class PDFWriter {
     return refSize + objectSize;
   }
 
-  protected createTrailerDict(): PDFDict {
+  protected createTrailerDict(prevStartXRef?: number): PDFDict {
+    /**
+     * If last object (XRef Stream) is not in the output, then size is one less.
+     * An XRef Stream object should always be the largest object number in PDF
+     */
+    const size =
+      this.context.largestObjectNumber +
+      (this._largestSkippedObjectNum === this.context.largestObjectNumber
+        ? 0
+        : 1);
     return this.context.obj({
-      Size: this.context.largestObjectNumber + 1,
+      Size: size,
       Root: this.context.trailerInfo.Root,
       Encrypt: this.context.trailerInfo.Encrypt,
       Info: this.context.trailerInfo.Info,
       ID: this.context.trailerInfo.ID,
+      Prev: prevStartXRef ? PDFNumber.of(prevStartXRef) : undefined,
     });
   }
 
-  protected async computeBufferSize(): Promise<SerializationInfo> {
+  protected async computeBufferSize(
+    incremental: boolean,
+  ): Promise<SerializationInfo> {
+    this._largestSkippedObjectNum = 0;
+    // Use the header from the parsed PDF context to preserve the original version
     const header = this.context.header;
 
-    let size = header.sizeInBytes() + 2;
+    let size = this.snapshot.pdfSize;
+    if (!incremental) {
+      size += header.sizeInBytes() + 1;
+    }
+    size += 1;
 
     const xref = PDFCrossRefSection.create();
 
@@ -128,20 +208,35 @@ class PDFWriter {
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
       const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
+      if (!this.shouldSave(incremental, ref.objectNumber, object)) continue;
       if (security) this.encrypt(ref, object, security);
       xref.addEntry(ref, size);
       size += this.computeIndirectObjectSize(indirectObject);
       if (this.shouldWaitForTick(1)) await waitForTick();
     }
+    // Deleted objects
+    for (let idx = 0; idx < this.snapshot.deletedCount; idx++) {
+      const dref = this.snapshot.deletedRef(idx);
+      if (!dref) break;
+      const nextdref = this.snapshot.deletedRef(idx + 1);
+      // Add 1 to generation number for deleted ref
+      xref.addDeletedEntry(
+        PDFRef.of(dref.objectNumber, dref.generationNumber + 1),
+        nextdref ? nextdref.objectNumber : 0,
+      );
+    }
 
     const xrefOffset = size;
     size += xref.sizeInBytes() + 1; // '\n'
 
-    const trailerDict = PDFTrailerDict.of(this.createTrailerDict());
+    const trailerDict = PDFTrailerDict.of(
+      this.createTrailerDict(this.snapshot.prevStartXRef),
+    );
     size += trailerDict.sizeInBytes() + 2; // '\n\n'
 
     const trailer = PDFTrailer.forLastCrossRefSectionOffset(xrefOffset);
     size += trailer.sizeInBytes();
+    size -= this.snapshot.pdfSize;
 
     return { size, header, indirectObjects, xref, trailerDict, trailer };
   }

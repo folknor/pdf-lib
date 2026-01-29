@@ -18,11 +18,13 @@ describe('PDFCrossRefSection', () => {
   xref2.addEntry(PDFRef.of(6), 192188923);
   xref2.addEntry(PDFRef.of(7), 129219);
 
+  // Note: PDF spec requires free entries to form a linked list.
+  // Entry 0 (always free) should point to the first free object number.
   it('can be converted to a string with a single subsection', () => {
     expect(String(xref1)).toEqual(
       'xref\n' +
         '0 5\n' +
-        '0000000000 65535 f \n' +
+        '0000000002 65535 f \n' + // Points to first free object (2)
         '0000000021 00000 n \n' +
         '0000000024 00001 f \n' +
         '0192188923 00000 n \n' +
@@ -34,7 +36,7 @@ describe('PDFCrossRefSection', () => {
     expect(String(xref2)).toEqual(
       'xref\n' +
         '0 1\n' +
-        '0000000000 65535 f \n' +
+        '0000000004 65535 f \n' + // Points to first free object (4)
         '3 2\n' +
         '0000000021 00000 n \n' +
         '0000000024 00001 f \n' +
@@ -59,7 +61,7 @@ describe('PDFCrossRefSection', () => {
       typedArrayFor(
         '   xref\n' +
           '0 5\n' +
-          '0000000000 65535 f \n' +
+          '0000000002 65535 f \n' + // Points to first free object (2)
           '0000000021 00000 n \n' +
           '0000000024 00001 f \n' +
           '0192188923 00000 n \n' +
@@ -75,7 +77,7 @@ describe('PDFCrossRefSection', () => {
       typedArrayFor(
         '   xref\n' +
           '0 1\n' +
-          '0000000000 65535 f \n' +
+          '0000000004 65535 f \n' + // Points to first free object (4)
           '3 2\n' +
           '0000000021 00000 n \n' +
           '0000000024 00001 f \n' +
