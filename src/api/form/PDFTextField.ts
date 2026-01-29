@@ -345,6 +345,51 @@ export default class PDFTextField extends PDFField {
   }
 
   /**
+   * Get the font name from the default appearance (DA) string of this field.
+   * This is the name used to reference the font in the PDF's resources.
+   *
+   * Common values include:
+   * - `Helv` - Helvetica
+   * - `TiRo` - Times Roman
+   * - `Cour` - Courier
+   * - `F1`, `F2`, etc. - Custom embedded fonts
+   *
+   * Note: This returns the resource name, not the actual font family name.
+   * For custom fonts, you may need to look up the font in the PDF's resources
+   * to determine the actual font.
+   *
+   * For example:
+   * ```js
+   * const textField = form.getTextField('some.text.field')
+   * const fontName = textField.getDefaultAppearanceFontName()
+   * console.log(fontName) // e.g., 'Helv', 'F1'
+   * ```
+   *
+   * @returns The font resource name or undefined if not found.
+   */
+  getDefaultAppearanceFontName(): string | undefined {
+    return this.acroField.getDefaultAppearanceFontName();
+  }
+
+  /**
+   * Get the font size from the default appearance (DA) string of this field.
+   * Returns `0` if the field is set to auto-size (common for forms that
+   * auto-fit text to the field size).
+   *
+   * For example:
+   * ```js
+   * const textField = form.getTextField('some.text.field')
+   * const fontSize = textField.getDefaultAppearanceFontSize()
+   * console.log(fontSize) // e.g., 12, 0 (auto-size)
+   * ```
+   *
+   * @returns The font size or undefined if not found.
+   */
+  getDefaultAppearanceFontSize(): number | undefined {
+    return this.acroField.getDefaultAppearanceFontSize();
+  }
+
+  /**
    * Returns `true` if each line of text is shown on a new line when this
    * field is displayed in a PDF reader. The alternative is that all lines of
    * text are merged onto a single line when displayed. See

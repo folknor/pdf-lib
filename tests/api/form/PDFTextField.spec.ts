@@ -1044,4 +1044,53 @@ describe('PDFTextField', () => {
       expect(loadedField.getMaxLength()).toBe(5);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Default appearance font methods
+  // ---------------------------------------------------------------------------
+  describe('getDefaultAppearanceFontName() / getDefaultAppearanceFontSize()', () => {
+    it('returns undefined for a newly created field with no DA', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('no.da');
+
+      // Newly created fields don't have DA until text is set or appearances updated
+      expect(field.getDefaultAppearanceFontName()).toBeUndefined();
+      expect(field.getDefaultAppearanceFontSize()).toBeUndefined();
+    });
+
+    it('returns font info after setting text and updating appearances', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('with.font');
+      field.addToPage(page);
+      field.setText('Hello');
+
+      // After updating appearances, the DA should be set
+      const helvetica = await pdfDoc.embedFont('Helvetica');
+      field.updateAppearances(helvetica);
+
+      // The font name will be something like "F0-1" for embedded fonts
+      const fontName = field.getDefaultAppearanceFontName();
+      expect(fontName).toBeDefined();
+      expect(typeof fontName).toBe('string');
+    });
+
+    it('returns correct font size after setFontSize', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const field = form.createTextField('font.size');
+      field.addToPage(page);
+
+      // Set up a DA string first
+      const helvetica = await pdfDoc.embedFont('Helvetica');
+      field.updateAppearances(helvetica);
+
+      field.setFontSize(14);
+
+      expect(field.getDefaultAppearanceFontSize()).toBe(14);
+    });
+  });
 });

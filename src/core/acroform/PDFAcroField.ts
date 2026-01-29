@@ -103,6 +103,29 @@ class PDFAcroField {
     return DA?.asString();
   }
 
+  /**
+   * Get the font name from the default appearance (DA) string.
+   * @returns The font name (e.g., "Helv", "F1") or undefined if not found.
+   */
+  getDefaultAppearanceFontName(): string | undefined {
+    const da = this.getDefaultAppearance();
+    if (!da) return undefined;
+    const match = findLastMatch(da, tfRegex);
+    return match.match?.[1];
+  }
+
+  /**
+   * Get the font size from the default appearance (DA) string.
+   * @returns The font size or undefined if not found.
+   */
+  getDefaultAppearanceFontSize(): number | undefined {
+    const da = this.getDefaultAppearance();
+    if (!da) return undefined;
+    const match = findLastMatch(da, tfRegex);
+    const sizeStr = match.match?.[2];
+    return sizeStr ? parseFloat(sizeStr) : undefined;
+  }
+
   setFontSize(fontSize: number) {
     const da = this.getDefaultAppearance();
     if (!da) {
