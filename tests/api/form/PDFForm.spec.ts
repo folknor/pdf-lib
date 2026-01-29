@@ -1407,4 +1407,54 @@ describe('PDFForm', () => {
       expect(form.getFieldMaybe('c')).toBeUndefined();
     });
   });
+
+  describe('PDFAcroForm.getFields() graceful degradation', () => {
+    it('skips invalid field entries instead of throwing', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+
+      // Create a valid field
+      form.createTextField('validField').addToPage(page);
+
+      // Get the internal acroForm and manipulate the Fields array
+      const acroForm = form.acroForm;
+      const fields = acroForm.normalizedEntries().Fields;
+
+      // Insert an invalid ref that points to nothing (will resolve to undefined)
+      const invalidRef = pdfDoc.context.nextRef();
+      fields.push(invalidRef);
+
+      // Also insert a ref that points to a non-PDFDict object
+      const nonDictRef = pdfDoc.context.register(pdfDoc.context.obj([1, 2, 3]));
+      fields.push(nonDictRef);
+
+      // getFields should not throw but should skip invalid entries
+      const retrievedFields = acroForm.getFields();
+
+      // Should only return the valid field, skipping the invalid ones
+      expect(retrievedFields.length).toBe(1);
+      expect(retrievedFields[0]![0].getPartialName()).toBe('validField');
+    });
+
+    it('returns empty array when all field entries are invalid', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const form = pdfDoc.getForm();
+
+      // Get the internal acroForm and manipulate the Fields array
+      const acroForm = form.acroForm;
+      const fields = acroForm.normalizedEntries().Fields;
+
+      // Only add invalid refs
+      const invalidRef = pdfDoc.context.nextRef();
+      fields.push(invalidRef);
+
+      const nonDictRef = pdfDoc.context.register(pdfDoc.context.obj('not a dict'));
+      fields.push(nonDictRef);
+
+      // Should return empty array, not throw
+      const retrievedFields = acroForm.getFields();
+      expect(retrievedFields).toEqual([]);
+    });
+  });
 });

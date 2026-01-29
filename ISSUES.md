@@ -407,10 +407,17 @@ limitations, or are design issues that require architectural changes.
 
 **Design issues (require architectural changes):**
 
+- **#951** - Corrupted PDF (22 comments) — object ordering during page copying with incremental updates. Multiple PRs exist (#1772, #1769, #1755) but the fix is complex. Root cause is in `PDFContext.enumerateIndirectObjects()` always sorting by ascending object number, which can break reference chains in incrementally-updated PDFs. Safe fix would require preserving original object ordering from the parser.
 - **#1295** - Text overlaps itself when drawText is used inside for loop — copied pages may share content stream references; `translateContent` wraps all streams cumulatively. Would require deep-cloning content streams during page copy
 - **#1420** - Can't call translateContent multiple times per page — by design, `translateContent` wraps ALL content streams (not just new ones), so each call shifts all previous content. Would need a scoped translation API
 - **#1622** - enableReadOnly() does not work for checkboxes — the ReadOnly flag is set correctly in memory (`isReadOnly()` returns true), but may not be properly respected by PDF viewers during save/render for checkbox widgets specifically
 - **#1391** - Cannot read checkbox value correctly — checkbox `/V` (value) and `/AS` (appearance state) can be out of sync when toggled in external PDF viewers; `isChecked()` compares field value to appearance-derived on-value, which fails when they diverge
+
+**Already fixed in this fork:**
+
+- **#1260** - Expected instance of PDFDict, but got instance of undefined (15 comments) — fixed by changing `PDFAcroForm.getFields()` to skip invalid field entries instead of throwing. Uses same graceful degradation pattern as `createPDFAcroFields()` helper.
+- **#1544** - fontkit.create is not a function — fixed by adding validation in `registerFontkit()` that throws `InvalidFontkitError` with a helpful message explaining how to install and register fontkit correctly
+- **#1549** - Flatten is removing RadioGroups and Checkboxes (10 comments) — already fixed (commit `ff78ea2f`); the code now correctly dereferences PDFRef to PDFDict before extracting appearance states for checkboxes and radio groups
 
 ---
 
