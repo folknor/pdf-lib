@@ -153,11 +153,11 @@ Error: "Expected instance of PDFDict, but got instance of PDFNull"
 
 #### #64 - Failed to Parse Number
 Parsing error at specific file offset.
-- **Status**: Needs investigation with repro file
+- **Status**: **NOT A BUG** - Test files provided are truncated PDFs (missing trailer/EOF). Parser correctly rejects with clear error message: "file may be truncated"
 
 #### #63 - Failed to Parse Invalid PDF Object
 Generic parsing failure.
-- **Status**: Needs investigation with repro file
+- **Status**: **NOT A BUG** - Same as #64. Improved error message now indicates truncation.
 
 ### Minor Issues
 

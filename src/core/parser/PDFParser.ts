@@ -228,7 +228,12 @@ class PDFParser extends PDFObjectParser {
       this.bytes.next();
     }
 
-    if (failed) throw new PDFInvalidObjectParsingError(startPos);
+    if (failed) {
+      throw new PDFInvalidObjectParsingError(
+        startPos,
+        "no 'endobj' keyword found - file may be truncated",
+      );
+    }
 
     const end = this.bytes.offset() - Keywords.endobj.length;
 

@@ -181,8 +181,10 @@ export class PDFObjectParsingError extends PDFParsingError {
 }
 
 export class PDFInvalidObjectParsingError extends PDFParsingError {
-  constructor(pos: Position) {
-    const msg = 'Failed to parse invalid PDF object';
+  constructor(pos: Position, details?: string) {
+    const msg = details
+      ? `Failed to parse PDF object (${details})`
+      : 'Failed to parse invalid PDF object';
     super(pos, msg);
   }
 }
