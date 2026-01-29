@@ -131,11 +131,15 @@ export default class PDFForm {
    * const form = pdfDoc.getForm()
    * const fields = form.getFields()
    * fields.forEach(field => {
-   *   const type = field.constructor.name
    *   const name = field.getName()
-   *   console.log(`${type}: ${name}`)
+   *   if (field instanceof PDFTextField) {
+   *     console.log(`Text field: ${name}`)
+   *   } else if (field instanceof PDFCheckBox) {
+   *     console.log(`Checkbox: ${name}`)
+   *   }
    * })
    * ```
+   * Note: Do not use `field.constructor.name` as it breaks after minification.
    * @returns An array of all fields in this form.
    */
   getFields(): PDFField[] {
