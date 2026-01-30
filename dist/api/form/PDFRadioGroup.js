@@ -37,8 +37,6 @@ export default class PDFRadioGroup extends PDFField {
      * @param doc The document to which this radio group will belong.
      */
     static of = (acroRadioButton, ref, doc) => new PDFRadioGroup(acroRadioButton, ref, doc);
-    /** The low-level PDFAcroRadioButton wrapped by this radio group. */
-    acroField;
     constructor(acroRadioButton, ref, doc) {
         super(acroRadioButton, ref, doc);
         assertIs(acroRadioButton, 'acroRadioButton', [

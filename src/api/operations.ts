@@ -747,7 +747,9 @@ export const drawTextField = (options: {
           end: { x: x + width, y },
           thickness: borderWidth,
           color: options.borderColor,
-          ...(options.borderDashArray && { dashArray: options.borderDashArray }),
+          ...(options.borderDashArray && {
+            dashArray: options.borderDashArray,
+          }),
           ...(options.borderDashPhase !== undefined && {
             dashPhase: options.borderDashPhase,
           }),
@@ -777,7 +779,9 @@ export const drawTextField = (options: {
       borderWidth: options.borderWidth,
       color: options.color,
       borderColor: options.borderColor,
-      ...(options.borderDashArray && { borderDashArray: options.borderDashArray }),
+      ...(options.borderDashArray && {
+        borderDashArray: options.borderDashArray,
+      }),
       ...(options.borderDashPhase !== undefined && {
         borderDashPhase: options.borderDashPhase,
       }),

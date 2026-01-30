@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    // Decorators
+    "experimentalDecorators": true,
+
     // Output
     "target": "ES2022",
     "module": "nodenext",
@@ -16,6 +19,7 @@
     "importHelpers": true,
 
     // Interop
+    "allowJs": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
@@ -23,14 +27,14 @@
 
     // Type Checking - Strict
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
+    "noImplicitAny": false,  // TODO: re-enable after fontkit migration
+    "strictNullChecks": false,  // TODO: re-enable after fontkit migration
+    "strictFunctionTypes": false,  // TODO: re-enable after fontkit migration
     "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
+    "strictPropertyInitialization": false,  // TODO: re-enable (requires strictNullChecks)
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "useUnknownInCatchVariables": true,
+    // "useUnknownInCatchVariables": true,  // TODO: re-enable after fontkit migration
 
     // Type Checking - Additional
     "noUnusedLocals": true,
@@ -41,9 +45,9 @@
 
     // These are valuable but need codebase refactoring:
     "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noPropertyAccessFromIndexSignature": true,
+    // "noUncheckedIndexedAccess": true,  // TODO: re-enable after fontkit migration
+    // "exactOptionalPropertyTypes": true,  // TODO: re-enable after fontkit migration
+    // "noPropertyAccessFromIndexSignature": true,  // TODO: re-enable after fontkit migration
 
     // Skip
     "skipLibCheck": true

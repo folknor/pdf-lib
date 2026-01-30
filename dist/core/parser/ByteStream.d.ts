@@ -12,8 +12,8 @@ declare class ByteStream {
     next(): number;
     assertNext(expected: number): number;
     peek(): number;
-    peekAhead(steps: number): number | undefined;
-    peekAt(offset: number): number | undefined;
+    peekAhead(steps: number): number;
+    peekAt(offset: number): number;
     done(): boolean;
     offset(): number;
     slice(start: number, end: number): Uint8Array;

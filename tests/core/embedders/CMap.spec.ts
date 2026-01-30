@@ -1,4 +1,4 @@
-import fontkit, { type Font, type Glyph } from '@pdf-lib/fontkit';
+import fontkit, { type Font, type Glyph } from 'src/fontkit.js';
 import fs from 'fs';
 
 import { createCmap } from '../../../src/core/embedders/CMap';

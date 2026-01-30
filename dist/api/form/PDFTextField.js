@@ -31,8 +31,6 @@ export default class PDFTextField extends PDFField {
      * @param doc The document to which this text field will belong.
      */
     static of = (acroText, ref, doc) => new PDFTextField(acroText, ref, doc);
-    /** The low-level PDFAcroText wrapped by this text field. */
-    acroField;
     constructor(acroText, ref, doc) {
         super(acroText, ref, doc);
         assertIs(acroText, 'acroText', [[PDFAcroText, 'PDFAcroText']]);

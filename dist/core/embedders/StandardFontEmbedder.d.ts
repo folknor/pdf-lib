@@ -1,4 +1,4 @@
-import { type EncodingType, Font, FontNames } from '@pdf-lib/standard-fonts';
+import { type EncodingType, Font, FontNames } from '../../vendors/standard-fonts/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';

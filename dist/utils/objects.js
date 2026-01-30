@@ -1,4 +1,4 @@
-import { FontNames } from '@pdf-lib/standard-fonts';
+import { FontNames } from '../vendors/standard-fonts/index.js';
 export const values = (obj) => Object.keys(obj).map((k) => obj[k]);
 export const StandardFontValues = values(FontNames);
 export const isStandardFont = (input) => StandardFontValues.includes(input);

@@ -17,7 +17,7 @@ export interface BoundingBox {
  */
 export interface Path {
   /**
-   * This property represents the path’s bounding box, i.e. the smallest
+   * This property represents the path's bounding box, i.e. the smallest
    * rectangle that contains the entire path shape. This is the exact
    * bounding box, taking into account control points that may be outside the
    * visible shape.
@@ -25,7 +25,7 @@ export interface Path {
   bbox: BoundingBox;
 
   /**
-   * This property represents the path’s control box. It is like the
+   * This property represents the path's control box. It is like the
    * bounding box, but it includes all points of the path, including control
    * points of bezier segments. It is much faster to compute than the real
    * bounding box, but less accurate if there are control points outside of the
@@ -102,12 +102,12 @@ export interface Glyph {
   codePoints: number[];
   path: Path /** Vector Path object representing the glyph */;
   /**
-   * The Glyph’s bounding box, i.e. the rectangle that encloses the glyph
+   * The Glyph's bounding box, i.e. the rectangle that encloses the glyph
    * outline as tightly as possible.
    */
   bbox: BoundingBox;
   /**
-   * The Glyph’s control box. This is often the same as the bounding box, but is
+   * The Glyph's control box. This is often the same as the bounding box, but is
    * faster to compute. Because of the way bezier curves are defined, some of
    * the control points can be outside of the bounding box. Where bbox takes
    * this into account, cbox does not. Thus, cbox is less accurate, but faster
@@ -478,7 +478,7 @@ export interface OpenTypeFeatures {
   zero?: boolean;
 }
 /**
- * A map of Apple Advanced Typography (AAT) as decribed by Apple’s TrueType
+ * A map of Apple Advanced Typography (AAT) as decribed by Apple's TrueType
  * Reference manual:
  * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6AATIntro.html
  */
@@ -556,16 +556,16 @@ export interface Font {
   version: string | null;
 
   // Metrics properties
-  unitsPerEm: number /** Size of the font’s internal coordinate grid */;
-  ascent: number /** The font’s ascender */;
-  descent: number /** The font’s descender */;
+  unitsPerEm: number /** Size of the font's internal coordinate grid */;
+  ascent: number /** The font's ascender */;
+  descent: number /** The font's descender */;
   lineGap: number /** Amount of space that should be included between lines */;
   underlinePosition: number /** Offset from the normal underline position that should be used */;
   underlineThickness: number /** Weight of the underline that should be used */;
   italicAngle: number /** If this is an italic font, the angle the cursor should be drawn at to match the font design */;
   capHeight: number /** Height of capital letters above the baseline. */;
   xHeight: number /** Height of lower case letters. */;
-  bbox: BoundingBox /** Font’s bounding box, i.e. the box that encloses all glyphs in the font */;
+  bbox: BoundingBox /** Font's bounding box, i.e. the box that encloses all glyphs in the font */;
 
   // Other properties
   numGlyphs: number /** Number of glyphs in the font */;

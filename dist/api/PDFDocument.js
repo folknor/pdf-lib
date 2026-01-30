@@ -686,7 +686,9 @@ export default class PDFDocument {
         const copier = PDFObjectCopier.for(srcDoc.context, this.context, options);
         const srcPages = srcDoc.getPages();
         // Copy each page in a separate thread
-        const copiedPageNodes = await Promise.all(indices.map((i) => srcPages[i]).map(async (page) => copier.copy(page.node)));
+        const copiedPageNodes = await Promise.all(indices
+            .map((i) => srcPages[i])
+            .map(async (page) => copier.copy(page.node)));
         const pages = copiedPageNodes.map((copy) => PDFPage.of(copy, this.context.register(copy), this));
         // Register copied form fields with the destination AcroForm and optionally rename them
         this.registerCopiedFormFields(pages, options?.renameFields);
@@ -1529,7 +1531,7 @@ export default class PDFDocument {
         // Check PDF version
         const vparts = this.context.header.getVersionString().split('.');
         const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
-        const { objectsPerTick = 50, compress = false, fillXrefGaps = false } = options;
+        const { objectsPerTick = 50, compress = false, fillXrefGaps = false, } = options;
         assertIs(objectsPerTick, 'objectsPerTick', ['number']);
         assertIs(compress, 'compress', ['boolean']);
         assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);

@@ -29,8 +29,6 @@ export default class PDFButton extends PDFField {
      * @param doc The document to which this button will belong.
      */
     static of = (acroPushButton, ref, doc) => new PDFButton(acroPushButton, ref, doc);
-    /** The low-level PDFAcroPushButton wrapped by this button. */
-    acroField;
     constructor(acroPushButton, ref, doc) {
         super(acroPushButton, ref, doc);
         assertIs(acroPushButton, 'acroButton', [

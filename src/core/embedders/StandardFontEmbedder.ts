@@ -1,10 +1,10 @@
+import { toCodePoint, toHexString } from '../../utils/index.js';
 import {
   Encodings,
   type EncodingType,
   Font,
   FontNames,
-} from '@pdf-lib/standard-fonts';
-import { toCodePoint, toHexString } from '../../utils/index.js';
+} from '../../vendors/standard-fonts/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';

@@ -1048,7 +1048,7 @@ const parseBlendMode = (blendMode?: string): BlendMode | undefined => {
 };
 
 const parseViewBox = (viewBox?: string): Box | undefined => {
-  if (!viewBox) return;
+  if (!viewBox) return undefined;
   const [xViewBox = 0, yViewBox = 0, widthViewBox = 1, heightViewBox = 1] = (
     viewBox || ''
   )

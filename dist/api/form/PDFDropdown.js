@@ -31,8 +31,6 @@ export default class PDFDropdown extends PDFField {
      * @param doc The document to which this dropdown will belong.
      */
     static of = (acroComboBox, ref, doc) => new PDFDropdown(acroComboBox, ref, doc);
-    /** The low-level PDFAcroComboBox wrapped by this dropdown. */
-    acroField;
     constructor(acroComboBox, ref, doc) {
         super(acroComboBox, ref, doc);
         assertIs(acroComboBox, 'acroComboBox', [

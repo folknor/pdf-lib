@@ -1,6 +1,15 @@
 import { defineConfig } from 'vitest/config';
+import babel from 'vite-plugin-babel';
 
 export default defineConfig({
+  plugins: [
+    babel({
+      filter: /src\/fontkit\/.*\.js$/,
+      babelConfig: {
+        plugins: [['@babel/plugin-proposal-decorators', { version: 'legacy' }]],
+      },
+    }),
+  ],
   test: {
     globals: true,
     environment: 'node',

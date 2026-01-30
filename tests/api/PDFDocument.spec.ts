@@ -1,4 +1,4 @@
-import fontkit from '@pdf-lib/fontkit';
+import fontkit from 'src/fontkit.js';
 import fs from 'fs';
 import { vi } from 'vitest';
 import type { PDFAttachment } from '../../src/api/PDFDocument';
@@ -56,7 +56,7 @@ describe('PDFDocument', () => {
         'Invalid object ref:',
       ];
       console.warn = vi.fn((...args) => {
-        const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
+        const isIgnored = ignoredWarnings.some((iw) => args[0].includes(iw));
         if (!isIgnored) origConsoleWarn(...args);
       });
     });

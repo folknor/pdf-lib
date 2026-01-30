@@ -27,8 +27,6 @@ export default class PDFCheckBox extends PDFField {
      * @param doc The document to which this check box will belong.
      */
     static of = (acroCheckBox, ref, doc) => new PDFCheckBox(acroCheckBox, ref, doc);
-    /** The low-level PDFAcroCheckBox wrapped by this check box. */
-    acroField;
     constructor(acroCheckBox, ref, doc) {
         super(acroCheckBox, ref, doc);
         assertIs(acroCheckBox, 'acroCheckBox', [

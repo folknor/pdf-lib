@@ -1,0 +1,1 @@
+{"version":3,"file":"UnicodeTrie.d.ts","sourceRoot":"","sources":["../../../src/vendors/unicode-properties/UnicodeTrie.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAiEH,qBAAa,WAAW;IACtB,IAAI,EAAE,WAAW,CAAC;IAClB,SAAS,EAAE,MAAM,CAAC;IAClB,UAAU,EAAE,MAAM,CAAC;gBAEP,KAAK,EAAE,UAAU;IAmB7B,GAAG,CAAC,SAAS,EAAE,MAAM,GAAG,MAAM;CAwC/B"}

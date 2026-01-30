@@ -22,8 +22,6 @@ export default class PDFSignature extends PDFField {
      * @param doc The document to which this signature will belong.
      */
     static of = (acroSignature, ref, doc) => new PDFSignature(acroSignature, ref, doc);
-    /** The low-level PDFAcroSignature wrapped by this signature. */
-    acroField;
     constructor(acroSignature, ref, doc) {
         super(acroSignature, ref, doc);
         assertIs(acroSignature, 'acroSignature', [

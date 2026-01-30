@@ -31,8 +31,6 @@ export default class PDFOptionList extends PDFField {
      * @param doc The document to which this option list will belong.
      */
     static of = (acroListBox, ref, doc) => new PDFOptionList(acroListBox, ref, doc);
-    /** The low-level PDFAcroListBox wrapped by this option list. */
-    acroField;
     constructor(acroListBox, ref, doc) {
         super(acroListBox, ref, doc);
         assertIs(acroListBox, 'acroListBox', [[PDFAcroListBox, 'PDFAcroListBox']]);

@@ -738,7 +738,7 @@ const parseBlendMode = (blendMode) => {
 };
 const parseViewBox = (viewBox) => {
     if (!viewBox)
-        return;
+        return undefined;
     const [xViewBox = 0, yViewBox = 0, widthViewBox = 1, heightViewBox = 1] = (viewBox || '')
         .split(' ')
         .map((val) => parseFloatValue(val));

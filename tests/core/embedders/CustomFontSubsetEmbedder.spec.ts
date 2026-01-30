@@ -1,4 +1,4 @@
-import fontkit from '@pdf-lib/fontkit';
+import fontkit from 'src/fontkit.js';
 import fs from 'fs';
 
 import {

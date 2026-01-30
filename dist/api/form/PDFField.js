@@ -130,7 +130,7 @@ export default class PDFField {
         // Check for conflict with existing non-terminal (container) field.
         // A non-terminal with this name exists if any field's fully qualified
         // name starts with the new name followed by a period.
-        const prefix = newFullName + '.';
+        const prefix = `${newFullName}.`;
         const allFields = form.getFields();
         for (let i = 0, len = allFields.length; i < len; i++) {
             if (allFields[i].getName().startsWith(prefix)) {

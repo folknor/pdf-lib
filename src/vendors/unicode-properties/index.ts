@@ -1,0 +1,195 @@
+/**
+ * Unicode Properties - Fast access to Unicode character properties
+ * Originally from https://github.com/foliojs/unicode-properties
+ * Absorbed and converted to TypeScript for pdf-lib
+ */
+
+import pako from 'pako';
+import base64DeflatedData from './data.json' with { type: 'json' };
+import base64DeflatedTrie from './trie.json' with { type: 'json' };
+import { UnicodeTrie } from './UnicodeTrie.js';
+
+// Base64 decode helper
+function base64Decode(str: string): Uint8Array {
+  const binaryString = atob(str);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// Decompress and parse the data
+interface UnicodeData {
+  categories: string[];
+  combiningClasses: string[];
+  scripts: string[];
+  eaw: string[];
+}
+
+const data: UnicodeData = JSON.parse(
+  String.fromCharCode(
+    ...pako.inflate(base64Decode(base64DeflatedData as string)),
+  ),
+);
+
+// Inflate the base64-encoded zlib data to get the binary trie format
+const trieData = pako.inflate(base64Decode(base64DeflatedTrie as string));
+const trie = new UnicodeTrie(trieData);
+
+// Compute the number of bits stored for each field
+const log2 = Math.log2 || ((n: number) => Math.log(n) / Math.LN2);
+const bits = (n: number) => (log2(n) + 1) | 0;
+
+const CATEGORY_BITS = bits(data.categories.length - 1);
+const COMBINING_BITS = bits(data.combiningClasses.length - 1);
+const SCRIPT_BITS = bits(data.scripts.length - 1);
+const EAW_BITS = bits(data.eaw.length - 1);
+const NUMBER_BITS = 10;
+
+// Compute shift and mask values for each field
+const CATEGORY_SHIFT = COMBINING_BITS + SCRIPT_BITS + EAW_BITS + NUMBER_BITS;
+const COMBINING_SHIFT = SCRIPT_BITS + EAW_BITS + NUMBER_BITS;
+const SCRIPT_SHIFT = EAW_BITS + NUMBER_BITS;
+const EAW_SHIFT = NUMBER_BITS;
+
+const CATEGORY_MASK = (1 << CATEGORY_BITS) - 1;
+const COMBINING_MASK = (1 << COMBINING_BITS) - 1;
+const SCRIPT_MASK = (1 << SCRIPT_BITS) - 1;
+const EAW_MASK = (1 << EAW_BITS) - 1;
+const NUMBER_MASK = (1 << NUMBER_BITS) - 1;
+
+export function getCategory(codePoint: number): string {
+  const val = trie.get(codePoint);
+  return data.categories[(val >> CATEGORY_SHIFT) & CATEGORY_MASK]!;
+}
+
+export function getCombiningClass(codePoint: number): string {
+  const val = trie.get(codePoint);
+  return data.combiningClasses[(val >> COMBINING_SHIFT) & COMBINING_MASK]!;
+}
+
+export function getScript(codePoint: number): string {
+  const val = trie.get(codePoint);
+  return data.scripts[(val >> SCRIPT_SHIFT) & SCRIPT_MASK]!;
+}
+
+export function getEastAsianWidth(codePoint: number): string {
+  const val = trie.get(codePoint);
+  return data.eaw[(val >> EAW_SHIFT) & EAW_MASK]!;
+}
+
+export function getNumericValue(codePoint: number): number | null {
+  let val = trie.get(codePoint);
+  const num = val & NUMBER_MASK;
+
+  if (num === 0) {
+    return null;
+  } else if (num <= 50) {
+    return num - 1;
+  } else if (num < 0x1e0) {
+    const numerator = (num >> 4) - 12;
+    const denominator = (num & 0xf) + 1;
+    return numerator / denominator;
+  } else if (num < 0x300) {
+    val = (num >> 5) - 14;
+    let exp = (num & 0x1f) + 2;
+    while (exp > 0) {
+      val *= 10;
+      exp--;
+    }
+    return val;
+  } else {
+    val = (num >> 2) - 0xbf;
+    let exp = (num & 3) + 1;
+    while (exp > 0) {
+      val *= 60;
+      exp--;
+    }
+    return val;
+  }
+}
+
+export function isAlphabetic(codePoint: number): boolean {
+  const category = getCategory(codePoint);
+  return (
+    category === 'Lu' ||
+    category === 'Ll' ||
+    category === 'Lt' ||
+    category === 'Lm' ||
+    category === 'Lo' ||
+    category === 'Nl'
+  );
+}
+
+export function isDigit(codePoint: number): boolean {
+  return getCategory(codePoint) === 'Nd';
+}
+
+export function isPunctuation(codePoint: number): boolean {
+  const category = getCategory(codePoint);
+  return (
+    category === 'Pc' ||
+    category === 'Pd' ||
+    category === 'Pe' ||
+    category === 'Pf' ||
+    category === 'Pi' ||
+    category === 'Po' ||
+    category === 'Ps'
+  );
+}
+
+export function isLowerCase(codePoint: number): boolean {
+  return getCategory(codePoint) === 'Ll';
+}
+
+export function isUpperCase(codePoint: number): boolean {
+  return getCategory(codePoint) === 'Lu';
+}
+
+export function isTitleCase(codePoint: number): boolean {
+  return getCategory(codePoint) === 'Lt';
+}
+
+export function isWhiteSpace(codePoint: number): boolean {
+  const category = getCategory(codePoint);
+  return category === 'Zs' || category === 'Zl' || category === 'Zp';
+}
+
+export function isBaseForm(codePoint: number): boolean {
+  const category = getCategory(codePoint);
+  return (
+    category === 'Nd' ||
+    category === 'No' ||
+    category === 'Nl' ||
+    category === 'Lu' ||
+    category === 'Ll' ||
+    category === 'Lt' ||
+    category === 'Lm' ||
+    category === 'Lo' ||
+    category === 'Me' ||
+    category === 'Mc'
+  );
+}
+
+export function isMark(codePoint: number): boolean {
+  const category = getCategory(codePoint);
+  return category === 'Mn' || category === 'Me' || category === 'Mc';
+}
+
+export default {
+  getCategory,
+  getCombiningClass,
+  getScript,
+  getEastAsianWidth,
+  getNumericValue,
+  isAlphabetic,
+  isDigit,
+  isPunctuation,
+  isLowerCase,
+  isUpperCase,
+  isTitleCase,
+  isWhiteSpace,
+  isBaseForm,
+  isMark,
+};

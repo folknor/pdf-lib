@@ -1,5 +1,5 @@
-import fontkit from '@pdf-lib/fontkit';
-import { FontNames } from '@pdf-lib/standard-fonts';
+import fontkit from 'src/fontkit.js';
+import { FontNames } from '../../src/vendors/standard-fonts/index.js';
 import fs from 'fs';
 
 import { CustomFontEmbedder, StandardFontEmbedder } from '../../src/core';

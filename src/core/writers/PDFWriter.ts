@@ -35,7 +35,8 @@ class PDFWriter {
     context: PDFContext,
     objectsPerTick: number,
     compress = false,
-  ) => new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
+  ) =>
+    new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
 
   static forContextWithSnapshot = (
     context: PDFContext,

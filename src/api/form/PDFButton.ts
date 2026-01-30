@@ -54,7 +54,7 @@ export default class PDFButton extends PDFField {
   ) => new PDFButton(acroPushButton, ref, doc);
 
   /** The low-level PDFAcroPushButton wrapped by this button. */
-  override readonly acroField: PDFAcroPushButton;
+  declare readonly acroField: PDFAcroPushButton;
 
   private constructor(
     acroPushButton: PDFAcroPushButton,

@@ -859,7 +859,9 @@ export default class PDFDocument {
     const srcPages = srcDoc.getPages();
     // Copy each page in a separate thread
     const copiedPageNodes = await Promise.all(
-      indices.map((i) => srcPages[i]!).map(async (page) => copier.copy(page.node)),
+      indices
+        .map((i) => srcPages[i]!)
+        .map(async (page) => copier.copy(page.node)),
     );
 
     const pages = copiedPageNodes.map((copy) =>
@@ -1848,7 +1850,11 @@ export default class PDFDocument {
         );
         return result;
       }
-      const writer = PDFWriter.forContext(this.context, objectsPerTick, compress);
+      const writer = PDFWriter.forContext(
+        this.context,
+        objectsPerTick,
+        compress,
+      );
       writer.fillXrefGaps = fillXrefGaps;
       return writer.serializeToBuffer();
     }
@@ -1878,8 +1884,11 @@ export default class PDFDocument {
     // Check PDF version
     const vparts = this.context.header.getVersionString().split('.');
     const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
-    const { objectsPerTick = 50, compress = false, fillXrefGaps = false } =
-      options;
+    const {
+      objectsPerTick = 50,
+      compress = false,
+      fillXrefGaps = false,
+    } = options;
 
     assertIs(objectsPerTick, 'objectsPerTick', ['number']);
     assertIs(compress, 'compress', ['boolean']);

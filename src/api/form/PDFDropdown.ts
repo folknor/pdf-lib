@@ -55,7 +55,7 @@ export default class PDFDropdown extends PDFField {
     new PDFDropdown(acroComboBox, ref, doc);
 
   /** The low-level PDFAcroComboBox wrapped by this dropdown. */
-  override readonly acroField: PDFAcroComboBox;
+  declare readonly acroField: PDFAcroComboBox;
 
   private constructor(
     acroComboBox: PDFAcroComboBox,

@@ -1,4 +1,4 @@
-# TODO for @folknor/pdf-lib
+# TODO for @folknor/pdf-lib.
 
 ## Intentionally Disabled (too noisy or conflicts with codebase)
 | Rule | Reason |
@@ -46,30 +46,6 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ---
 
-## Code Issues & Improvements
-
-### Flatten Bugs (High Priority)
-
-- [x] **#1267 #1387 - Orphan annotation references after flatten** — Fixed: `removeField()` now removes widget refs from ALL pages' Annots arrays, not just pages where `findWidgetPage()` succeeds. This prevents orphan refs when widget's P (page) reference is missing.
-
-- [x] **#1482 #1757 - Error 14 after flatten with cross-page fields** — Fixed: `flatten()` now removes `/CO` (calculation order) and `/NeedAppearances` from AcroForm dict after flattening. These arrays could contain refs to deleted fields, causing Adobe's "Expected a dict object" error.
-
-- [x] **#1519 - Runtime crash on certain PDFs** — Fixed: Changed `lookup()` to `lookupMaybe()` for FT attribute in `createPDFAcroTerminal()` to gracefully handle malformed PDFs with missing or invalid field types.
-
-- [x] **#1574 - Checkbox marks disappear after flatten** — Fixed: `findWidgetAppearanceRef()` now uses widget's appearance state (`/AS`) first before falling back to field value (`/V`), ensuring correct appearance is used when these values differ.
-
-### Completed
-
-- [x] **PDFPageLeaf inherited resource mutation** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: `normalize()` now clones inherited Resources, Font, XObject, and ExtGState dictionaries to prevent mutation of shared parent dictionaries.
-
-- [x] **PDFFont orphan cleanup** (`src/core/embedders/CustomFontEmbedder.ts`) — Fixed: Embedder now tracks refs to child objects (CID font dict, font descriptor, font stream, unicode cmap) and reuses them on re-embedding instead of creating new orphan objects.
-
-- [x] **PDFPage resource reuse** (`src/core/structures/PDFPageLeaf.ts`) — Fixed: Added `getOrCreateFontDictionary`, `getOrCreateXObject`, `getOrCreateExtGState` methods that look up existing refs before creating new entries. Updated PDFPage to use these methods.
-
-- [x] **PDFName static properties** — Added: `Filter`, `Subtype`, `Kids`, `Count`, `Catalog`, `Pages`, `ColorSpace`, `Pattern`, `Shading`, `Properties`, `Form`, `Image`, `Off`, `Yes`, `Opt`, `Names`, `EmbeddedFiles`.
-
----
-
 ## Consider Implementing
 
 - [ ] **#1388 - Prevent xref fragmentation** — Important for digital signature workflows. Adobe invalidates signatures when xref has gaps. Fix: fill gaps with deleted ('f') entries instead of creating new subsections. https://github.com/Hopding/pdf-lib/issues/1388
@@ -78,6 +54,36 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ---
 
-## Final Checklist
-- [x] `pnpm build && pnpm test && pnpm lint` passes
-- [ ] Delete this file
+## Dependency Cleanup
+
+### Remove (High Priority)
+
+- [ ] **`clone`** → Replace with native `structuredClone()` (Node 17+, all modern browsers)
+  - Only used in `src/fontkit/subset/TTFSubset.js` to clone font table objects (maxp, head, hhea)
+  - These are simple data objects, `structuredClone()` handles them fine
+  - Removes a dependency entirely
+
+- [ ] **`release-it`** (dev dependency) → Remove if not using automated releases
+  - Evaluate if current release workflow needs it
+  - If using manual releases or different CI/CD, can be removed
+
+### Upgrade (Medium Priority)
+
+- [ ] **`pako` + `tiny-inflate`** → Replace with **`fflate`**
+  - fflate is up to 60% faster than pako
+  - Smaller bundle (8kB vs 45kB for pako)
+  - Replaces two dependencies with one (handles both compression and decompression)
+  - Used in: `src/core/writers/PDFWriter.ts`, `src/core/PDFContext.ts`, `src/core/structures/PDFFlateStream.ts`, `src/vendors/`, `src/fontkit/`
+
+- [ ] **`fast-deep-equal`** → Consider **`fast-equals`**
+  - Slightly faster with circular reference support
+  - However, fast-deep-equal is still well-maintained (50M+ weekly downloads)
+  - Only used in `src/fontkit/cff/CFFDict.js`
+  - Low priority since current package works fine
+
+### Keep As-Is
+
+| Package | Reason |
+|---------|--------|
+| **`dfa`** | Specialized DFA compiler for text shaping in fontkit. XState is the popular modern state machine but has completely different API/purpose. Replacing would require significant refactoring with unclear benefits. Used in `src/fontkit/opentype/shapers/`. |
+| **`unicode-trie`** | Ported from ICU for fast Unicode character metadata lookup. No modern alternative exists for this specific use case. Still works correctly despite age (5 years). Used in fontkit shapers. |

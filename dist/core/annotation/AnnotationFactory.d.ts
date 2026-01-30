@@ -1,7 +1,8 @@
 import type PDFDict from '../objects/PDFDict.js';
 import PDFAnnotation from './PDFAnnotation.js';
-export default class AnnotationFactory {
-    static fromDict: (dict: PDFDict) => PDFAnnotation;
-    private static getSubtype;
-}
+declare function fromDict(dict: PDFDict): PDFAnnotation;
+declare const AnnotationFactory: {
+    fromDict: typeof fromDict;
+};
+export default AnnotationFactory;
 //# sourceMappingURL=AnnotationFactory.d.ts.map

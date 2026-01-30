@@ -109,7 +109,8 @@ class PDFCrossRefSection {
     }
     for (let i = 0; i < freeIndices.length; i++) {
       const nextFreeIdx = freeIndices[i + 1];
-      const nextFreeObjNum = nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
+      const nextFreeObjNum =
+        nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
       merged[freeIndices[i]!]!.offset = nextFreeObjNum;
     }
 

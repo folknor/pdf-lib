@@ -45,7 +45,7 @@ export default class PDFCheckBox extends PDFField {
     new PDFCheckBox(acroCheckBox, ref, doc);
 
   /** The low-level PDFAcroCheckBox wrapped by this check box. */
-  override readonly acroField: PDFAcroCheckBox;
+  declare readonly acroField: PDFAcroCheckBox;
 
   private constructor(
     acroCheckBox: PDFAcroCheckBox,

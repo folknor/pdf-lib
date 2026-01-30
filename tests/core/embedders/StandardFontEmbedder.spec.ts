@@ -1,4 +1,4 @@
-import { FontNames } from '@pdf-lib/standard-fonts';
+import { FontNames } from '../../../src/vendors/standard-fonts/index.js';
 import {
   PDFContext,
   PDFDict,
