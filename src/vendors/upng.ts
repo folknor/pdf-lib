@@ -145,7 +145,7 @@ function decodeImage(
     if (depth === 16) for (let i = 0; i < qarea; i++) bf[i] = data[i << 1]!;
   } else if (ctype === 2) {
     // RGB
-    const ts = out.tabs['tRNS'] as number[] | undefined;
+    const ts = out.tabs.tRNS as number[] | undefined;
     if (ts == null) {
       if (depth === 8)
         for (let i = 0; i < area; i++) {
@@ -200,8 +200,8 @@ function decodeImage(
     }
   } else if (ctype === 3) {
     // palette
-    const p = out.tabs['PLTE'] as number[];
-    const ap = out.tabs['tRNS'] as number[] | undefined;
+    const p = out.tabs.PLTE as number[];
+    const ap = out.tabs.tRNS as number[] | undefined;
     const tl = ap ? ap.length : 0;
 
     if (depth === 1)
@@ -280,7 +280,7 @@ function decodeImage(
       }
   } else if (ctype === 0) {
     // gray
-    const tr = out.tabs['tRNS'] != null ? (out.tabs['tRNS'] as number) : -1;
+    const tr = out.tabs.tRNS != null ? (out.tabs.tRNS as number) : -1;
     for (let y = 0; y < h; y++) {
       const off = y * bpl;
       const to = y * w;
@@ -453,7 +453,7 @@ export function decode(buff: ArrayBuffer): PNGImage {
     } else if (type === 'PLTE') {
       out.tabs[type] = bin.readBytes(data, offset, len);
     } else if (type === 'hIST') {
-      const pl = (out.tabs['PLTE'] as number[]).length / 3;
+      const pl = (out.tabs.PLTE as number[]).length / 3;
       out.tabs[type] = [];
       for (let i = 0; i < pl; i++)
         (out.tabs[type] as number[]).push(rUs(data, offset + i * 2));
@@ -512,7 +512,7 @@ function _decompress(
     (bpl + 1 + (out as unknown as { interlace: number }).interlace) * h,
   );
   let result: Uint8Array;
-  if (out.tabs['CgBI']) result = inflateRaw(dd, buff);
+  if (out.tabs.CgBI) result = inflateRaw(dd, buff);
   else result = _inflate(dd, buff);
 
   const interlace = (out as unknown as { interlace: number }).interlace;

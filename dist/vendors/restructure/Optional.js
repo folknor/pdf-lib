@@ -20,7 +20,7 @@ export class Optional extends Base {
         if (condition) {
             return this.type.decode(stream, parent);
         }
-        return undefined;
+        return;
     }
     size(val, parent) {
         let condition = this.condition;

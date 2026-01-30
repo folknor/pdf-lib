@@ -48,7 +48,7 @@ class PDFAcroField {
   DA(): PDFString | PDFHexString | undefined {
     const da = this.dict.lookup(PDFName.of('DA'));
     if (da instanceof PDFString || da instanceof PDFHexString) return da;
-    return undefined;
+    return;
   }
 
   setKids(kids: PDFObject[]) {
@@ -66,7 +66,7 @@ class PDFAcroField {
       return new PDFAcroField(parent, parentRef);
     }
 
-    return undefined;
+    return;
   }
 
   setParent(parent: PDFRef | undefined) {
@@ -109,7 +109,7 @@ class PDFAcroField {
    */
   getDefaultAppearanceFontName(): string | undefined {
     const da = this.getDefaultAppearance();
-    if (!da) return undefined;
+    if (!da) return;
     const match = findLastMatch(da, tfRegex);
     return match.match?.[1];
   }
@@ -120,7 +120,7 @@ class PDFAcroField {
    */
   getDefaultAppearanceFontSize(): number | undefined {
     const da = this.getDefaultAppearance();
-    if (!da) return undefined;
+    if (!da) return;
     const match = findLastMatch(da, tfRegex);
     const sizeStr = match.match?.[2];
     return sizeStr ? parseFloat(sizeStr) : undefined;

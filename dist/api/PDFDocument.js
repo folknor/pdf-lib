@@ -85,7 +85,7 @@ export default class PDFDocument {
         assertIs(forIncrementalUpdate, 'forIncrementalUpdate', ['boolean']);
         const bytes = toUint8Array(pdf);
         const context = await PDFParser.forBytesWithOptions(bytes, parseSpeed, throwOnInvalidObject, undefined, capNumbers, undefined, forIncrementalUpdate).parseDocument();
-        if (!!context.lookup(context.trailerInfo.Encrypt) &&
+        if (Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
             password !== undefined) {
             // Decrypt
             const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
@@ -139,11 +139,12 @@ export default class PDFDocument {
         assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
         this.context = context;
         this.catalog = context.lookup(context.trailerInfo.Root);
-        if (!!context.lookup(context.trailerInfo.Encrypt) && context.isDecrypted) {
+        if (Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
+            context.isDecrypted) {
             // context.delete(context.trailerInfo.Encrypt);
             context.trailerInfo.Encrypt = undefined;
         }
-        this.isEncrypted = !!context.lookup(context.trailerInfo.Encrypt);
+        this.isEncrypted = Boolean(context.lookup(context.trailerInfo.Encrypt));
         this.pageCache = Cache.populatedBy(this.computePages);
         this.pageMap = new Map();
         this.formCache = Cache.populatedBy(this.getOrCreateForm);
@@ -220,7 +221,7 @@ export default class PDFDocument {
     getTitle() {
         const title = this.getInfoDict().lookup(PDFName.Title);
         if (!title)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(title);
         return title.decodeText();
     }
@@ -235,7 +236,7 @@ export default class PDFDocument {
     getAuthor() {
         const author = this.getInfoDict().lookup(PDFName.Author);
         if (!author)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(author);
         return author.decodeText();
     }
@@ -250,7 +251,7 @@ export default class PDFDocument {
     getSubject() {
         const subject = this.getInfoDict().lookup(PDFName.Subject);
         if (!subject)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(subject);
         return subject.decodeText();
     }
@@ -265,7 +266,7 @@ export default class PDFDocument {
     getKeywords() {
         const keywords = this.getInfoDict().lookup(PDFName.Keywords);
         if (!keywords)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(keywords);
         return keywords.decodeText();
     }
@@ -280,7 +281,7 @@ export default class PDFDocument {
     getCreator() {
         const creator = this.getInfoDict().lookup(PDFName.Creator);
         if (!creator)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(creator);
         return creator.decodeText();
     }
@@ -295,7 +296,7 @@ export default class PDFDocument {
     getProducer() {
         const producer = this.getInfoDict().lookup(PDFName.Producer);
         if (!producer)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(producer);
         return producer.decodeText();
     }
@@ -311,7 +312,7 @@ export default class PDFDocument {
     getLanguage() {
         const language = this.catalog.get(PDFName.of('Lang'));
         if (!language)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(language);
         return language.decodeText();
     }
@@ -327,7 +328,7 @@ export default class PDFDocument {
     getCreationDate() {
         const creationDate = this.getInfoDict().lookup(PDFName.CreationDate);
         if (!creationDate)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(creationDate);
         return creationDate.decodeDate();
     }
@@ -344,7 +345,7 @@ export default class PDFDocument {
     getModificationDate() {
         const modificationDate = this.getInfoDict().lookup(PDFName.ModDate);
         if (!modificationDate)
-            return undefined;
+            return;
         assertIsLiteralOrHexString(modificationDate);
         return modificationDate.decodeDate();
     }
@@ -769,7 +770,7 @@ export default class PDFDocument {
             }
         }
         if (!currentRef)
-            return undefined;
+            return;
         return { dict: currentDict, ref: currentRef };
     }
     /**
@@ -1584,7 +1585,7 @@ export default class PDFDocument {
      * @returns Resolves with the complete PDF bytes including all updates.
      */
     async commit(options = {}) {
-        if (!this.context.snapshot || !this.context.pdfFileDetails.originalBytes) {
+        if (!(this.context.snapshot && this.context.pdfFileDetails.originalBytes)) {
             throw new Error('commit() requires the document to be loaded with forIncrementalUpdate: true');
         }
         const incrementalBytes = await this.saveIncremental(this.context.snapshot, options);
@@ -1649,7 +1650,7 @@ export default class PDFDocument {
                 return page;
             }
         }
-        return undefined;
+        return;
     }
     async embedAll(embeddables) {
         for (let idx = 0, len = embeddables.length; idx < len; idx++) {
@@ -1702,8 +1703,7 @@ export default class PDFDocument {
 }
 /* tslint:disable-next-line only-arrow-functions */
 function assertIsLiteralOrHexString(pdfObject) {
-    if (!(pdfObject instanceof PDFHexString) &&
-        !(pdfObject instanceof PDFString)) {
+    if (!(pdfObject instanceof PDFHexString || pdfObject instanceof PDFString)) {
         throw new UnexpectedObjectTypeError([PDFHexString, PDFString], pdfObject);
     }
 }

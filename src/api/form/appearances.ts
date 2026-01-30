@@ -155,7 +155,7 @@ const getDefaultColor = (field: {
     return cmyk(Number(c1), Number(c2), Number(c3), Number(c4));
   }
 
-  return undefined;
+  return;
 };
 
 const updateDefaultAppearance = (

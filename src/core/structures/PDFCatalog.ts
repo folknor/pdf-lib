@@ -39,7 +39,7 @@ class PDFCatalog extends PDFDict {
 
   getAcroForm(): PDFAcroForm | undefined {
     const dict = this.AcroForm();
-    if (!dict) return undefined;
+    if (!dict) return;
     return PDFAcroForm.fromDict(dict);
   }
 
@@ -59,7 +59,7 @@ class PDFCatalog extends PDFDict {
 
   getViewerPreferences(): ViewerPreferences | undefined {
     const dict = this.ViewerPreferences();
-    if (!dict) return undefined;
+    if (!dict) return;
     return ViewerPreferences.fromDict(dict);
   }
 

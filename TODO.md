@@ -1,18 +1,61 @@
 # TODO for @folknor/pdf-lib.
 
-## Intentionally Disabled (too noisy or conflicts with codebase)
+## Biome Rules
+
+### Enabled Rules (error)
+| Category | Rules |
+|----------|-------|
+| **nursery** | `useConsistentArrowReturn`, `useArraySortCompare`, `noUselessUndefined`, `noUselessCatchBinding`, `noUnusedExpressions`, `noShadow`, `noMisusedPromises`, `noFloatingPromises` |
+| **complexity** | `noBannedTypes`, `noUselessStringConcat`, `noForEach` |
+| **correctness** | `noUndeclaredVariables`, `noProcessGlobal` |
+| **style** | `useImportType` |
+| **suspicious** | `noDoubleEquals`, `noDebugger`, `useErrorMessage`, `noVar`, `noUnassignedVariables`, `noMisplacedAssertion`, `useIterableCallbackReturn` |
+
+### Disabled Rules
+
+#### Breaks Fontkit Code (auto-fix causes test failures)
 | Rule | Reason |
 |------|--------|
-| `noExplicitAny` | Large effort, many legitimate uses |
-| `noNonNullAssertion` | Would undo noUncheckedIndexedAccess work |
-| `noImplicitCoercions` | `!!value` is idiomatic |
-| `noUselessUndefined` | Explicit returns improve clarity |
-| `noUselessSwitchCase` | Explicit case labels document intent |
-| `useLiteralKeys` | Bracket notation sometimes clearer |
-| `useSimplifiedLogicExpression` | Original expressions often clearer |
-| `noBarrelFile` / `noReExportAll` | Conflicts with current structure |
-| `noConsole` | Legitimate warning/debug usage |
+| `useSimplifiedLogicExpression` | De Morgan transforms break subtle logic in font parsing |
+| `noUselessSwitchCase` | Fontkit uses explicit fallthrough cases intentionally |
+| `noImplicitCoercions` | Changes `+x` to `Number(x)`, breaks fontkit encoding |
+
+#### Type Safety (TypeScript handles better)
+| Rule | Reason |
+|------|--------|
+| `noExplicitAny` | Large effort, many legitimate uses in fontkit |
+| `noNonNullAssertion` | Would undo `noUncheckedIndexedAccess` work |
+| `noImplicitAnyLet` | TypeScript strict mode handles this |
+| `noEvolvingTypes` | TypeScript inference is sufficient |
+| `useExplicitType` | Large effort, TypeScript infers return types well |
+
+#### False Positives / Limitations
+| Rule | Reason |
+|------|--------|
+| `useAwaitThenable` | Can't resolve Promise types through interfaces |
+| `noUnresolvedImports` | Can't resolve barrel exports (index.js re-exports) |
+| `useGetterReturn` | Doesn't handle `T | undefined` return types with implicit return |
+| `noUnnecessaryConditions` | Conflicts with defensive coding patterns |
 | `noParametersOnlyUsedInRecursion` | False positives on method replacement patterns |
+| `noConfusingVoidType` | False positives in callback signatures |
+| `noControlCharactersInRegex` | Legitimate uses in binary format parsing |
+
+#### Module Structure
+| Rule | Reason |
+|------|--------|
+| `noBarrelFile` | Conflicts with current index.ts re-export structure |
+| `noReExportAll` | Conflicts with current index.ts re-export structure |
+| `noNamespaceImport` | `import * as` useful for restructure, etc. |
+| `noImportCycles` | Would require significant refactoring |
+
+#### Intentional Patterns
+| Rule | Reason |
+|------|--------|
+| `noConsole` | Legitimate warning/debug usage |
+| `noTsIgnore` | Some legitimate uses in fontkit (@ts-nocheck in IndicShaper) |
+| `noAssignInExpressions` | Used intentionally in some loops |
+| `useMaxParams` | Many functions legitimately need multiple params |
+| `useLiteralEnumMembers` | Conflicts with computed enum values |
 
 ---
 
@@ -63,14 +106,6 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 - ✅ **`pako` + `tiny-inflate`** → Replaced with **`fflate`**
   - Smaller bundle (8kB vs 45kB), 30-60% faster compression
   - Updated 10 source files and 8 test files
-
-### Keep As-Is
-
-- **`fast-deep-equal`** — Only used in 1 file, well-maintained, no practical benefit to change
-  - Slightly faster with circular reference support
-  - However, fast-deep-equal is still well-maintained (50M+ weekly downloads)
-  - Only used in `src/fontkit/cff/CFFDict.js`
-  - Low priority since current package works fine
 
 ### Keep As-Is
 

@@ -127,7 +127,7 @@ export default class PDFForm {
             if (field.getName() === name)
                 return field;
         }
-        return undefined;
+        return;
     }
     /**
      * Get the field in this [[PDFForm]] with the given name. For example:
@@ -607,7 +607,7 @@ export default class PDFForm {
                 const widget = widgets[j];
                 const page = this.findWidgetPage(widget);
                 const widgetRef = this.findWidgetAppearanceRef(field, widget);
-                if (!page || !widgetRef)
+                if (!(page && widgetRef))
                     continue;
                 const xObjectKey = page.node.getOrCreateXObject('FlatWidget', widgetRef);
                 const rectangle = widget.getRectangle();
@@ -761,7 +761,7 @@ export default class PDFForm {
         if (page === undefined) {
             const widgetRef = this.doc.context.getObjectRef(widget.dict);
             if (widgetRef === undefined)
-                return undefined;
+                return;
             page = this.doc.findPageForAnnotationRef(widgetRef);
         }
         return page;
@@ -769,12 +769,12 @@ export default class PDFForm {
     findWidgetAppearanceRef(field, widget) {
         let refOrDict = widget.getNormalAppearance();
         if (!refOrDict)
-            return undefined;
+            return;
         if (field instanceof PDFCheckBox || field instanceof PDFRadioGroup) {
             if (refOrDict instanceof PDFRef) {
                 const lookedUp = this.doc.context.lookupMaybe(refOrDict, PDFDict);
                 if (!lookedUp)
-                    return undefined;
+                    return;
                 refOrDict = lookedUp;
             }
             if (refOrDict instanceof PDFDict) {
@@ -794,7 +794,7 @@ export default class PDFForm {
             }
         }
         if (!(refOrDict instanceof PDFRef))
-            return undefined;
+            return;
         return refOrDict;
     }
     findOrCreateNonTerminals(partialNames) {
@@ -833,7 +833,7 @@ export default class PDFForm {
                 throw new FieldAlreadyExistsError(partialName);
             }
         }
-        return undefined;
+        return;
     }
     embedDefaultFont = () => this.doc.embedStandardFont(StandardFonts.Helvetica);
 }
@@ -854,7 +854,7 @@ const convertToPDFField = (field, ref, doc) => {
     if (field instanceof PDFAcroSignature) {
         return PDFSignature.of(field, ref, doc);
     }
-    return undefined;
+    return;
 };
 const splitFieldName = (fullyQualifiedName) => {
     if (fullyQualifiedName.length === 0) {

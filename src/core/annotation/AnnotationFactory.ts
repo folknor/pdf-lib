@@ -9,7 +9,7 @@ function getSubtype(dict: PDFDict): AnnotationTypes | undefined {
   if (subtypePdfName instanceof PDFName) {
     return subtypePdfName.toString() as AnnotationTypes;
   } else {
-    return undefined;
+    return;
   }
 }
 

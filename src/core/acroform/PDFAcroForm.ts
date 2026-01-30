@@ -24,7 +24,7 @@ class PDFAcroForm {
   Fields(): PDFArray | undefined {
     const fields = this.dict.lookup(PDFName.of('Fields'));
     if (fields instanceof PDFArray) return fields;
-    return undefined;
+    return;
   }
 
   getFields(): [PDFAcroField, PDFRef][] {

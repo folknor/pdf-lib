@@ -157,7 +157,7 @@ const dateRegex =
 export const parseDate = (dateStr: string): Date | undefined => {
   const match = dateStr.match(dateRegex);
 
-  if (!match) return undefined;
+  if (!match) return;
 
   const [
     ,

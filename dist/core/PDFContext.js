@@ -85,7 +85,7 @@ class PDFContext {
         const preservePDFNull = types.includes(PDFNull);
         const result = ref instanceof PDFRef ? this.indirectObjects.get(ref) : ref;
         if (!result || (result === PDFNull && !preservePDFNull))
-            return undefined;
+            return;
         for (let idx = 0, len = types.length; idx < len; idx++) {
             const type = types[idx];
             if (type === PDFNull) {
@@ -129,7 +129,7 @@ class PDFContext {
                 return ref;
             }
         }
-        return undefined;
+        return;
     }
     enumerateIndirectObjects() {
         const entries = Array.from(this.indirectObjects.entries());
@@ -310,7 +310,7 @@ class PDFContext {
                 return ref;
             }
         }
-        return undefined;
+        return;
     }
     objectContains(container, target) {
         if (container === target)

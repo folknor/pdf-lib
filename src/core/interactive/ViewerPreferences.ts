@@ -15,7 +15,7 @@ const asEnum = <T extends string | number, U extends { [key: string]: T }>(
   rawValue: T | undefined,
   enumType: U,
 ): U[keyof U] | undefined => {
-  if (rawValue === undefined) return undefined;
+  if (rawValue === undefined) return;
   return enumType[rawValue];
 };
 
@@ -116,13 +116,13 @@ class ViewerPreferences {
   protected lookupBool(key: BoolViewerPrefKey): PDFBool | undefined {
     const returnObj = this.dict.lookup(PDFName.of(key));
     if (returnObj instanceof PDFBool) return returnObj;
-    return undefined;
+    return;
   }
 
   protected lookupName(key: NameViewerPrefKey): PDFName | undefined {
     const returnObj = this.dict.lookup(PDFName.of(key));
     if (returnObj instanceof PDFName) return returnObj;
-    return undefined;
+    return;
   }
 
   /** @ignore */
@@ -184,14 +184,14 @@ class ViewerPreferences {
   PrintPageRange(): PDFArray | undefined {
     const PrintPageRange = this.dict.lookup(PDFName.of('PrintPageRange'));
     if (PrintPageRange instanceof PDFArray) return PrintPageRange;
-    return undefined;
+    return;
   }
 
   /** @ignore */
   NumCopies(): PDFNumber | undefined {
     const NumCopies = this.dict.lookup(PDFName.of('NumCopies'));
     if (NumCopies instanceof PDFNumber) return NumCopies;
-    return undefined;
+    return;
   }
 
   /**

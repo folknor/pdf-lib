@@ -66,7 +66,7 @@ class PDFPageTree extends PDFDict {
       if (leafsRemainingUntilTarget === 0) {
         // Insert page and return
         this.insertLeafKid(idx, leafRef);
-        return undefined;
+        return;
       }
 
       const kidRef = Kids.get(idx) as PDFRef;
@@ -93,7 +93,7 @@ class PDFPageTree extends PDFDict {
     if (leafsRemainingUntilTarget === 0) {
       // Insert page at the end and return
       this.insertLeafKid(Kids.size(), leafRef);
-      return undefined;
+      return;
     }
 
     // Should never get here if `targetIndex` is valid

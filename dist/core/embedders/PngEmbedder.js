@@ -42,7 +42,7 @@ class PngEmbedder {
     }
     embedAlphaChannel(context) {
         if (!this.image.alphaChannel)
-            return undefined;
+            return;
         const xObject = context.flateStream(this.image.alphaChannel, {
             Type: 'XObject',
             Subtype: 'Image',

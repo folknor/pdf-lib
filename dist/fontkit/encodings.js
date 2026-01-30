@@ -57,7 +57,7 @@ export function getEncodingMapping(encoding) {
         encodingCache.set(encoding, res);
         return res;
     }
-    return undefined;
+    return;
 }
 // Map of platform ids to encoding ids.
 export const ENCODINGS = [

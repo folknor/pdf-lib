@@ -30,7 +30,7 @@ export class Optional<T = unknown> extends Base<T | undefined> {
       return this.type.decode(stream, parent);
     }
 
-    return undefined;
+    return;
   }
 
   size(val?: T | null, parent?: unknown): number {

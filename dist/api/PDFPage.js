@@ -1201,7 +1201,7 @@ export default class PDFPage {
             }),
             ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
         });
-        if (!('color' in options) && !('borderColor' in options)) {
+        if (!('color' in options || 'borderColor' in options)) {
             options.borderColor = rgb(0, 0, 0);
         }
         const contentStream = this.getContentStream();
@@ -1348,7 +1348,7 @@ export default class PDFPage {
             }),
             ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
         });
-        if (!('color' in options) && !('borderColor' in options)) {
+        if (!('color' in options || 'borderColor' in options)) {
             options.color = rgb(0, 0, 0);
         }
         const contentStream = this.getContentStream();
@@ -1457,7 +1457,7 @@ export default class PDFPage {
             }),
             ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
         });
-        if (!('color' in options) && !('borderColor' in options)) {
+        if (!('color' in options || 'borderColor' in options)) {
             options.color = rgb(0, 0, 0);
         }
         const contentStream = this.getContentStream();
@@ -1559,7 +1559,7 @@ export default class PDFPage {
         });
     }
     getFont() {
-        if (!this.font || !this.fontKey) {
+        if (!(this.font && this.fontKey)) {
             const font = this.doc.embedStandardFont(StandardFonts.Helvetica);
             this.setFont(font);
         }
@@ -1587,7 +1587,7 @@ export default class PDFPage {
         if (opacity === undefined &&
             borderOpacity === undefined &&
             blendMode === undefined) {
-            return undefined;
+            return;
         }
         const graphicsState = this.doc.context.obj({
             Type: 'ExtGState',
@@ -1605,7 +1605,7 @@ export default class PDFPage {
     annotations() {
         const annotsArray = this.node.Annots();
         // if there are no annotations...
-        if (!annotsArray || !(annotsArray instanceof PDFArray)) {
+        if (!(annotsArray && annotsArray instanceof PDFArray)) {
             // ...return an empty array
             return [];
         }

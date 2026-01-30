@@ -23,7 +23,7 @@ class LazyArrayValue {
     }
     get(index) {
         if (index < 0 || index >= this.length) {
-            return undefined;
+            return;
         }
         if (this.items[index] == null) {
             const { pos } = this.stream;

@@ -176,13 +176,13 @@ export default class PDFField {
         const widgets = this.acroField.getWidgets();
         const widget = widgets[widgetIndex];
         if (!widget)
-            return undefined;
+            return;
         const pageRef = widget.P();
         let page = this.doc.getPages().find((x) => x.ref === pageRef);
         if (page === undefined) {
             const widgetRef = this.doc.context.getObjectRef(widget.dict);
             if (widgetRef === undefined)
-                return undefined;
+                return;
             page = this.doc.findPageForAnnotationRef(widgetRef);
         }
         return page;
@@ -205,7 +205,7 @@ export default class PDFField {
     getWidgetPageIndex(widgetIndex = 0) {
         const page = this.getWidgetPage(widgetIndex);
         if (!page)
-            return undefined;
+            return;
         return this.doc.getPages().indexOf(page);
     }
     /**

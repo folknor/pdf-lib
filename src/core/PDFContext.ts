@@ -159,7 +159,7 @@ class PDFContext {
 
     const result = ref instanceof PDFRef ? this.indirectObjects.get(ref) : ref;
 
-    if (!result || (result === PDFNull && !preservePDFNull)) return undefined;
+    if (!result || (result === PDFNull && !preservePDFNull)) return;
 
     for (let idx = 0, len = types.length; idx < len; idx++) {
       const type = types[idx];
@@ -220,7 +220,7 @@ class PDFContext {
       }
     }
 
-    return undefined;
+    return;
   }
 
   enumerateIndirectObjects(): [PDFRef, PDFObject][] {
@@ -447,7 +447,7 @@ class PDFContext {
         return ref;
       }
     }
-    return undefined;
+    return;
   }
 
   private objectContains(container: PDFObject, target: PDFObject): boolean {

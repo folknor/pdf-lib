@@ -28,7 +28,7 @@ class BaseParser {
 
     const numberValue = Number(value);
 
-    if (!value || !Number.isFinite(numberValue)) {
+    if (!(value && Number.isFinite(numberValue))) {
       throw new NumberParsingError(this.bytes.position(), value);
     }
 
@@ -57,7 +57,7 @@ class BaseParser {
 
     const numberValue = Number(value);
 
-    if (!value || !Number.isFinite(numberValue)) {
+    if (!(value && Number.isFinite(numberValue))) {
       throw new NumberParsingError(this.bytes.position(), value);
     }
 

@@ -69,7 +69,7 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
   }
 
   deletedRef(index: number): PDFRef | undefined {
-    if (index < 0 || index >= this.deleted.length) return undefined;
+    if (index < 0 || index >= this.deleted.length) return;
     return this.deleted[index];
   }
 }

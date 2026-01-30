@@ -243,11 +243,13 @@ class PDFObjectParser extends BaseParser {
     this.skipWhitespaceAndComments();
 
     if (
-      !this.matchKeyword(Keywords.streamEOF1) &&
-      !this.matchKeyword(Keywords.streamEOF2) &&
-      !this.matchKeyword(Keywords.streamEOF3) &&
-      !this.matchKeyword(Keywords.streamEOF4) &&
-      !this.matchKeyword(Keywords.stream)
+      !(
+        this.matchKeyword(Keywords.streamEOF1) ||
+        this.matchKeyword(Keywords.streamEOF2) ||
+        this.matchKeyword(Keywords.streamEOF3) ||
+        this.matchKeyword(Keywords.streamEOF4) ||
+        this.matchKeyword(Keywords.stream)
+      )
     ) {
       return dict;
     }

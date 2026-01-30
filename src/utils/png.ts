@@ -13,7 +13,7 @@ const splitAlphaChannel = (rgbaChannel: Uint8Array) => {
   const pixelCount = Math.floor(rgbaChannel.length / 4);
 
   const rgbChannel = new Uint8Array(pixelCount * 3);
-  const alphaChannel = new Uint8Array(pixelCount * 1);
+  const alphaChannel = new Uint8Array(Number(pixelCount));
 
   let rgbaOffset = 0;
   let rgbOffset = 0;

@@ -81,7 +81,7 @@ export function getEncodingMapping(
     return res;
   }
 
-  return undefined;
+  return;
 }
 
 // Map of platform ids to encoding ids.

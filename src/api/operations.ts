@@ -1037,5 +1037,5 @@ const getDrawingOperator = ({
   } else if (borderColor && borderWidth !== 0) {
     return stroke;
   }
-  return undefined;
+  return;
 };

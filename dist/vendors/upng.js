@@ -104,7 +104,7 @@ function decodeImage(data, w, h, out) {
     }
     else if (ctype === 2) {
         // RGB
-        const ts = out.tabs['tRNS'];
+        const ts = out.tabs.tRNS;
         if (ts == null) {
             if (depth === 8)
                 for (let i = 0; i < area; i++) {
@@ -159,8 +159,8 @@ function decodeImage(data, w, h, out) {
     }
     else if (ctype === 3) {
         // palette
-        const p = out.tabs['PLTE'];
-        const ap = out.tabs['tRNS'];
+        const p = out.tabs.PLTE;
+        const ap = out.tabs.tRNS;
         const tl = ap ? ap.length : 0;
         if (depth === 1)
             for (let y = 0; y < h; y++) {
@@ -240,7 +240,7 @@ function decodeImage(data, w, h, out) {
     }
     else if (ctype === 0) {
         // gray
-        const tr = out.tabs['tRNS'] != null ? out.tabs['tRNS'] : -1;
+        const tr = out.tabs.tRNS != null ? out.tabs.tRNS : -1;
         for (let y = 0; y < h; y++) {
             const off = y * bpl;
             const to = y * w;
@@ -423,7 +423,7 @@ export function decode(buff) {
             out.tabs[type] = bin.readBytes(data, offset, len);
         }
         else if (type === 'hIST') {
-            const pl = out.tabs['PLTE'].length / 3;
+            const pl = out.tabs.PLTE.length / 3;
             out.tabs[type] = [];
             for (let i = 0; i < pl; i++)
                 out.tabs[type].push(rUs(data, offset + i * 2));
@@ -476,7 +476,7 @@ function _decompress(out, dd, w, h) {
     const bpl = Math.ceil((w * bpp) / 8);
     const buff = new Uint8Array((bpl + 1 + out.interlace) * h);
     let result;
-    if (out.tabs['CgBI'])
+    if (out.tabs.CgBI)
         result = inflateRaw(dd, buff);
     else
         result = _inflate(dd, buff);

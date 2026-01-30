@@ -136,7 +136,7 @@ export default class Glyph {
         return cacheValue(this, 'advanceHeight', this._getMetrics().advanceHeight);
     }
     get ligatureCaretPositions() {
-        return undefined;
+        return;
     }
     _getName() {
         const { post } = this._font;
@@ -158,7 +158,7 @@ export default class Glyph {
             case 4:
                 return String.fromCharCode(post.map[this.id]);
             default:
-                return undefined;
+                return;
         }
     }
     /**

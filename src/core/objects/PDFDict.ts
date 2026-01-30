@@ -55,7 +55,7 @@ class PDFDict extends PDFObject {
     preservePDFNull = false,
   ): PDFObject | undefined {
     const value = this.dict.get(key);
-    if (value === PDFNull && !preservePDFNull) return undefined;
+    if (value === PDFNull && !preservePDFNull) return;
     return value;
   }
 
@@ -105,7 +105,7 @@ class PDFDict extends PDFObject {
       ...types,
     ) as any;
 
-    if (value === PDFNull && !preservePDFNull) return undefined;
+    if (value === PDFNull && !preservePDFNull) return;
 
     return value;
   }
@@ -149,7 +149,7 @@ class PDFDict extends PDFObject {
       ...types,
     ) as any;
 
-    if (value === PDFNull && !preservePDFNull) return undefined;
+    if (value === PDFNull && !preservePDFNull) return;
 
     return value;
   }

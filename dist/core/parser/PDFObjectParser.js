@@ -182,11 +182,11 @@ class PDFObjectParser extends BaseParser {
         const startPos = this.bytes.position();
         const dict = this.parseDict(ref);
         this.skipWhitespaceAndComments();
-        if (!this.matchKeyword(Keywords.streamEOF1) &&
-            !this.matchKeyword(Keywords.streamEOF2) &&
-            !this.matchKeyword(Keywords.streamEOF3) &&
-            !this.matchKeyword(Keywords.streamEOF4) &&
-            !this.matchKeyword(Keywords.stream)) {
+        if (!(this.matchKeyword(Keywords.streamEOF1) ||
+            this.matchKeyword(Keywords.streamEOF2) ||
+            this.matchKeyword(Keywords.streamEOF3) ||
+            this.matchKeyword(Keywords.streamEOF4) ||
+            this.matchKeyword(Keywords.stream))) {
             return dict;
         }
         const start = this.bytes.offset();

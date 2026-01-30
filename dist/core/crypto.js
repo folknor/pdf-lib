@@ -1482,7 +1482,7 @@ class CipherTransformFactory {
             const perms = dict.get(PDFName.of('Perms')).asBytes();
             encryptionKey = this.createEncryptionKey20(revision, passwordBytes, ownerPassword, ownerValidationSalt, ownerKeySalt, uBytes, userPassword, userValidationSalt, userKeySalt, ownerEncryption, userEncryption, perms);
         }
-        if (!encryptionKey && !password) {
+        if (!(encryptionKey || password)) {
             throw new Error('NEEDS PASSWORD');
         }
         else if (!encryptionKey && password) {

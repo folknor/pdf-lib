@@ -5,7 +5,7 @@ import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 const asEnum = (rawValue, enumType) => {
     if (rawValue === undefined)
-        return undefined;
+        return;
     return enumType[rawValue];
 };
 export var NonFullScreenPageMode;
@@ -75,13 +75,13 @@ class ViewerPreferences {
         const returnObj = this.dict.lookup(PDFName.of(key));
         if (returnObj instanceof PDFBool)
             return returnObj;
-        return undefined;
+        return;
     }
     lookupName(key) {
         const returnObj = this.dict.lookup(PDFName.of(key));
         if (returnObj instanceof PDFName)
             return returnObj;
-        return undefined;
+        return;
     }
     /** @ignore */
     HideToolbar() {
@@ -132,14 +132,14 @@ class ViewerPreferences {
         const PrintPageRange = this.dict.lookup(PDFName.of('PrintPageRange'));
         if (PrintPageRange instanceof PDFArray)
             return PrintPageRange;
-        return undefined;
+        return;
     }
     /** @ignore */
     NumCopies() {
         const NumCopies = this.dict.lookup(PDFName.of('NumCopies'));
         if (NumCopies instanceof PDFNumber)
             return NumCopies;
-        return undefined;
+        return;
     }
     /**
      * Returns `true` if PDF readers should hide the toolbar menus when displaying

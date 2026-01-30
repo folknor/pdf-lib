@@ -161,7 +161,7 @@ class PDFPageLeaf extends PDFDict {
     for (const [key, value] of Font.entries()) {
       if (value === fontDictRef) return key;
     }
-    return undefined;
+    return;
   }
 
   newFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
@@ -193,7 +193,7 @@ class PDFPageLeaf extends PDFDict {
     for (const [key, value] of XObject.entries()) {
       if (value === xObjectRef) return key;
     }
-    return undefined;
+    return;
   }
 
   newXObject(tag: string, xObjectRef: PDFRef): PDFName {
@@ -223,7 +223,7 @@ class PDFPageLeaf extends PDFDict {
     for (const [key, value] of ExtGState.entries()) {
       if (value === extGStateRef) return key;
     }
-    return undefined;
+    return;
   }
 
   newExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {

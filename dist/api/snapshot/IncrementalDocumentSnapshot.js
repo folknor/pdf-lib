@@ -51,7 +51,7 @@ export class IncrementalDocumentSnapshot {
     }
     deletedRef(index) {
         if (index < 0 || index >= this.deleted.length)
-            return undefined;
+            return;
         return this.deleted[index];
     }
 }

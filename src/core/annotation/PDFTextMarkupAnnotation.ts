@@ -53,12 +53,12 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
         if (num instanceof PDFNumber) {
           numbers.push(num);
         } else {
-          return undefined;
+          return;
         }
       }
       return numbers;
     }
-    return undefined;
+    return;
   }
 
   // Overloads: accept a tuple of 8 numbers OR 8 individual number args

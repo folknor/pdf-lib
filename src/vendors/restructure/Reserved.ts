@@ -24,7 +24,7 @@ export class Reserved extends Base<undefined> {
 
   decode(stream: DecodeStream, parent?: unknown): undefined {
     stream.pos += this.size(null, parent);
-    return undefined;
+    return;
   }
 
   size(_data?: unknown, parent?: unknown): number {

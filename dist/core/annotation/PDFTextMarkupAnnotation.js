@@ -34,12 +34,12 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
                     numbers.push(num);
                 }
                 else {
-                    return undefined;
+                    return;
                 }
             }
             return numbers;
         }
-        return undefined;
+        return;
     }
     setQuadPoints(quadOrLeftBottomX, leftBottomY, rightBottomX, rightBottomY, leftTopX, leftTopY, rightTopX, rightTopY) {
         let values;

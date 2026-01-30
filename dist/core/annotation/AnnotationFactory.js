@@ -8,7 +8,7 @@ function getSubtype(dict) {
         return subtypePdfName.toString();
     }
     else {
-        return undefined;
+        return;
     }
 }
 function fromDict(dict) {

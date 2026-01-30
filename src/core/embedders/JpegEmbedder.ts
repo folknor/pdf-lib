@@ -120,7 +120,7 @@ function parseExifOrientation(dataView: DataView): ExifOrientation {
     pos += 2 + segmentLength;
   }
 
-  return undefined;
+  return;
 }
 
 /**

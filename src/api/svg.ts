@@ -259,7 +259,7 @@ const runnersToPage = (
       fonts: { [fontName: string]: PDFFont },
     ) => {
       const family = style.fontFamily;
-      if (!family) return undefined;
+      if (!family) return;
       const isBold =
         style.fontWeight === 'bold' || Number(style.fontWeight) >= 700;
       const isItalic = style.fontStyle === 'italic';
@@ -542,8 +542,8 @@ const parseColor = (
   color: string,
   inherited?: { rgb: Color; alpha: string | undefined },
 ): { rgb: Color; alpha: string | undefined } | undefined => {
-  if (!color || color.length === 0) return undefined;
-  if (['none', 'transparent'].includes(color)) return undefined;
+  if (!color || color.length === 0) return;
+  if (['none', 'transparent'].includes(color)) return;
   if (color === 'currentColor') return inherited || parseColor('#000000');
   const parsedColor = colorString(color);
   return {
@@ -1009,9 +1009,9 @@ const parseGroupNode = (
 };
 
 const parseFloatValue = (value?: string, reference = 1) => {
-  if (!value) return undefined;
+  if (!value) return;
   const v = parseFloat(value);
-  if (Number.isNaN(v)) return undefined;
+  if (Number.isNaN(v)) return;
   if (value.endsWith('%')) return (v * reference) / 100;
   return v;
 };
@@ -1043,12 +1043,12 @@ const parseBlendMode = (blendMode?: string): BlendMode | undefined => {
     case 'exclusion':
       return BlendMode.Exclusion;
     default:
-      return undefined;
+      return;
   }
 };
 
 const parseViewBox = (viewBox?: string): Box | undefined => {
-  if (!viewBox) return undefined;
+  if (!viewBox) return;
   const [xViewBox = 0, yViewBox = 0, widthViewBox = 1, heightViewBox = 1] = (
     viewBox || ''
   )

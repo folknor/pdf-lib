@@ -10,7 +10,7 @@ class PDFSecurity {
         return new PDFSecurity(context, options);
     }
     constructor(context, options) {
-        if (!options.ownerPassword && !options.userPassword) {
+        if (!(options.ownerPassword || options.userPassword)) {
             throw new Error('Either an owner password or a user password must be specified.');
         }
         this.context = context;

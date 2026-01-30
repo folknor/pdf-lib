@@ -14,7 +14,7 @@ class PDFAcroButton extends PDFAcroTerminal {
     getExportValues() {
         const opt = this.Opt();
         if (!opt)
-            return undefined;
+            return;
         if (opt instanceof PDFString || opt instanceof PDFHexString) {
             return [opt];
         }

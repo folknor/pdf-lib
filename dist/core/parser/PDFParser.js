@@ -29,7 +29,7 @@ class PDFParser extends PDFObjectParser {
         this.objectsPerTick = objectsPerTick;
         this.throwOnInvalidObject = throwOnInvalidObject;
         this.warnOnInvalidObjects = warnOnInvalidObjects;
-        this.context.isDecrypted = !!cryptoFactory?.encryptionKey;
+        this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
         this.context.pdfFileDetails.pdfSize = pdfBytes.length;
         if (forIncrementalUpdate) {
             this.context.pdfFileDetails.originalBytes = pdfBytes;

@@ -47,7 +47,7 @@ class LazyArrayValue<T> {
 
   get(index: number): T | undefined {
     if (index < 0 || index >= this.length) {
-      return undefined;
+      return;
     }
 
     if (this.items[index] == null) {

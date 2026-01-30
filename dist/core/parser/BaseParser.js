@@ -21,7 +21,7 @@ class BaseParser {
             value += charFromCode(this.bytes.next());
         }
         const numberValue = Number(value);
-        if (!value || !Number.isFinite(numberValue)) {
+        if (!(value && Number.isFinite(numberValue))) {
             throw new NumberParsingError(this.bytes.position(), value);
         }
         return numberValue;
@@ -47,7 +47,7 @@ class BaseParser {
             value += charFromCode(this.bytes.next());
         }
         const numberValue = Number(value);
-        if (!value || !Number.isFinite(numberValue)) {
+        if (!(value && Number.isFinite(numberValue))) {
             throw new NumberParsingError(this.bytes.position(), value);
         }
         if (numberValue > Number.MAX_SAFE_INTEGER) {

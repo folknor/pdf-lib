@@ -17,13 +17,13 @@ class PDFAcroText extends PDFAcroTerminal {
         const maxLen = this.dict.lookup(PDFName.of('MaxLen'));
         if (maxLen instanceof PDFNumber)
             return maxLen;
-        return undefined;
+        return;
     }
     Q() {
         const q = this.dict.lookup(PDFName.of('Q'));
         if (q instanceof PDFNumber)
             return q;
-        return undefined;
+        return;
     }
     setMaxLength(maxLength) {
         this.dict.set(PDFName.of('MaxLen'), PDFNumber.of(maxLength));
@@ -57,7 +57,7 @@ class PDFAcroText extends PDFAcroTerminal {
         const v = this.V();
         if (v instanceof PDFString || v instanceof PDFHexString)
             return v;
-        return undefined;
+        return;
     }
 }
 export default PDFAcroText;

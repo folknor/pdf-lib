@@ -1360,7 +1360,7 @@ export default class PDFPage {
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
-    if (!('color' in options) && !('borderColor' in options)) {
+    if (!('color' in options || 'borderColor' in options)) {
       options.borderColor = rgb(0, 0, 0);
     }
 
@@ -1528,7 +1528,7 @@ export default class PDFPage {
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
-    if (!('color' in options) && !('borderColor' in options)) {
+    if (!('color' in options || 'borderColor' in options)) {
       options.color = rgb(0, 0, 0);
     }
 
@@ -1652,7 +1652,7 @@ export default class PDFPage {
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
     });
 
-    if (!('color' in options) && !('borderColor' in options)) {
+    if (!('color' in options || 'borderColor' in options)) {
       options.color = rgb(0, 0, 0);
     }
 
@@ -1766,7 +1766,7 @@ export default class PDFPage {
   }
 
   getFont(): [PDFFont, PDFName] {
-    if (!this.font || !this.fontKey) {
+    if (!(this.font && this.fontKey)) {
       const font = this.doc.embedStandardFont(StandardFonts.Helvetica);
       this.setFont(font);
     }
@@ -1804,7 +1804,7 @@ export default class PDFPage {
       borderOpacity === undefined &&
       blendMode === undefined
     ) {
-      return undefined;
+      return;
     }
 
     const graphicsState = this.doc.context.obj({
@@ -1827,7 +1827,7 @@ export default class PDFPage {
     const annotsArray = this.node.Annots();
 
     // if there are no annotations...
-    if (!annotsArray || !(annotsArray instanceof PDFArray)) {
+    if (!(annotsArray && annotsArray instanceof PDFArray)) {
       // ...return an empty array
       return [];
     }

@@ -64,12 +64,12 @@ function decodeContentStream(stream) {
         if (stream instanceof PDFContentStream) {
             return stream.getContentsString();
         }
-        return undefined;
+        return;
     }
     catch {
         // If decoding fails (unsupported filter, etc.), return undefined
         // Caller should fall back to copying all resources
-        return undefined;
+        return;
     }
 }
 /**
@@ -162,7 +162,7 @@ export function analyzePageResources(page, context) {
         const text = decodeContentStream(stream);
         if (text === undefined) {
             // Decoding failed - can't safely optimize, copy all resources
-            return undefined;
+            return;
         }
         extractResourcesFromText(text, used);
     }

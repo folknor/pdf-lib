@@ -18,7 +18,7 @@ class PDFAcroForm {
         const fields = this.dict.lookup(PDFName.of('Fields'));
         if (fields instanceof PDFArray)
             return fields;
-        return undefined;
+        return;
     }
     getFields() {
         const { Fields } = this.normalizedEntries();

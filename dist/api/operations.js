@@ -581,6 +581,6 @@ const getDrawingOperator = ({ color, borderWidth, borderColor, fillRule, }) => {
     else if (borderColor && borderWidth !== 0) {
         return stroke;
     }
-    return undefined;
+    return;
 };
 //# sourceMappingURL=operations.js.map

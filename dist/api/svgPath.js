@@ -44,7 +44,7 @@ const parse = (path) => {
             if (cmd) {
                 // save existing command
                 if (curArg.length > 0) {
-                    args[args.length] = +curArg;
+                    args[args.length] = Number(curArg);
                 }
                 ret[ret.length] = { cmd, args };
                 args = [];
@@ -62,7 +62,7 @@ const parse = (path) => {
             if (args.length === params) {
                 // handle reused commands
                 ret[ret.length] = { cmd, args };
-                args = [+curArg];
+                args = [Number(curArg)];
                 // handle assumed commands
                 if (cmd === 'M') {
                     cmd = 'L';
@@ -72,7 +72,7 @@ const parse = (path) => {
                 }
             }
             else {
-                args[args.length] = +curArg;
+                args[args.length] = Number(curArg);
             }
             foundDecimal = c === '.';
             // fix for negative numbers or repeated decimals with no delimeter between commands
@@ -90,7 +90,7 @@ const parse = (path) => {
         if (args.length === params) {
             // handle reused commands
             ret[ret.length] = { cmd, args };
-            args = [+curArg];
+            args = [Number(curArg)];
             // handle assumed commands
             if (cmd === 'M') {
                 cmd = 'L';
@@ -100,7 +100,7 @@ const parse = (path) => {
             }
         }
         else {
-            args[args.length] = +curArg;
+            args[args.length] = Number(curArg);
         }
     }
     ret[ret.length] = { cmd, args };

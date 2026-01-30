@@ -25,25 +25,25 @@ class PDFWidgetAnnotation extends PDFAnnotation {
   MK(): PDFDict | undefined {
     const MK = this.dict.lookup(PDFName.of('MK'));
     if (MK instanceof PDFDict) return MK;
-    return undefined;
+    return;
   }
 
   BS(): PDFDict | undefined {
     const BS = this.dict.lookup(PDFName.of('BS'));
     if (BS instanceof PDFDict) return BS;
-    return undefined;
+    return;
   }
 
   DA(): PDFString | PDFHexString | undefined {
     const da = this.dict.lookup(PDFName.of('DA'));
     if (da instanceof PDFString || da instanceof PDFHexString) return da;
-    return undefined;
+    return;
   }
 
   override P(): PDFRef | undefined {
     const P = this.dict.get(PDFName.of('P'));
     if (P instanceof PDFRef) return P;
-    return undefined;
+    return;
   }
 
   setP(page: PDFRef) {
@@ -67,7 +67,7 @@ class PDFWidgetAnnotation extends PDFAnnotation {
   getAppearanceCharacteristics(): AppearanceCharacteristics | undefined {
     const MK = this.MK();
     if (MK) return AppearanceCharacteristics.fromDict(MK);
-    return undefined;
+    return;
   }
 
   getOrCreateAppearanceCharacteristics(): AppearanceCharacteristics {
@@ -82,7 +82,7 @@ class PDFWidgetAnnotation extends PDFAnnotation {
   getBorderStyle(): BorderStyle | undefined {
     const BS = this.BS();
     if (BS) return BorderStyle.fromDict(BS);
-    return undefined;
+    return;
   }
 
   getOrCreateBorderStyle(): BorderStyle {
@@ -105,7 +105,7 @@ class PDFWidgetAnnotation extends PDFAnnotation {
       }
     }
 
-    return undefined;
+    return;
   }
 }
 

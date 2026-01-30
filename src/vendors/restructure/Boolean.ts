@@ -18,7 +18,7 @@ export class BooleanT extends Base<boolean> {
   }
 
   decode(stream: DecodeStream, _parent?: unknown): boolean {
-    return !!this.type.decode(stream);
+    return Boolean(this.type.decode(stream));
   }
 
   size(_val?: boolean | null | undefined, _parent?: unknown): number {
@@ -26,7 +26,7 @@ export class BooleanT extends Base<boolean> {
   }
 
   encode(stream: EncodeStream, val: boolean, _parent?: unknown): void {
-    this.type.encode(stream, +val);
+    this.type.encode(stream, Number(val));
   }
 }
 

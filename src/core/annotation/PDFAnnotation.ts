@@ -172,7 +172,7 @@ class PDFAnnotation {
     if (subtypePdfName instanceof PDFName) {
       return subtypePdfName.toString() as AnnotationTypes;
     }
-    return undefined;
+    return;
   }
 
   getRectangle(): { x: number; y: number; width: number; height: number } {
@@ -183,7 +183,7 @@ class PDFAnnotation {
   getAppearanceState(): PDFName | undefined {
     const AS = this.dict.lookup(PDFName.of('AS'));
     if (AS instanceof PDFName) return AS;
-    return undefined;
+    return;
   }
 
   ensureAP(): PDFDict {
@@ -197,10 +197,10 @@ class PDFAnnotation {
 
   getNormalAppearance(): PDFRef | PDFDict | undefined {
     const AP = this.AP();
-    if (!AP) return undefined;
+    if (!AP) return;
     const N = AP.get(PDFName.of('N'));
     if (N instanceof PDFRef || N instanceof PDFDict) return N;
-    return undefined;
+    return;
   }
 
   removeRolloverAppearance() {
@@ -222,14 +222,14 @@ class PDFAnnotation {
     | undefined {
     const AP = this.AP();
 
-    if (!AP) return undefined;
+    if (!AP) return;
 
     const N = AP.lookupMaybe(PDFName.of('N'), PDFDict, PDFStream);
     const R = AP.lookupMaybe(PDFName.of('R'), PDFDict, PDFStream);
     const D = AP.lookupMaybe(PDFName.of('D'), PDFDict, PDFStream);
 
     // Normal appearance is required, return undefined if missing
-    if (!N) return undefined;
+    if (!N) return;
 
     return { normal: N, rollover: R, down: D };
   }
@@ -245,13 +245,13 @@ class PDFAnnotation {
 
   getParentPage(): PDFPageLeaf | undefined {
     const pageRef = this.P();
-    if (!pageRef) return undefined;
+    if (!pageRef) return;
 
     const page = this.dict.context.lookup(pageRef);
     if (page instanceof PDFPageLeaf) {
       return page;
     }
-    return undefined;
+    return;
   }
 
   // Setter methods

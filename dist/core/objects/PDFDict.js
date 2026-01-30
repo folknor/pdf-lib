@@ -32,7 +32,7 @@ class PDFDict extends PDFObject {
     preservePDFNull = false) {
         const value = this.dict.get(key);
         if (value === PDFNull && !preservePDFNull)
-            return undefined;
+            return;
         return value;
     }
     has(key) {
@@ -47,7 +47,7 @@ class PDFDict extends PDFObject {
         // @ts-expect-error
         ...types);
         if (value === PDFNull && !preservePDFNull)
-            return undefined;
+            return;
         return value;
     }
     lookup(key, ...types) {
@@ -58,7 +58,7 @@ class PDFDict extends PDFObject {
         // @ts-expect-error
         ...types);
         if (value === PDFNull && !preservePDFNull)
-            return undefined;
+            return;
         return value;
     }
     delete(key) {

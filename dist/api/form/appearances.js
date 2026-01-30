@@ -39,7 +39,7 @@ const getDefaultColor = (field) => {
     if (colorSpace === 'k' && c1 && c2 && c3 && c4) {
         return cmyk(Number(c1), Number(c2), Number(c3), Number(c4));
     }
-    return undefined;
+    return;
 };
 const updateDefaultAppearance = (field, color, font, fontSize = 0) => {
     const da = [

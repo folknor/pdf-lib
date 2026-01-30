@@ -85,7 +85,7 @@ function parseExifOrientation(dataView) {
         }
         pos += 2 + segmentLength;
     }
-    return undefined;
+    return;
 }
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as

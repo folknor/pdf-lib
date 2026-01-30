@@ -186,7 +186,7 @@ export default class PDFForm {
       const field = fields[idx]!;
       if (field.getName() === name) return field;
     }
-    return undefined;
+    return;
   }
 
   /**
@@ -708,7 +708,7 @@ export default class PDFForm {
         const page = this.findWidgetPage(widget);
         const widgetRef = this.findWidgetAppearanceRef(field, widget);
 
-        if (!page || !widgetRef) continue;
+        if (!(page && widgetRef)) continue;
 
         const xObjectKey = page.node.getOrCreateXObject(
           'FlatWidget',
@@ -881,7 +881,7 @@ export default class PDFForm {
     let page = this.doc.getPages().find((x) => x.ref === pageRef);
     if (page === undefined) {
       const widgetRef = this.doc.context.getObjectRef(widget.dict);
-      if (widgetRef === undefined) return undefined;
+      if (widgetRef === undefined) return;
       page = this.doc.findPageForAnnotationRef(widgetRef);
     }
     return page;
@@ -892,12 +892,12 @@ export default class PDFForm {
     widget: PDFWidgetAnnotation,
   ): PDFRef | undefined {
     let refOrDict = widget.getNormalAppearance();
-    if (!refOrDict) return undefined;
+    if (!refOrDict) return;
 
     if (field instanceof PDFCheckBox || field instanceof PDFRadioGroup) {
       if (refOrDict instanceof PDFRef) {
         const lookedUp = this.doc.context.lookupMaybe(refOrDict, PDFDict);
-        if (!lookedUp) return undefined;
+        if (!lookedUp) return;
         refOrDict = lookedUp;
       }
       if (refOrDict instanceof PDFDict) {
@@ -919,7 +919,7 @@ export default class PDFForm {
       }
     }
 
-    if (!(refOrDict instanceof PDFRef)) return undefined;
+    if (!(refOrDict instanceof PDFRef)) return;
 
     return refOrDict;
   }
@@ -965,7 +965,7 @@ export default class PDFForm {
       }
     }
 
-    return undefined;
+    return;
   }
 
   private embedDefaultFont = (): PDFFont =>
@@ -988,7 +988,7 @@ const convertToPDFField = (
   if (field instanceof PDFAcroSignature) {
     return PDFSignature.of(field, ref, doc);
   }
-  return undefined;
+  return;
 };
 
 const splitFieldName = (fullyQualifiedName: string) => {

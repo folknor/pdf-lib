@@ -27,19 +27,19 @@ class BorderStyle {
         const W = this.dict.lookup(PDFName.of('W'));
         if (W instanceof PDFNumber)
             return W;
-        return undefined;
+        return;
     }
     S() {
         const S = this.dict.lookup(PDFName.of('S'));
         if (S instanceof PDFName)
             return S;
-        return undefined;
+        return;
     }
     D() {
         const D = this.dict.lookup(PDFName.of('D'));
         if (D instanceof PDFArray)
             return D;
-        return undefined;
+        return;
     }
     getWidth() {
         return this.W()?.asNumber() ?? 1;
@@ -82,7 +82,7 @@ class BorderStyle {
     getDashPattern() {
         const D = this.D();
         if (!D)
-            return undefined;
+            return;
         const pattern = [];
         for (let i = 0; i < D.size(); i++) {
             const item = D.get(i);

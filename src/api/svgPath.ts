@@ -61,7 +61,7 @@ const parse = (path: string) => {
       if (cmd) {
         // save existing command
         if (curArg.length > 0) {
-          args[args.length] = +curArg;
+          args[args.length] = Number(curArg);
         }
         ret[ret.length] = { cmd, args };
 
@@ -83,7 +83,7 @@ const parse = (path: string) => {
       if (args.length === params) {
         // handle reused commands
         ret[ret.length] = { cmd, args };
-        args = [+curArg];
+        args = [Number(curArg)];
 
         // handle assumed commands
         if (cmd === 'M') {
@@ -93,7 +93,7 @@ const parse = (path: string) => {
           cmd = 'l';
         }
       } else {
-        args[args.length] = +curArg;
+        args[args.length] = Number(curArg);
       }
 
       foundDecimal = c === '.';
@@ -113,7 +113,7 @@ const parse = (path: string) => {
     if (args.length === params) {
       // handle reused commands
       ret[ret.length] = { cmd, args };
-      args = [+curArg];
+      args = [Number(curArg)];
 
       // handle assumed commands
       if (cmd === 'M') {
@@ -123,7 +123,7 @@ const parse = (path: string) => {
         cmd = 'l';
       }
     } else {
-      args[args.length] = +curArg;
+      args[args.length] = Number(curArg);
     }
   }
 

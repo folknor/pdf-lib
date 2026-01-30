@@ -178,7 +178,7 @@ export default class Glyph {
   }
 
   get ligatureCaretPositions(): number[] | undefined {
-    return undefined;
+    return;
   }
 
   _getName(): string | null | undefined {
@@ -207,7 +207,7 @@ export default class Glyph {
         return String.fromCharCode(post.map[this.id]);
 
       default:
-        return undefined;
+        return;
     }
   }
 

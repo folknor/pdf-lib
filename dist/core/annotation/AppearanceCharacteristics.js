@@ -13,37 +13,37 @@ class AppearanceCharacteristics {
         const R = this.dict.lookup(PDFName.of('R'));
         if (R instanceof PDFNumber)
             return R;
-        return undefined;
+        return;
     }
     BC() {
         const BC = this.dict.lookup(PDFName.of('BC'));
         if (BC instanceof PDFArray)
             return BC;
-        return undefined;
+        return;
     }
     BG() {
         const BG = this.dict.lookup(PDFName.of('BG'));
         if (BG instanceof PDFArray)
             return BG;
-        return undefined;
+        return;
     }
     CA() {
         const CA = this.dict.lookup(PDFName.of('CA'));
         if (CA instanceof PDFHexString || CA instanceof PDFString)
             return CA;
-        return undefined;
+        return;
     }
     RC() {
         const RC = this.dict.lookup(PDFName.of('RC'));
         if (RC instanceof PDFHexString || RC instanceof PDFString)
             return RC;
-        return undefined;
+        return;
     }
     AC() {
         const AC = this.dict.lookup(PDFName.of('AC'));
         if (AC instanceof PDFHexString || AC instanceof PDFString)
             return AC;
-        return undefined;
+        return;
     }
     getRotation() {
         return this.R()?.asNumber();
@@ -51,7 +51,7 @@ class AppearanceCharacteristics {
     getBorderColor() {
         const BC = this.BC();
         if (!BC)
-            return undefined;
+            return;
         const components = [];
         for (let idx = 0, len = BC?.size(); idx < len; idx++) {
             const component = BC.get(idx);
@@ -63,7 +63,7 @@ class AppearanceCharacteristics {
     getBackgroundColor() {
         const BG = this.BG();
         if (!BG)
-            return undefined;
+            return;
         const components = [];
         for (let idx = 0, len = BG?.size(); idx < len; idx++) {
             const component = BG.get(idx);

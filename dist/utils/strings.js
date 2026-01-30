@@ -117,7 +117,7 @@ const dateRegex = /^D:(\d\d\d\d)(\d\d)?(\d\d)?(\d\d)?(\d\d)?(\d\d)?([+\-Z])?(\d{
 export const parseDate = (dateStr) => {
     const match = dateStr.match(dateRegex);
     if (!match)
-        return undefined;
+        return;
     const [, year, month = '01', day = '01', hours = '00', mins = '00', secs = '00', offsetSign = 'Z', offsetHours = '00', offsetMins = '00',] = match;
     // http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.15
     const tzOffset = offsetSign === 'Z'

@@ -50,7 +50,7 @@ class PngEmbedder {
   }
 
   private embedAlphaChannel(context: PDFContext): PDFRef | undefined {
-    if (!this.image.alphaChannel) return undefined;
+    if (!this.image.alphaChannel) return;
 
     const xObject = context.flateStream(this.image.alphaChannel, {
       Type: 'XObject',

@@ -11,13 +11,13 @@ export class BooleanT extends Base {
         this.type = type;
     }
     decode(stream, _parent) {
-        return !!this.type.decode(stream);
+        return Boolean(this.type.decode(stream));
     }
     size(_val, _parent) {
         return this.type.size();
     }
     encode(stream, val, _parent) {
-        this.type.encode(stream, +val);
+        this.type.encode(stream, Number(val));
     }
 }
 export { BooleanT as Boolean };

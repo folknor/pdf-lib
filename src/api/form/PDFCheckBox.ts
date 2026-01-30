@@ -118,7 +118,7 @@ export default class PDFCheckBox extends PDFField {
    */
   isChecked(): boolean {
     const onValue = this.acroField.getOnValue();
-    return !!onValue && onValue === this.acroField.getValue();
+    return Boolean(onValue) && onValue === this.acroField.getValue();
   }
 
   /**

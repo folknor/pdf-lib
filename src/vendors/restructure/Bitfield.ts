@@ -26,7 +26,7 @@ export class Bitfield extends Base<Record<string, boolean>> {
     for (let i = 0; i < this.flags.length; i++) {
       const flag = this.flags[i];
       if (flag != null) {
-        res[flag] = !!(val & (1 << i));
+        res[flag] = Boolean(val & (1 << i));
       }
     }
 

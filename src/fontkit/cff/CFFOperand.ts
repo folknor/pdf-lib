@@ -108,7 +108,7 @@ export default class CFFOperand {
 
     if (typeof value !== 'number' && value.forceLarge) {
       stream.writeUInt8(29);
-      return stream.writeInt32BE(val);
+      stream.writeInt32BE(val);
     } else if ((val | 0) !== val) {
       // floating point
       stream.writeUInt8(30);
@@ -132,24 +132,24 @@ export default class CFFOperand {
       }
 
       if (lastN2 !== FLOAT_EOF) {
-        return stream.writeUInt8(FLOAT_EOF << 4);
+        stream.writeUInt8(FLOAT_EOF << 4);
       }
     } else if (-107 <= val && val <= 107) {
-      return stream.writeUInt8(val + 139);
+      stream.writeUInt8(val + 139);
     } else if (108 <= val && val <= 1131) {
       val -= 108;
       stream.writeUInt8((val >> 8) + 247);
-      return stream.writeUInt8(val & 0xff);
+      stream.writeUInt8(val & 0xff);
     } else if (-1131 <= val && val <= -108) {
       val = -val - 108;
       stream.writeUInt8((val >> 8) + 251);
-      return stream.writeUInt8(val & 0xff);
+      stream.writeUInt8(val & 0xff);
     } else if (-32768 <= val && val <= 32767) {
       stream.writeUInt8(28);
-      return stream.writeInt16BE(val);
+      stream.writeInt16BE(val);
     } else {
       stream.writeUInt8(29);
-      return stream.writeInt32BE(val);
+      stream.writeInt32BE(val);
     }
   }
 }

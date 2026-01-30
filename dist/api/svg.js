@@ -114,7 +114,7 @@ const runnersToPage = (page, options) => ({
         const getBestFont = (style, fonts) => {
             const family = style.fontFamily;
             if (!family)
-                return undefined;
+                return;
             const isBold = style.fontWeight === 'bold' || Number(style.fontWeight) >= 700;
             const isItalic = style.fontStyle === 'italic';
             const getFont = (bold, italic, fontFamily) => fonts[fontFamily + (bold ? '_bold' : '') + (italic ? '_italic' : '')];
@@ -362,9 +362,9 @@ const parseStyles = (style) => {
 };
 const parseColor = (color, inherited) => {
     if (!color || color.length === 0)
-        return undefined;
+        return;
     if (['none', 'transparent'].includes(color))
-        return undefined;
+        return;
     if (color === 'currentColor')
         return inherited || parseColor('#000000');
     const parsedColor = colorString(color);
@@ -698,10 +698,10 @@ const parseGroupNode = (node, inherited, matrix, clipSpaces) => {
 };
 const parseFloatValue = (value, reference = 1) => {
     if (!value)
-        return undefined;
+        return;
     const v = parseFloat(value);
     if (Number.isNaN(v))
-        return undefined;
+        return;
     if (value.endsWith('%'))
         return (v * reference) / 100;
     return v;
@@ -733,12 +733,12 @@ const parseBlendMode = (blendMode) => {
         case 'exclusion':
             return BlendMode.Exclusion;
         default:
-            return undefined;
+            return;
     }
 };
 const parseViewBox = (viewBox) => {
     if (!viewBox)
-        return undefined;
+        return;
     const [xViewBox = 0, yViewBox = 0, widthViewBox = 1, heightViewBox = 1] = (viewBox || '')
         .split(' ')
         .map((val) => parseFloatValue(val));

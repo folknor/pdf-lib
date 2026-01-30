@@ -16,7 +16,7 @@
         "useConsistentArrowReturn": "error",
         "useAwaitThenable": "off",
         "useArraySortCompare": "error",
-        "noUselessUndefined": "off",
+        "noUselessUndefined": "error",
         "noUselessCatchBinding": "error",
         "noUnusedExpressions": "error",
         "noUnresolvedImports": "off",
@@ -29,7 +29,6 @@
       },
       "complexity": {
         "noBannedTypes": "error",
-        "useLiteralKeys": "off",
         "useSimplifiedLogicExpression": "off",
         "noUselessSwitchCase": "off",
         "noUselessStringConcat": "error",
@@ -37,8 +36,8 @@
         "noForEach": "error"
       },
       "correctness": {
-        "noUndeclaredVariables": "off",
-        "noProcessGlobal": "off"
+        "noUndeclaredVariables": "error",
+        "noProcessGlobal": "error"
       },
       "style": {
         "noNonNullAssertion": "off",
@@ -51,6 +50,7 @@
         "noBarrelFile": "off"
       },
       "suspicious": {
+        "useGetterReturn": "off",
         "noConsole": "off",
         "noExplicitAny": "off",
         "noDoubleEquals": "error",
@@ -60,10 +60,10 @@
         "noTsIgnore": "off",
         "useErrorMessage": "error",
         "noVar": "error",
-        "noUnassignedVariables": "off",
-        "noMisplacedAssertion": "off",
+        "noUnassignedVariables": "error",
+        "noMisplacedAssertion": "error",
         "noEvolvingTypes": "off",
-        "useIterableCallbackReturn": "off",
+        "useIterableCallbackReturn": "error",
         "noControlCharactersInRegex": "off",
         "noAssignInExpressions": "off"
       }

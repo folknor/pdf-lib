@@ -15,7 +15,7 @@ export class Reserved extends Base {
     }
     decode(stream, parent) {
         stream.pos += this.size(null, parent);
-        return undefined;
+        return;
     }
     size(_data, parent) {
         const count = utils.resolveLength(this.count, null, parent);

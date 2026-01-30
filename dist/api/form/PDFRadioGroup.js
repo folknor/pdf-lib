@@ -89,7 +89,7 @@ export default class PDFRadioGroup extends PDFField {
     getSelected() {
         const value = this.acroField.getValue();
         if (value === PDFName.of('Off'))
-            return undefined;
+            return;
         const exportValues = this.acroField.getExportValues();
         if (exportValues) {
             const onValues = this.acroField.getOnValues();
