@@ -24,6 +24,7 @@ declare class AppearanceCharacteristics {
     setRotation(rotation: number): void;
     setBorderColor(color: number[]): void;
     setBackgroundColor(color: number[]): void;
+    clearBackgroundColor(): void;
     setCaptions(captions: {
         normal: string;
         rollover?: string;

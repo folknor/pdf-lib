@@ -1,10 +1,12 @@
 import {
   AnnotationFactory,
+  AnnotationTypes,
   type PDFAnnotation,
   PDFArray,
   PDFContentStream,
   PDFDict,
   type PDFHexString,
+  type PDFLinkAnnotation,
   PDFName,
   PDFOperator,
   PDFPageLeaf,
@@ -1842,6 +1844,88 @@ export default class PDFPage {
       }
     }
     return annotations;
+  }
+
+  /**
+   * Get all link annotations on this page.
+   * Link annotations are clickable areas that navigate to URLs or document destinations.
+   *
+   * For example:
+   * ```js
+   * const links = page.getLinkAnnotations();
+   * for (const link of links) {
+   *   const url = link.getUrl();
+   *   if (url) console.log('External link:', url);
+   *
+   *   const dest = link.getDestination();
+   *   if (dest) console.log('Internal link:', dest);
+   * }
+   * ```
+   * @returns An array of PDFLinkAnnotation instances.
+   */
+  getLinkAnnotations(): PDFLinkAnnotation[] {
+    return this.annotations().filter(
+      (annot): annot is PDFLinkAnnotation =>
+        annot.getSubtype() === AnnotationTypes.Link,
+    );
+  }
+
+  /**
+   * Remove a specific annotation from this page.
+   *
+   * For example:
+   * ```js
+   * const links = page.getLinkAnnotations();
+   * if (links.length > 0) {
+   *   const removed = page.removeAnnotation(links[0]);
+   *   console.log('Removed:', removed);
+   * }
+   * ```
+   * @param annotation The annotation to remove.
+   * @returns True if the annotation was found and removed, false otherwise.
+   */
+  removeAnnotation(annotation: PDFAnnotation): boolean {
+    const ref = this.doc.context.getObjectRef(annotation.dict);
+    if (!ref) return false;
+
+    // Check if this annotation is actually on this page
+    const annotsArray = this.node.Annots();
+    if (!annotsArray) return false;
+
+    const index = annotsArray.indexOf(ref);
+    if (index === undefined) return false;
+
+    this.node.removeAnnot(ref);
+    return true;
+  }
+
+  /**
+   * Remove all annotations matching a predicate from this page.
+   *
+   * For example:
+   * ```js
+   * // Remove all link annotations pointing to a specific domain
+   * const removed = page.removeAnnotations((annot) => {
+   *   if (annot.getSubtype() !== AnnotationTypes.Link) return false;
+   *   const url = (annot as PDFLinkAnnotation).getUrl();
+   *   return url?.includes('example.com') ?? false;
+   * });
+   * console.log(`Removed ${removed} annotations`);
+   * ```
+   * @param predicate A function that returns true for annotations to remove.
+   * @returns The number of annotations removed.
+   */
+  removeAnnotations(predicate: (annot: PDFAnnotation) => boolean): number {
+    const annotations = this.annotations();
+    let removed = 0;
+    for (const annot of annotations) {
+      if (predicate(annot)) {
+        if (this.removeAnnotation(annot)) {
+          removed++;
+        }
+      }
+    }
+    return removed;
   }
 
   /**

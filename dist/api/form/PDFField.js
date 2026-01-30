@@ -14,9 +14,12 @@ export const assertFieldAppearanceOptions = (options) => {
     assertOrUndefined(options?.textColor, 'options.textColor', [
         [Object, 'Color'],
     ]);
-    assertOrUndefined(options?.backgroundColor, 'options.backgroundColor', [
-        [Object, 'Color'],
-    ]);
+    // backgroundColor accepts Color, null (transparent), or undefined
+    if (options?.backgroundColor !== null) {
+        assertOrUndefined(options?.backgroundColor, 'options.backgroundColor', [
+            [Object, 'Color'],
+        ]);
+    }
     assertOrUndefined(options?.borderColor, 'options.borderColor', [
         [Object, 'Color'],
     ]);
@@ -357,7 +360,11 @@ export default class PDFField {
         if (pageRef)
             widget.setP(pageRef);
         const ac = widget.getOrCreateAppearanceCharacteristics();
-        if (backgroundColor) {
+        if (backgroundColor === null) {
+            // Explicit null = transparent (no background)
+            ac.clearBackgroundColor();
+        }
+        else if (backgroundColor) {
             ac.setBackgroundColor(colorToComponents(backgroundColor));
         }
         ac.setRotation(degreesAngle);

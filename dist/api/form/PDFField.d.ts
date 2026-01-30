@@ -13,7 +13,8 @@ export interface FieldAppearanceOptions {
     width?: number;
     height?: number;
     textColor?: Color;
-    backgroundColor?: Color;
+    /** Background color. Use `null` for transparent (no background). */
+    backgroundColor?: Color | null;
     borderColor?: Color;
     borderWidth?: number;
     rotate?: Rotation;
@@ -246,7 +247,7 @@ export default class PDFField {
         width: number;
         height: number;
         textColor?: Color;
-        backgroundColor?: Color;
+        backgroundColor?: Color | null;
         borderColor?: Color;
         borderWidth: number;
         rotate: Rotation;

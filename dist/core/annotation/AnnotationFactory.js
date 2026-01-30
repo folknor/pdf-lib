@@ -1,6 +1,7 @@
 import PDFName from '../objects/PDFName.js';
 import { AnnotationTypes } from './AnnotationTypes.js';
 import PDFAnnotation from './PDFAnnotation.js';
+import PDFLinkAnnotation from './PDFLinkAnnotation.js';
 import PDFTextMarkupAnnotation from './PDFTextMarkupAnnotation.js';
 function getSubtype(dict) {
     const subtypePdfName = dict.lookup(PDFName.of('Subtype'), PDFName);
@@ -13,6 +14,8 @@ function getSubtype(dict) {
 }
 function fromDict(dict) {
     switch (getSubtype(dict)) {
+        case AnnotationTypes.Link:
+            return PDFLinkAnnotation.fromDict(dict);
         case AnnotationTypes.Highlight:
         case AnnotationTypes.Underline:
         case AnnotationTypes.Squiggly:

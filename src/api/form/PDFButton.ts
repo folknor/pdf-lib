@@ -160,13 +160,18 @@ export default class PDFButton extends PDFField {
     assertFieldAppearanceOptions(options);
 
     // Create a widget for this button
+    // Use 'in' check to allow explicit null for transparent background
+    const backgroundColor =
+      options && 'backgroundColor' in options
+        ? options.backgroundColor
+        : rgb(0.75, 0.75, 0.75);
     const widget = this.createWidget({
       x: (options?.x ?? 0) - (options?.borderWidth ?? 0) / 2,
       y: (options?.y ?? 0) - (options?.borderWidth ?? 0) / 2,
       width: options?.width ?? 100,
       height: options?.height ?? 50,
       textColor: options?.textColor ?? rgb(0, 0, 0),
-      backgroundColor: options?.backgroundColor ?? rgb(0.75, 0.75, 0.75),
+      backgroundColor,
       ...(options?.borderColor !== undefined && {
         borderColor: options.borderColor,
       }),

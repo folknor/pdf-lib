@@ -94,6 +94,9 @@ class AppearanceCharacteristics {
         const BG = this.dict.context.obj(color);
         this.dict.set(PDFName.of('BG'), BG);
     }
+    clearBackgroundColor() {
+        this.dict.delete(PDFName.of('BG'));
+    }
     setCaptions(captions) {
         const CA = PDFHexString.fromText(captions.normal);
         this.dict.set(PDFName.of('CA'), CA);
