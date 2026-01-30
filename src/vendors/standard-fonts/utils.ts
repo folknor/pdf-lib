@@ -13,7 +13,7 @@
  *     Licensed under the MIT license.
  */
 
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 
 const chars =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -66,7 +66,7 @@ const arrayToString = (array: Uint8Array): string => {
 };
 
 export const decompressJson = (compressedJson: string): string =>
-  arrayToString(pako.inflate(decodeFromBase64(compressedJson)));
+  arrayToString(unzlibSync(decodeFromBase64(compressedJson)));
 
 export const padStart = (
   value: string,

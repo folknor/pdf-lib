@@ -4,7 +4,7 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import base64DeflatedData from './data.json' with { type: 'json' };
 import base64DeflatedTrie from './trie.json' with { type: 'json' };
 import { UnicodeTrie } from './UnicodeTrie.js';
@@ -29,12 +29,12 @@ interface UnicodeData {
 
 const data: UnicodeData = JSON.parse(
   String.fromCharCode(
-    ...pako.inflate(base64Decode(base64DeflatedData as string)),
+    ...unzlibSync(base64Decode(base64DeflatedData as string)),
   ),
 );
 
 // Inflate the base64-encoded zlib data to get the binary trie format
-const trieData = pako.inflate(base64Decode(base64DeflatedTrie as string));
+const trieData = unzlibSync(base64Decode(base64DeflatedTrie as string));
 const trie = new UnicodeTrie(trieData);
 
 // Compute the number of bits stored for each field

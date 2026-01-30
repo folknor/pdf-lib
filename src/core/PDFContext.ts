@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 import type { DocumentSnapshot } from '../api/snapshot/DocumentSnapshot.js';
 import { typedArrayFor } from '../utils/index.js';
 import { SimpleRNG } from '../utils/rng.js';
@@ -344,7 +344,7 @@ class PDFContext {
     contents: string | Uint8Array,
     dict: LiteralObject = {},
   ): PDFRawStream {
-    return this.stream(pako.deflate(typedArrayFor(contents)), {
+    return this.stream(zlibSync(typedArrayFor(contents)), {
       ...dict,
       Filter: 'FlateDecode',
     });

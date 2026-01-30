@@ -58,7 +58,10 @@ export default class OTLayoutEngine {
         if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS' && glyphRun.positions) {
             this.zeroMarkAdvances(glyphRun.positions);
         }
-        if (this.GPOSProcessor && this.plan && this.glyphInfos && glyphRun.positions) {
+        if (this.GPOSProcessor &&
+            this.plan &&
+            this.glyphInfos &&
+            glyphRun.positions) {
             this.plan.process(this.GPOSProcessor, this.glyphInfos, glyphRun.positions);
         }
         if (this.shaper.zeroMarkWidths === 'AFTER_GPOS' && glyphRun.positions) {

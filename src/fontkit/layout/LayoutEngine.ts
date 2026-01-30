@@ -66,7 +66,7 @@ export default class LayoutEngine {
     }
 
     // Normalize script to a string
-    const scriptStr = Array.isArray(script) ? script[0] ?? 'zzzz' : script;
+    const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
     const glyphRun = new GlyphRun(
       glyphs,
       features ?? [],

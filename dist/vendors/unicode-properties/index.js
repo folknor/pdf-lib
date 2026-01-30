@@ -3,7 +3,7 @@
  * Originally from https://github.com/foliojs/unicode-properties
  * Absorbed and converted to TypeScript for pdf-lib
  */
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import base64DeflatedData from './data.json' with { type: 'json' };
 import base64DeflatedTrie from './trie.json' with { type: 'json' };
 import { UnicodeTrie } from './UnicodeTrie.js';
@@ -16,9 +16,9 @@ function base64Decode(str) {
     }
     return bytes;
 }
-const data = JSON.parse(String.fromCharCode(...pako.inflate(base64Decode(base64DeflatedData))));
+const data = JSON.parse(String.fromCharCode(...unzlibSync(base64Decode(base64DeflatedData))));
 // Inflate the base64-encoded zlib data to get the binary trie format
-const trieData = pako.inflate(base64Decode(base64DeflatedTrie));
+const trieData = unzlibSync(base64Decode(base64DeflatedTrie));
 const trie = new UnicodeTrie(trieData);
 // Compute the number of bits stored for each field
 const log2 = Math.log2 || ((n) => Math.log(n) / Math.LN2);

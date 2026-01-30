@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 import {
   PDFArray,
@@ -83,14 +83,15 @@ describe('PDFContext', () => {
     const buffer = new Uint8Array(stream.sizeInBytes());
     stream.copyBytesInto(buffer, 0);
 
+    const compressed = zlibSync(new TextEncoder().encode('stuff and things!'));
     expect(buffer).toEqual(
       mergeIntoTypedArray(
         '<<\n',
         '/Filter /FlateDecode\n',
-        '/Length 25\n',
+        `/Length ${compressed.length}\n`,
         '>>\n',
         'stream\n',
-        pako.deflate('stuff and things!'),
+        compressed,
         '\nendstream',
       ),
     );

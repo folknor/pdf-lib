@@ -89,7 +89,10 @@ const knownTags = [
 
 const WOFF2DirectoryEntry = new r.Struct({
   flags: r.uint8,
-  customTag: new r.Optional(new r.String(4), (t: any) => (t.flags & 0x3f) === 0x3f),
+  customTag: new r.Optional(
+    new r.String(4),
+    (t: any) => (t.flags & 0x3f) === 0x3f,
+  ),
   tag: (t: any) => t['customTag'] || knownTags[t['flags'] & 0x3f], // || (() => { throw new Error(`Bad tag: ${flags & 0x3f}`); })(); },
   length: Base128 as any,
   transformVersion: (t: any) => (t['flags'] >>> 6) & 0x03,

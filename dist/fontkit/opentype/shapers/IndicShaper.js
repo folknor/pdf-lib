@@ -1,6 +1,6 @@
 // @ts-nocheck
 import StateMachine from 'dfa';
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
 import * as Script from '../../layout/Script.js';
@@ -11,10 +11,10 @@ import base64DeflatedIndicMachine from './indic.js';
 import { CATEGORIES, CONSONANT_FLAGS, HALANT_OR_COENG_FLAGS, INDIC_CONFIGS, INDIC_DECOMPOSITIONS, JOINER_FLAGS, POSITIONS, } from './indic-data.js';
 import base64DeflatedTrie from './trieIndic.js';
 import base64DeflatedUseData from './use.js';
-const indicMachine = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedIndicMachine)))));
-const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedUseData)))));
+const indicMachine = JSON.parse(String.fromCharCode.apply(String, Array.from(unzlibSync(decodeBase64(base64DeflatedIndicMachine)))));
+const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(unzlibSync(decodeBase64(base64DeflatedUseData)))));
 const { decompositions } = useData;
-const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
+const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(indicMachine);
 /**
  * The IndicShaper supports indic scripts e.g. Devanagari, Kannada, etc.

@@ -172,7 +172,8 @@ export default class OTProcessor {
             this.currentFeature = feature;
             this.glyphIterator.reset(lookup.flags);
             while (this.glyphIterator.index < glyphs.length) {
-                if (!this.glyphIterator.cur || !(feature in this.glyphIterator.cur.features)) {
+                if (!this.glyphIterator.cur ||
+                    !(feature in this.glyphIterator.cur.features)) {
                     this.glyphIterator.next();
                     continue;
                 }

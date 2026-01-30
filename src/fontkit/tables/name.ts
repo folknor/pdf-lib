@@ -169,5 +169,9 @@ NameTable.preEncode = function (this: Record<string, unknown>) {
 
   self.records = records;
   self.count = records.length;
-  self.stringOffset = NameTable.size(self as unknown as Record<string, unknown>, null, false);
+  self.stringOffset = NameTable.size(
+    self as unknown as Record<string, unknown>,
+    null,
+    false,
+  );
 };

@@ -5,7 +5,7 @@
  *
  * Only includes decoding functionality (decode + toRGBA8)
  */
-import pako from 'pako';
+import { inflateSync } from 'fflate';
 // Binary utilities
 const _bin = {
     nextZero: (data, p) => {
@@ -492,8 +492,8 @@ function _inflate(data, buff) {
     return out;
 }
 // Minimal inflateRaw implementation
-function inflateRaw(data, buff) {
-    return pako.inflateRaw(data, buff ? { to: undefined } : undefined);
+function inflateRaw(data, _buff) {
+    return inflateSync(data);
 }
 function _readInterlace(data, out) {
     const w = out.width;

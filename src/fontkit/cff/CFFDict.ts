@@ -43,7 +43,8 @@ export default class CFFDict {
   encodeOperands(type: any, stream: any, ctx: any, operands: any): any[] {
     if (Array.isArray(type)) {
       return operands.map(
-        (op: any, i: number) => this.encodeOperands(type[i], stream, ctx, op)[0],
+        (op: any, i: number) =>
+          this.encodeOperands(type[i], stream, ctx, op)[0],
       );
     } else if (type.encode != null) {
       return type.encode(stream, operands, ctx);

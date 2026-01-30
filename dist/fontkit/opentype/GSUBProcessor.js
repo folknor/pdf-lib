@@ -35,7 +35,9 @@ export default class GSUBProcessor extends OTProcessor {
                     this.glyphIterator.cur.ligatureComponent = 0;
                     const features = this.glyphIterator.cur.features;
                     const curGlyph = this.glyphIterator.cur;
-                    const replacement = sequence.slice(1).map((gid, i) => {
+                    const replacement = sequence
+                        .slice(1)
+                        .map((gid, i) => {
                         const glyph = new GlyphInfo(this.font, gid, undefined, features);
                         glyph.shaperInfo = curGlyph.shaperInfo;
                         glyph.isLigated = curGlyph.isLigated;
@@ -54,7 +56,8 @@ export default class GSUBProcessor extends OTProcessor {
                 const index = this.coverageIndex(table.coverage);
                 if (index !== -1) {
                     const USER_INDEX = 0; // TODO
-                    this.glyphIterator.cur.id = table.alternateSet.get(index)[USER_INDEX];
+                    this.glyphIterator.cur.id =
+                        table.alternateSet.get(index)[USER_INDEX];
                     return true;
                 }
                 return false;

@@ -1,4 +1,4 @@
-import inflate from 'tiny-inflate';
+import { inflateSync } from 'fflate';
 import * as r from '../vendors/restructure/index.js';
 import TTFFont from './TTFFont.js';
 import WOFFDirectory from './tables/WOFFDirectory.js';
@@ -17,8 +17,9 @@ export default class WOFFFont extends TTFFont {
             this.stream.pos = table.offset;
             if (table.compLength < table.length) {
                 this.stream.pos += 2; // skip deflate header
-                const outBuffer = new Uint8Array(table.length);
-                const buf = inflate(this.stream.readBuffer(table.compLength - 2), outBuffer);
+                const buf = inflateSync(this.stream.readBuffer(table.compLength - 2), {
+                    out: new Uint8Array(table.length),
+                });
                 return new r.DecodeStream(buf);
             }
             else {

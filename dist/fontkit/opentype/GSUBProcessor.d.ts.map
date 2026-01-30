@@ -1,1 +1,1 @@
-{"version":3,"file":"GSUBProcessor.d.ts","sourceRoot":"","sources":["../../../src/fontkit/opentype/GSUBProcessor.ts"],"names":[],"mappings":"AACA,OAAO,WAAW,MAAM,kBAAkB,CAAC;AAE3C,MAAM,CAAC,OAAO,OAAO,aAAc,SAAQ,WAAW;IAC3C,WAAW,CAAC,UAAU,EAAE,MAAM,EAAE,KAAK,EAAE,GAAG,GAAG,OAAO;CA6M9D"}
+{"version":3,"file":"GSUBProcessor.d.ts","sourceRoot":"","sources":["../../../src/fontkit/opentype/GSUBProcessor.ts"],"names":[],"mappings":"AACA,OAAO,WAAW,MAAM,kBAAkB,CAAC;AAE3C,MAAM,CAAC,OAAO,OAAO,aAAc,SAAQ,WAAW;IAC3C,WAAW,CAAC,UAAU,EAAE,MAAM,EAAE,KAAK,EAAE,GAAG,GAAG,OAAO;CAmN9D"}

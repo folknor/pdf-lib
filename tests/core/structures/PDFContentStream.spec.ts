@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 import {
   mergeIntoTypedArray,
@@ -98,16 +98,18 @@ describe('PDFContentStream', () => {
       '100 100 Td\n' +
       '(Hello World and stuff!) Tj\n' +
       'ET\n';
-    const encodedContents = pako.deflate(contents);
+    const encodedContents = zlibSync(new TextEncoder().encode(contents));
 
     const stream = PDFContentStream.of(dict, operators, true);
     const buffer = new Uint8Array(stream.sizeInBytes() + 3).fill(
       toCharCode(' '),
     );
-    expect(stream.copyBytesInto(buffer, 2)).toBe(115);
+    const headerContent = `<<\n/Length ${encodedContents.length}\n/Filter /FlateDecode\n>>\n`;
+    const expectedSize = headerContent.length + 'stream\n'.length + encodedContents.length + '\nendstream'.length;
+    expect(stream.copyBytesInto(buffer, 2)).toBe(expectedSize);
     expect(buffer).toEqual(
       mergeIntoTypedArray(
-        '  <<\n/Length 60\n/Filter /FlateDecode\n>>\n',
+        `  ${headerContent}`,
         'stream\n',
         encodedContents,
         '\nendstream ',

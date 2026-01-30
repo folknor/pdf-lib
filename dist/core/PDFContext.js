@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 import { typedArrayFor } from '../utils/index.js';
 import { SimpleRNG } from '../utils/rng.js';
 import PDFHeader from './document/PDFHeader.js';
@@ -221,7 +221,7 @@ class PDFContext {
         return PDFRawStream.of(this.obj(dict), typedArrayFor(contents));
     }
     flateStream(contents, dict = {}) {
-        return this.stream(pako.deflate(typedArrayFor(contents)), {
+        return this.stream(zlibSync(typedArrayFor(contents)), {
             ...dict,
             Filter: 'FlateDecode',
         });

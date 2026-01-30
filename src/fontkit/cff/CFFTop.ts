@@ -108,10 +108,7 @@ class RangeArray extends r.Array {
 
 const CFFCustomCharset = new r.VersionedStruct(r.uint8, {
   0: {
-    glyphs: new r.Array(
-      r.uint16,
-      (t: any) => t.parent.CharStrings.length - 1,
-    ),
+    glyphs: new r.Array(r.uint16, (t: any) => t.parent.CharStrings.length - 1),
   },
 
   1: {

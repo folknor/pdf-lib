@@ -1,10 +1,10 @@
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
 import { decodeBase64 } from '../../utils.js';
 import DefaultShaper from './DefaultShaper.js';
 import base64DeflatedTrie from './trie.js';
-const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
+const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const FEATURES = [
     'isol',
     'fina',

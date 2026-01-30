@@ -1,14 +1,14 @@
 import StateMachine from 'dfa';
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import UnicodeTrie from 'unicode-trie';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
 import DefaultShaper from './DefaultShaper.js';
 import base64DeflatedTrie from './trieUse.js';
 import base64DeflatedUseData from './use.js';
-const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedUseData)))));
+const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(unzlibSync(decodeBase64(base64DeflatedUseData)))));
 const { categories, decompositions } = useData;
-const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
+const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(useData);
 /**
  * This shaper is an implementation of the Universal Shaping Engine, which

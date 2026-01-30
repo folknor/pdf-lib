@@ -12,7 +12,7 @@
  *     Copyright (c) 2012 Niklas von Hertzen
  *     Licensed under the MIT license.
  */
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 // Use a lookup table to find the index.
 const lookup = new Uint8Array(256);
@@ -53,7 +53,7 @@ const arrayToString = (array) => {
     }
     return str;
 };
-export const decompressJson = (compressedJson) => arrayToString(pako.inflate(decodeFromBase64(compressedJson)));
+export const decompressJson = (compressedJson) => arrayToString(unzlibSync(decodeFromBase64(compressedJson)));
 export const padStart = (value, length, padChar) => {
     let padding = '';
     for (let idx = 0, len = length - value.length; idx < len; idx++) {

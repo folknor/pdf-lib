@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 import {
   mergeIntoTypedArray,
@@ -121,7 +121,7 @@ describe('PDFCrossRefStream', () => {
       0, 0, 0, 255, 255, 1, 1, 44, 0, 0, 2, 0, 10, 0, 0, 1, 2, 88, 0, 0, 2, 0,
       10, 0, 1,
     ]);
-    const encodedEntries = pako.deflate(expectedEntries);
+    const encodedEntries = zlibSync(expectedEntries);
 
     expect(stream.copyBytesInto(buffer, 2)).toBe(135);
     expect(buffer).toEqual(

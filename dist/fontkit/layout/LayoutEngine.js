@@ -52,7 +52,7 @@ export default class LayoutEngine {
             glyphs = string;
         }
         // Normalize script to a string
-        const scriptStr = Array.isArray(script) ? script[0] ?? 'zzzz' : script;
+        const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
         const glyphRun = new GlyphRun(glyphs, features ?? [], scriptStr, language ?? null, direction ?? null);
         // Return early if there are no glyphs
         if (glyphs.length === 0) {

@@ -126,7 +126,11 @@ export default class TTFGlyphEncoder {
 
     // Close the path if the last command didn't already
     const lastCmd = path.commands[path.commands.length - 1];
-    if (path.commands.length > 1 && lastCmd && lastCmd.command !== 'closePath') {
+    if (
+      path.commands.length > 1 &&
+      lastCmd &&
+      lastCmd.command !== 'closePath'
+    ) {
       endPtsOfContours.push(pointCount - 1);
     }
 

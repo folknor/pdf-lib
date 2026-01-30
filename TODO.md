@@ -60,16 +60,13 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 - ✅ **`clone`** → Replaced with native `structuredClone()` in `TTFSubset.ts`
 - ✅ **`release-it`** → Removed, release script now uses `npm publish` directly
+- ✅ **`pako` + `tiny-inflate`** → Replaced with **`fflate`**
+  - Smaller bundle (8kB vs 45kB), 30-60% faster compression
+  - Updated 10 source files and 8 test files
 
-### Upgrade (Medium Priority)
+### Keep As-Is
 
-- [ ] **`pako` + `tiny-inflate`** → Replace with **`fflate`**
-  - fflate is up to 60% faster than pako
-  - Smaller bundle (8kB vs 45kB for pako)
-  - Replaces two dependencies with one (handles both compression and decompression)
-  - Used in: `src/core/writers/PDFWriter.ts`, `src/core/PDFContext.ts`, `src/core/structures/PDFFlateStream.ts`, `src/vendors/`, `src/fontkit/`
-
-- [ ] **`fast-deep-equal`** → Consider **`fast-equals`**
+- **`fast-deep-equal`** — Only used in 1 file, well-maintained, no practical benefit to change
   - Slightly faster with circular reference support
   - However, fast-deep-equal is still well-maintained (50M+ weekly downloads)
   - Only used in `src/fontkit/cff/CFFDict.js`
@@ -79,8 +76,9 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 | Package | Reason |
 |---------|--------|
-| **`dfa`** | Specialized DFA compiler for text shaping in fontkit. XState is the popular modern state machine but has completely different API/purpose. Replacing would require significant refactoring with unclear benefits. Used in `src/fontkit/opentype/shapers/`. |
-| **`unicode-trie`** | Ported from ICU for fast Unicode character metadata lookup. No modern alternative exists for this specific use case. Still works correctly despite age (5 years). Used in fontkit shapers. |
+| **`fast-deep-equal`** | Only used in 1 file (`CFFDict.ts`), well-maintained (50M+ downloads/week), no practical benefit to change |
+| **`dfa`** | Specialized DFA compiler for text shaping in fontkit. XState has completely different API/purpose. Used in `src/fontkit/opentype/shapers/`. |
+| **`unicode-trie`** | Ported from ICU for fast Unicode character metadata lookup. No modern alternative exists. Used in fontkit shapers. |
 
 ---
 

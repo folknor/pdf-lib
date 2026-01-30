@@ -17,11 +17,6 @@ declare module 'brotli/decompress.js' {
   export { default } from 'brotli/decompress';
 }
 
-declare module 'tiny-inflate' {
-  function inflate(input: Uint8Array, output: Uint8Array): Uint8Array;
-  export default inflate;
-}
-
 declare module 'unicode-trie' {
   export default class UnicodeTrie {
     constructor(data: Uint8Array);
@@ -34,9 +29,4 @@ declare module 'dfa' {
     constructor(data: any);
     match(input: number[]): Iterable<[number, number, string[]]>;
   }
-}
-
-declare module 'clone' {
-  function clone<T>(obj: T): T;
-  export default clone;
 }

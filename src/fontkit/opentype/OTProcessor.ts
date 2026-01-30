@@ -235,7 +235,10 @@ export default class OTProcessor {
       this.glyphIterator.reset(lookup.flags);
 
       while (this.glyphIterator.index < glyphs.length) {
-        if (!this.glyphIterator.cur || !(feature in this.glyphIterator.cur.features)) {
+        if (
+          !this.glyphIterator.cur ||
+          !(feature in this.glyphIterator.cur.features)
+        ) {
           this.glyphIterator.next();
           continue;
         }
@@ -484,7 +487,10 @@ export default class OTProcessor {
           return false;
         }
 
-        index = this.getClassID(this.glyphIterator.cur!.id, table.inputClassDef);
+        index = this.getClassID(
+          this.glyphIterator.cur!.id,
+          table.inputClassDef,
+        );
         const rules = table.chainClassSet[index];
         if (!rules) {
           return false;

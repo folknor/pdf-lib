@@ -1,7 +1,7 @@
 import DecodeStream from '../../../src/core/streams/DecodeStream';
 import Stream from '../../../src/core/streams/Stream';
 import FlateStream from '../../../src/core/streams/FlateStream';
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 /**
  * A minimal concrete subclass of DecodeStream used for testing.
@@ -494,7 +494,7 @@ describe('DecodeStream', () => {
   describe('integration with FlateStream (real DecodeStream subclass)', () => {
     it('decodes flate-compressed data via all DecodeStream methods', () => {
       const originalData = new TextEncoder().encode('Hello, DecodeStream!');
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       // decode() should return the original content
@@ -504,7 +504,7 @@ describe('DecodeStream', () => {
 
     it('reads individual bytes from flate-compressed data', () => {
       const originalData = Uint8Array.from([0xDE, 0xAD, 0xBE, 0xEF]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       expect(flateStream.getByte()).toBe(0xDE);
@@ -517,7 +517,7 @@ describe('DecodeStream', () => {
     it('reads uint16 from flate-compressed data', () => {
       // 0xAB << 8 + 0xCD = 43981
       const originalData = Uint8Array.from([0xAB, 0xCD]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       expect(flateStream.getUint16()).toBe(0xABCD);
@@ -525,7 +525,7 @@ describe('DecodeStream', () => {
 
     it('peeks at bytes from flate-compressed data without advancing', () => {
       const originalData = Uint8Array.from([1, 2, 3, 4]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       expect(flateStream.peekByte()).toBe(1);
@@ -536,7 +536,7 @@ describe('DecodeStream', () => {
 
     it('supports skip and reset with flate-compressed data', () => {
       const originalData = Uint8Array.from([10, 20, 30, 40, 50]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       flateStream.skip(2);
@@ -548,7 +548,7 @@ describe('DecodeStream', () => {
 
     it('isEmpty returns false for non-empty flate-compressed data', () => {
       const originalData = Uint8Array.from([42]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       expect(flateStream.isEmpty).toBe(false);
@@ -556,7 +556,7 @@ describe('DecodeStream', () => {
 
     it('getBytes returns exact slice from flate-compressed data', () => {
       const originalData = Uint8Array.from([5, 10, 15, 20, 25, 30]);
-      const compressed = pako.deflate(originalData);
+      const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
       const bytes = flateStream.getBytes(3);

@@ -6,7 +6,7 @@
  * Only includes decoding functionality (decode + toRGBA8)
  */
 
-import pako from 'pako';
+import { inflateSync } from 'fflate';
 
 // Types
 export interface PNGImage {
@@ -530,11 +530,8 @@ function _inflate(data: Uint8Array, buff?: Uint8Array): Uint8Array {
 }
 
 // Minimal inflateRaw implementation
-function inflateRaw(data: Uint8Array, buff?: Uint8Array): Uint8Array {
-  return pako.inflateRaw(
-    data,
-    buff ? { to: undefined } : undefined,
-  ) as unknown as Uint8Array;
+function inflateRaw(data: Uint8Array, _buff?: Uint8Array): Uint8Array {
+  return inflateSync(data);
 }
 
 function _readInterlace(data: Uint8Array, out: PNGImage): Uint8Array {

@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 import { decodePDFRawStream } from '../../../src/core/streams/decode';
 import {
@@ -139,7 +139,7 @@ describe('decodePDFRawStream', () => {
   describe('with FlateDecode filter', () => {
     it('decodes flate-compressed content to the original data', () => {
       const original = new TextEncoder().encode('The quick brown fox jumps over the lazy dog');
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -150,7 +150,7 @@ describe('decodePDFRawStream', () => {
 
     it('decodes flate-compressed binary data', () => {
       const original = Uint8Array.from([0, 1, 2, 255, 254, 253, 128, 64, 32]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -164,7 +164,7 @@ describe('decodePDFRawStream', () => {
       for (let i = 0; i < 1000; i++) {
         original[i] = i % 256;
       }
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -241,7 +241,7 @@ describe('decodePDFRawStream', () => {
       const original = new TextEncoder().encode('chained filters test');
 
       // First, flate-compress the original data
-      const flateCompressed = pako.deflate(original);
+      const flateCompressed = zlibSync(original);
       // Then, ASCII hex encode the compressed data
       const asciiHexEncoded = asciiHexEncode(flateCompressed);
 
@@ -262,7 +262,7 @@ describe('decodePDFRawStream', () => {
       const original = new TextEncoder().encode('double decode');
 
       // First, flate-compress the original data
-      const flateCompressed = pako.deflate(original);
+      const flateCompressed = zlibSync(original);
       // Then, ASCII85 encode the compressed data
       const ascii85Encoded = ascii85Encode(flateCompressed);
 
@@ -280,7 +280,7 @@ describe('decodePDFRawStream', () => {
 
     it('applies a single filter from a PDFArray correctly', () => {
       const original = new TextEncoder().encode('single filter in array');
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
 
       const rawStream = createRawStreamWithFilters(compressed, ['FlateDecode']);
 
@@ -328,7 +328,7 @@ describe('decodePDFRawStream', () => {
   describe('stream interface methods on decoded result', () => {
     it('returns a stream that supports getByte()', () => {
       const original = Uint8Array.from([0xCA, 0xFE, 0xBA, 0xBE]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -342,7 +342,7 @@ describe('decodePDFRawStream', () => {
 
     it('returns a stream that supports getBytes()', () => {
       const original = Uint8Array.from([10, 20, 30, 40, 50]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -353,7 +353,7 @@ describe('decodePDFRawStream', () => {
 
     it('returns a stream that supports peekByte()', () => {
       const original = Uint8Array.from([77, 88]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -367,7 +367,7 @@ describe('decodePDFRawStream', () => {
     it('returns a stream that supports getUint16()', () => {
       // 0x01, 0x00 -> (1 << 8) + 0 = 256
       const original = Uint8Array.from([0x01, 0x00]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -377,7 +377,7 @@ describe('decodePDFRawStream', () => {
 
     it('returns a stream that supports skip() and reset()', () => {
       const original = Uint8Array.from([1, 2, 3, 4, 5]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -391,7 +391,7 @@ describe('decodePDFRawStream', () => {
 
     it('returns a stream whose isEmpty is false for non-empty data', () => {
       const original = Uint8Array.from([1]);
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
       const result = decodePDFRawStream(rawStream);
@@ -434,7 +434,7 @@ describe('decodePDFRawStream', () => {
       // the structural wiring by confirming no runtime error with valid params
       // when the Filter is something we can encode (FlateDecode ignores params).
       const original = new TextEncoder().encode('params test');
-      const compressed = pako.deflate(original);
+      const compressed = zlibSync(original);
 
       const dict = PDFDict.withContext(context);
       dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));

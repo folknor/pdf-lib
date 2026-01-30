@@ -7,7 +7,10 @@ const VmtxEntry = new r.Struct({
 
 // Vertical Metrics Table
 export default new r.Struct({
-  metrics: new r.LazyArray(VmtxEntry, (t: any) => t.parent.vhea.numberOfMetrics),
+  metrics: new r.LazyArray(
+    VmtxEntry,
+    (t: any) => t.parent.vhea.numberOfMetrics,
+  ),
   bearings: new r.LazyArray(
     r.int16,
     (t: any) => t.parent.maxp.numGlyphs - t.parent.vhea.numberOfMetrics,

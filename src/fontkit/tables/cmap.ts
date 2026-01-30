@@ -45,7 +45,8 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     length: r.uint16,
     language: r.uint16,
     subHeaderKeys: new r.Array(r.uint16, 256),
-    subHeaderCount: (t: any) => Math.max.apply(Math, t.subHeaderKeys as number[]),
+    subHeaderCount: (t: any) =>
+      Math.max.apply(Math, t.subHeaderKeys as number[]),
     subHeaders: new r.LazyArray(SubHeader, 'subHeaderCount'),
     glyphIndexArray: new r.LazyArray(r.uint16, 'subHeaderCount'),
   },

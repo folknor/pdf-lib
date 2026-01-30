@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 import { Cache } from '../../utils/index.js';
 import { MethodNotImplementedError } from '../errors.js';
 import PDFName from '../objects/PDFName.js';
@@ -15,7 +15,7 @@ class PDFFlateStream extends PDFStream {
     }
     computeContents = () => {
         const unencodedContents = this.getUnencodedContents();
-        return this.encode ? pako.deflate(unencodedContents) : unencodedContents;
+        return this.encode ? zlibSync(unencodedContents) : unencodedContents;
     };
     getContents() {
         return this.contentsCache.access();

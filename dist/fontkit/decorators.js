@@ -8,7 +8,11 @@
  * }
  */
 export function cacheValue(obj, key, value) {
-    Object.defineProperty(obj, key, { value, writable: false, configurable: true });
+    Object.defineProperty(obj, key, {
+        value,
+        writable: false,
+        configurable: true,
+    });
     return value;
 }
 /**

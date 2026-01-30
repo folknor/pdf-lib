@@ -1,4 +1,4 @@
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 import type { DocumentSnapshot } from '../../api/snapshot/index.js';
 import {
   DefaultDocumentSnapshot,
@@ -272,7 +272,7 @@ class PDFWriter {
     // Skip small streams where compression overhead exceeds benefit
     if (contents.length < 50) return;
 
-    const compressed = pako.deflate(contents);
+    const compressed = zlibSync(contents);
 
     // Only apply if compression actually reduces size
     if (compressed.length >= contents.length) return;

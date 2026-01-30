@@ -1,6 +1,6 @@
 // @ts-nocheck
 import StateMachine from 'dfa';
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
 import * as Script from '../../layout/Script.js';
@@ -24,17 +24,17 @@ import base64DeflatedUseData from './use.js';
 const indicMachine = JSON.parse(
   String.fromCharCode.apply(
     String,
-    Array.from(pako.inflate(decodeBase64(base64DeflatedIndicMachine))),
+    Array.from(unzlibSync(decodeBase64(base64DeflatedIndicMachine))),
   ),
 );
 const useData = JSON.parse(
   String.fromCharCode.apply(
     String,
-    Array.from(pako.inflate(decodeBase64(base64DeflatedUseData))),
+    Array.from(unzlibSync(decodeBase64(base64DeflatedUseData))),
   ),
 );
 const { decompositions } = useData;
-const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
+const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(indicMachine);
 
 /**
@@ -216,7 +216,11 @@ function wouldSubstitute(glyphs: GlyphInfo[], feature: string): boolean {
   return glyphs.length === 1;
 }
 
-function consonantPosition(_font: any, consonant: GlyphInfo, virama: GlyphInfo): number {
+function consonantPosition(
+  _font: any,
+  consonant: GlyphInfo,
+  virama: GlyphInfo,
+): number {
   const glyphs = [virama, consonant, virama];
   if (
     wouldSubstitute(glyphs.slice(0, 2), 'blwf') ||
@@ -571,7 +575,10 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     const arr = glyphs.slice(start, end);
-    arr.sort((a: GlyphInfo, b: GlyphInfo) => a.shaperInfo.position - b.shaperInfo.position);
+    arr.sort(
+      (a: GlyphInfo, b: GlyphInfo) =>
+        a.shaperInfo.position - b.shaperInfo.position,
+    );
     glyphs.splice(start, arr.length, ...arr);
 
     // Find base again

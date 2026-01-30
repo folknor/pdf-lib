@@ -60,7 +60,11 @@ export default class OTLayoutEngine {
     // Choose a shaper based on the script, and setup a shaping plan.
     // This determines which features to apply to which glyphs.
     this.shaper = Shapers.choose(script ?? 'DFLT');
-    this.plan = new ShapingPlan(this.font, script ?? 'DFLT', glyphRun.direction);
+    this.plan = new ShapingPlan(
+      this.font,
+      script ?? 'DFLT',
+      glyphRun.direction,
+    );
     this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
 
     // Assign chosen features to output glyph run
@@ -85,7 +89,12 @@ export default class OTLayoutEngine {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
-    if (this.GPOSProcessor && this.plan && this.glyphInfos && glyphRun.positions) {
+    if (
+      this.GPOSProcessor &&
+      this.plan &&
+      this.glyphInfos &&
+      glyphRun.positions
+    ) {
       this.plan.process(
         this.GPOSProcessor,
         this.glyphInfos,

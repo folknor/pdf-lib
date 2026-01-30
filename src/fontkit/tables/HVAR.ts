@@ -34,7 +34,8 @@ const MapDataEntry = new r.Struct({
   entry: new VariableSizeNumber(
     (t: any) => ((t.parent.entryFormat & 0x0030) >> 4) + 1,
   ) as any,
-  outerIndex: (t: any) => t['entry'] >> ((t['parent'].entryFormat & 0x000f) + 1),
+  outerIndex: (t: any) =>
+    t['entry'] >> ((t['parent'].entryFormat & 0x000f) + 1),
   innerIndex: (t: any) =>
     t['entry'] & ((1 << ((t['parent'].entryFormat & 0x000f) + 1)) - 1),
 });

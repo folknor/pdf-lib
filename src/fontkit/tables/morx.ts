@@ -34,7 +34,10 @@ const SubtableData = new r.VersionedStruct('type', {
   2: {
     // Ligature subtable
     stateTable: StateTable(LigatureData),
-    ligatureActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint32) as any),
+    ligatureActions: new r.Pointer(
+      r.uint32,
+      new UnboundedArray(r.uint32) as any,
+    ),
     components: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
     ligatureList: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
   },
@@ -47,7 +50,10 @@ const SubtableData = new r.VersionedStruct('type', {
   5: {
     // Glyph Insertion Subtable
     stateTable: StateTable(InsertionData),
-    insertionActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
+    insertionActions: new r.Pointer(
+      r.uint32,
+      new UnboundedArray(r.uint16) as any,
+    ),
   },
 });
 

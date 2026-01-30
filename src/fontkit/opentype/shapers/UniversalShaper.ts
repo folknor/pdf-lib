@@ -1,5 +1,5 @@
 import StateMachine from 'dfa';
-import pako from 'pako';
+import { unzlibSync } from 'fflate';
 import UnicodeTrie from 'unicode-trie';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
@@ -11,11 +11,11 @@ import base64DeflatedUseData from './use.js';
 const useData = JSON.parse(
   String.fromCharCode.apply(
     String,
-    Array.from(pako.inflate(decodeBase64(base64DeflatedUseData))),
+    Array.from(unzlibSync(decodeBase64(base64DeflatedUseData))),
   ),
 );
 const { categories, decompositions } = useData;
-const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
+const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(useData);
 
 /**
@@ -58,10 +58,12 @@ export default class UniversalShaper extends DefaultShaper {
       const glyph = glyphs[i]!;
       const codepoint = glyph.codePoints[0]!;
       if (decompositions[String(codepoint)]) {
-        const decomposed = decompositions[String(codepoint)].map((c: number) => {
-          const g = plan.font.glyphForCodePoint(c);
-          return new GlyphInfo(plan.font, g.id, [c], glyph.features);
-        });
+        const decomposed = decompositions[String(codepoint)].map(
+          (c: number) => {
+            const g = plan.font.glyphForCodePoint(c);
+            return new GlyphInfo(plan.font, g.id, [c], glyph.features);
+          },
+        );
 
         glyphs.splice(i, 1, ...decomposed);
       }

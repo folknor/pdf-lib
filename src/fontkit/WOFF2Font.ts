@@ -102,7 +102,11 @@ export default class WOFF2Font extends TTFFont {
           nPoints.push(totalPoints);
         }
 
-        glyph.points = decodeTriplet(table['flags'], table['glyphs'], totalPoints);
+        glyph.points = decodeTriplet(
+          table['flags'],
+          table['glyphs'],
+          totalPoints,
+        );
         for (let i = 0; i < nContours; i++) {
           glyph.points[nPoints[i]! - 1]!.endContour = true;
         }

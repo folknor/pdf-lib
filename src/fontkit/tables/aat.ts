@@ -117,7 +117,10 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
     },
     6: {
       binarySearchHeader: BinarySearchHeader,
-      segments: new r.Array(LookupSingle, (t: any) => t.binarySearchHeader.nUnits),
+      segments: new r.Array(
+        LookupSingle,
+        (t: any) => t.binarySearchHeader.nUnits,
+      ),
     },
     8: {
       firstGlyph: r.uint16,

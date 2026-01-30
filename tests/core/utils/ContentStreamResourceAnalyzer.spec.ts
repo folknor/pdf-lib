@@ -12,7 +12,7 @@ import {
   PDFRef,
 } from '../../../src/core/index.js';
 import PDFPageLeaf from '../../../src/core/structures/PDFPageLeaf.js';
-import pako from 'pako';
+import { zlibSync } from 'fflate';
 
 describe('ContentStreamResourceAnalyzer', () => {
   describe('analyzePageResources', () => {
@@ -138,7 +138,7 @@ describe('ContentStreamResourceAnalyzer', () => {
 
       // Create compressed content stream
       const contentText = 'BT /F1 12 Tf (Hello) Tj ET';
-      const compressedData = pako.deflate(new TextEncoder().encode(contentText));
+      const compressedData = zlibSync(new TextEncoder().encode(contentText));
       const streamDict = context.obj({});
       streamDict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
       const contentStream = PDFRawStream.of(streamDict, compressedData);

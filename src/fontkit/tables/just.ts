@@ -63,7 +63,10 @@ const Action = new r.Struct({
   actionType: r.uint16,
   actionLength: r.uint32,
   actionData: ActionData,
-  padding: new r.Reserved(r.uint8, (t: any) => t.actionLength - t._currentOffset),
+  padding: new r.Reserved(
+    r.uint8,
+    (t: any) => t.actionLength - t._currentOffset,
+  ),
 });
 
 const PostcompensationAction = new r.Array(Action, r.uint32);

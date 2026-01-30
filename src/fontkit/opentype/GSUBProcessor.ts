@@ -43,15 +43,17 @@ export default class GSUBProcessor extends OTProcessor {
 
           const features = this.glyphIterator.cur!.features;
           const curGlyph = this.glyphIterator.cur!;
-          const replacement = sequence.slice(1).map((gid: number, i: number) => {
-            const glyph = new GlyphInfo(this.font, gid, undefined, features);
-            glyph.shaperInfo = curGlyph.shaperInfo;
-            glyph.isLigated = curGlyph.isLigated;
-            glyph.ligatureComponent = i + 1;
-            glyph.substituted = true;
-            glyph.isMultiplied = true;
-            return glyph;
-          });
+          const replacement = sequence
+            .slice(1)
+            .map((gid: number, i: number) => {
+              const glyph = new GlyphInfo(this.font, gid, undefined, features);
+              glyph.shaperInfo = curGlyph.shaperInfo;
+              glyph.isLigated = curGlyph.isLigated;
+              glyph.ligatureComponent = i + 1;
+              glyph.substituted = true;
+              glyph.isMultiplied = true;
+              return glyph;
+            });
 
           this.glyphs.splice(this.glyphIterator.index + 1, 0, ...replacement);
           return true;
@@ -65,7 +67,8 @@ export default class GSUBProcessor extends OTProcessor {
         const index = this.coverageIndex(table.coverage);
         if (index !== -1) {
           const USER_INDEX = 0; // TODO
-          this.glyphIterator.cur!.id = table.alternateSet.get(index)[USER_INDEX];
+          this.glyphIterator.cur!.id =
+            table.alternateSet.get(index)[USER_INDEX];
           return true;
         }
 
@@ -174,7 +177,10 @@ export default class GSUBProcessor extends OTProcessor {
                 const ligComponent =
                   curComps -
                   lastNumComps +
-                  Math.min(this.glyphs[i]!.ligatureComponent || 1, lastNumComps);
+                  Math.min(
+                    this.glyphs[i]!.ligatureComponent || 1,
+                    lastNumComps,
+                  );
                 this.glyphs[i]!.ligatureComponent = ligComponent;
               } else {
                 break;

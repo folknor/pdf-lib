@@ -277,7 +277,12 @@ export default class TTFFont {
       this,
       'bbox',
       Object.freeze(
-        new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax),
+        new BBox(
+          this['head'].xMin,
+          this['head'].yMin,
+          this['head'].xMax,
+          this['head'].yMax,
+        ),
       ),
     );
   }
@@ -291,7 +296,11 @@ export default class TTFFont {
    * @type {number[]}
    */
   get characterSet() {
-    return cacheValue(this, 'characterSet', this._cmapProcessor.getCharacterSet());
+    return cacheValue(
+      this,
+      'characterSet',
+      this._cmapProcessor.getCharacterSet(),
+    );
   }
 
   /**
@@ -423,7 +432,10 @@ export default class TTFFont {
     return this._layoutEngine.getAvailableFeatures('DFLT', 'dflt');
   }
 
-  getAvailableFeatures(script: string = 'DFLT', language: string = 'dflt'): string[] {
+  getAvailableFeatures(
+    script: string = 'DFLT',
+    language: string = 'dflt',
+  ): string[] {
     return this._layoutEngine.getAvailableFeatures(script, language);
   }
 
@@ -562,7 +574,10 @@ export default class TTFFont {
       if (axisTag in (settings as Record<string, number>)) {
         return Math.max(
           axis.minValue,
-          Math.min(axis.maxValue, (settings as Record<string, number>)[axisTag]!),
+          Math.min(
+            axis.maxValue,
+            (settings as Record<string, number>)[axisTag]!,
+          ),
         );
       } else {
         return axis.defaultValue;

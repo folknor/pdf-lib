@@ -163,7 +163,10 @@ export default class CmapProcessor {
     }
 
     const selectors = this.uvs.varSelectors.toArray();
-    let i = binarySearch(selectors, (x: any) => variationSelector - x.varSelector);
+    let i = binarySearch(
+      selectors,
+      (x: any) => variationSelector - x.varSelector,
+    );
     const sel = selectors[i];
 
     if (i !== -1 && sel.defaultUVS) {
@@ -177,7 +180,10 @@ export default class CmapProcessor {
     }
 
     if (i !== -1 && sel.nonDefaultUVS) {
-      i = binarySearch(sel.nonDefaultUVS, (x: any) => codepoint - x.unicodeValue);
+      i = binarySearch(
+        sel.nonDefaultUVS,
+        (x: any) => codepoint - x.unicodeValue,
+      );
       if (i !== -1) {
         return sel.nonDefaultUVS[i].glyphID;
       }
@@ -215,7 +221,10 @@ export default class CmapProcessor {
 
       case 6:
       case 10:
-        result = range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+        result = range(
+          cmap.firstCode,
+          cmap.firstCode + cmap.glyphIndices.length,
+        );
         break;
 
       case 12:
