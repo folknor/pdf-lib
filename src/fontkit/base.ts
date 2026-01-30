@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DecodeStream } from '../vendors/restructure/index.js';
 
 export const logErrors: boolean = false;
@@ -16,7 +15,7 @@ export function registerFormat(format: FontFormat): void {
 
 export function create(buffer: Uint8Array, postscriptName?: string): any {
   for (let i = 0; i < formats.length; i++) {
-    const format = formats[i];
+    const format = formats[i]!;
     if (format.probe(buffer)) {
       const font = new format(new DecodeStream(buffer));
       if (postscriptName) {

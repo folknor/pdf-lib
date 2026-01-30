@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const DeviceRecord = new r.Struct({
     pixelSize: r.uint8,

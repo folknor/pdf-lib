@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type Glyph from '../glyph/Glyph.js';
 import { binarySearch } from '../utils.js';
 import type GlyphPosition from './GlyphPosition.js';
@@ -13,9 +11,9 @@ export default class KernProcessor {
 
   process(glyphs: Glyph[], positions: GlyphPosition[]): void {
     for (let glyphIndex = 0; glyphIndex < glyphs.length - 1; glyphIndex++) {
-      const left = glyphs[glyphIndex].id;
-      const right = glyphs[glyphIndex + 1].id;
-      positions[glyphIndex].xAdvance += this.getKerning(left, right);
+      const left = glyphs[glyphIndex]!.id;
+      const right = glyphs[glyphIndex + 1]!.id;
+      positions[glyphIndex]!.xAdvance += this.getKerning(left, right);
     }
   }
 
@@ -50,7 +48,8 @@ export default class KernProcessor {
         case 0: {
           const pairIdx = binarySearch(
             s.pairs,
-            (pair) => left - pair.left || right - pair.right,
+            (pair: { left: number; right: number }) =>
+              left - pair.left || right - pair.right,
           );
 
           if (pairIdx >= 0) {

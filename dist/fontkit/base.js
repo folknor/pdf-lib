@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DecodeStream } from '../vendors/restructure/index.js';
 export const logErrors = false;
 const formats = [];

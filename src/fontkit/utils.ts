@@ -1,10 +1,9 @@
-// @ts-nocheck
 export function binarySearch<T>(arr: T[], cmp: (item: T) => number): number {
   let min = 0;
   let max = arr.length - 1;
   while (min <= max) {
     const mid = (min + max) >> 1;
-    const res = cmp(arr[mid]);
+    const res = cmp(arr[mid]!);
 
     if (res < 0) {
       max = mid - 1;
@@ -50,10 +49,10 @@ export function decodeBase64(base64: string): Uint8Array {
   let p = 0;
 
   for (let i = 0, len = base64.length; i < len; i += 4) {
-    const encoded1 = LOOKUP[base64.charCodeAt(i)];
-    const encoded2 = LOOKUP[base64.charCodeAt(i + 1)];
-    const encoded3 = LOOKUP[base64.charCodeAt(i + 2)];
-    const encoded4 = LOOKUP[base64.charCodeAt(i + 3)];
+    const encoded1 = LOOKUP[base64.charCodeAt(i)]!;
+    const encoded2 = LOOKUP[base64.charCodeAt(i + 1)]!;
+    const encoded3 = LOOKUP[base64.charCodeAt(i + 2)]!;
+    const encoded4 = LOOKUP[base64.charCodeAt(i + 3)]!;
 
     bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
     bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const VmtxEntry = new r.Struct({
     advance: r.uint16, // The advance height of the glyph

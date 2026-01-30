@@ -1,5 +1,4 @@
 import { __decorate } from "tslib";
-// @ts-nocheck
 import { cache } from './decorators.js';
 import { getEncoding, getEncodingMapping } from './encodings.js';
 import { binarySearch, range } from './utils.js';
@@ -26,10 +25,12 @@ export default class CmapProcessor {
         if (!this.cmap) {
             for (const cmap of cmapTable.tables) {
                 const encoding = getEncoding(cmap.platformID, cmap.encodingID, cmap.table.language - 1);
-                const mapping = getEncodingMapping(encoding);
-                if (mapping) {
-                    this.cmap = cmap.table;
-                    this.encoding = mapping;
+                if (encoding) {
+                    const mapping = getEncodingMapping(encoding);
+                    if (mapping) {
+                        this.cmap = cmap.table;
+                        this.encoding = mapping;
+                    }
                 }
             }
         }

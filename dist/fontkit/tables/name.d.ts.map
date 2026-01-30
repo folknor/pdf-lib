@@ -1,1 +1,1 @@
-{"version":3,"file":"name.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/name.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAoDxD,QAAA,MAAM,SAAS,mBAab,CAAC;AAEH,eAAe,SAAS,CAAC"}
+{"version":3,"file":"name.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/name.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAmDxD,QAAA,MAAM,SAAS,mBAab,CAAC;AAEH,eAAe,SAAS,CAAC"}

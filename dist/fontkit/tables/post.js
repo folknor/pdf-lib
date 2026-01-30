@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 // PostScript information
 export default new r.VersionedStruct(r.fixed32, {

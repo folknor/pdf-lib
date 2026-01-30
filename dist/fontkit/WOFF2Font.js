@@ -1,4 +1,3 @@
-// @ts-nocheck
 import brotli from 'brotli/decompress.js';
 import * as r from '../vendors/restructure/index.js';
 import TTFGlyph, { Point } from './glyph/TTFGlyph.js';
@@ -60,36 +59,37 @@ export default class WOFF2Font extends TTFFont {
                 return super._getBaseGlyph(glyph, characters);
             }
         }
+        return this._glyphs[glyph] || null;
     }
     _transformGlyfTable() {
         this._decompress();
         this.stream.pos = this.directory.tables.glyf.offset;
         const table = GlyfTable.decode(this.stream);
         const glyphs = [];
-        for (let index = 0; index < table.numGlyphs; index++) {
-            const glyph = {};
-            const nContours = table.nContours.readInt16BE();
+        for (let index = 0; index < table['numGlyphs']; index++) {
+            const glyph = { numberOfContours: 0 };
+            const nContours = table['nContours'].readInt16BE();
             glyph.numberOfContours = nContours;
             if (nContours > 0) {
                 // simple glyph
                 const nPoints = [];
                 let totalPoints = 0;
                 for (let i = 0; i < nContours; i++) {
-                    const pointCount = read255UInt16(table.nPoints);
+                    const pointCount = read255UInt16(table['nPoints']);
                     totalPoints += pointCount;
                     nPoints.push(totalPoints);
                 }
-                glyph.points = decodeTriplet(table.flags, table.glyphs, totalPoints);
+                glyph.points = decodeTriplet(table['flags'], table['glyphs'], totalPoints);
                 for (let i = 0; i < nContours; i++) {
                     glyph.points[nPoints[i] - 1].endContour = true;
                 }
-                read255UInt16(table.glyphs);
+                read255UInt16(table['glyphs']);
             }
             else if (nContours < 0) {
                 // composite glyph
-                const haveInstructions = TTFGlyph.prototype._decodeComposite.call({ _font: this }, glyph, table.composites);
+                const haveInstructions = TTFGlyph.prototype._decodeComposite.call({ _font: this }, glyph, table['composites']);
                 if (haveInstructions) {
-                    read255UInt16(table.glyphs);
+                    read255UInt16(table['glyphs']);
                 }
             }
             glyphs.push(glyph);

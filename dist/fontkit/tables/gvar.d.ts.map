@@ -1,1 +1,1 @@
-{"version":3,"file":"gvar.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/gvar.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAYxD,QAAA,MAAM,IAAI,UAmBR,CAAC;AAEH,eAAe,IAAI,CAAC"}
+{"version":3,"file":"gvar.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/gvar.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAYxD,QAAA,MAAM,IAAI,UAmBR,CAAC;AAEH,eAAe,IAAI,CAAC"}

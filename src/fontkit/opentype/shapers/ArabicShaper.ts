@@ -1,4 +1,3 @@
-// @ts-nocheck
 import pako from 'pako';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
@@ -40,7 +39,7 @@ const INIT = 'init';
 const NONE = null;
 
 // Each entry is [prevAction, curAction, nextState]
-const STATE_TABLE = [
+const STATE_TABLE: [string | null, string | null, number][][] = [
   //   Non_Joining,        Left_Joining,       Right_Joining,     Dual_Joining,           ALAPH,            DALATH RISH
   // State 0: prev was U,  not willing to join.
   [
@@ -125,7 +124,7 @@ export default class ArabicShaper extends DefaultShaper {
   static override planFeatures(plan: ShapingPlan): void {
     plan.add(['ccmp', 'locl']);
     for (let i = 0; i < FEATURES.length; i++) {
-      const feature = FEATURES[i];
+      const feature = FEATURES[i]!;
       plan.addStage(feature, false);
     }
 
@@ -142,14 +141,17 @@ export default class ArabicShaper extends DefaultShaper {
     // Apply the state machine to map glyphs to features
     for (let i = 0; i < glyphs.length; i++) {
       let curAction: string | null, prevAction: string | null;
-      const glyph = glyphs[i];
-      const type = getShapingClass(glyph.codePoints[0]);
-      if (type === ShapingClasses.Transparent) {
+      const glyph = glyphs[i]!;
+      const type = getShapingClass(glyph.codePoints[0]!);
+      if (type === ShapingClasses['Transparent']) {
         actions[i] = NONE;
         continue;
       }
 
-      [prevAction, curAction, state] = STATE_TABLE[state][type];
+      const stateRow = STATE_TABLE[state]![type]!;
+      prevAction = stateRow[0]!;
+      curAction = stateRow[1]!;
+      state = stateRow[2]!;
 
       if (prevAction !== NONE && prev !== -1) {
         actions[prev] = prevAction;
@@ -161,9 +163,9 @@ export default class ArabicShaper extends DefaultShaper {
 
     // Apply the chosen features to their respective glyphs
     for (let index = 0; index < glyphs.length; index++) {
-      let feature: string | null;
-      const glyphToApply = glyphs[index];
-      if ((feature = actions[index])) {
+      const glyphToApply = glyphs[index]!;
+      const feature = actions[index];
+      if (feature) {
         glyphToApply.features[feature] = true;
       }
     }
@@ -178,8 +180,8 @@ function getShapingClass(codePoint: number): number {
 
   const category = getCategory(codePoint);
   if (category === 'Mn' || category === 'Me' || category === 'Cf') {
-    return ShapingClasses.Transparent;
+    return ShapingClasses['Transparent']!;
   }
 
-  return ShapingClasses.Non_Joining;
+  return ShapingClasses['Non_Joining']!;
 }

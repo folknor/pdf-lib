@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../vendors/restructure/index.js';
 import TTFFont from './TTFFont.js';
 
@@ -17,14 +16,14 @@ const Type = new r.Struct({
   maxTypeIndex: r.uint16,
   refList: new r.Pointer(
     r.uint16,
-    new r.Array(Ref, (t) => t.maxTypeIndex + 1),
+    new r.Array(Ref, (t: any) => t.maxTypeIndex + 1),
     { type: 'parent' },
   ),
 });
 
 const TypeList = new r.Struct({
   length: r.uint16,
-  types: new r.Array(Type, (t) => t.length + 1),
+  types: new r.Array(Type, (t: any) => t.length + 1),
 });
 
 const DFontMap = new r.Struct({
@@ -56,7 +55,7 @@ export default class DFont {
       return false;
     }
 
-    for (const type of header.map.typeList.types) {
+    for (const type of (header as any)['map'].typeList.types) {
       if (type.name === 'sfnt') {
         return true;
       }
@@ -94,11 +93,12 @@ export default class DFont {
       const pos = this.header.dataOffset + ref.dataOffset + 4;
       const stream = new r.DecodeStream(this.stream.buffer.slice(pos));
       const font = new TTFFont(stream);
+      const psName: unknown = font.postscriptName;
       if (
-        font.postscriptName === name ||
-        (font.postscriptName instanceof Uint8Array &&
+        psName === name ||
+        (psName instanceof Uint8Array &&
           name instanceof Uint8Array &&
-          font.postscriptName.every((v, i) => name[i] === v))
+          psName.every((v, i) => name[i] === v))
       ) {
         return font;
       }

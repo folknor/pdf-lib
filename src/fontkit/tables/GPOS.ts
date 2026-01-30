@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import {
   ChainingContext,
@@ -23,35 +22,37 @@ const ValueFormat = new r.Bitfield(r.uint16, [
   'yAdvDevice',
 ]);
 
-const types = {
+const types: Record<string, any> = {
   xPlacement: r.int16,
   yPlacement: r.int16,
   xAdvance: r.int16,
   yAdvance: r.int16,
   xPlaDevice: new r.Pointer(r.uint16, Device, {
     type: 'global',
-    relativeTo: (ctx) => ctx.rel,
+    relativeTo: (ctx: any) => ctx.rel,
   }),
   yPlaDevice: new r.Pointer(r.uint16, Device, {
     type: 'global',
-    relativeTo: (ctx) => ctx.rel,
+    relativeTo: (ctx: any) => ctx.rel,
   }),
   xAdvDevice: new r.Pointer(r.uint16, Device, {
     type: 'global',
-    relativeTo: (ctx) => ctx.rel,
+    relativeTo: (ctx: any) => ctx.rel,
   }),
   yAdvDevice: new r.Pointer(r.uint16, Device, {
     type: 'global',
-    relativeTo: (ctx) => ctx.rel,
+    relativeTo: (ctx: any) => ctx.rel,
   }),
 };
 
 class ValueRecord {
+  key: string;
+
   constructor(key = 'valueFormat') {
     this.key = key;
   }
 
-  buildStruct(parent) {
+  buildStruct(parent: any): r.Struct | undefined {
     let struct = parent;
     while (!struct[this.key] && struct.parent) {
       struct = struct.parent;
@@ -59,8 +60,8 @@ class ValueRecord {
 
     if (!struct[this.key]) return;
 
-    const fields = {};
-    fields.rel = () => struct._startOffset;
+    const fields: Record<string, any> = {};
+    fields['rel'] = () => struct._startOffset;
 
     const format = struct[this.key];
     for (const key in format) {
@@ -72,28 +73,28 @@ class ValueRecord {
     return new r.Struct(fields);
   }
 
-  size(val, ctx) {
-    return this.buildStruct(ctx).size(val, ctx);
+  size(val: any, ctx: any): number {
+    return this.buildStruct(ctx)!.size(val, ctx);
   }
 
-  decode(stream, parent) {
-    const res = this.buildStruct(parent).decode(stream, parent);
-    delete res.rel;
+  decode(stream: any, parent: any): any {
+    const res = this.buildStruct(parent)!.decode(stream, parent);
+    delete res['rel'];
     return res;
   }
 }
 
 const PairValueRecord = new r.Struct({
   secondGlyph: r.uint16,
-  value1: new ValueRecord('valueFormat1'),
-  value2: new ValueRecord('valueFormat2'),
+  value1: new ValueRecord('valueFormat1') as any,
+  value2: new ValueRecord('valueFormat2') as any,
 });
 
 const PairSet = new r.Array(PairValueRecord, r.uint16);
 
 const Class2Record = new r.Struct({
-  value1: new ValueRecord('valueFormat1'),
-  value2: new ValueRecord('valueFormat2'),
+  value1: new ValueRecord('valueFormat1') as any,
+  value2: new ValueRecord('valueFormat2') as any,
 });
 
 const Anchor = new r.VersionedStruct(r.uint16, {
@@ -133,13 +134,13 @@ const MarkArray = new r.Array(MarkRecord, r.uint16);
 
 const BaseRecord = new r.Array(
   new r.Pointer(r.uint16, Anchor),
-  (t) => t.parent.classCount,
+  (t: any) => t.parent.classCount,
 );
 const BaseArray = new r.Array(BaseRecord, r.uint16);
 
 const ComponentRecord = new r.Array(
   new r.Pointer(r.uint16, Anchor),
-  (t) => t.parent.parent.classCount,
+  (t: any) => t.parent.parent.classCount,
 );
 const LigatureAttach = new r.Array(ComponentRecord, r.uint16);
 const LigatureArray = new r.Array(
@@ -154,13 +155,13 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
       // Single positioning value
       coverage: new r.Pointer(r.uint16, Coverage),
       valueFormat: ValueFormat,
-      value: new ValueRecord(),
+      value: new ValueRecord() as any,
     },
     2: {
       coverage: new r.Pointer(r.uint16, Coverage),
       valueFormat: ValueFormat,
       valueCount: r.uint16,
-      values: new r.LazyArray(new ValueRecord(), 'valueCount'),
+      values: new r.LazyArray(new ValueRecord() as any, 'valueCount'),
     },
   }),
 
@@ -244,13 +245,13 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
 });
 
 // Fix circular reference
-GPOSLookup.versions[9].extension.type = GPOSLookup;
+(GPOSLookup.versions[9] as any).extension.type = GPOSLookup;
 
 export default new r.VersionedStruct(r.uint32, {
   header: {
     scriptList: new r.Pointer(r.uint16, ScriptList),
     featureList: new r.Pointer(r.uint16, FeatureList),
-    lookupList: new r.Pointer(r.uint16, new LookupList(GPOSLookup)),
+    lookupList: new r.Pointer(r.uint16, new (LookupList as any)(GPOSLookup)),
   },
 
   65536: {},

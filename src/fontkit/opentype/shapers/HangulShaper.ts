@@ -1,4 +1,3 @@
-// @ts-nocheck
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
 import DefaultShaper from './DefaultShaper.js';
@@ -36,11 +35,13 @@ export default class HangulShaper extends DefaultShaper {
     let i = 0;
     while (i < glyphs.length) {
       let action: number;
-      const glyph = glyphs[i];
-      const code = glyph.codePoints[0];
+      const glyph = glyphs[i]!;
+      const code = glyph.codePoints[0]!;
       const type = getType(code);
 
-      [action, state] = STATE_TABLE[state][type];
+      const stateRow = STATE_TABLE[state]![type]!;
+      action = stateRow[0]!;
+      state = stateRow[1]!;
 
       switch (action) {
         case DECOMPOSE:
@@ -99,7 +100,7 @@ const isLV = (code: number): boolean =>
 const isCombiningL = (code: number): boolean => L_BASE <= code && code <= L_END;
 const isCombiningV = (code: number): boolean => V_BASE <= code && code <= V_END;
 const isCombiningT = (code: number): boolean =>
-  T_BASE + 1 && 1 <= code && code <= T_END;
+  T_BASE + 1 <= code && code <= T_END;
 
 // Character categories
 const X = 0; // Other character
@@ -198,8 +199,8 @@ function getGlyph(
 }
 
 function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
-  const glyph = glyphs[i];
-  const code = glyph.codePoints[0];
+  const glyph = glyphs[i]!;
+  const code = glyph.codePoints[0]!;
 
   let s = code - HANGUL_BASE;
   const t = T_BASE + (s % T_COUNT);
@@ -219,16 +220,16 @@ function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
   // Replace the current glyph with decomposed L, V, and T glyphs,
   // and apply the proper OpenType features to each component.
   const ljmo = getGlyph(font, l, glyph.features);
-  ljmo.features.ljmo = true;
+  ljmo.features['ljmo'] = true;
 
   const vjmo = getGlyph(font, v, glyph.features);
-  vjmo.features.vjmo = true;
+  vjmo.features['vjmo'] = true;
 
   const insert = [ljmo, vjmo];
 
   if (t > T_BASE) {
     const tjmo = getGlyph(font, t, glyph.features);
-    tjmo.features.tjmo = true;
+    tjmo.features['tjmo'] = true;
     insert.push(tjmo);
   }
 
@@ -237,15 +238,18 @@ function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
 }
 
 function compose(glyphs: GlyphInfo[], i: number, font: any): number {
-  const glyph = glyphs[i];
-  const code = glyphs[i].codePoints[0];
+  const glyph = glyphs[i]!;
+  const code = glyphs[i]!.codePoints[0]!;
   const type = getType(code);
 
-  const prev = glyphs[i - 1].codePoints[0];
+  const prev = glyphs[i - 1]!.codePoints[0]!;
   const prevType = getType(prev);
 
   // Figure out what type of syllable we're dealing with
-  let lv, ljmo, vjmo, tjmo;
+  let lv: number | undefined;
+  let ljmo: GlyphInfo | undefined;
+  let vjmo: GlyphInfo | undefined;
+  let tjmo: GlyphInfo | undefined;
   if (prevType === LV && type === T) {
     // <LV,T>
     lv = prev;
@@ -253,17 +257,17 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
   } else {
     if (type === V) {
       // <L,V>
-      ljmo = glyphs[i - 1];
+      ljmo = glyphs[i - 1]!;
       vjmo = glyph;
     } else {
       // <L,V,T>
-      ljmo = glyphs[i - 2];
-      vjmo = glyphs[i - 1];
+      ljmo = glyphs[i - 2]!;
+      vjmo = glyphs[i - 1]!;
       tjmo = glyph;
     }
 
-    const l = ljmo.codePoints[0];
-    const v = vjmo.codePoints[0];
+    const l = ljmo.codePoints[0]!;
+    const v = vjmo.codePoints[0]!;
 
     // Make sure L and V are combining characters
     if (isCombiningL(l) && isCombiningV(v)) {
@@ -286,13 +290,13 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
 
   // Didn't compose (either a non-combining component or unsupported by font).
   if (ljmo) {
-    ljmo.features.ljmo = true;
+    ljmo.features['ljmo'] = true;
   }
   if (vjmo) {
-    vjmo.features.vjmo = true;
+    vjmo.features['vjmo'] = true;
   }
   if (tjmo) {
-    tjmo.features.tjmo = true;
+    tjmo.features['tjmo'] = true;
   }
 
   if (prevType === LV) {
@@ -306,7 +310,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
   return i;
 }
 
-function getLength(code: number): number | undefined {
+function getLength(code: number): number {
   switch (getType(code)) {
     case LV:
     case LVT:
@@ -315,28 +319,30 @@ function getLength(code: number): number | undefined {
       return 2;
     case T:
       return 3;
+    default:
+      return 0;
   }
 }
 
 function reorderToneMark(glyphs: GlyphInfo[], i: number, font: any): void {
-  const glyph = glyphs[i];
-  const code = glyphs[i].codePoints[0];
+  const glyph = glyphs[i]!;
+  const code = glyphs[i]!.codePoints[0]!;
 
   // Move tone mark to the beginning of the previous syllable, unless it is zero width
   if (font.glyphForCodePoint(code).advanceWidth === 0) {
     return;
   }
 
-  const prev = glyphs[i - 1].codePoints[0];
+  const prev = glyphs[i - 1]!.codePoints[0]!;
   const len = getLength(prev);
 
   glyphs.splice(i, 1);
-  return glyphs.splice(i - len, 0, glyph);
+  glyphs.splice(i - len, 0, glyph);
 }
 
 function insertDottedCircle(glyphs: GlyphInfo[], i: number, font: any): number {
-  const glyph = glyphs[i];
-  const code = glyphs[i].codePoints[0];
+  const glyph = glyphs[i]!;
+  const code = glyphs[i]!.codePoints[0]!;
 
   if (font.hasGlyphForCodePoint(DOTTED_CIRCLE)) {
     const dottedCircle = getGlyph(font, DOTTED_CIRCLE, glyph.features);

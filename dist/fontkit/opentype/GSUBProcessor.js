@@ -1,4 +1,3 @@
-// @ts-nocheck
 import GlyphInfo from './GlyphInfo.js';
 import OTProcessor from './OTProcessor.js';
 export default class GSUBProcessor extends OTProcessor {
@@ -68,7 +67,7 @@ export default class GSUBProcessor extends OTProcessor {
                 }
                 for (const ligature of table.ligatureSets.get(index)) {
                     const matched = this.sequenceMatchIndices(1, ligature.components);
-                    if (!matched) {
+                    if (!matched || matched === true) {
                         continue;
                     }
                     const curGlyph = this.glyphIterator.cur;

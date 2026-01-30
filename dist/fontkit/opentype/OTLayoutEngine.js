@@ -39,8 +39,8 @@ export default class OTLayoutEngine {
         }
         // Choose a shaper based on the script, and setup a shaping plan.
         // This determines which features to apply to which glyphs.
-        this.shaper = Shapers.choose(script);
-        this.plan = new ShapingPlan(this.font, script, glyphRun.direction);
+        this.shaper = Shapers.choose(script ?? 'DFLT');
+        this.plan = new ShapingPlan(this.font, script ?? 'DFLT', glyphRun.direction);
         this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
         // Assign chosen features to output glyph run
         for (const key in this.plan.allFeatures) {
@@ -48,30 +48,32 @@ export default class OTLayoutEngine {
         }
     }
     substitute(glyphRun) {
-        if (this.GSUBProcessor) {
+        if (this.GSUBProcessor && this.plan && this.glyphInfos) {
             this.plan.process(this.GSUBProcessor, this.glyphInfos);
             // Map glyph infos back to normal Glyph objects
             glyphRun.glyphs = this.glyphInfos.map((glyphInfo) => this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints));
         }
     }
     position(glyphRun) {
-        if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS') {
+        if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS' && glyphRun.positions) {
             this.zeroMarkAdvances(glyphRun.positions);
         }
-        if (this.GPOSProcessor) {
+        if (this.GPOSProcessor && this.plan && this.glyphInfos && glyphRun.positions) {
             this.plan.process(this.GPOSProcessor, this.glyphInfos, glyphRun.positions);
         }
-        if (this.shaper.zeroMarkWidths === 'AFTER_GPOS') {
+        if (this.shaper.zeroMarkWidths === 'AFTER_GPOS' && glyphRun.positions) {
             this.zeroMarkAdvances(glyphRun.positions);
         }
         // Reverse the glyphs and positions if the script is right-to-left
-        if (glyphRun.direction === 'rtl') {
+        if (glyphRun.direction === 'rtl' && glyphRun.positions) {
             glyphRun.glyphs.reverse();
             glyphRun.positions.reverse();
         }
         return this.GPOSProcessor?.features;
     }
     zeroMarkAdvances(positions) {
+        if (!this.glyphInfos)
+            return;
         for (let i = 0; i < this.glyphInfos.length; i++) {
             if (this.glyphInfos[i].isMark) {
                 positions[i].xAdvance = 0;

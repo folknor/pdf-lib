@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { isMark } from '../../vendors/unicode-properties/index.js';
 import OTProcessor from './OTProcessor.js';
 
@@ -33,7 +32,7 @@ export default class GlyphInfo {
     this.features = {};
     if (Array.isArray(features)) {
       for (let i = 0; i < features.length; i++) {
-        const feature = features[i];
+        const feature = features[i]!;
         this.features[feature] = true;
       }
     } else if (typeof features === 'object') {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import standardStrings from './CFFStandardStrings.js';
 import CFFTop from './CFFTop.js';
 class CFFFont {
@@ -29,7 +28,7 @@ class CFFFont {
             }
             this.topDict = this.topDictIndex[0];
         }
-        this.isCIDFont = this.topDict.ROS != null;
+        this.isCIDFont = this.topDict['ROS'] != null;
         return this;
     }
     string(sid) {
@@ -37,25 +36,25 @@ class CFFFont {
             return null;
         }
         if (sid < standardStrings.length) {
-            return standardStrings[sid];
+            return standardStrings[sid] ?? null;
         }
-        return this.stringIndex[sid - standardStrings.length];
+        return this.stringIndex[sid - standardStrings.length] ?? null;
     }
     get postscriptName() {
         if (this.version < 2) {
-            return this.nameIndex[0];
+            return this.nameIndex[0] ?? null;
         }
         return null;
     }
     get fullName() {
-        return this.string(this.topDict.FullName);
+        return this.string(this.topDict['FullName']);
     }
     get familyName() {
-        return this.string(this.topDict.FamilyName);
+        return this.string(this.topDict['FamilyName']);
     }
     getCharString(glyph) {
-        this.stream.pos = this.topDict.CharStrings[glyph].offset;
-        return this.stream.readBuffer(this.topDict.CharStrings[glyph].length);
+        this.stream.pos = this.topDict['CharStrings'][glyph].offset;
+        return this.stream.readBuffer(this.topDict['CharStrings'][glyph].length);
     }
     getGlyphName(gid) {
         // CFF2 glyph names are in the post table.
@@ -90,15 +89,15 @@ class CFFFont {
         return null;
     }
     fdForGlyph(gid) {
-        if (!this.topDict.FDSelect) {
+        if (!this.topDict['FDSelect']) {
             return null;
         }
-        switch (this.topDict.FDSelect.version) {
+        switch (this.topDict['FDSelect'].version) {
             case 0:
-                return this.topDict.FDSelect.fds[gid];
+                return this.topDict['FDSelect'].fds[gid];
             case 3:
             case 4: {
-                const { ranges } = this.topDict.FDSelect;
+                const { ranges } = this.topDict['FDSelect'];
                 let low = 0;
                 let high = ranges.length - 1;
                 while (low <= high) {
@@ -113,24 +112,24 @@ class CFFFont {
                         return ranges[mid].fd;
                     }
                 }
-                throw new Error(`Unknown FDSelect version: ${this.topDict.FDSelect.version}`);
+                throw new Error(`Unknown FDSelect version: ${this.topDict['FDSelect'].version}`);
             }
             default:
-                throw new Error(`Unknown FDSelect version: ${this.topDict.FDSelect.version}`);
+                throw new Error(`Unknown FDSelect version: ${this.topDict['FDSelect'].version}`);
         }
     }
     privateDictForGlyph(gid) {
-        if (this.topDict.FDSelect) {
+        if (this.topDict['FDSelect']) {
             const fd = this.fdForGlyph(gid);
-            if (this.topDict.FDArray[fd]) {
-                return this.topDict.FDArray[fd].Private;
+            if (fd !== null && this.topDict['FDArray'][fd]) {
+                return this.topDict['FDArray'][fd].Private;
             }
             return null;
         }
         if (this.version < 2) {
-            return this.topDict.Private;
+            return this.topDict['Private'];
         }
-        return this.topDict.FDArray[0].Private;
+        return this.topDict['FDArray'][0].Private;
     }
 }
 export default CFFFont;

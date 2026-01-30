@@ -1,1 +1,1 @@
-{"version":3,"file":"WOFF2Directory.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/WOFF2Directory.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAsGxD,QAAA,MAAM,cAAc,UAgBlB,CAAC;AAWH,eAAe,cAAc,CAAC"}
+{"version":3,"file":"WOFF2Directory.d.ts","sourceRoot":"","sources":["../../../src/fontkit/tables/WOFF2Directory.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,CAAC,MAAM,oCAAoC,CAAC;AAsGxD,QAAA,MAAM,cAAc,UAgBlB,CAAC;AAWH,eAAe,cAAc,CAAC"}

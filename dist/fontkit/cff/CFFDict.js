@@ -1,4 +1,3 @@
-// @ts-nocheck
 import isEqual from 'fast-deep-equal';
 import { PropertyDescriptor } from '../../vendors/restructure/index.js';
 import CFFOperand from './CFFOperand.js';
@@ -118,7 +117,7 @@ export default class CFFDict {
             len += key.length;
         }
         if (includePointers) {
-            len += ctx.pointerSize;
+            len += ctx['pointerSize'];
         }
         return len;
     }
@@ -130,7 +129,7 @@ export default class CFFDict {
             val: dict,
             pointerSize: 0,
         };
-        ctx.pointerOffset = stream.pos + this.size(dict, ctx, false);
+        ctx['pointerOffset'] = stream.pos + this.size(dict, ctx, false);
         for (const field of this.ops) {
             const val = dict[field[1]];
             if (val == null || isEqual(val, field[3])) {
@@ -146,8 +145,8 @@ export default class CFFDict {
             }
         }
         let i = 0;
-        while (i < ctx.pointers.length) {
-            const ptr = ctx.pointers[i++];
+        while (i < ctx['pointers'].length) {
+            const ptr = ctx['pointers'][i++];
             ptr.type.encode(stream, ptr.val, ptr.parent);
         }
         return;

@@ -1,9 +1,8 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const shortFrac = new r.Fixed(16, 'BE', 14);
 class Offset {
-  static decode(stream, parent) {
+  static decode(stream: any, parent: any): number {
     // In short format, offsets are multiplied by 2.
     // This doesn't seem to be documented by Apple, but it
     // is implemented this way in Freetype.
@@ -24,11 +23,11 @@ const gvar = new r.Struct({
   flags: r.uint16,
   offsetToData: r.uint32,
   offsets: new r.Array(
-    new r.Pointer(Offset, 'void', {
-      relativeTo: (ctx) => ctx.offsetToData,
+    new r.Pointer(Offset as any, 'void', {
+      relativeTo: (ctx: any) => ctx.offsetToData,
       allowNull: false,
     }),
-    (t) => t.glyphCount + 1,
+    (t: any) => t.glyphCount + 1,
   ),
 });
 

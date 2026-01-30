@@ -1,11 +1,10 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { LookupTable, StateTable1 } from './aat.js';
 const ClassTable = new r.Struct({
     length: r.uint16,
     coverage: r.uint16,
     subFeatureFlags: r.uint32,
-    stateTable: new StateTable1(),
+    stateTable: StateTable1(),
 });
 const WidthDeltaRecord = new r.Struct({
     justClass: r.uint32,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const ImageTable = new r.Struct({
@@ -6,7 +5,7 @@ const ImageTable = new r.Struct({
   resolution: r.uint16,
   imageOffsets: new r.Array(
     new r.Pointer(r.uint32, 'void'),
-    (t) => t.parent.parent.maxp.numGlyphs + 1,
+    (t: any) => t.parent.parent.maxp.numGlyphs + 1,
   ),
 });
 

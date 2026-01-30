@@ -1,4 +1,3 @@
-// @ts-nocheck
 import BBox from '../glyph/BBox.js';
 import type Glyph from '../glyph/Glyph.js';
 import type GlyphPosition from './GlyphPosition.js';
@@ -71,7 +70,7 @@ export default class GlyphRun {
    */
   get advanceWidth(): number {
     let width = 0;
-    for (const position of this.positions) {
+    for (const position of this.positions ?? []) {
       width += position.xAdvance;
     }
 
@@ -83,7 +82,7 @@ export default class GlyphRun {
    */
   get advanceHeight(): number {
     let height = 0;
-    for (const position of this.positions) {
+    for (const position of this.positions ?? []) {
       height += position.yAdvance;
     }
 
@@ -98,9 +97,10 @@ export default class GlyphRun {
 
     let x = 0;
     let y = 0;
+    const positions = this.positions ?? [];
     for (let index = 0; index < this.glyphs.length; index++) {
-      const glyph = this.glyphs[index];
-      const p = this.positions[index];
+      const glyph = this.glyphs[index]!;
+      const p = positions[index]!;
       const b = glyph.bbox;
 
       bbox.addPoint(b.minX + x + p.xOffset, b.minY + y + p.yOffset);

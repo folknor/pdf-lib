@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getCombiningClass } from '../../vendors/unicode-properties/index.js';
 import type Glyph from '../glyph/Glyph.js';
 import type GlyphPosition from './GlyphPosition.js';
@@ -23,7 +22,7 @@ export default class UnicodeLayoutEngine {
     let clusterStart = 0;
     let clusterEnd = 0;
     for (let index = 0; index < glyphs.length; index++) {
-      const glyph = glyphs[index];
+      const glyph = glyphs[index]!;
       if (glyph.isMark) {
         // TODO: handle ligatures
         clusterEnd = index;
@@ -49,7 +48,7 @@ export default class UnicodeLayoutEngine {
     clusterStart: number,
     clusterEnd: number,
   ): void {
-    const base = glyphs[clusterStart];
+    const base = glyphs[clusterStart]!;
     const baseBox = base.cbox.copy();
 
     // adjust bounding box for ligature glyphs
@@ -59,17 +58,17 @@ export default class UnicodeLayoutEngine {
         ((base.codePoints.length - 1) * baseBox.width) / base.codePoints.length;
     }
 
-    let xOffset = -positions[clusterStart].xAdvance;
+    let xOffset = -positions[clusterStart]!.xAdvance;
     let yOffset = 0;
     const yGap = this.font.unitsPerEm / 16;
 
     // position each of the mark glyphs relative to the base glyph
     for (let index = clusterStart + 1; index <= clusterEnd; index++) {
-      const mark = glyphs[index];
+      const mark = glyphs[index]!;
       const markBox = mark.cbox;
-      const position = positions[index];
+      const position = positions[index]!;
 
-      const combiningClass = this.getCombiningClass(mark.codePoints[0]);
+      const combiningClass = this.getCombiningClass(mark.codePoints[0]!);
 
       if (combiningClass !== 'Not_Reordered') {
         position.xOffset = position.yOffset = 0;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const OS2 = new r.VersionedStruct(r.uint16, {
     header: {

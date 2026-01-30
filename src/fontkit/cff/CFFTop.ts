@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { resolveLength } from '../../vendors/restructure/index.js';
 import { ItemVariationStore } from '../tables/variations.js';
@@ -25,8 +24,9 @@ class PredefinedOp {
   }
 
   decode(stream: any, parent: any, operands: number[]): any {
-    if (this.predefinedOps[operands[0]]) {
-      return this.predefinedOps[operands[0]];
+    const index = operands[0];
+    if (index !== undefined && this.predefinedOps[index]) {
+      return this.predefinedOps[index];
     }
 
     return this.type.decode(stream, parent, operands);
@@ -93,7 +93,10 @@ class RangeArray extends r.Array {
     let count = 0;
     const res: any[] = [];
     while (count < length) {
-      const range = this.type.decode(stream, parent);
+      const range = this.type.decode(stream, parent) as {
+        offset: number;
+        nLeft: number;
+      };
       range.offset = count;
       count += range.nLeft + 1;
       res.push(range);
@@ -105,15 +108,18 @@ class RangeArray extends r.Array {
 
 const CFFCustomCharset = new r.VersionedStruct(r.uint8, {
   0: {
-    glyphs: new r.Array(r.uint16, (t) => t.parent.CharStrings.length - 1),
+    glyphs: new r.Array(
+      r.uint16,
+      (t: any) => t.parent.CharStrings.length - 1,
+    ),
   },
 
   1: {
-    ranges: new RangeArray(Range1, (t) => t.parent.CharStrings.length - 1),
+    ranges: new RangeArray(Range1, (t: any) => t.parent.CharStrings.length - 1),
   },
 
   2: {
-    ranges: new RangeArray(Range2, (t) => t.parent.CharStrings.length - 1),
+    ranges: new RangeArray(Range2, (t: any) => t.parent.CharStrings.length - 1),
   },
 });
 
@@ -134,7 +140,7 @@ const FDRange4 = new r.Struct({
 
 const FDSelect = new r.VersionedStruct(r.uint8, {
   0: {
-    fds: new r.Array(r.uint8, (t) => t.parent.CharStrings.length),
+    fds: new r.Array(r.uint8, (t: any) => t.parent.CharStrings.length),
   },
 
   3: {
@@ -153,12 +159,13 @@ const FDSelect = new r.VersionedStruct(r.uint8, {
 const ptr = new CFFPointer(CFFPrivateDict);
 class CFFPrivateOp {
   decode(stream: any, parent: any, operands: number[]): any {
-    parent.length = operands[0];
-    return ptr.decode(stream, parent, [operands[1]]);
+    parent.length = operands[0] ?? 0;
+    return ptr.decode(stream, parent, [operands[1] ?? 0]);
   }
 
   size(dict: any, ctx: any): [number, any] {
-    return [CFFPrivateDict.size(dict, ctx, false), ptr.size(dict, ctx)[0]];
+    const ptrSizeResult = ptr.size(dict, ctx);
+    return [CFFPrivateDict.size(dict, ctx, false), ptrSizeResult];
   }
 
   encode(stream: any, dict: any, ctx: any): [number, any] {
@@ -236,17 +243,17 @@ const CFFTop = new r.VersionedStruct(r.fixed16, {
   1: {
     hdrSize: r.uint8,
     offSize: r.uint8,
-    nameIndex: new CFFIndex(new r.String('length')),
-    topDictIndex: new CFFIndex(CFFTopDict),
-    stringIndex: new CFFIndex(new r.String('length')),
-    globalSubrIndex: new CFFIndex(),
+    nameIndex: new CFFIndex(new r.String('length')) as unknown as r.Base,
+    topDictIndex: new CFFIndex(CFFTopDict) as unknown as r.Base,
+    stringIndex: new CFFIndex(new r.String('length')) as unknown as r.Base,
+    globalSubrIndex: new CFFIndex() as unknown as r.Base,
   },
 
   2: {
     hdrSize: r.uint8,
     length: r.uint16,
-    topDict: CFF2TopDict,
-    globalSubrIndex: new CFFIndex(),
+    topDict: CFF2TopDict as unknown as r.Base,
+    globalSubrIndex: new CFFIndex() as unknown as r.Base,
   },
 });
 

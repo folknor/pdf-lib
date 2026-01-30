@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const HmtxEntry = new r.Struct({
     advance: r.uint16,

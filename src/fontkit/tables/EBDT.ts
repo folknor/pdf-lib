@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 export const BigMetrics = new r.Struct({
@@ -26,9 +25,9 @@ const EBDTComponent = new r.Struct({
   yOffset: r.int8,
 });
 
-class ByteAligned {}
-
-class BitAligned {}
+// Placeholder types for byte-aligned and bit-aligned data
+const ByteAligned = {} as any;
+const BitAligned = {} as any;
 
 export const glyph = new r.VersionedStruct('version', {
   1: {

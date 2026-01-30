@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getScript } from '../../vendors/unicode-properties/index.js';
 // This maps the Unicode Script property to an OpenType script tag
 // Data from http://www.microsoft.com/typography/otspec/scripttags.htm
@@ -140,7 +139,7 @@ for (const script in UNICODE_SCRIPTS) {
             OPENTYPE_SCRIPTS[t] = script;
         }
     }
-    else {
+    else if (tag !== undefined) {
         OPENTYPE_SCRIPTS[tag] = script;
     }
 }
@@ -166,20 +165,20 @@ export function forString(string) {
         }
         const script = getScript(code);
         if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-            return UNICODE_SCRIPTS[script];
+            return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown'];
         }
     }
-    return UNICODE_SCRIPTS.Unknown;
+    return UNICODE_SCRIPTS['Unknown'];
 }
 export function forCodePoints(codePoints) {
     for (let i = 0; i < codePoints.length; i++) {
         const codePoint = codePoints[i];
         const script = getScript(codePoint);
         if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-            return UNICODE_SCRIPTS[script];
+            return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown'];
         }
     }
-    return UNICODE_SCRIPTS.Unknown;
+    return UNICODE_SCRIPTS['Unknown'];
 }
 // The scripts in this map are written from right to left
 const RTL = {
@@ -211,7 +210,8 @@ const RTL = {
     phlp: true, // Psalter Pahlavi
 };
 export function direction(script) {
-    if (RTL[script]) {
+    const scriptKey = Array.isArray(script) ? script[0] : script;
+    if (scriptKey && RTL[scriptKey]) {
         return 'rtl';
     }
     return 'ltr';

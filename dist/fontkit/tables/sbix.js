@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const ImageTable = new r.Struct({
     ppem: r.uint16,

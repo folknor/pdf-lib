@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Gets an encoding name from platform, encoding, and language ids.
  * Returned encoding names can be used in iconv-lite to decode text.
@@ -58,6 +57,7 @@ export function getEncodingMapping(encoding) {
         encodingCache.set(encoding, res);
         return res;
     }
+    return undefined;
 }
 // Map of platform ids to encoding ids.
 export const ENCODINGS = [

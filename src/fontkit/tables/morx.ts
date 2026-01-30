@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { LookupTable, StateTable, UnboundedArray } from './aat.js';
 
@@ -17,27 +16,27 @@ const InsertionData = {
 };
 
 const SubstitutionTable = new r.Struct({
-  items: new UnboundedArray(new r.Pointer(r.uint32, LookupTable())),
+  items: new UnboundedArray(new r.Pointer(r.uint32, LookupTable())) as any,
 });
 
 const SubtableData = new r.VersionedStruct('type', {
   0: {
     // Indic Rearrangement Subtable
-    stateTable: new StateTable(),
+    stateTable: StateTable(),
   },
 
   1: {
     // Contextual Glyph Substitution Subtable
-    stateTable: new StateTable(ContextualData),
+    stateTable: StateTable(ContextualData),
     substitutionTable: new r.Pointer(r.uint32, SubstitutionTable),
   },
 
   2: {
     // Ligature subtable
-    stateTable: new StateTable(LigatureData),
-    ligatureActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint32)),
-    components: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
-    ligatureList: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
+    stateTable: StateTable(LigatureData),
+    ligatureActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint32) as any),
+    components: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
+    ligatureList: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
   },
 
   4: {
@@ -47,8 +46,8 @@ const SubtableData = new r.VersionedStruct('type', {
 
   5: {
     // Glyph Insertion Subtable
-    stateTable: new StateTable(InsertionData),
-    insertionActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
+    stateTable: StateTable(InsertionData),
+    insertionActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
   },
 });
 
@@ -58,7 +57,7 @@ const Subtable = new r.Struct({
   type: r.uint8,
   subFeatureFlags: r.uint32,
   table: SubtableData,
-  padding: new r.Reserved(r.uint8, (t) => t.length - t._currentOffset),
+  padding: new r.Reserved(r.uint8, (t: any) => t.length - t._currentOffset),
 });
 
 const FeatureEntry = new r.Struct({

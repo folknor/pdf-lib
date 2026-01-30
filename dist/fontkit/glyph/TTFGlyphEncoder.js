@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 // Flags for simple glyphs
 const ON_CURVE = 1 << 0;
@@ -46,9 +45,11 @@ export default class TTFGlyphEncoder {
         let pointCount = 0;
         for (let i = 0; i < path.commands.length; i++) {
             const c = path.commands[i];
+            if (!c)
+                continue;
             for (let j = 0; j < c.args.length; j += 2) {
-                const x = c.args[j];
-                const y = c.args[j + 1];
+                const x = c.args[j] ?? 0;
+                const y = c.args[j + 1] ?? 0;
                 let flag = 0;
                 // If the ending point of a quadratic curve is the midpoint
                 // between the control point and the control point of the next
@@ -56,8 +57,8 @@ export default class TTFGlyphEncoder {
                 if (c.command === 'quadraticCurveTo' && j === 2) {
                     const next = path.commands[i + 1];
                     if (next && next.command === 'quadraticCurveTo') {
-                        const midX = (lastX + next.args[0]) / 2;
-                        const midY = (lastY + next.args[1]) / 2;
+                        const midX = (lastX + (next.args[0] ?? 0)) / 2;
+                        const midY = (lastY + (next.args[1] ?? 0)) / 2;
                         if (x === midX && y === midY) {
                             continue;
                         }
@@ -70,7 +71,10 @@ export default class TTFGlyphEncoder {
                 flag = this._encodePoint(x, lastX, xPoints, flag, X_SHORT_VECTOR, SAME_X);
                 flag = this._encodePoint(y, lastY, yPoints, flag, Y_SHORT_VECTOR, SAME_Y);
                 if (flag === lastFlag && same < 255) {
-                    flags[flags.length - 1] |= REPEAT;
+                    const lastFlagIdx = flags.length - 1;
+                    if (flags[lastFlagIdx] !== undefined) {
+                        flags[lastFlagIdx] |= REPEAT;
+                    }
                     same++;
                 }
                 else {
@@ -90,8 +94,8 @@ export default class TTFGlyphEncoder {
             }
         }
         // Close the path if the last command didn't already
-        if (path.commands.length > 1 &&
-            path.commands[path.commands.length - 1].command !== 'closePath') {
+        const lastCmd = path.commands[path.commands.length - 1];
+        if (path.commands.length > 1 && lastCmd && lastCmd.command !== 'closePath') {
             endPtsOfContours.push(pointCount - 1);
         }
         const bbox = path.bbox;
@@ -109,7 +113,7 @@ export default class TTFGlyphEncoder {
         };
         const size = Glyf.size(glyf);
         const tail = 4 - (size % 4);
-        const stream = new r.EncodeStream(size + tail);
+        const stream = new r.EncodeStream(new Uint8Array(size + tail));
         Glyf.encode(stream, glyf);
         // Align to 4-byte length
         if (tail !== 0) {

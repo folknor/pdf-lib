@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { BigMetrics } from './EBDT.js';
 const SBitLineMetrics = new r.Struct({

@@ -11,8 +11,8 @@ import base64DeflatedIndicMachine from './indic.js';
 import { CATEGORIES, CONSONANT_FLAGS, HALANT_OR_COENG_FLAGS, INDIC_CONFIGS, INDIC_DECOMPOSITIONS, JOINER_FLAGS, POSITIONS, } from './indic-data.js';
 import base64DeflatedTrie from './trieIndic.js';
 import base64DeflatedUseData from './use.js';
-const indicMachine = JSON.parse(String.fromCharCode.apply(String, pako.inflate(decodeBase64(base64DeflatedIndicMachine))));
-const useData = JSON.parse(String.fromCharCode.apply(String, pako.inflate(decodeBase64(base64DeflatedUseData))));
+const indicMachine = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedIndicMachine)))));
+const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedUseData)))));
 const { decompositions } = useData;
 const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(indicMachine);
@@ -55,9 +55,11 @@ export default class IndicShaper extends DefaultShaper {
             ],
         });
         // Setup the indic config for the selected script
-        plan.unicodeScript = Script.fromOpenType(plan.script);
+        const unicodeScript = Script.fromOpenType(plan.script) ?? '';
+        plan.unicodeScript = unicodeScript || undefined;
         plan.indicConfig =
-            INDIC_CONFIGS[plan.unicodeScript] || INDIC_CONFIGS.Default;
+            INDIC_CONFIGS[unicodeScript] ||
+                INDIC_CONFIGS['Default'];
         plan.isOldSpec =
             plan.indicConfig.hasOldSpec &&
                 plan.script[plan.script.length - 1] !== '2';
@@ -68,7 +70,8 @@ export default class IndicShaper extends DefaultShaper {
         // TODO: do this in a more general unicode normalizer
         for (let i = glyphs.length - 1; i >= 0; i--) {
             const codepoint = glyphs[i].codePoints[0];
-            const d = INDIC_DECOMPOSITIONS[codepoint] || decompositions[codepoint];
+            const d = INDIC_DECOMPOSITIONS[codepoint] ||
+                decompositions[String(codepoint)];
             if (d) {
                 const decomposed = d.map((c) => {
                     const g = plan.font.glyphForCodePoint(c);
@@ -104,7 +107,7 @@ function setupSyllables(_font, glyphs) {
         if (start > last) {
             ++syllable;
             for (let i = last; i < start; i++) {
-                glyphs[i].shaperInfo = new IndicInfo(CATEGORIES.X, POSITIONS.End, 'non_indic_cluster', syllable);
+                glyphs[i].shaperInfo = new IndicInfo(CATEGORIES['X'], POSITIONS['End'], 'non_indic_cluster', syllable);
             }
         }
         ++syllable;
@@ -117,7 +120,7 @@ function setupSyllables(_font, glyphs) {
     if (last < glyphs.length) {
         ++syllable;
         for (let i = last; i < glyphs.length; i++) {
-            glyphs[i].shaperInfo = new IndicInfo(CATEGORIES.X, POSITIONS.End, 'non_indic_cluster', syllable);
+            glyphs[i].shaperInfo = new IndicInfo(CATEGORIES['X'], POSITIONS['End'], 'non_indic_cluster', syllable);
         }
     }
 }
@@ -554,7 +557,7 @@ function finalReordering(font, glyphs, plan) {
                                 while (base < end && isHalantOrCoeng(glyphs[base])) {
                                     base++;
                                 }
-                                glyphs[base].shaperInfo.position = POSITIONS.BASE_C;
+                                glyphs[base].shaperInfo.position = POSITIONS['Base_C'];
                                 tryPref = false;
                             }
                             break;
@@ -675,7 +678,7 @@ function finalReordering(font, glyphs, plan) {
             glyphs[start].shaperInfo.position === POSITIONS.Ra_To_Become_Reph &&
             (glyphs[start].shaperInfo.category === CATEGORIES.Repha) !==
                 (glyphs[start].isLigated && !glyphs[start].isMultiplied)) {
-            let newRephPos;
+            let newRephPos = start + 1;
             const rephPos = indicConfig.rephPos;
             let found = false;
             // 1. If reph should be positioned after post-base consonant forms,

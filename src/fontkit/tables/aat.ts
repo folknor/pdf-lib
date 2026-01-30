@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 class UnboundedArrayAccessor {
@@ -37,7 +36,7 @@ export class UnboundedArray extends r.Array {
     super(type, 0);
   }
 
-  override decode(stream: any, parent: any): UnboundedArrayAccessor {
+  override decode(stream: any, parent: any): any {
     return new UnboundedArrayAccessor(this.type, stream, parent);
   }
 }
@@ -88,7 +87,7 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
     firstGlyph: r.uint16,
     values: new r.Pointer(
       r.uint16,
-      new r.Array(ValueType, (t) => t.lastGlyph - t.firstGlyph + 1),
+      new r.Array(ValueType, (t: any) => t.lastGlyph - t.firstGlyph + 1),
       { type: 'parent' },
     ),
   });
@@ -100,25 +99,25 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
 
   return new r.VersionedStruct(r.uint16, {
     0: {
-      values: new UnboundedArray(ValueType), // length == number of glyphs maybe?
+      values: new UnboundedArray(ValueType) as any, // length == number of glyphs maybe?
     },
     2: {
       binarySearchHeader: BinarySearchHeader,
       segments: new r.Array(
         LookupSegmentSingle,
-        (t) => t.binarySearchHeader.nUnits,
+        (t: any) => t.binarySearchHeader.nUnits,
       ),
     },
     4: {
       binarySearchHeader: BinarySearchHeader,
       segments: new r.Array(
         LookupSegmentArray,
-        (t) => t.binarySearchHeader.nUnits,
+        (t: any) => t.binarySearchHeader.nUnits,
       ),
     },
     6: {
       binarySearchHeader: BinarySearchHeader,
-      segments: new r.Array(LookupSingle, (t) => t.binarySearchHeader.nUnits),
+      segments: new r.Array(LookupSingle, (t: any) => t.binarySearchHeader.nUnits),
     },
     8: {
       firstGlyph: r.uint16,
@@ -142,14 +141,14 @@ export function StateTable(
 
   const Entry = new r.Struct(entry);
   const StateArray = new UnboundedArray(
-    new r.Array(r.uint16, (t) => t.nClasses),
+    new r.Array(r.uint16, (t: any) => t.nClasses),
   );
 
   const StateHeader = new r.Struct({
     nClasses: r.uint32,
     classTable: new r.Pointer(r.uint32, LookupTable(lookupType)),
-    stateArray: new r.Pointer(r.uint32, StateArray),
-    entryTable: new r.Pointer(r.uint32, new UnboundedArray(Entry)),
+    stateArray: new r.Pointer(r.uint32, StateArray as any),
+    entryTable: new r.Pointer(r.uint32, new UnboundedArray(Entry) as any),
   });
 
   return StateHeader;
@@ -172,7 +171,7 @@ export function StateTable1(
     {
       newStateOffset: r.uint16,
       // convert offset to stateArray index
-      newState: (t) =>
+      newState: (t: any) =>
         (t.newStateOffset -
           (t.parent.stateArray.base - t.parent._startOffset)) /
         t.parent.nClasses,
@@ -183,14 +182,14 @@ export function StateTable1(
 
   const Entry = new r.Struct(entry);
   const StateArray = new UnboundedArray(
-    new r.Array(r.uint8, (t) => t.nClasses),
+    new r.Array(r.uint8, (t: any) => t.nClasses),
   );
 
   const StateHeader1 = new r.Struct({
     nClasses: r.uint16,
     classTable: new r.Pointer(r.uint16, ClassLookupTable),
-    stateArray: new r.Pointer(r.uint16, StateArray),
-    entryTable: new r.Pointer(r.uint16, new UnboundedArray(Entry)),
+    stateArray: new r.Pointer(r.uint16, StateArray as any),
+    entryTable: new r.Pointer(r.uint16, new UnboundedArray(Entry) as any),
   });
 
   return StateHeader1;

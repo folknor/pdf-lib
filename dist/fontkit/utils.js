@@ -1,4 +1,3 @@
-// @ts-nocheck
 export function binarySearch(arr, cmp) {
     let min = 0;
     let max = arr.length - 1;

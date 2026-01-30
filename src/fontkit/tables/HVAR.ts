@@ -1,15 +1,16 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { resolveLength } from '../../vendors/restructure/index.js';
 import { ItemVariationStore } from './variations.js';
 
 // TODO: add this to restructure
 class VariableSizeNumber {
-  constructor(size) {
+  private _size: any;
+
+  constructor(size: any) {
     this._size = size;
   }
 
-  decode(stream, parent) {
+  decode(stream: any, parent: any): number {
     switch (this.size(0, parent)) {
       case 1:
         return stream.readUInt8();
@@ -19,21 +20,23 @@ class VariableSizeNumber {
         return stream.readUInt24BE();
       case 4:
         return stream.readUInt32BE();
+      default:
+        return 0;
     }
   }
 
-  size(_val, parent) {
+  size(_val: any, parent: any): number {
     return resolveLength(this._size, null, parent);
   }
 }
 
 const MapDataEntry = new r.Struct({
   entry: new VariableSizeNumber(
-    (t) => ((t.parent.entryFormat & 0x0030) >> 4) + 1,
-  ),
-  outerIndex: (t) => t.entry >> ((t.parent.entryFormat & 0x000f) + 1),
-  innerIndex: (t) =>
-    t.entry & ((1 << ((t.parent.entryFormat & 0x000f) + 1)) - 1),
+    (t: any) => ((t.parent.entryFormat & 0x0030) >> 4) + 1,
+  ) as any,
+  outerIndex: (t: any) => t['entry'] >> ((t['parent'].entryFormat & 0x000f) + 1),
+  innerIndex: (t: any) =>
+    t['entry'] & ((1 << ((t['parent'].entryFormat & 0x000f) + 1)) - 1),
 });
 
 const DeltaSetIndexMap = new r.Struct({

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import isEqual from 'fast-deep-equal';
 import { PropertyDescriptor } from '../../vendors/restructure/index.js';
 import CFFOperand from './CFFOperand.js';
@@ -44,7 +43,7 @@ export default class CFFDict {
   encodeOperands(type: any, stream: any, ctx: any, operands: any): any[] {
     if (Array.isArray(type)) {
       return operands.map(
-        (op, i) => this.encodeOperands(type[i], stream, ctx, op)[0],
+        (op: any, i: number) => this.encodeOperands(type[i], stream, ctx, op)[0],
       );
     } else if (type.encode != null) {
       return type.encode(stream, operands, ctx);
@@ -72,7 +71,7 @@ export default class CFFDict {
 
     // fill in defaults
     for (const key in this.fields) {
-      const field = this.fields[key];
+      const field = this.fields[key]!;
       ret[field[1]] = field[3];
     }
 
@@ -121,7 +120,7 @@ export default class CFFDict {
     let len = 0;
 
     for (const k in this.fields) {
-      const field = this.fields[k];
+      const field = this.fields[k]!;
       const val = dict[field[1]];
       if (val == null || isEqual(val, field[3])) {
         continue;
@@ -137,7 +136,7 @@ export default class CFFDict {
     }
 
     if (includePointers) {
-      len += ctx.pointerSize;
+      len += ctx['pointerSize'];
     }
 
     return len;
@@ -152,7 +151,7 @@ export default class CFFDict {
       pointerSize: 0,
     };
 
-    ctx.pointerOffset = stream.pos + this.size(dict, ctx, false);
+    ctx['pointerOffset'] = stream.pos + this.size(dict, ctx, false);
 
     for (const field of this.ops) {
       const val = dict[field[1]];
@@ -172,8 +171,8 @@ export default class CFFDict {
     }
 
     let i = 0;
-    while (i < ctx.pointers.length) {
-      const ptr = ctx.pointers[i++];
+    while (i < ctx['pointers'].length) {
+      const ptr = ctx['pointers'][i++];
       ptr.type.encode(stream, ptr.val, ptr.parent);
     }
 

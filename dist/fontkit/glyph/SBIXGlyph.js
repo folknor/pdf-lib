@@ -1,11 +1,10 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import TTFGlyph from './TTFGlyph.js';
 const SBIXImage = new r.Struct({
     originX: r.uint16,
     originY: r.uint16,
     type: new r.String(4),
-    data: new r.Buffer((t) => t.parent.buflen - t._currentOffset),
+    data: new r.Buffer(((t) => t.parent.buflen - t._currentOffset)),
 });
 /**
  * Represents a color (e.g. emoji) glyph in Apple's SBIX format.
@@ -32,7 +31,9 @@ export default class SBIXGlyph extends TTFGlyph {
             return null;
         }
         this._font.stream.pos = start;
-        return SBIXImage.decode(this._font.stream, { buflen: end - start });
+        return SBIXImage.decode(this._font.stream, {
+            buflen: end - start,
+        });
     }
     render(ctx, size) {
         const img = this.getImageForSize(size);

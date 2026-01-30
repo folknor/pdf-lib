@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 //########################
@@ -71,7 +70,7 @@ export function LookupList(SubTable: any): any {
     subTables: new r.Array(new r.Pointer(r.uint16, SubTable), 'subTableCount'),
     markFilteringSet: new r.Optional(
       r.uint16,
-      (t) => t.flags.flags.useMarkFilteringSet,
+      (t: any) => t.flags.flags.useMarkFilteringSet,
     ),
   });
 
@@ -145,7 +144,7 @@ const LookupRecord = new r.Struct({
 const Rule = new r.Struct({
   glyphCount: r.uint16,
   lookupCount: r.uint16,
-  input: new r.Array(r.uint16, (t) => t.glyphCount - 1),
+  input: new r.Array(r.uint16, (t: any) => t.glyphCount - 1),
   lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
 });
 
@@ -154,7 +153,7 @@ const RuleSet = new r.Array(new r.Pointer(r.uint16, Rule), r.uint16);
 const ClassRule = new r.Struct({
   glyphCount: r.uint16,
   lookupCount: r.uint16,
-  classes: new r.Array(r.uint16, (t) => t.glyphCount - 1),
+  classes: new r.Array(r.uint16, (t: any) => t.glyphCount - 1),
   lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
 });
 
@@ -190,7 +189,7 @@ const ChainRule = new r.Struct({
   backtrackGlyphCount: r.uint16,
   backtrack: new r.Array(r.uint16, 'backtrackGlyphCount'),
   inputGlyphCount: r.uint16,
-  input: new r.Array(r.uint16, (t) => t.inputGlyphCount - 1),
+  input: new r.Array(r.uint16, (t: any) => t.inputGlyphCount - 1),
   lookaheadGlyphCount: r.uint16,
   lookahead: new r.Array(r.uint16, 'lookaheadGlyphCount'),
   lookupCount: r.uint16,

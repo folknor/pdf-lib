@@ -1,5 +1,4 @@
 import { __decorate } from "tslib";
-// @ts-nocheck
 import * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
@@ -96,14 +95,15 @@ export default class TTFFont {
      * @return {string}
      */
     getName(key, lang = this.defaultLanguage || fontkit.defaultLanguage) {
-        const record = this.name?.records[key];
+        const record = this['name']?.records[key];
         if (record) {
             // Attempt to retrieve the entry, depending on which translation is available:
+            const firstKey = Object.keys(record)[0];
             return (record[lang] ||
-                record[this.defaultLanguage] ||
+                (this.defaultLanguage ? record[this.defaultLanguage] : null) ||
                 record[fontkit.defaultLanguage] ||
                 record['en'] ||
-                record[Object.keys(record)[0]] || // Seriously, ANY language would be fine
+                (firstKey ? record[firstKey] : null) || // Seriously, ANY language would be fine
                 null);
         }
         return null;
@@ -151,46 +151,46 @@ export default class TTFFont {
         return this.getName('version');
     }
     /**
-     * The font’s [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
+     * The font's [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
      * @type {number}
      */
     get ascent() {
-        return this.hhea.ascent;
+        return this['hhea'].ascent;
     }
     /**
-     * The font’s [descender](https://en.wikipedia.org/wiki/Descender)
+     * The font's [descender](https://en.wikipedia.org/wiki/Descender)
      * @type {number}
      */
     get descent() {
-        return this.hhea.descent;
+        return this['hhea'].descent;
     }
     /**
      * The amount of space that should be included between lines
      * @type {number}
      */
     get lineGap() {
-        return this.hhea.lineGap;
+        return this['hhea'].lineGap;
     }
     /**
      * The offset from the normal underline position that should be used
      * @type {number}
      */
     get underlinePosition() {
-        return this.post.underlinePosition;
+        return this['post'].underlinePosition;
     }
     /**
      * The weight of the underline that should be used
      * @type {number}
      */
     get underlineThickness() {
-        return this.post.underlineThickness;
+        return this['post'].underlineThickness;
     }
     /**
      * If this is an italic font, the angle the cursor should be drawn at to match the font design
      * @type {number}
      */
     get italicAngle() {
-        return this.post.italicAngle;
+        return this['post'].italicAngle;
     }
     /**
      * The height of capital letters above the baseline.
@@ -215,24 +215,24 @@ export default class TTFFont {
      * @type {number}
      */
     get numGlyphs() {
-        return this.maxp.numGlyphs;
+        return this['maxp'].numGlyphs;
     }
     /**
-     * The size of the font’s internal coordinate grid
+     * The size of the font's internal coordinate grid
      * @type {number}
      */
     get unitsPerEm() {
-        return this.head.unitsPerEm;
+        return this['head'].unitsPerEm;
     }
     /**
-     * The font’s bounding box, i.e. the box that encloses all glyphs in the font.
+     * The font's bounding box, i.e. the box that encloses all glyphs in the font.
      * @type {BBox}
      */
     get bbox() {
-        return Object.freeze(new BBox(this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax));
+        return Object.freeze(new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax));
     }
     get _cmapProcessor() {
-        return new CmapProcessor(this.cmap);
+        return new CmapProcessor(this['cmap']);
     }
     /**
      * An array of all of the unicode code points supported by the font.
@@ -343,9 +343,9 @@ export default class TTFFont {
      * @type {string[]}
      */
     get availableFeatures() {
-        return this._layoutEngine.getAvailableFeatures();
+        return this._layoutEngine.getAvailableFeatures('DFLT', 'dflt');
     }
-    getAvailableFeatures(script, language) {
+    getAvailableFeatures(script = 'DFLT', language = 'dflt') {
         return this._layoutEngine.getAvailableFeatures(script, language);
     }
     _getBaseGlyph(glyph, characters = []) {
@@ -401,10 +401,10 @@ export default class TTFFont {
      */
     get variationAxes() {
         const res = {};
-        if (!this.fvar) {
+        if (!this['fvar']) {
             return res;
         }
-        for (const axis of this.fvar.axis) {
+        for (const axis of this['fvar'].axis) {
             res[axis.axisTag.trim()] = {
                 name: axis.name.en,
                 min: axis.minValue,
@@ -423,13 +423,13 @@ export default class TTFFont {
      */
     get namedVariations() {
         const res = {};
-        if (!this.fvar) {
+        if (!this['fvar']) {
             return res;
         }
-        for (const instance of this.fvar.instance) {
+        for (const instance of this['fvar'].instance) {
             const settings = {};
-            for (let i = 0; i < this.fvar.axis.length; i++) {
-                const axis = this.fvar.axis[i];
+            for (let i = 0; i < this['fvar'].axis.length; i++) {
+                const axis = this['fvar'].axis[i];
                 settings[axis.axisTag.trim()] = instance.coord[i];
             }
             res[instance.name.en] = settings;
@@ -457,7 +457,7 @@ export default class TTFFont {
             throw new Error('Variation settings must be either a variation name or settings object.');
         }
         // normalize the coordinates
-        const coords = this.fvar.axis.map((axis, _i) => {
+        const coords = this['fvar'].axis.map((axis, _i) => {
             const axisTag = axis.axisTag.trim();
             if (axisTag in settings) {
                 return Math.max(axis.minValue, Math.min(axis.maxValue, settings[axisTag]));
@@ -473,16 +473,16 @@ export default class TTFFont {
         return font;
     }
     get _variationProcessor() {
-        if (!this.fvar) {
+        if (!this['fvar']) {
             return null;
         }
         let variationCoords = this.variationCoords;
         // Ignore if no variation coords and not CFF2
-        if (!variationCoords && !this.CFF2) {
+        if (!variationCoords && !this['CFF2']) {
             return null;
         }
         if (!variationCoords) {
-            variationCoords = this.fvar.axis.map((axis) => axis.defaultValue);
+            variationCoords = this['fvar'].axis.map((axis) => axis.defaultValue);
         }
         return new GlyphVariationProcessor(this, variationCoords);
     }

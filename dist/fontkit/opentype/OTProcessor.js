@@ -58,7 +58,7 @@ export default class OTProcessor {
         let changed = false;
         let entry;
         if (!this.script || script !== this.scriptTag) {
-            entry = this.findScript(script);
+            entry = this.findScript(script ?? DEFAULT_SCRIPTS);
             if (!entry) {
                 entry = this.findScript(DEFAULT_SCRIPTS);
             }
@@ -72,7 +72,7 @@ export default class OTProcessor {
             changed = true;
         }
         if (!direction || direction !== this.direction) {
-            this.direction = direction || Script.direction(script);
+            this.direction = direction || Script.direction(script ?? DEFAULT_SCRIPTS);
         }
         if (language && language.length < 4) {
             language += ' '.repeat(4 - language.length);
@@ -166,13 +166,13 @@ export default class OTProcessor {
     }
     applyLookups(lookups, glyphs, positions) {
         this.glyphs = glyphs;
-        this.positions = positions;
+        this.positions = positions ?? [];
         this.glyphIterator = new GlyphIterator(glyphs);
         for (const { feature, lookup } of lookups) {
             this.currentFeature = feature;
             this.glyphIterator.reset(lookup.flags);
             while (this.glyphIterator.index < glyphs.length) {
-                if (!(feature in this.glyphIterator.cur.features)) {
+                if (!this.glyphIterator.cur || !(feature in this.glyphIterator.cur.features)) {
                     this.glyphIterator.next();
                     continue;
                 }

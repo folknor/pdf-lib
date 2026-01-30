@@ -64,12 +64,12 @@ export default class TTFFont {
      */
     get version(): string | null;
     /**
-     * The font’s [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
+     * The font's [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
      * @type {number}
      */
     get ascent(): any;
     /**
-     * The font’s [descender](https://en.wikipedia.org/wiki/Descender)
+     * The font's [descender](https://en.wikipedia.org/wiki/Descender)
      * @type {number}
      */
     get descent(): any;
@@ -111,12 +111,12 @@ export default class TTFFont {
      */
     get numGlyphs(): any;
     /**
-     * The size of the font’s internal coordinate grid
+     * The size of the font's internal coordinate grid
      * @type {number}
      */
     get unitsPerEm(): any;
     /**
-     * The font’s bounding box, i.e. the box that encloses all glyphs in the font.
+     * The font's bounding box, i.e. the box that encloses all glyphs in the font.
      * @type {BBox}
      */
     get bbox(): Readonly<BBox>;
@@ -150,7 +150,7 @@ export default class TTFFont {
      * @param {string} string
      * @return {Glyph[]}
      */
-    glyphsForString(string: string): Glyph[];
+    glyphsForString(string: string): (Glyph | null)[];
     get _layoutEngine(): LayoutEngine;
     /**
      * Returns a GlyphRun object, which includes an array of Glyphs and GlyphPositions for the given string.
@@ -167,7 +167,7 @@ export default class TTFFont {
      * Returns an array of strings that map to the given glyph id.
      * @param {number} gid - glyph id
      */
-    stringsForGlyph(gid: number): Set<string>;
+    stringsForGlyph(gid: number): string[];
     /**
      * An array of all [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm)
      * (or mapped AAT tags) supported by the font.
@@ -201,7 +201,7 @@ export default class TTFFont {
      *
      * @type {object}
      */
-    get variationAxes(): {};
+    get variationAxes(): Record<string, any>;
     /**
      * Returns an object describing the named variation instances
      * that the font designer has specified. Keys are variation names
@@ -209,7 +209,7 @@ export default class TTFFont {
      *
      * @type {object}
      */
-    get namedVariations(): {};
+    get namedVariations(): Record<string, any>;
     /**
      * Returns a new font with the given variation settings applied.
      * Settings can either be an instance name, or an object containing

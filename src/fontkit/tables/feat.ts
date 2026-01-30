@@ -1,10 +1,9 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const Setting = new r.Struct({
   setting: r.uint16,
   nameIndex: r.int16,
-  name: (t) => t.parent.parent.parent.name.records.fontFeatures[t.nameIndex],
+  name: (t: any) => t['parent'].parent.parent.name.records.fontFeatures[t['nameIndex']],
 });
 
 const FeatureName = new r.Struct({
@@ -25,7 +24,7 @@ const FeatureName = new r.Struct({
   ]),
   defaultSetting: r.uint8,
   nameIndex: r.int16,
-  name: (t) => t.parent.parent.name.records.fontFeatures[t.nameIndex],
+  name: (t: any) => t['parent'].parent.name.records.fontFeatures[t['nameIndex']],
 });
 
 export default new r.Struct({

@@ -1,4 +1,3 @@
-// @ts-nocheck
 const FLOAT_EOF = 0xf;
 const FLOAT_LOOKUP = [
     '0',
@@ -100,14 +99,14 @@ export default class CFFOperand {
             let lastN2 = FLOAT_EOF;
             for (let i = 0; i < str.length; i += 2) {
                 const c1 = str[i];
-                const n1 = FLOAT_ENCODE_LOOKUP[c1] || +c1;
+                const n1 = FLOAT_ENCODE_LOOKUP[c1] ?? +c1;
                 let n2;
                 if (i === str.length - 1) {
                     n2 = FLOAT_EOF;
                 }
                 else {
                     const c2 = str[i + 1];
-                    n2 = FLOAT_ENCODE_LOOKUP[c2] || +c2;
+                    n2 = FLOAT_ENCODE_LOOKUP[c2] ?? +c2;
                 }
                 lastN2 = n2;
                 stream.writeUInt8((n1 << 4) | (n2 & 15));

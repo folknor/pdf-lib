@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const shortFrac = new r.Fixed(16, 'BE', 14);
 class Offset {

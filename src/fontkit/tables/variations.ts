@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { Feature } from './opentype.js';
 
@@ -23,12 +22,12 @@ const VariationRegionList = new r.Struct({
 });
 
 const DeltaSet = new r.Struct({
-  shortDeltas: new r.Array(r.int16, (t) => t.parent.shortDeltaCount),
+  shortDeltas: new r.Array(r.int16, (t: any) => t.parent.shortDeltaCount),
   regionDeltas: new r.Array(
     r.int8,
-    (t) => t.parent.regionIndexCount - t.parent.shortDeltaCount,
+    (t: any) => t.parent.regionIndexCount - t.parent.shortDeltaCount,
   ),
-  deltas: (t) => t.shortDeltas.concat(t.regionDeltas),
+  deltas: (t: any) => t['shortDeltas'].concat(t['regionDeltas']),
 });
 
 const ItemVariationData = new r.Struct({

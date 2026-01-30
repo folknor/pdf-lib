@@ -1,10 +1,9 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const DeviceRecord = new r.Struct({
   pixelSize: r.uint8,
   maximumWidth: r.uint8,
-  widths: new r.Array(r.uint8, (t) => t.parent.parent.maxp.numGlyphs),
+  widths: new r.Array(r.uint8, (t: any) => t.parent.parent.maxp.numGlyphs),
 });
 
 // The Horizontal Device Metrics table stores integer advance widths scaled to particular pixel sizes

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import cloneDeep from 'clone';
 import TTFGlyphEncoder from '../glyph/TTFGlyphEncoder.js';
 import Directory from '../tables/directory.js';
@@ -88,7 +87,7 @@ export default class TTFSubset extends Subset {
     // glyphs to the array as we go, and CoffeeScript caches the length.
     let i = 0;
     while (i < this.glyphs.length) {
-      this._addGlyph(this.glyphs[i++]);
+      this._addGlyph(this.glyphs[i++]!);
     }
 
     const maxp = cloneDeep(this.font.maxp);

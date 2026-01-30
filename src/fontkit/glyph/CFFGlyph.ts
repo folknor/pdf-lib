@@ -1,4 +1,3 @@
-// @ts-nocheck
 import Glyph from './Glyph.js';
 import Path from './Path.js';
 
@@ -43,8 +42,8 @@ export default class CFFGlyph extends Glyph {
     let nStems = 0;
     let x = 0,
       y = 0;
-    let usedGsubrs;
-    let usedSubrs;
+    let usedGsubrs: Record<number, boolean>;
+    let usedSubrs: Record<number, boolean>;
     let open = false;
 
     this._usedGsubrs = usedGsubrs = {};
@@ -107,14 +106,14 @@ export default class CFFGlyph extends Glyph {
                 checkWidth();
               }
 
-              y += stack.shift();
+              y += stack.shift() ?? 0;
               moveTo(x, y);
               break;
 
             case 5: // rlineto
               while (stack.length >= 2) {
-                x += stack.shift();
-                y += stack.shift();
+                x += stack.shift() ?? 0;
+                y += stack.shift() ?? 0;
                 path.lineTo(x, y);
               }
               break;
@@ -124,9 +123,9 @@ export default class CFFGlyph extends Glyph {
               phase = op === 6;
               while (stack.length >= 1) {
                 if (phase) {
-                  x += stack.shift();
+                  x += stack.shift() ?? 0;
                 } else {
-                  y += stack.shift();
+                  y += stack.shift() ?? 0;
                 }
 
                 path.lineTo(x, y);
@@ -136,18 +135,18 @@ export default class CFFGlyph extends Glyph {
 
             case 8: // rrcurveto
               while (stack.length > 0) {
-                c1x = x + stack.shift();
-                c1y = y + stack.shift();
-                c2x = c1x + stack.shift();
-                c2y = c1y + stack.shift();
-                x = c2x + stack.shift();
-                y = c2y + stack.shift();
+                c1x = x + (stack.shift() ?? 0);
+                c1y = y + (stack.shift() ?? 0);
+                c2x = c1x + (stack.shift() ?? 0);
+                c2y = c1y + (stack.shift() ?? 0);
+                x = c2x + (stack.shift() ?? 0);
+                y = c2y + (stack.shift() ?? 0);
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
               break;
 
             case 10: // callsubr
-              index = stack.pop() + subrsBias;
+              index = (stack.pop() ?? 0) + subrsBias;
               subr = subrs[index];
               if (subr) {
                 usedSubrs[index] = true;
@@ -188,7 +187,7 @@ export default class CFFGlyph extends Glyph {
                 throw new Error('vsindex operator not supported in CFF v1');
               }
 
-              vsindex = stack.pop();
+              vsindex = stack.pop() ?? 0;
               break;
             }
 
@@ -206,15 +205,15 @@ export default class CFFGlyph extends Glyph {
                 vstore,
                 vsindex,
               );
-              const numBlends = stack.pop();
+              const numBlends = stack.pop() ?? 0;
               let numOperands = numBlends * blendVector.length;
               let delta = stack.length - numOperands;
               const base = delta - numBlends;
 
               for (let i = 0; i < numBlends; i++) {
-                let sum = stack[base + i];
+                let sum = stack[base + i] ?? 0;
                 for (let j = 0; j < blendVector.length; j++) {
-                  sum += blendVector[j] * stack[delta++];
+                  sum += (blendVector[j] ?? 0) * (stack[delta++] ?? 0);
                 }
 
                 stack[base + i] = sum;
@@ -238,8 +237,8 @@ export default class CFFGlyph extends Glyph {
                 checkWidth();
               }
 
-              x += stack.shift();
-              y += stack.shift();
+              x += stack.shift() ?? 0;
+              y += stack.shift() ?? 0;
               moveTo(x, y);
               break;
 
@@ -248,69 +247,69 @@ export default class CFFGlyph extends Glyph {
                 checkWidth();
               }
 
-              x += stack.shift();
+              x += stack.shift() ?? 0;
               moveTo(x, y);
               break;
 
             case 24: // rcurveline
               while (stack.length >= 8) {
-                c1x = x + stack.shift();
-                c1y = y + stack.shift();
-                c2x = c1x + stack.shift();
-                c2y = c1y + stack.shift();
-                x = c2x + stack.shift();
-                y = c2y + stack.shift();
+                c1x = x + (stack.shift() ?? 0);
+                c1y = y + (stack.shift() ?? 0);
+                c2x = c1x + (stack.shift() ?? 0);
+                c2y = c1y + (stack.shift() ?? 0);
+                x = c2x + (stack.shift() ?? 0);
+                y = c2y + (stack.shift() ?? 0);
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
 
-              x += stack.shift();
-              y += stack.shift();
+              x += stack.shift() ?? 0;
+              y += stack.shift() ?? 0;
               path.lineTo(x, y);
               break;
 
             case 25: // rlinecurve
               while (stack.length >= 8) {
-                x += stack.shift();
-                y += stack.shift();
+                x += stack.shift() ?? 0;
+                y += stack.shift() ?? 0;
                 path.lineTo(x, y);
               }
 
-              c1x = x + stack.shift();
-              c1y = y + stack.shift();
-              c2x = c1x + stack.shift();
-              c2y = c1y + stack.shift();
-              x = c2x + stack.shift();
-              y = c2y + stack.shift();
+              c1x = x + (stack.shift() ?? 0);
+              c1y = y + (stack.shift() ?? 0);
+              c2x = c1x + (stack.shift() ?? 0);
+              c2y = c1y + (stack.shift() ?? 0);
+              x = c2x + (stack.shift() ?? 0);
+              y = c2y + (stack.shift() ?? 0);
               path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               break;
 
             case 26: // vvcurveto
               if (stack.length % 2) {
-                x += stack.shift();
+                x += stack.shift() ?? 0;
               }
 
               while (stack.length >= 4) {
                 c1x = x;
-                c1y = y + stack.shift();
-                c2x = c1x + stack.shift();
-                c2y = c1y + stack.shift();
+                c1y = y + (stack.shift() ?? 0);
+                c2x = c1x + (stack.shift() ?? 0);
+                c2y = c1y + (stack.shift() ?? 0);
                 x = c2x;
-                y = c2y + stack.shift();
+                y = c2y + (stack.shift() ?? 0);
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
               break;
 
             case 27: // hhcurveto
               if (stack.length % 2) {
-                y += stack.shift();
+                y += stack.shift() ?? 0;
               }
 
               while (stack.length >= 4) {
-                c1x = x + stack.shift();
+                c1x = x + (stack.shift() ?? 0);
                 c1y = y;
-                c2x = c1x + stack.shift();
-                c2y = c1y + stack.shift();
-                x = c2x + stack.shift();
+                c2x = c1x + (stack.shift() ?? 0);
+                c2y = c1y + (stack.shift() ?? 0);
+                x = c2x + (stack.shift() ?? 0);
                 y = c2y;
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
@@ -321,7 +320,7 @@ export default class CFFGlyph extends Glyph {
               break;
 
             case 29: // callgsubr
-              index = stack.pop() + gsubrsBias;
+              index = (stack.pop() ?? 0) + gsubrsBias;
               subr = gsubrs[index];
               if (subr) {
                 usedGsubrs[index] = true;
@@ -340,19 +339,19 @@ export default class CFFGlyph extends Glyph {
               phase = op === 31;
               while (stack.length >= 4) {
                 if (phase) {
-                  c1x = x + stack.shift();
+                  c1x = x + (stack.shift() ?? 0);
                   c1y = y;
-                  c2x = c1x + stack.shift();
-                  c2y = c1y + stack.shift();
-                  y = c2y + stack.shift();
-                  x = c2x + (stack.length === 1 ? stack.shift() : 0);
+                  c2x = c1x + (stack.shift() ?? 0);
+                  c2y = c1y + (stack.shift() ?? 0);
+                  y = c2y + (stack.shift() ?? 0);
+                  x = c2x + (stack.length === 1 ? (stack.shift() ?? 0) : 0);
                 } else {
                   c1x = x;
-                  c1y = y + stack.shift();
-                  c2x = c1x + stack.shift();
-                  c2y = c1y + stack.shift();
-                  x = c2x + stack.shift();
-                  y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                  c1y = y + (stack.shift() ?? 0);
+                  c2x = c1x + (stack.shift() ?? 0);
+                  c2y = c1y + (stack.shift() ?? 0);
+                  x = c2x + (stack.shift() ?? 0);
+                  y = c2y + (stack.length === 1 ? (stack.shift() ?? 0) : 0);
                 }
 
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
@@ -362,57 +361,57 @@ export default class CFFGlyph extends Glyph {
 
             case 12: {
               op = stream.readUInt8();
-              let a: number | undefined, b: number | undefined;
+              let a: number, b: number;
               switch (op) {
                 case 3:
                   // and
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a && b ? 1 : 0);
                   break;
 
                 case 4: // or
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a || b ? 1 : 0);
                   break;
 
                 case 5: // not
-                  a = stack.pop();
+                  a = stack.pop() ?? 0;
                   stack.push(a ? 0 : 1);
                   break;
 
                 case 9: // abs
-                  a = stack.pop();
+                  a = stack.pop() ?? 0;
                   stack.push(Math.abs(a));
                   break;
 
                 case 10: // add
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a + b);
                   break;
 
                 case 11: // sub
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a - b);
                   break;
 
                 case 12: // div
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a / b);
                   break;
 
                 case 14: // neg
-                  a = stack.pop();
+                  a = stack.pop() ?? 0;
                   stack.push(-a);
                   break;
 
                 case 15: // eq
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a === b ? 1 : 0);
                   break;
 
@@ -422,23 +421,25 @@ export default class CFFGlyph extends Glyph {
 
                 case 20: {
                   // put
-                  const val = stack.pop();
-                  const idx = stack.pop();
-                  trans[idx] = val;
+                  const val = stack.pop() ?? 0;
+                  const putIdx = stack.pop() ?? 0;
+                  trans[putIdx] = val;
                   break;
                 }
 
-                case 21: // get
-                  idx = stack.pop();
-                  stack.push(trans[idx] || 0);
+                case 21: {
+                  // get
+                  const getIdx = stack.pop() ?? 0;
+                  stack.push(trans[getIdx] || 0);
                   break;
+                }
 
                 case 22: {
                   // ifelse
-                  const s1 = stack.pop();
-                  const s2 = stack.pop();
-                  const v1 = stack.pop();
-                  const v2 = stack.pop();
+                  const s1 = stack.pop() ?? 0;
+                  const s2 = stack.pop() ?? 0;
+                  const v1 = stack.pop() ?? 0;
+                  const v2 = stack.pop() ?? 0;
                   stack.push(v1 <= v2 ? s1 : s2);
                   break;
                 }
@@ -448,48 +449,50 @@ export default class CFFGlyph extends Glyph {
                   break;
 
                 case 24: // mul
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(a * b);
                   break;
 
                 case 26: // sqrt
-                  a = stack.pop();
+                  a = stack.pop() ?? 0;
                   stack.push(Math.sqrt(a));
                   break;
 
                 case 27: // dup
-                  a = stack.pop();
+                  a = stack.pop() ?? 0;
                   stack.push(a, a);
                   break;
 
                 case 28: // exch
-                  a = stack.pop();
-                  b = stack.pop();
+                  a = stack.pop() ?? 0;
+                  b = stack.pop() ?? 0;
                   stack.push(b, a);
                   break;
 
-                case 29: // index
-                  idx = stack.pop();
-                  if (idx < 0) {
-                    idx = 0;
-                  } else if (idx > stack.length - 1) {
-                    idx = stack.length - 1;
+                case 29: {
+                  // index
+                  let indexIdx = stack.pop() ?? 0;
+                  if (indexIdx < 0) {
+                    indexIdx = 0;
+                  } else if (indexIdx > stack.length - 1) {
+                    indexIdx = stack.length - 1;
                   }
 
-                  stack.push(stack[idx]);
+                  stack.push(stack[indexIdx] ?? 0);
                   break;
+                }
 
                 case 30: {
                   // roll
-                  const n = stack.pop();
-                  let j = stack.pop();
+                  const n = stack.pop() ?? 0;
+                  let j = stack.pop() ?? 0;
 
                   if (j >= 0) {
                     while (j > 0) {
-                      const t = stack[n - 1];
+                      const t = stack[n - 1] ?? 0;
                       for (let i = n - 2; i >= 0; i--) {
-                        stack[i + 1] = stack[i];
+                        stack[i + 1] = stack[i] ?? 0;
                       }
 
                       stack[0] = t;
@@ -497,9 +500,9 @@ export default class CFFGlyph extends Glyph {
                     }
                   } else {
                     while (j < 0) {
-                      const t = stack[0];
+                      const t = stack[0] ?? 0;
                       for (let i = 0; i <= n; i++) {
-                        stack[i] = stack[i + 1];
+                        stack[i] = stack[i + 1] ?? 0;
                       }
 
                       stack[n - 1] = t;
@@ -510,17 +513,17 @@ export default class CFFGlyph extends Glyph {
                 }
 
                 case 34: // hflex
-                  c1x = x + stack.shift();
+                  c1x = x + (stack.shift() ?? 0);
                   c1y = y;
-                  c2x = c1x + stack.shift();
-                  c2y = c1y + stack.shift();
-                  c3x = c2x + stack.shift();
+                  c2x = c1x + (stack.shift() ?? 0);
+                  c2y = c1y + (stack.shift() ?? 0);
+                  c3x = c2x + (stack.shift() ?? 0);
                   c3y = c2y;
-                  c4x = c3x + stack.shift();
+                  c4x = c3x + (stack.shift() ?? 0);
                   c4y = c3y;
-                  c5x = c4x + stack.shift();
+                  c5x = c4x + (stack.shift() ?? 0);
                   c5y = c4y;
-                  c6x = c5x + stack.shift();
+                  c6x = c5x + (stack.shift() ?? 0);
                   c6y = c5y;
                   x = c6x;
                   y = c6y;
@@ -533,8 +536,8 @@ export default class CFFGlyph extends Glyph {
                   pts = [];
 
                   for (let i = 0; i <= 5; i++) {
-                    x += stack.shift();
-                    y += stack.shift();
+                    x += stack.shift() ?? 0;
+                    y += stack.shift() ?? 0;
                     pts.push(x, y);
                   }
 
@@ -544,17 +547,17 @@ export default class CFFGlyph extends Glyph {
                   break;
 
                 case 36: // hflex1
-                  c1x = x + stack.shift();
-                  c1y = y + stack.shift();
-                  c2x = c1x + stack.shift();
-                  c2y = c1y + stack.shift();
-                  c3x = c2x + stack.shift();
+                  c1x = x + (stack.shift() ?? 0);
+                  c1y = y + (stack.shift() ?? 0);
+                  c2x = c1x + (stack.shift() ?? 0);
+                  c2y = c1y + (stack.shift() ?? 0);
+                  c3x = c2x + (stack.shift() ?? 0);
                   c3y = c2y;
-                  c4x = c3x + stack.shift();
+                  c4x = c3x + (stack.shift() ?? 0);
                   c4y = c3y;
-                  c5x = c4x + stack.shift();
-                  c5y = c4y + stack.shift();
-                  c6x = c5x + stack.shift();
+                  c5x = c4x + (stack.shift() ?? 0);
+                  c5y = c4y + (stack.shift() ?? 0);
+                  c6x = c5x + (stack.shift() ?? 0);
                   c6y = c5y;
                   x = c6x;
                   y = c6y;
@@ -570,18 +573,18 @@ export default class CFFGlyph extends Glyph {
 
                   pts = [];
                   for (let i = 0; i <= 4; i++) {
-                    x += stack.shift();
-                    y += stack.shift();
+                    x += stack.shift() ?? 0;
+                    y += stack.shift() ?? 0;
                     pts.push(x, y);
                   }
 
                   if (Math.abs(x - startx) > Math.abs(y - starty)) {
                     // horizontal
-                    x += stack.shift();
+                    x += stack.shift() ?? 0;
                     y = starty;
                   } else {
                     x = startx;
-                    y += stack.shift();
+                    y += stack.shift() ?? 0;
                   }
 
                   pts.push(x, y);

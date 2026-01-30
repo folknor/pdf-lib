@@ -1,5 +1,4 @@
 import { __decorate } from "tslib";
-// @ts-nocheck
 import { isMark } from '../../vendors/unicode-properties/index.js';
 import { cache } from '../decorators.js';
 import Path from './Path.js';
@@ -159,6 +158,8 @@ export default class Glyph {
                 return StandardNames[this.id + post.offsets[this.id]];
             case 4:
                 return String.fromCharCode(post.map[this.id]);
+            default:
+                return undefined;
         }
     }
     /**

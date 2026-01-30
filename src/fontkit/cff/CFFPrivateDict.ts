@@ -1,11 +1,10 @@
-// @ts-nocheck
 import CFFDict from './CFFDict.js';
 import CFFIndex from './CFFIndex.js';
 import CFFPointer from './CFFPointer.js';
 
 class CFFBlendOp {
   static decode(_stream: any, _parent: any, operands: number[]): void {
-    const numBlends = operands.pop();
+    const numBlends = operands.pop() ?? 0;
 
     // TODO: actually blend. For now just consume the deltas
     // since we don't use any of the values anyway.

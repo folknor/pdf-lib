@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { ChainingContext, ClassDef, Context, Coverage, Device, FeatureList, LookupList, ScriptList, } from './opentype.js';
 import { FeatureVariations } from './variations.js';
@@ -35,6 +34,7 @@ const types = {
     }),
 };
 class ValueRecord {
+    key;
     constructor(key = 'valueFormat') {
         this.key = key;
     }
@@ -46,7 +46,7 @@ class ValueRecord {
         if (!struct[this.key])
             return;
         const fields = {};
-        fields.rel = () => struct._startOffset;
+        fields['rel'] = () => struct._startOffset;
         const format = struct[this.key];
         for (const key in format) {
             if (format[key]) {
@@ -60,7 +60,7 @@ class ValueRecord {
     }
     decode(stream, parent) {
         const res = this.buildStruct(parent).decode(stream, parent);
-        delete res.rel;
+        delete res['rel'];
         return res;
     }
 }

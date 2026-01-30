@@ -1,4 +1,3 @@
-// @ts-nocheck
 import BBox from './BBox.js';
 import Glyph from './Glyph.js';
 
@@ -29,8 +28,7 @@ export default class COLRGlyph extends Glyph {
 
   override _getBBox(): BBox {
     const bbox = new BBox();
-    for (let i = 0; i < this.layers.length; i++) {
-      const layer = this.layers[i];
+    for (const layer of this.layers) {
       const b = layer.glyph.bbox;
       bbox.addPoint(b.minX, b.minY);
       bbox.addPoint(b.maxX, b.maxY);

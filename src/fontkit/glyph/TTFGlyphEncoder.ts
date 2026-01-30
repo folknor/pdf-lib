@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type { EncodeStream } from '../../vendors/restructure/index.js';
 import * as r from '../../vendors/restructure/index.js';
 import type PathType from './Path.js';
@@ -35,8 +33,8 @@ const Glyf = new r.Struct({
   endPtsOfContours: new r.Array(r.uint16, 'numberOfContours'),
   instructions: new r.Array(r.uint8, r.uint16),
   flags: new r.Array(r.uint8, 0),
-  xPoints: new r.Array(PointEncoder, 0),
-  yPoints: new r.Array(PointEncoder, 0),
+  xPoints: new r.Array(PointEncoder as unknown as r.Base<number>, 0),
+  yPoints: new r.Array(PointEncoder as unknown as r.Base<number>, 0),
 });
 
 /**
@@ -44,10 +42,10 @@ const Glyf = new r.Struct({
  */
 export default class TTFGlyphEncoder {
   encodeSimple(path: PathType, instructions: number[] = []): Uint8Array {
-    const endPtsOfContours = [];
-    const xPoints = [];
-    const yPoints = [];
-    const flags = [];
+    const endPtsOfContours: number[] = [];
+    const xPoints: number[] = [];
+    const yPoints: number[] = [];
+    const flags: number[] = [];
     let same = 0;
     let lastX = 0,
       lastY = 0,
@@ -56,10 +54,11 @@ export default class TTFGlyphEncoder {
 
     for (let i = 0; i < path.commands.length; i++) {
       const c = path.commands[i];
+      if (!c) continue;
 
       for (let j = 0; j < c.args.length; j += 2) {
-        const x = c.args[j];
-        const y = c.args[j + 1];
+        const x = c.args[j] ?? 0;
+        const y = c.args[j + 1] ?? 0;
         let flag = 0;
 
         // If the ending point of a quadratic curve is the midpoint
@@ -68,8 +67,8 @@ export default class TTFGlyphEncoder {
         if (c.command === 'quadraticCurveTo' && j === 2) {
           const next = path.commands[i + 1];
           if (next && next.command === 'quadraticCurveTo') {
-            const midX = (lastX + next.args[0]) / 2;
-            const midY = (lastY + next.args[1]) / 2;
+            const midX = (lastX + (next.args[0] ?? 0)) / 2;
+            const midY = (lastY + (next.args[1] ?? 0)) / 2;
 
             if (x === midX && y === midY) {
               continue;
@@ -100,7 +99,10 @@ export default class TTFGlyphEncoder {
         );
 
         if (flag === lastFlag && same < 255) {
-          flags[flags.length - 1] |= REPEAT;
+          const lastFlagIdx = flags.length - 1;
+          if (flags[lastFlagIdx] !== undefined) {
+            flags[lastFlagIdx] |= REPEAT;
+          }
           same++;
         } else {
           if (same > 0) {
@@ -123,10 +125,8 @@ export default class TTFGlyphEncoder {
     }
 
     // Close the path if the last command didn't already
-    if (
-      path.commands.length > 1 &&
-      path.commands[path.commands.length - 1].command !== 'closePath'
-    ) {
+    const lastCmd = path.commands[path.commands.length - 1];
+    if (path.commands.length > 1 && lastCmd && lastCmd.command !== 'closePath') {
       endPtsOfContours.push(pointCount - 1);
     }
 
@@ -147,7 +147,7 @@ export default class TTFGlyphEncoder {
     const size = Glyf.size(glyf);
     const tail = 4 - (size % 4);
 
-    const stream = new r.EncodeStream(size + tail);
+    const stream = new r.EncodeStream(new Uint8Array(size + tail));
     Glyf.encode(stream, glyf);
 
     // Align to 4-byte length

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { GPOSLookup } from './GPOS.js';
 import { LookupList } from './opentype.js';

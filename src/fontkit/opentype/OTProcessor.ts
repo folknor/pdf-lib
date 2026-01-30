@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type GlyphPosition from '../layout/GlyphPosition.js';
 import * as Script from '../layout/Script.js';
 import type GlyphInfo from './GlyphInfo.js';
@@ -79,7 +78,7 @@ export default class OTProcessor {
     let changed = false;
     let entry;
     if (!this.script || script !== this.scriptTag) {
-      entry = this.findScript(script);
+      entry = this.findScript(script ?? DEFAULT_SCRIPTS);
       if (!entry) {
         entry = this.findScript(DEFAULT_SCRIPTS);
       }
@@ -96,7 +95,7 @@ export default class OTProcessor {
     }
 
     if (!direction || direction !== this.direction) {
-      this.direction = direction || Script.direction(script);
+      this.direction = direction || Script.direction(script ?? DEFAULT_SCRIPTS);
     }
 
     if (language && language.length < 4) {
@@ -205,10 +204,10 @@ export default class OTProcessor {
   variationConditionsMatch(conditions: any[], coords: number[]): boolean {
     return conditions.every((condition) => {
       const coord =
-        condition.axisIndex < coords.length ? coords[condition.axisIndex] : 0;
+        condition.axisIndex < coords.length ? coords[condition.axisIndex]! : 0;
       return (
-        condition.filterRangeMinValue <= coord &&
-        coord <= condition.filterRangeMaxValue
+        condition.filterRangeMinValue <= coord! &&
+        coord! <= condition.filterRangeMaxValue
       );
     });
   }
@@ -228,7 +227,7 @@ export default class OTProcessor {
     positions?: GlyphPosition[],
   ): void {
     this.glyphs = glyphs;
-    this.positions = positions;
+    this.positions = positions ?? [];
     this.glyphIterator = new GlyphIterator(glyphs);
 
     for (const { feature, lookup } of lookups) {
@@ -236,7 +235,7 @@ export default class OTProcessor {
       this.glyphIterator.reset(lookup.flags);
 
       while (this.glyphIterator.index < glyphs.length) {
-        if (!(feature in this.glyphIterator.cur.features)) {
+        if (!this.glyphIterator.cur || !(feature in this.glyphIterator.cur.features)) {
           this.glyphIterator.next();
           continue;
         }
@@ -284,7 +283,7 @@ export default class OTProcessor {
 
   coverageIndex(coverage: any, glyph?: number): number {
     if (glyph == null) {
-      glyph = this.glyphIterator.cur.id;
+      glyph = this.glyphIterator.cur!.id;
     }
 
     switch (coverage.version) {
@@ -351,7 +350,7 @@ export default class OTProcessor {
       sequence,
       (component, glyph) => {
         // If the current feature doesn't apply to this glyph,
-        if (!(this.currentFeature in glyph.features)) {
+        if (!(this.currentFeature! in glyph.features)) {
           return false;
         }
 
@@ -432,7 +431,7 @@ export default class OTProcessor {
           return false;
         }
 
-        index = this.getClassID(this.glyphIterator.cur.id, table.classDef);
+        index = this.getClassID(this.glyphIterator.cur!.id, table.classDef);
         if (index === -1) {
           return false;
         }
@@ -485,7 +484,7 @@ export default class OTProcessor {
           return false;
         }
 
-        index = this.getClassID(this.glyphIterator.cur.id, table.inputClassDef);
+        index = this.getClassID(this.glyphIterator.cur!.id, table.inputClassDef);
         const rules = table.chainClassSet[index];
         if (!rules) {
           return false;

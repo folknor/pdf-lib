@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { getEncoding, LANGUAGES } from '../encodings.js';
 
@@ -32,12 +31,11 @@ const NameRecord = new r.Struct({
   length: r.uint16,
   string: new r.Pointer(
     r.uint16,
-    new r.String('length', (t) =>
-      getEncoding(t.platformID, t.encodingID, t.languageID),
-    ),
+    new r.String('length', ((t: any) =>
+      getEncoding(t.platformID, t.encodingID, t.languageID)) as any),
     {
       type: 'parent',
-      relativeTo: (ctx) => ctx.parent.stringOffset,
+      relativeTo: (ctx: any) => ctx.parent.stringOffset,
       allowNull: false,
     },
   ),
@@ -47,7 +45,7 @@ const LangTagRecord = new r.Struct({
   length: r.uint16,
   tag: new r.Pointer(r.uint16, new r.String('length', 'utf16be'), {
     type: 'parent',
-    relativeTo: (ctx) => ctx.stringOffset,
+    relativeTo: (ctx: any) => ctx.stringOffset,
   }),
 });
 
@@ -94,18 +92,19 @@ const NAMES: (string | null)[] = [
   'wwsSubfamilyName',
 ];
 
-NameTable.process = function (this: NameTableData, _stream: any) {
+NameTable.process = function (this: Record<string, unknown>) {
+  const self = this as unknown as NameTableData;
   const records: Record<string, any> = {};
-  for (const record of this.records as NameRecordData[]) {
+  for (const record of self.records as NameRecordData[]) {
     // find out what language this is for
-    let language = LANGUAGES[record.platformID][record.languageID];
+    let language = LANGUAGES[record.platformID]?.[record.languageID];
 
     if (
       language == null &&
-      this.langTags != null &&
+      self.langTags != null &&
       record.languageID >= 0x8000
     ) {
-      language = this.langTags[record.languageID - 0x8000].tag;
+      language = self.langTags[record.languageID - 0x8000]?.tag;
     }
 
     if (language == null) {
@@ -134,16 +133,17 @@ NameTable.process = function (this: NameTableData, _stream: any) {
     }
   }
 
-  this.records = records;
+  self.records = records;
 };
 
-NameTable.preEncode = function (this: NameTableData) {
-  if (Array.isArray(this.records)) return;
-  this.version = 0;
+NameTable.preEncode = function (this: Record<string, unknown>) {
+  const self = this as unknown as NameTableData;
+  if (Array.isArray(self.records)) return;
+  self.version = 0;
 
   const records: NameRecordData[] = [];
-  for (const key in this.records) {
-    const val = this.records[key];
+  for (const key in self.records) {
+    const val = self.records[key];
     if (key === 'fontFeatures') continue;
 
     records.push({
@@ -167,7 +167,7 @@ NameTable.preEncode = function (this: NameTableData) {
     }
   }
 
-  this.records = records;
-  this.count = records.length;
-  this.stringOffset = NameTable.size(this, null, false);
+  self.records = records;
+  self.count = records.length;
+  self.stringOffset = NameTable.size(self as unknown as Record<string, unknown>, null, false);
 };

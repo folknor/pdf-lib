@@ -1,4 +1,3 @@
-// @ts-nocheck
 import OTProcessor from './OTProcessor.js';
 export default class GPOSProcessor extends OTProcessor {
     applyPositionValue(sequenceIndex, value) {
@@ -144,7 +143,7 @@ export default class GPOSProcessor extends OTProcessor {
                 let baseGlyphIndex = this.glyphIterator.index;
                 while (--baseGlyphIndex >= 0 &&
                     (this.glyphs[baseGlyphIndex].isMark ||
-                        this.glyphs[baseGlyphIndex].ligatureComponent > 0))
+                        (this.glyphs[baseGlyphIndex].ligatureComponent ?? 0) > 0))
                     ;
                 if (baseGlyphIndex < 0) {
                     return false;
@@ -180,7 +179,7 @@ export default class GPOSProcessor extends OTProcessor {
                 const ligGlyph = this.glyphs[baseGlyphIndex];
                 const compIndex = ligGlyph.ligatureID &&
                     ligGlyph.ligatureID === markGlyph.ligatureID &&
-                    markGlyph.ligatureComponent > 0
+                    (markGlyph.ligatureComponent ?? 0) > 0
                     ? Math.min(markGlyph.ligatureComponent, ligGlyph.codePoints.length) - 1
                     : ligGlyph.codePoints.length - 1;
                 const markRecord = table.markArray[markIndex];
@@ -246,7 +245,7 @@ export default class GPOSProcessor extends OTProcessor {
     applyAnchor(markRecord, baseAnchor, baseGlyphIndex) {
         const baseCoords = this.getAnchor(baseAnchor);
         const markCoords = this.getAnchor(markRecord.markAnchor);
-        const _basePos = this.positions[baseGlyphIndex];
+        // const _basePos = this.positions[baseGlyphIndex];
         const markPos = this.positions[this.glyphIterator.index];
         markPos.xOffset = baseCoords.x - markCoords.x;
         markPos.yOffset = baseCoords.y - markCoords.y;

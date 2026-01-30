@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../vendors/restructure/index.js';
 import TTFFont from './TTFFont.js';
 import { asciiDecoder } from './utils.js';
@@ -34,10 +33,11 @@ export default class TrueTypeCollection {
             const stream = new r.DecodeStream(this.stream.buffer);
             stream.pos = offset;
             const font = new TTFFont(stream);
-            if (font.postscriptName === name ||
-                (font.postscriptName instanceof Uint8Array &&
+            const psName = font.postscriptName;
+            if (psName === name ||
+                (psName instanceof Uint8Array &&
                     name instanceof Uint8Array &&
-                    font.postscriptName.every((v, i) => name[i] === v))) {
+                    psName.every((v, i) => name[i] === v))) {
                 return font;
             }
         }

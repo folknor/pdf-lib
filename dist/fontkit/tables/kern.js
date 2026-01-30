@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const KernPair = new r.Struct({
     left: r.uint16,

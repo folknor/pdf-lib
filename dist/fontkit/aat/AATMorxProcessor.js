@@ -1,5 +1,4 @@
 import { __decorate } from "tslib";
-// @ts-nocheck
 import { cache } from '../decorators.js';
 import AATLookupTable from './AATLookupTable.js';
 import AATStateMachine from './AATStateMachine.js';
@@ -16,12 +15,12 @@ const PERFORM_ACTION = 0x2000;
 const LAST_MASK = 0x80000000;
 const STORE_MASK = 0x40000000;
 const OFFSET_MASK = 0x3fffffff;
-const _VERTICAL_ONLY = 0x800000;
+// const VERTICAL_ONLY = 0x800000;
 const REVERSE_DIRECTION = 0x400000;
-const _HORIZONTAL_AND_VERTICAL = 0x200000;
+// const HORIZONTAL_AND_VERTICAL = 0x200000;
 // glyph insertion flags
-const _CURRENT_IS_KASHIDA_LIKE = 0x2000;
-const _MARKED_IS_KASHIDA_LIKE = 0x1000;
+// const CURRENT_IS_KASHIDA_LIKE = 0x2000;
+// const MARKED_IS_KASHIDA_LIKE = 0x1000;
 const CURRENT_INSERT_BEFORE = 0x0800;
 const MARKED_INSERT_BEFORE = 0x0400;
 const CURRENT_INSERT_COUNT = 0x03e0;
@@ -131,7 +130,7 @@ export default class AATMorxProcessor {
     }
     processContextualSubstitution(glyph, entry, index) {
         const subsitutions = this.subtable.table.substitutionTable.items;
-        if (entry.markIndex !== 0xffff) {
+        if (entry.markIndex !== 0xffff && this.markedGlyph !== null) {
             const lookup = subsitutions.getItem(entry.markIndex);
             const lookupTable = new AATLookupTable(lookup);
             glyph = this.glyphs[this.markedGlyph];
@@ -219,7 +218,7 @@ export default class AATMorxProcessor {
         if (entry.flags & SET_MARK) {
             this.markedIndex = index;
         }
-        if (entry.markedInsertIndex !== 0xffff) {
+        if (entry.markedInsertIndex !== 0xffff && this.markedIndex !== null) {
             const count = (entry.flags & MARKED_INSERT_COUNT) >>> 5;
             const isBefore = !!(entry.flags & MARKED_INSERT_BEFORE);
             this._insertGlyphs(this.markedIndex, entry.markedInsertIndex, count, isBefore);
@@ -332,7 +331,10 @@ function swap(glyphs, rangeA, rangeB, reverseA = false, reverseB = false) {
     return glyphs;
 }
 function reorderGlyphs(glyphs, verb, firstGlyph, lastGlyph) {
-    const _length = lastGlyph - firstGlyph + 1;
+    if (firstGlyph === null || lastGlyph === null) {
+        return glyphs;
+    }
+    // const length = lastGlyph - firstGlyph + 1;
     switch (verb) {
         case 0: // no change
             return glyphs;

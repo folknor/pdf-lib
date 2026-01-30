@@ -1,4 +1,3 @@
-// @ts-nocheck
 // see https://developer.apple.com/fonts/TrueType-Reference-Manual/RM09/AppendixF.html
 // and /System/Library/Frameworks/CoreText.framework/Versions/A/Headers/SFNTLayoutTypes.h on a Mac
 const features = {
@@ -452,7 +451,7 @@ const OTMapping = {
 // Add cv01-cv99 features
 for (let i = 1; i <= 99; i++) {
     OTMapping[`cv${`00${i}`.slice(-2)}`] = [
-        features.characterAlternatives.code,
+        features['characterAlternatives'].code,
         i,
     ];
 }

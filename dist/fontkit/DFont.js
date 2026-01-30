@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../vendors/restructure/index.js';
 import TTFFont from './TTFFont.js';
 const DFontName = new r.String(r.uint8);
@@ -43,7 +42,7 @@ export default class DFont {
         catch {
             return false;
         }
-        for (const type of header.map.typeList.types) {
+        for (const type of header['map'].typeList.types) {
             if (type.name === 'sfnt') {
                 return true;
             }
@@ -76,10 +75,11 @@ export default class DFont {
             const pos = this.header.dataOffset + ref.dataOffset + 4;
             const stream = new r.DecodeStream(this.stream.buffer.slice(pos));
             const font = new TTFFont(stream);
-            if (font.postscriptName === name ||
-                (font.postscriptName instanceof Uint8Array &&
+            const psName = font.postscriptName;
+            if (psName === name ||
+                (psName instanceof Uint8Array &&
                     name instanceof Uint8Array &&
-                    font.postscriptName.every((v, i) => name[i] === v))) {
+                    psName.every((v, i) => name[i] === v))) {
                 return font;
             }
         }

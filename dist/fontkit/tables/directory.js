@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import Tables from './index.js';
 const TableEntry = new r.Struct({
@@ -16,17 +15,19 @@ const Directory = new r.Struct({
     tables: new r.Array(TableEntry, 'numTables'),
 });
 Directory.process = function () {
+    const self = this;
     const tables = {};
-    for (const table of this.tables) {
+    for (const table of self.tables) {
         tables[table.tag] = table;
     }
-    this.tables = tables;
+    self.tables = tables;
 };
 Directory.preEncode = function () {
-    if (!Array.isArray(this.tables)) {
+    const self = this;
+    if (!Array.isArray(self.tables)) {
         const tables = [];
-        for (const tag in this.tables) {
-            const table = this.tables[tag];
+        for (const tag in self.tables) {
+            const table = self.tables[tag];
             if (table) {
                 tables.push({
                     tag: tag,
@@ -36,15 +37,15 @@ Directory.preEncode = function () {
                 });
             }
         }
-        this.tables = tables;
+        self.tables = tables;
     }
-    this.tag = 'true';
-    this.numTables = this.tables.length;
-    const maxExponentFor2 = Math.floor(Math.log(this.numTables) / Math.LN2);
+    self.tag = 'true';
+    self.numTables = self.tables.length;
+    const maxExponentFor2 = Math.floor(Math.log(self.numTables) / Math.LN2);
     const maxPowerOf2 = 2 ** maxExponentFor2;
-    this.searchRange = maxPowerOf2 * 16;
-    this.entrySelector = Math.log(maxPowerOf2) / Math.LN2;
-    this.rangeShift = this.numTables * 16 - this.searchRange;
+    self.searchRange = maxPowerOf2 * 16;
+    self.entrySelector = Math.log(maxPowerOf2) / Math.LN2;
+    self.rangeShift = self.numTables * 16 - self.searchRange;
 };
 export default Directory;
 //# sourceMappingURL=directory.js.map

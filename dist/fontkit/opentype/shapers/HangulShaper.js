@@ -1,4 +1,3 @@
-// @ts-nocheck
 import GlyphInfo from '../GlyphInfo.js';
 import DefaultShaper from './DefaultShaper.js';
 /**
@@ -36,7 +35,9 @@ export default class HangulShaper extends DefaultShaper {
             const glyph = glyphs[i];
             const code = glyph.codePoints[0];
             const type = getType(code);
-            [action, state] = STATE_TABLE[state][type];
+            const stateRow = STATE_TABLE[state][type];
+            action = stateRow[0];
+            state = stateRow[1];
             switch (action) {
                 case DECOMPOSE:
                     // Decompose the composed syllable if it is not supported by the font.
@@ -82,7 +83,7 @@ const isLVT = (code) => HANGUL_BASE <= code && code <= HANGUL_END;
 const isLV = (code) => code - HANGUL_BASE < HANGUL_COUNT && (code - HANGUL_BASE) % T_COUNT === 0;
 const isCombiningL = (code) => L_BASE <= code && code <= L_END;
 const isCombiningV = (code) => V_BASE <= code && code <= V_END;
-const isCombiningT = (code) => T_BASE + 1 && 1 <= code && code <= T_END;
+const isCombiningT = (code) => T_BASE + 1 <= code && code <= T_END;
 // Character categories
 const X = 0; // Other character
 const L = 1; // Leading consonant
@@ -184,13 +185,13 @@ function decompose(glyphs, i, font) {
     // Replace the current glyph with decomposed L, V, and T glyphs,
     // and apply the proper OpenType features to each component.
     const ljmo = getGlyph(font, l, glyph.features);
-    ljmo.features.ljmo = true;
+    ljmo.features['ljmo'] = true;
     const vjmo = getGlyph(font, v, glyph.features);
-    vjmo.features.vjmo = true;
+    vjmo.features['vjmo'] = true;
     const insert = [ljmo, vjmo];
     if (t > T_BASE) {
         const tjmo = getGlyph(font, t, glyph.features);
-        tjmo.features.tjmo = true;
+        tjmo.features['tjmo'] = true;
         insert.push(tjmo);
     }
     glyphs.splice(i, 1, ...insert);
@@ -203,7 +204,10 @@ function compose(glyphs, i, font) {
     const prev = glyphs[i - 1].codePoints[0];
     const prevType = getType(prev);
     // Figure out what type of syllable we're dealing with
-    let lv, ljmo, vjmo, tjmo;
+    let lv;
+    let ljmo;
+    let vjmo;
+    let tjmo;
     if (prevType === LV && type === T) {
         // <LV,T>
         lv = prev;
@@ -241,13 +245,13 @@ function compose(glyphs, i, font) {
     }
     // Didn't compose (either a non-combining component or unsupported by font).
     if (ljmo) {
-        ljmo.features.ljmo = true;
+        ljmo.features['ljmo'] = true;
     }
     if (vjmo) {
-        vjmo.features.vjmo = true;
+        vjmo.features['vjmo'] = true;
     }
     if (tjmo) {
-        tjmo.features.tjmo = true;
+        tjmo.features['tjmo'] = true;
     }
     if (prevType === LV) {
         // Sequence was originally <L,V>, which got combined earlier.
@@ -267,6 +271,8 @@ function getLength(code) {
             return 2;
         case T:
             return 3;
+        default:
+            return 0;
     }
 }
 function reorderToneMark(glyphs, i, font) {
@@ -279,7 +285,7 @@ function reorderToneMark(glyphs, i, font) {
     const prev = glyphs[i - 1].codePoints[0];
     const len = getLength(prev);
     glyphs.splice(i, 1);
-    return glyphs.splice(i - len, 0, glyph);
+    glyphs.splice(i - len, 0, glyph);
 }
 function insertDottedCircle(glyphs, i, font) {
     const glyph = glyphs[i];

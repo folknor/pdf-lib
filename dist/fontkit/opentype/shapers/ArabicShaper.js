@@ -1,4 +1,3 @@
-// @ts-nocheck
 import pako from 'pako';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
@@ -127,11 +126,14 @@ export default class ArabicShaper extends DefaultShaper {
             let curAction, prevAction;
             const glyph = glyphs[i];
             const type = getShapingClass(glyph.codePoints[0]);
-            if (type === ShapingClasses.Transparent) {
+            if (type === ShapingClasses['Transparent']) {
                 actions[i] = NONE;
                 continue;
             }
-            [prevAction, curAction, state] = STATE_TABLE[state][type];
+            const stateRow = STATE_TABLE[state][type];
+            prevAction = stateRow[0];
+            curAction = stateRow[1];
+            state = stateRow[2];
             if (prevAction !== NONE && prev !== -1) {
                 actions[prev] = prevAction;
             }
@@ -140,9 +142,9 @@ export default class ArabicShaper extends DefaultShaper {
         }
         // Apply the chosen features to their respective glyphs
         for (let index = 0; index < glyphs.length; index++) {
-            let feature;
             const glyphToApply = glyphs[index];
-            if ((feature = actions[index])) {
+            const feature = actions[index];
+            if (feature) {
                 glyphToApply.features[feature] = true;
             }
         }
@@ -155,8 +157,8 @@ function getShapingClass(codePoint) {
     }
     const category = getCategory(codePoint);
     if (category === 'Mn' || category === 'Me' || category === 'Cf') {
-        return ShapingClasses.Transparent;
+        return ShapingClasses['Transparent'];
     }
-    return ShapingClasses.Non_Joining;
+    return ShapingClasses['Non_Joining'];
 }
 //# sourceMappingURL=ArabicShaper.js.map

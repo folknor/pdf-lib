@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 // PostScript information
@@ -31,6 +30,6 @@ export default new r.VersionedStruct(r.fixed32, {
   3: {}, // version 3 has no additional fields
 
   4: {
-    map: new r.Array(r.uint32, (t) => t.parent.maxp.numGlyphs),
+    map: new r.Array(r.uint32, (t: any) => t.parent.maxp.numGlyphs),
   },
 });

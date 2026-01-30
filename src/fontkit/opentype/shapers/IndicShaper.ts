@@ -24,13 +24,13 @@ import base64DeflatedUseData from './use.js';
 const indicMachine = JSON.parse(
   String.fromCharCode.apply(
     String,
-    pako.inflate(decodeBase64(base64DeflatedIndicMachine)),
+    Array.from(pako.inflate(decodeBase64(base64DeflatedIndicMachine))),
   ),
 );
 const useData = JSON.parse(
   String.fromCharCode.apply(
     String,
-    pako.inflate(decodeBase64(base64DeflatedUseData)),
+    Array.from(pako.inflate(decodeBase64(base64DeflatedUseData))),
   ),
 );
 const { decompositions } = useData;
@@ -88,9 +88,11 @@ export default class IndicShaper extends DefaultShaper {
     });
 
     // Setup the indic config for the selected script
-    plan.unicodeScript = Script.fromOpenType(plan.script);
+    const unicodeScript = Script.fromOpenType(plan.script) ?? '';
+    plan.unicodeScript = unicodeScript || undefined;
     plan.indicConfig =
-      INDIC_CONFIGS[plan.unicodeScript] || INDIC_CONFIGS.Default;
+      (INDIC_CONFIGS as Record<string, any>)[unicodeScript] ||
+      INDIC_CONFIGS['Default'];
     plan.isOldSpec =
       plan.indicConfig.hasOldSpec &&
       plan.script[plan.script.length - 1] !== '2';
@@ -102,12 +104,14 @@ export default class IndicShaper extends DefaultShaper {
     // Decompose split matras
     // TODO: do this in a more general unicode normalizer
     for (let i = glyphs.length - 1; i >= 0; i--) {
-      const codepoint = glyphs[i].codePoints[0];
-      const d = INDIC_DECOMPOSITIONS[codepoint] || decompositions[codepoint];
+      const codepoint = glyphs[i]!.codePoints[0]!;
+      const d =
+        (INDIC_DECOMPOSITIONS as Record<number, number[]>)[codepoint] ||
+        decompositions[String(codepoint)];
       if (d) {
-        const decomposed = d.map((c) => {
+        const decomposed = d.map((c: number) => {
           const g = plan.font.glyphForCodePoint(c);
-          return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features);
+          return new GlyphInfo(plan.font, g.id, [c], glyphs[i]!.features);
         });
 
         glyphs.splice(i, 1, ...decomposed);
@@ -117,11 +121,11 @@ export default class IndicShaper extends DefaultShaper {
 }
 
 function indicCategory(glyph: GlyphInfo): number {
-  return trie.get(glyph.codePoints[0]) >> 8;
+  return trie.get(glyph.codePoints[0]!) >> 8;
 }
 
 function indicPosition(glyph: GlyphInfo): number {
-  return 1 << (trie.get(glyph.codePoints[0]) & 0xff);
+  return 1 << (trie.get(glyph.codePoints[0]!) & 0xff);
 }
 
 class IndicInfo {
@@ -143,18 +147,18 @@ class IndicInfo {
   }
 }
 
-function setupSyllables(_font, glyphs) {
+function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   let syllable = 0;
   let last = 0;
   for (const [start, end, tags] of stateMachine.match(
     glyphs.map(indicCategory),
-  )) {
+  ) as Iterable<[number, number, string[]]>) {
     if (start > last) {
       ++syllable;
       for (let i = last; i < start; i++) {
-        glyphs[i].shaperInfo = new IndicInfo(
-          CATEGORIES.X,
-          POSITIONS.End,
+        glyphs[i]!.shaperInfo = new IndicInfo(
+          CATEGORIES['X']!,
+          POSITIONS['End']!,
           'non_indic_cluster',
           syllable,
         );
@@ -165,10 +169,10 @@ function setupSyllables(_font, glyphs) {
 
     // Create shaper info
     for (let i = start; i <= end; i++) {
-      glyphs[i].shaperInfo = new IndicInfo(
-        1 << indicCategory(glyphs[i]),
-        indicPosition(glyphs[i]),
-        tags[0],
+      glyphs[i]!.shaperInfo = new IndicInfo(
+        1 << indicCategory(glyphs[i]!),
+        indicPosition(glyphs[i]!),
+        tags[0]!,
         syllable,
       );
     }
@@ -179,9 +183,9 @@ function setupSyllables(_font, glyphs) {
   if (last < glyphs.length) {
     ++syllable;
     for (let i = last; i < glyphs.length; i++) {
-      glyphs[i].shaperInfo = new IndicInfo(
-        CATEGORIES.X,
-        POSITIONS.End,
+      glyphs[i]!.shaperInfo = new IndicInfo(
+        CATEGORIES['X']!,
+        POSITIONS['End']!,
         'non_indic_cluster',
         syllable,
       );
@@ -189,30 +193,30 @@ function setupSyllables(_font, glyphs) {
   }
 }
 
-function isConsonant(glyph) {
+function isConsonant(glyph: GlyphInfo): number {
   return glyph.shaperInfo.category & CONSONANT_FLAGS;
 }
 
-function isJoiner(glyph) {
+function isJoiner(glyph: GlyphInfo): number {
   return glyph.shaperInfo.category & JOINER_FLAGS;
 }
 
-function isHalantOrCoeng(glyph) {
+function isHalantOrCoeng(glyph: GlyphInfo): number {
   return glyph.shaperInfo.category & HALANT_OR_COENG_FLAGS;
 }
 
-function wouldSubstitute(glyphs, feature) {
+function wouldSubstitute(glyphs: GlyphInfo[], feature: string): boolean {
   for (const glyph of glyphs) {
     glyph.features = { [feature]: true };
   }
 
-  const GSUB = glyphs[0]._font._layoutEngine.engine.GSUBProcessor;
+  const GSUB = glyphs[0]!._font._layoutEngine.engine.GSUBProcessor;
   GSUB.applyFeatures([feature], glyphs);
 
   return glyphs.length === 1;
 }
 
-function consonantPosition(_font, consonant, virama) {
+function consonantPosition(_font: any, consonant: GlyphInfo, virama: GlyphInfo): number {
   const glyphs = [virama, consonant, virama];
   if (
     wouldSubstitute(glyphs.slice(0, 2), 'blwf') ||
@@ -234,7 +238,7 @@ function consonantPosition(_font, consonant, virama) {
   return POSITIONS.Base_C;
 }
 
-function initialReordering(font, glyphs, plan) {
+function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
   const indicConfig = plan.indicConfig;
   const features = font._layoutEngine.engine.GSUBProcessor.features;
 
@@ -567,7 +571,7 @@ function initialReordering(font, glyphs, plan) {
     }
 
     const arr = glyphs.slice(start, end);
-    arr.sort((a, b) => a.shaperInfo.position - b.shaperInfo.position);
+    arr.sort((a: GlyphInfo, b: GlyphInfo) => a.shaperInfo.position - b.shaperInfo.position);
     glyphs.splice(start, arr.length, ...arr);
 
     // Find base again
@@ -685,7 +689,7 @@ function initialReordering(font, glyphs, plan) {
   }
 }
 
-function finalReordering(font, glyphs, plan) {
+function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
   const indicConfig = plan.indicConfig;
   const features = font._layoutEngine.engine.GSUBProcessor.features;
 
@@ -723,7 +727,7 @@ function finalReordering(font, glyphs, plan) {
                 while (base < end && isHalantOrCoeng(glyphs[base])) {
                   base++;
                 }
-                glyphs[base].shaperInfo.position = POSITIONS.BASE_C;
+                glyphs[base]!.shaperInfo.position = POSITIONS['Base_C']!;
                 tryPref = false;
               }
               break;
@@ -883,7 +887,7 @@ function finalReordering(font, glyphs, plan) {
       (glyphs[start].shaperInfo.category === CATEGORIES.Repha) !==
         (glyphs[start].isLigated && !glyphs[start].isMultiplied)
     ) {
-      let newRephPos;
+      let newRephPos: number = start + 1;
       const rephPos = indicConfig.rephPos;
       let found = false;
 
@@ -1099,12 +1103,12 @@ function finalReordering(font, glyphs, plan) {
   }
 }
 
-function nextSyllable(glyphs, start) {
+function nextSyllable(glyphs: GlyphInfo[], start: number): number {
   if (start >= glyphs.length) return start;
-  const syllable = glyphs[start].shaperInfo.syllable;
+  const syllable = glyphs[start]!.shaperInfo.syllable;
   while (
     ++start < glyphs.length &&
-    glyphs[start].shaperInfo.syllable === syllable
+    glyphs[start]!.shaperInfo.syllable === syllable
   );
   return start;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { BigMetrics } from './EBDT.js';
 
@@ -30,7 +29,7 @@ const IndexSubtable = new r.VersionedStruct(r.uint16, {
   1: {
     offsetArray: new r.Array(
       r.uint32,
-      (t) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1,
+      (t: any) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1,
     ),
   },
 
@@ -42,13 +41,13 @@ const IndexSubtable = new r.VersionedStruct(r.uint16, {
   3: {
     offsetArray: new r.Array(
       r.uint16,
-      (t) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1,
+      (t: any) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1,
     ),
   },
 
   4: {
     numGlyphs: r.uint32,
-    glyphArray: new r.Array(CodeOffsetPair, (t) => t.numGlyphs + 1),
+    glyphArray: new r.Array(CodeOffsetPair, (t: any) => t.numGlyphs + 1),
   },
 
   5: {

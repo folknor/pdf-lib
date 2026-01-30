@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { ChainingContext, Context, Coverage, FeatureList, LookupList, ScriptList, } from './opentype.js';
 import { FeatureVariations } from './variations.js';

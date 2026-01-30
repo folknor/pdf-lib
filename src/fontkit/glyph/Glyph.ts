@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { isMark } from '../../vendors/unicode-properties/index.js';
 import { cache } from '../decorators.js';
 import type BBox from './BBox.js';
@@ -211,6 +210,9 @@ export default class Glyph {
 
       case 4:
         return String.fromCharCode(post.map[this.id]);
+
+      default:
+        return undefined;
     }
   }
 

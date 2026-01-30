@@ -1,4 +1,3 @@
-// @ts-nocheck
 import StateMachine from 'dfa';
 import pako from 'pako';
 import UnicodeTrie from 'unicode-trie';
@@ -7,7 +6,7 @@ import GlyphInfo from '../GlyphInfo.js';
 import DefaultShaper from './DefaultShaper.js';
 import base64DeflatedTrie from './trieUse.js';
 import base64DeflatedUseData from './use.js';
-const useData = JSON.parse(String.fromCharCode.apply(String, pako.inflate(decodeBase64(base64DeflatedUseData))));
+const useData = JSON.parse(String.fromCharCode.apply(String, Array.from(pako.inflate(decodeBase64(base64DeflatedUseData)))));
 const { categories, decompositions } = useData;
 const trie = new UnicodeTrie(pako.inflate(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(useData);
@@ -42,11 +41,12 @@ export default class UniversalShaper extends DefaultShaper {
         // Decompose split vowels
         // TODO: do this in a more general unicode normalizer
         for (let i = glyphs.length - 1; i >= 0; i--) {
-            const codepoint = glyphs[i].codePoints[0];
-            if (decompositions[codepoint]) {
-                const decomposed = decompositions[codepoint].map((c) => {
+            const glyph = glyphs[i];
+            const codepoint = glyph.codePoints[0];
+            if (decompositions[String(codepoint)]) {
+                const decomposed = decompositions[String(codepoint)].map((c) => {
                     const g = plan.font.glyphForCodePoint(c);
-                    return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features);
+                    return new GlyphInfo(plan.font, g.id, [c], glyph.features);
                 });
                 glyphs.splice(i, 1, ...decomposed);
             }
@@ -77,7 +77,7 @@ function setupSyllables(_font, glyphs) {
         // Assign rphf feature
         const limit = glyphs[start].shaperInfo.category === 'R' ? 1 : Math.min(3, end - start);
         for (let i = start; i < start + limit; i++) {
-            glyphs[i].features.rphf = true;
+            glyphs[i].features['rphf'] = true;
         }
     }
 }
@@ -88,7 +88,7 @@ function clearSubstitutionFlags(_font, glyphs) {
 }
 function recordRphf(_font, glyphs) {
     for (const glyph of glyphs) {
-        if (glyph.substituted && glyph.features.rphf) {
+        if (glyph.substituted && glyph.features['rphf']) {
             // Mark a substituted repha.
             glyph.shaperInfo.category = 'R';
         }

@@ -35,12 +35,13 @@ export default class GlyphVariationProcessor {
         const normalized = [];
         for (let i = 0; i < this.font.fvar.axis.length; i++) {
             const axis = this.font.fvar.axis[i];
-            if (coords[i] < axis.defaultValue) {
-                normalized.push((coords[i] - axis.defaultValue + Number.EPSILON) /
+            const coord = coords[i] ?? 0;
+            if (coord < axis.defaultValue) {
+                normalized.push((coord - axis.defaultValue + Number.EPSILON) /
                     (axis.defaultValue - axis.minValue + Number.EPSILON));
             }
             else {
-                normalized.push((coords[i] - axis.defaultValue + Number.EPSILON) /
+                normalized.push((coord - axis.defaultValue + Number.EPSILON) /
                     (axis.maxValue - axis.defaultValue + Number.EPSILON));
             }
         }
@@ -51,10 +52,10 @@ export default class GlyphVariationProcessor {
                 const segment = this.font.avar.segment[i];
                 for (let j = 0; j < segment.correspondence.length; j++) {
                     const pair = segment.correspondence[j];
-                    if (j >= 1 && normalized[i] < pair.fromCoord) {
+                    if (j >= 1 && (normalized[i] ?? 0) < pair.fromCoord) {
                         const prev = segment.correspondence[j - 1];
                         normalized[i] =
-                            ((normalized[i] - prev.fromCoord) *
+                            (((normalized[i] ?? 0) - prev.fromCoord) *
                                 (pair.toCoord - prev.toCoord) +
                                 Number.EPSILON) /
                                 (pair.fromCoord - prev.fromCoord + Number.EPSILON) +
@@ -137,7 +138,7 @@ export default class GlyphVariationProcessor {
                 points = this.decodePoints();
             }
             else {
-                points = sharedPoints;
+                points = sharedPoints ?? new Uint16Array(0);
             }
             // points.length = 0 means there are deltas for all points
             const nPoints = points.length === 0 ? glyphPoints.length : points.length;
@@ -147,8 +148,10 @@ export default class GlyphVariationProcessor {
                 // all points
                 for (let j = 0; j < glyphPoints.length; j++) {
                     const point = glyphPoints[j];
-                    point.x += Math.round(xDeltas[j] * factor);
-                    point.y += Math.round(yDeltas[j] * factor);
+                    if (point) {
+                        point.x += Math.round((xDeltas[j] ?? 0) * factor);
+                        point.y += Math.round((yDeltas[j] ?? 0) * factor);
+                    }
                 }
             }
             else {
@@ -156,19 +159,26 @@ export default class GlyphVariationProcessor {
                 const hasDelta = glyphPoints.map(() => false);
                 for (let k = 0; k < points.length; k++) {
                     const idx = points[k];
-                    if (idx < glyphPoints.length) {
+                    if (idx !== undefined && idx < glyphPoints.length) {
                         const point = outPoints[idx];
-                        hasDelta[idx] = true;
-                        point.x += xDeltas[k] * factor;
-                        point.y += yDeltas[k] * factor;
+                        if (point) {
+                            hasDelta[idx] = true;
+                            point.x += (xDeltas[k] ?? 0) * factor;
+                            point.y += (yDeltas[k] ?? 0) * factor;
+                        }
                     }
                 }
                 this.interpolateMissingDeltas(outPoints, origPoints, hasDelta);
                 for (let m = 0; m < glyphPoints.length; m++) {
-                    const deltaX = outPoints[m].x - origPoints[m].x;
-                    const deltaY = outPoints[m].y - origPoints[m].y;
-                    glyphPoints[m].x = Math.round(glyphPoints[m].x + deltaX);
-                    glyphPoints[m].y = Math.round(glyphPoints[m].y + deltaY);
+                    const outPt = outPoints[m];
+                    const origPt = origPoints[m];
+                    const glyphPt = glyphPoints[m];
+                    if (outPt && origPt && glyphPt) {
+                        const deltaX = outPt.x - origPt.x;
+                        const deltaY = outPt.y - origPt.y;
+                        glyphPt.x = Math.round(glyphPt.x + deltaX);
+                        glyphPt.y = Math.round(glyphPt.y + deltaY);
+                    }
                 }
             }
             offsetToData += tupleDataSize;
@@ -219,34 +229,38 @@ export default class GlyphVariationProcessor {
         const { gvar } = this.font;
         let factor = 1;
         for (let i = 0; i < gvar.axisCount; i++) {
-            if (tupleCoords[i] === 0) {
+            const tupleCoord = tupleCoords[i] ?? 0;
+            const normalizedCoord = normalized[i] ?? 0;
+            if (tupleCoord === 0) {
                 continue;
             }
-            if (normalized[i] === 0) {
+            if (normalizedCoord === 0) {
                 return 0;
             }
             if ((tupleIndex & INTERMEDIATE_TUPLE) === 0) {
-                if (normalized[i] < Math.min(0, tupleCoords[i]) ||
-                    normalized[i] > Math.max(0, tupleCoords[i])) {
+                if (normalizedCoord < Math.min(0, tupleCoord) ||
+                    normalizedCoord > Math.max(0, tupleCoord)) {
                     return 0;
                 }
                 factor =
-                    (factor * normalized[i] + Number.EPSILON) /
-                        (tupleCoords[i] + Number.EPSILON);
+                    (factor * normalizedCoord + Number.EPSILON) /
+                        (tupleCoord + Number.EPSILON);
             }
             else {
-                if (normalized[i] < startCoords[i] || normalized[i] > endCoords[i]) {
+                const startCoord = startCoords?.[i] ?? 0;
+                const endCoord = endCoords?.[i] ?? 0;
+                if (normalizedCoord < startCoord || normalizedCoord > endCoord) {
                     return 0;
                 }
-                else if (normalized[i] < tupleCoords[i]) {
+                else if (normalizedCoord < tupleCoord) {
                     factor =
-                        (factor * (normalized[i] - startCoords[i] + Number.EPSILON)) /
-                            (tupleCoords[i] - startCoords[i] + Number.EPSILON);
+                        (factor * (normalizedCoord - startCoord + Number.EPSILON)) /
+                            (tupleCoord - startCoord + Number.EPSILON);
                 }
                 else {
                     factor =
-                        (factor * (endCoords[i] - normalized[i] + Number.EPSILON)) /
-                            (endCoords[i] - tupleCoords[i] + Number.EPSILON);
+                        (factor * (endCoord - normalizedCoord + Number.EPSILON)) /
+                            (endCoord - tupleCoord + Number.EPSILON);
                 }
             }
         }
@@ -265,7 +279,7 @@ export default class GlyphVariationProcessor {
             // find the end point of the contour
             let endPoint = point;
             let pt = points[endPoint];
-            while (!pt.endContour) {
+            while (pt && !pt.endContour) {
                 pt = points[++endPoint];
             }
             // find the first point that has a delta
@@ -307,21 +321,31 @@ export default class GlyphVariationProcessor {
         const iterable = ['x', 'y'];
         for (let i = 0; i < iterable.length; i++) {
             const k = iterable[i];
-            if (inPoints[ref1][k] > inPoints[ref2][k]) {
+            const inRef1 = inPoints[ref1];
+            const inRef2 = inPoints[ref2];
+            const outRef1 = outPoints[ref1];
+            const outRef2 = outPoints[ref2];
+            if (!inRef1 || !inRef2 || !outRef1 || !outRef2)
+                continue;
+            if (inRef1[k] > inRef2[k]) {
                 const temp = ref1;
                 ref1 = ref2;
                 ref2 = temp;
             }
-            const in1 = inPoints[ref1][k];
-            const in2 = inPoints[ref2][k];
-            const out1 = outPoints[ref1][k];
-            const out2 = outPoints[ref2][k];
+            const in1 = inPoints[ref1]?.[k] ?? 0;
+            const in2 = inPoints[ref2]?.[k] ?? 0;
+            const out1 = outPoints[ref1]?.[k] ?? 0;
+            const out2 = outPoints[ref2]?.[k] ?? 0;
             // If the reference points have the same coordinate but different
             // delta, inferred delta is zero.  Otherwise interpolate.
             if (in1 !== in2 || out1 === out2) {
                 const scale = in1 === in2 ? 0 : (out2 - out1) / (in2 - in1);
                 for (let p = p1; p <= p2; p++) {
-                    let out = inPoints[p][k];
+                    const inPt = inPoints[p];
+                    const outPt = outPoints[p];
+                    if (!inPt || !outPt)
+                        continue;
+                    let out = inPt[k];
                     if (out <= in1) {
                         out += out1 - in1;
                     }
@@ -331,32 +355,38 @@ export default class GlyphVariationProcessor {
                     else {
                         out = out1 + (out - in1) * scale;
                     }
-                    outPoints[p][k] = out;
+                    outPt[k] = out;
                 }
             }
         }
     }
     deltaShift(p1, p2, ref, inPoints, outPoints) {
-        const deltaX = outPoints[ref].x - inPoints[ref].x;
-        const deltaY = outPoints[ref].y - inPoints[ref].y;
+        const outRef = outPoints[ref];
+        const inRef = inPoints[ref];
+        if (!outRef || !inRef)
+            return;
+        const deltaX = outRef.x - inRef.x;
+        const deltaY = outRef.y - inRef.y;
         if (deltaX === 0 && deltaY === 0) {
             return;
         }
         for (let p = p1; p <= p2; p++) {
-            if (p !== ref) {
-                outPoints[p].x += deltaX;
-                outPoints[p].y += deltaY;
+            const outPt = outPoints[p];
+            if (p !== ref && outPt) {
+                outPt.x += deltaX;
+                outPt.y += deltaY;
             }
         }
     }
     getAdvanceAdjustment(gid, table) {
-        let outerIndex, innerIndex;
+        let outerIndex;
+        let innerIndex;
         if (table.advanceWidthMapping) {
             let idx = gid;
             if (idx >= table.advanceWidthMapping.mapCount) {
                 idx = table.advanceWidthMapping.mapCount - 1;
             }
-            const _entryFormat = table.advanceWidthMapping.entryFormat;
+            // _entryFormat is available but not used
             ({ outerIndex, innerIndex } = table.advanceWidthMapping.mapData[idx]);
         }
         else {
@@ -379,7 +409,8 @@ export default class GlyphVariationProcessor {
         const blendVector = this.getBlendVector(itemStore, outerIndex);
         let netAdjustment = 0;
         for (let master = 0; master < varData.regionIndexCount; master++) {
-            netAdjustment += deltaSet.deltas[master] * blendVector[master];
+            netAdjustment +=
+                (deltaSet.deltas[master] ?? 0) * (blendVector[master] ?? 0);
         }
         return netAdjustment;
     }
@@ -415,23 +446,24 @@ export default class GlyphVariationProcessor {
                     axisScalar = 1;
                     // ignore this region if coords are out of range
                 }
-                else if (normalizedCoords[j] < axis.startCoord ||
-                    normalizedCoords[j] > axis.endCoord) {
+                else if ((normalizedCoords[j] ?? 0) < axis.startCoord ||
+                    (normalizedCoords[j] ?? 0) > axis.endCoord) {
                     axisScalar = 0;
                     // calculate a proportional factor
                 }
                 else {
-                    if (normalizedCoords[j] === axis.peakCoord) {
+                    const normCoord = normalizedCoords[j] ?? 0;
+                    if (normCoord === axis.peakCoord) {
                         axisScalar = 1;
                     }
-                    else if (normalizedCoords[j] < axis.peakCoord) {
+                    else if (normCoord < axis.peakCoord) {
                         axisScalar =
-                            (normalizedCoords[j] - axis.startCoord + Number.EPSILON) /
+                            (normCoord - axis.startCoord + Number.EPSILON) /
                                 (axis.peakCoord - axis.startCoord + Number.EPSILON);
                     }
                     else {
                         axisScalar =
-                            (axis.endCoord - normalizedCoords[j] + Number.EPSILON) /
+                            (axis.endCoord - normCoord + Number.EPSILON) /
                                 (axis.endCoord - axis.peakCoord + Number.EPSILON);
                     }
                 }

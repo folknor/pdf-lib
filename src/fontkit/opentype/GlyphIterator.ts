@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type GlyphInfo from './GlyphInfo.js';
 
 interface GlyphIteratorOptions {
@@ -38,7 +37,7 @@ export default class GlyphIterator {
   }
 
   shouldIgnore(glyph: GlyphInfo): boolean {
-    return (
+    return !!(
       (this.flags.ignoreMarks && glyph.isMark) ||
       (this.flags.ignoreBaseGlyphs && glyph.isBase) ||
       (this.flags.ignoreLigatures && glyph.isLigature) ||
@@ -53,7 +52,7 @@ export default class GlyphIterator {
     while (
       0 <= this.index &&
       this.index < this.glyphs.length &&
-      this.shouldIgnore(this.glyphs[this.index])
+      this.shouldIgnore(this.glyphs[this.index]!)
     ) {
       this.index += dir;
     }
@@ -62,7 +61,7 @@ export default class GlyphIterator {
       return null;
     }
 
-    return this.glyphs[this.index];
+    return this.glyphs[this.index] ?? null;
   }
 
   next(): GlyphInfo | null {
@@ -95,6 +94,6 @@ export default class GlyphIterator {
       this.move(dir);
     }
 
-    return this.glyphs[this.index];
+    return this.glyphs[this.index] ?? null;
   }
 }

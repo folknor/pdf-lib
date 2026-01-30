@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { getEncoding, LANGUAGES } from '../encodings.js';
 const NameRecord = new r.Struct({
@@ -7,7 +6,7 @@ const NameRecord = new r.Struct({
     languageID: r.uint16,
     nameID: r.uint16,
     length: r.uint16,
-    string: new r.Pointer(r.uint16, new r.String('length', (t) => getEncoding(t.platformID, t.encodingID, t.languageID)), {
+    string: new r.Pointer(r.uint16, new r.String('length', ((t) => getEncoding(t.platformID, t.encodingID, t.languageID))), {
         type: 'parent',
         relativeTo: (ctx) => ctx.parent.stringOffset,
         allowNull: false,
@@ -60,15 +59,16 @@ const NAMES = [
     'wwsFamilyName',
     'wwsSubfamilyName',
 ];
-NameTable.process = function (_stream) {
+NameTable.process = function () {
+    const self = this;
     const records = {};
-    for (const record of this.records) {
+    for (const record of self.records) {
         // find out what language this is for
-        let language = LANGUAGES[record.platformID][record.languageID];
+        let language = LANGUAGES[record.platformID]?.[record.languageID];
         if (language == null &&
-            this.langTags != null &&
+            self.langTags != null &&
             record.languageID >= 0x8000) {
-            language = this.langTags[record.languageID - 0x8000].tag;
+            language = self.langTags[record.languageID - 0x8000]?.tag;
         }
         if (language == null) {
             language = `${record.platformID}-${record.languageID}`;
@@ -89,15 +89,16 @@ NameTable.process = function (_stream) {
             obj[language] = record.string;
         }
     }
-    this.records = records;
+    self.records = records;
 };
 NameTable.preEncode = function () {
-    if (Array.isArray(this.records))
+    const self = this;
+    if (Array.isArray(self.records))
         return;
-    this.version = 0;
+    self.version = 0;
     const records = [];
-    for (const key in this.records) {
-        const val = this.records[key];
+    for (const key in self.records) {
+        const val = self.records[key];
         if (key === 'fontFeatures')
             continue;
         records.push({
@@ -119,8 +120,8 @@ NameTable.preEncode = function () {
             });
         }
     }
-    this.records = records;
-    this.count = records.length;
-    this.stringOffset = NameTable.size(this, null, false);
+    self.records = records;
+    self.count = records.length;
+    self.stringOffset = NameTable.size(self, null, false);
 };
 //# sourceMappingURL=name.js.map

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { cache } from './decorators.js';
 import { getEncoding, getEncodingMapping } from './encodings.js';
 import { binarySearch, range } from './utils.js';
@@ -33,10 +32,12 @@ export default class CmapProcessor {
           cmap.encodingID,
           cmap.table.language - 1,
         );
-        const mapping = getEncodingMapping(encoding);
-        if (mapping) {
-          this.cmap = cmap.table;
-          this.encoding = mapping;
+        if (encoding) {
+          const mapping = getEncodingMapping(encoding);
+          if (mapping) {
+            this.cmap = cmap.table;
+            this.encoding = mapping;
+          }
         }
       }
     }
@@ -161,11 +162,11 @@ export default class CmapProcessor {
     }
 
     const selectors = this.uvs.varSelectors.toArray();
-    let i = binarySearch(selectors, (x) => variationSelector - x.varSelector);
+    let i = binarySearch(selectors, (x: any) => variationSelector - x.varSelector);
     const sel = selectors[i];
 
     if (i !== -1 && sel.defaultUVS) {
-      i = binarySearch(sel.defaultUVS, (x) =>
+      i = binarySearch(sel.defaultUVS, (x: any) =>
         codepoint < x.startUnicodeValue
           ? -1
           : codepoint > x.startUnicodeValue + x.additionalCount
@@ -175,7 +176,7 @@ export default class CmapProcessor {
     }
 
     if (i !== -1 && sel.nonDefaultUVS) {
-      i = binarySearch(sel.nonDefaultUVS, (x) => codepoint - x.unicodeValue);
+      i = binarySearch(sel.nonDefaultUVS, (x: any) => codepoint - x.unicodeValue);
       if (i !== -1) {
         return sel.nonDefaultUVS[i].glyphID;
       }

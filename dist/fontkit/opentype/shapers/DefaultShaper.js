@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { isDigit } from '../../../vendors/unicode-properties/index.js';
 const VARIATION_FEATURES = ['rvrn'];
 const COMMON_FEATURES = ['ccmp', 'locl', 'rlig', 'mark', 'mkmk'];
@@ -11,6 +10,7 @@ const HORIZONTAL_FEATURES = [
     'curs',
     'kern',
 ];
+// @ts-ignore - Reserved for future vertical feature support
 const _VERTICAL_FEATURES = ['vert'];
 const DIRECTIONAL_FEATURES = {
     ltr: ['ltra', 'ltrm'],
@@ -30,7 +30,10 @@ export default class DefaultShaper {
     }
     static planPreprocessing(plan) {
         plan.add({
-            global: [...VARIATION_FEATURES, ...DIRECTIONAL_FEATURES[plan.direction]],
+            global: [
+                ...VARIATION_FEATURES,
+                ...(DIRECTIONAL_FEATURES[plan.direction] || []),
+            ],
             local: FRACTIONAL_FEATURES,
         });
     }
@@ -51,18 +54,18 @@ export default class DefaultShaper {
                 let end = i + 1;
                 // Apply numerator
                 while (start > 0 && isDigit(glyphs[start - 1].codePoints[0])) {
-                    glyphs[start - 1].features.numr = true;
-                    glyphs[start - 1].features.frac = true;
+                    glyphs[start - 1].features['numr'] = true;
+                    glyphs[start - 1].features['frac'] = true;
                     start--;
                 }
                 // Apply denominator
                 while (end < glyphs.length && isDigit(glyphs[end].codePoints[0])) {
-                    glyphs[end].features.dnom = true;
-                    glyphs[end].features.frac = true;
+                    glyphs[end].features['dnom'] = true;
+                    glyphs[end].features['frac'] = true;
                     end++;
                 }
                 // Apply fraction slash
-                glyph.features.frac = true;
+                glyph.features['frac'] = true;
                 i = end - 1;
             }
         }

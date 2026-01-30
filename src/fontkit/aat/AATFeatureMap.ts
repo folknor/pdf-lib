@@ -1,4 +1,3 @@
-// @ts-nocheck
 // see https://developer.apple.com/fonts/TrueType-Reference-Manual/RM09/AppendixF.html
 // and /System/Library/Frameworks/CoreText.framework/Versions/A/Headers/SFNTLayoutTypes.h on a Mac
 
@@ -366,8 +365,8 @@ const features: Features = {
 };
 
 const feature = (name: string, selector: string): [number, number] => [
-  features[name].code,
-  features[name][selector] as number,
+  features[name]!.code,
+  features[name]![selector] as number,
 ];
 
 const OTMapping: Record<string, [number, number]> = {
@@ -483,7 +482,7 @@ const OTMapping: Record<string, [number, number]> = {
 // Add cv01-cv99 features
 for (let i = 1; i <= 99; i++) {
   OTMapping[`cv${`00${i}`.slice(-2)}`] = [
-    features.characterAlternatives.code,
+    features['characterAlternatives']!.code,
     i,
   ];
 }
@@ -491,12 +490,12 @@ for (let i = 1; i <= 99; i++) {
 // create inverse mapping
 const AATMapping: Record<number, Record<number, string>> = {};
 for (const ot in OTMapping) {
-  const aat = OTMapping[ot];
+  const aat = OTMapping[ot]!;
   if (AATMapping[aat[0]] == null) {
     AATMapping[aat[0]] = {};
   }
 
-  AATMapping[aat[0]][aat[1]] = ot;
+  AATMapping[aat[0]]![aat[1]] = ot;
 }
 
 // Maps an array of OpenType features to AAT features
@@ -512,7 +511,7 @@ export function mapOTToAAT(
         res[r[0]] = {};
       }
 
-      res[r[0]][r[1]] = inputFeatures[k];
+      res[r[0]]![r[1]] = inputFeatures[k]!;
     }
   }
 
@@ -546,7 +545,7 @@ export function mapAATToOT(
   if (Array.isArray(inputFeatures)) {
     for (let k = 0; k < inputFeatures.length; k++) {
       let r: string | undefined;
-      const f = mapFeatureStrings(inputFeatures[k]);
+      const f = mapFeatureStrings(inputFeatures[k]!);
       if ((r = AATMapping[f[0] as number]?.[f[1] as number])) {
         res[r] = true;
       }

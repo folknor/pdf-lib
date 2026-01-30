@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { cache } from '../decorators.js';
 import { range } from '../utils.js';
 
@@ -21,7 +20,7 @@ export default class AATLookupTable {
 
         while (min <= max) {
           const mid = (min + max) >> 1;
-          const seg = this.table.segments[mid];
+          const seg = this.table.segments[mid]!;
 
           // special end of search value
           if (seg.firstGlyph === 0xffff) {
@@ -51,7 +50,7 @@ export default class AATLookupTable {
 
         while (min <= max) {
           const mid = (min + max) >> 1;
-          const seg = this.table.segments[mid];
+          const seg = this.table.segments[mid]!;
 
           // special end of search value
           if (seg.glyph === 0xffff) {
@@ -80,7 +79,7 @@ export default class AATLookupTable {
 
   @cache
   glyphsForValue(classValue: number): number[] {
-    const res = [];
+    const res: number[] = [];
 
     switch (this.table.version) {
       case 2: // segment format

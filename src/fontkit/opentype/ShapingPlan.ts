@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type GlyphPosition from '../layout/GlyphPosition.js';
 import type GlyphInfo from './GlyphInfo.js';
 import type OTProcessor from './OTProcessor.js';
@@ -49,6 +47,9 @@ export default class ShapingPlan {
   _addFeatures(features: string[], global: boolean): void {
     const stageIndex = this.stages.length - 1;
     const stage = this.stages[stageIndex];
+    if (!stage || typeof stage === 'function') {
+      return;
+    }
     for (const feature of features) {
       if (this.allFeatures[feature] == null) {
         stage.push(feature);
@@ -106,8 +107,10 @@ export default class ShapingPlan {
         if (features[tag]) {
           this.add(tag);
         } else if (this.allFeatures[tag] != null) {
-          const stage = this.stages[this.allFeatures[tag]];
-          stage.splice(stage.indexOf(tag), 1);
+          const stage = this.stages[this.allFeatures[tag]!];
+          if (stage && Array.isArray(stage)) {
+            stage.splice(stage.indexOf(tag), 1);
+          }
           delete this.allFeatures[tag];
           delete this.globalFeatures[tag];
         }

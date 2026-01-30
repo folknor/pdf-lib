@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { resolveLength } from '../../vendors/restructure/index.js';
 import { ItemVariationStore } from '../tables/variations.js';
@@ -18,8 +17,9 @@ class PredefinedOp {
         this.type = type;
     }
     decode(stream, parent, operands) {
-        if (this.predefinedOps[operands[0]]) {
-            return this.predefinedOps[operands[0]];
+        const index = operands[0];
+        if (index !== undefined && this.predefinedOps[index]) {
+            return this.predefinedOps[index];
         }
         return this.type.decode(stream, parent, operands);
     }
@@ -116,11 +116,12 @@ const FDSelect = new r.VersionedStruct(r.uint8, {
 const ptr = new CFFPointer(CFFPrivateDict);
 class CFFPrivateOp {
     decode(stream, parent, operands) {
-        parent.length = operands[0];
-        return ptr.decode(stream, parent, [operands[1]]);
+        parent.length = operands[0] ?? 0;
+        return ptr.decode(stream, parent, [operands[1] ?? 0]);
     }
     size(dict, ctx) {
-        return [CFFPrivateDict.size(dict, ctx, false), ptr.size(dict, ctx)[0]];
+        const ptrSizeResult = ptr.size(dict, ctx);
+        return [CFFPrivateDict.size(dict, ctx, false), ptrSizeResult];
     }
     encode(stream, dict, ctx) {
         return [

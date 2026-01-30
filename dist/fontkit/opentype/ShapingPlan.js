@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ShapingPlans are used by the OpenType shapers to store which
  * features should by applied, and in what order to apply them.
@@ -30,6 +29,9 @@ export default class ShapingPlan {
     _addFeatures(features, global) {
         const stageIndex = this.stages.length - 1;
         const stage = this.stages[stageIndex];
+        if (!stage || typeof stage === 'function') {
+            return;
+        }
         for (const feature of features) {
             if (this.allFeatures[feature] == null) {
                 stage.push(feature);
@@ -84,7 +86,9 @@ export default class ShapingPlan {
                 }
                 else if (this.allFeatures[tag] != null) {
                     const stage = this.stages[this.allFeatures[tag]];
-                    stage.splice(stage.indexOf(tag), 1);
+                    if (stage && Array.isArray(stage)) {
+                        stage.splice(stage.indexOf(tag), 1);
+                    }
                     delete this.allFeatures[tag];
                     delete this.globalFeatures[tag];
                 }

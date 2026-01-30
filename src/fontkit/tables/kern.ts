@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const KernPair = new r.Struct({
@@ -11,12 +10,12 @@ const ClassTable = new r.Struct({
   firstGlyph: r.uint16,
   nGlyphs: r.uint16,
   offsets: new r.Array(r.uint16, 'nGlyphs'),
-  max: (t) => t.offsets.length && Math.max.apply(Math, t.offsets),
+  max: (t: any) => t.offsets.length && Math.max.apply(Math, t.offsets),
 });
 
 const Kern2Array = new r.Struct({
-  off: (t) => t._startOffset - t.parent.parent._startOffset,
-  len: (t) =>
+  off: (t: any) => t._startOffset - t.parent.parent._startOffset,
+  len: (t: any) =>
     ((t.parent.leftTable.max - t.off) / t.parent.rowWidth + 1) *
     (t.parent.rowWidth / 2),
   values: new r.LazyArray(r.int16, 'len'),
@@ -49,7 +48,7 @@ const KernSubtable = new r.VersionedStruct('format', {
     rightClass: new r.Array(r.uint8, 'glyphCount'),
     kernIndex: new r.Array(
       r.uint8,
-      (t) => t.leftClassCount * t.rightClassCount,
+      (t: any) => t.leftClassCount * t.rightClassCount,
     ),
   },
 });
@@ -67,7 +66,7 @@ const KernTable = new r.VersionedStruct('version', {
       'override', // If set to 1 the value in this table replaces the accumulated value
     ]),
     subtable: KernSubtable,
-    padding: new r.Reserved(r.uint8, (t) => t.length - t._currentOffset),
+    padding: new r.Reserved(r.uint8, (t: any) => t.length - t._currentOffset),
   },
   1: {
     // Apple uses this format
@@ -85,7 +84,7 @@ const KernTable = new r.VersionedStruct('version', {
     format: r.uint8,
     tupleIndex: r.uint16,
     subtable: KernSubtable,
-    padding: new r.Reserved(r.uint8, (t) => t.length - t._currentOffset),
+    padding: new r.Reserved(r.uint8, (t: any) => t.length - t._currentOffset),
   },
 });
 

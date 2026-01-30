@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AATLayoutEngine from '../aat/AATLayoutEngine.js';
 import type Glyph from '../glyph/Glyph.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
@@ -38,7 +37,7 @@ export default class LayoutEngine {
     // Make the features parameter optional
     if (typeof features === 'string') {
       direction = language;
-      language = script;
+      language = script as string | null;
       script = features;
       features = [];
     }
@@ -66,12 +65,14 @@ export default class LayoutEngine {
       glyphs = string;
     }
 
+    // Normalize script to a string
+    const scriptStr = Array.isArray(script) ? script[0] ?? 'zzzz' : script;
     const glyphRun = new GlyphRun(
       glyphs,
-      features,
-      script,
-      language,
-      direction,
+      features ?? [],
+      scriptStr,
+      language ?? null,
+      direction ?? null,
     );
 
     // Return early if there are no glyphs
@@ -81,7 +82,7 @@ export default class LayoutEngine {
     }
 
     // Setup the advanced layout engine
-    if (this.engine?.setup) {
+    if (this.engine && 'setup' in this.engine && this.engine.setup) {
       this.engine.setup(glyphRun);
     }
 
@@ -89,10 +90,10 @@ export default class LayoutEngine {
     this.substitute(glyphRun);
     this.position(glyphRun);
 
-    this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions);
+    this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions!);
 
     // Let the layout engine clean up any state it might have
-    if (this.engine?.cleanup) {
+    if (this.engine && 'cleanup' in this.engine && this.engine.cleanup) {
       this.engine.cleanup();
     }
 
@@ -111,11 +112,13 @@ export default class LayoutEngine {
     glyphRun.positions = glyphRun.glyphs.map(
       (glyph) => new GlyphPosition(glyph.advanceWidth),
     );
-    let positioned = null;
+    let positioned: Record<string, boolean> | null | undefined = null;
 
     // Call the advanced layout engine. Returns the features applied.
-    if (this.engine?.position) {
-      positioned = this.engine.position(glyphRun);
+    if (this.engine && 'position' in this.engine && this.engine.position) {
+      positioned = this.engine.position(glyphRun) as
+        | Record<string, boolean>
+        | undefined;
     }
 
     // if there is no GPOS table, use unicode properties to position marks.
@@ -132,26 +135,27 @@ export default class LayoutEngine {
 
     // if kerning is not supported by GPOS, do kerning with the TrueType/AAT kern table
     if (
-      (!positioned || !positioned.kern) &&
-      glyphRun.features.kern !== false &&
+      (!positioned || !positioned['kern']) &&
+      glyphRun.features['kern'] !== false &&
       this.font.kern
     ) {
       if (!this.kernProcessor) {
         this.kernProcessor = new KernProcessor(this.font);
       }
 
-      this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions);
-      glyphRun.features.kern = true;
+      this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions!);
+      glyphRun.features['kern'] = true;
     }
   }
 
   hideDefaultIgnorables(glyphs: Glyph[], positions: GlyphPosition[]): void {
     const space = this.font.glyphForCodePoint(0x20);
     for (let i = 0; i < glyphs.length; i++) {
-      if (this.isDefaultIgnorable(glyphs[i].codePoints[0])) {
+      const codePoint = glyphs[i]!.codePoints[0];
+      if (codePoint !== undefined && this.isDefaultIgnorable(codePoint)) {
         glyphs[i] = space;
-        positions[i].xAdvance = 0;
-        positions[i].yAdvance = 0;
+        positions[i]!.xAdvance = 0;
+        positions[i]!.yAdvance = 0;
       }
     }
   }
@@ -217,14 +221,14 @@ export default class LayoutEngine {
   }
 
   stringsForGlyph(gid: number): string[] {
-    const result = new Set();
+    const result = new Set<string>();
 
     const codePoints = this.font._cmapProcessor.codePointsForGlyph(gid);
     for (const codePoint of codePoints) {
       result.add(String.fromCodePoint(codePoint));
     }
 
-    if (this.engine?.stringsForGlyph) {
+    if (this.engine && 'stringsForGlyph' in this.engine) {
       for (const string of this.engine.stringsForGlyph(gid)) {
         result.add(string);
       }

@@ -1,8 +1,7 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const Base128 = {
-  decode(stream) {
+  decode(stream: any): number {
     let result = 0;
     for (let j = 0; j < 5; j++) {
       const code = stream.readUInt8();
@@ -90,15 +89,15 @@ const knownTags = [
 
 const WOFF2DirectoryEntry = new r.Struct({
   flags: r.uint8,
-  customTag: new r.Optional(new r.String(4), (t) => (t.flags & 0x3f) === 0x3f),
-  tag: (t) => t.customTag || knownTags[t.flags & 0x3f], // || (() => { throw new Error(`Bad tag: ${flags & 0x3f}`); })(); },
-  length: Base128,
-  transformVersion: (t) => (t.flags >>> 6) & 0x03,
-  transformed: (t) =>
-    t.tag === 'glyf' || t.tag === 'loca'
-      ? t.transformVersion === 0
-      : t.transformVersion !== 0,
-  transformLength: new r.Optional(Base128, (t) => t.transformed),
+  customTag: new r.Optional(new r.String(4), (t: any) => (t.flags & 0x3f) === 0x3f),
+  tag: (t: any) => t['customTag'] || knownTags[t['flags'] & 0x3f], // || (() => { throw new Error(`Bad tag: ${flags & 0x3f}`); })(); },
+  length: Base128 as any,
+  transformVersion: (t: any) => (t['flags'] >>> 6) & 0x03,
+  transformed: (t: any) =>
+    t['tag'] === 'glyf' || t['tag'] === 'loca'
+      ? t['transformVersion'] === 0
+      : t['transformVersion'] !== 0,
+  transformLength: new r.Optional(Base128 as any, (t: any) => t.transformed),
 });
 
 const WOFF2Directory = new r.Struct({
@@ -119,13 +118,13 @@ const WOFF2Directory = new r.Struct({
   tables: new r.Array(WOFF2DirectoryEntry, 'numTables'),
 });
 
-WOFF2Directory.process = function () {
-  const tables = {};
-  for (const table of this.tables) {
+WOFF2Directory.process = function (this: Record<string, unknown>) {
+  const tables: Record<string, unknown> = {};
+  for (const table of this['tables'] as any[]) {
     tables[table.tag] = table;
   }
 
-  return (this.tables = tables);
+  return (this['tables'] = tables);
 };
 
 export default WOFF2Directory;

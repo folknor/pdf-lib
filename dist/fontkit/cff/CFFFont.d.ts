@@ -7,6 +7,7 @@ declare class CFFFont {
     stringIndex: string[];
     isCIDFont: boolean;
     globalSubrIndex: any[];
+    [key: string]: any;
     constructor(stream: any);
     static decode(stream: any): CFFFont;
     decode(): this;

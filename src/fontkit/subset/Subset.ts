@@ -1,4 +1,3 @@
-// @ts-nocheck
 const resolved = Promise.resolve();
 
 interface SubsetStream {
@@ -29,7 +28,7 @@ export default class Subset {
       this.mapping[glyph] = this.glyphs.length - 1;
     }
 
-    return this.mapping[glyph];
+    return this.mapping[glyph]!;
   }
 
   encode(): Uint8Array {
@@ -51,15 +50,15 @@ export default class Subset {
     void resolved.then(() => {
       try {
         const data = this.encode();
-        if (handlers.data) {
-          handlers.data(data);
+        if (handlers['data']) {
+          handlers['data'](data);
         }
-        if (handlers.end) {
-          handlers.end();
+        if (handlers['end']) {
+          handlers['end']();
         }
       } catch (err) {
-        if (handlers.error) {
-          handlers.error(err);
+        if (handlers['error']) {
+          handlers['error'](err);
         }
       }
     });

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import {
   ChainingContext,
@@ -16,7 +15,7 @@ const AlternateSet = Sequence;
 const Ligature = new r.Struct({
   glyph: r.uint16,
   compCount: r.uint16,
-  components: new r.Array(r.uint16, (t) => t.compCount - 1),
+  components: new r.Array(r.uint16, (t: any) => t.compCount - 1),
 });
 
 const LigatureSet = new r.Array(new r.Pointer(r.uint16, Ligature), r.uint16);
@@ -94,13 +93,13 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
 });
 
 // Fix circular reference
-GSUBLookup.versions[7].extension.type = GSUBLookup;
+(GSUBLookup.versions[7] as any).extension.type = GSUBLookup;
 
 export default new r.VersionedStruct(r.uint32, {
   header: {
     scriptList: new r.Pointer(r.uint16, ScriptList),
     featureList: new r.Pointer(r.uint16, FeatureList),
-    lookupList: new r.Pointer(r.uint16, new LookupList(GSUBLookup)),
+    lookupList: new r.Pointer(r.uint16, new (LookupList as any)(GSUBLookup)),
   },
 
   65536: {},

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import standardStrings from '../cff/CFFStandardStrings.js';
 import CFFTop from '../cff/CFFTop.js';
 import Subset from './Subset.js';
@@ -20,7 +19,7 @@ export default class CFFSubset extends Subset {
 
   subsetCharstrings(): void {
     this.charstrings = [];
-    const gsubrs = {};
+    const gsubrs: Record<number, boolean> = {};
 
     for (const gid of this.glyphs) {
       this.charstrings.push(this.cff.getCharString(gid));
@@ -29,7 +28,7 @@ export default class CFFSubset extends Subset {
       void glyph.path; // this causes the glyph to be parsed
 
       for (const subr in glyph._usedGsubrs) {
-        gsubrs[subr] = true;
+        gsubrs[subr as unknown as number] = true;
       }
     }
 
@@ -55,14 +54,14 @@ export default class CFFSubset extends Subset {
     topDict.FDArray = [];
     topDict.FDSelect = {
       version: 0,
-      fds: [],
+      fds: [] as number[],
     };
 
-    const used_fds = {};
-    const used_subrs = [];
-    const fd_select = {};
+    const used_fds: Record<number, boolean> = {};
+    const used_subrs: Record<number, boolean>[] = [];
+    const fd_select: Record<number, number> = {};
     for (const gid of this.glyphs) {
-      const fd = this.cff.fdForGlyph(gid);
+      const fd = this.cff.fdForGlyph(gid) as number | null;
       if (fd == null) {
         continue;
       }
@@ -79,7 +78,7 @@ export default class CFFSubset extends Subset {
       const glyph = this.font.getGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
       for (const subr in glyph._usedSubrs) {
-        used_subrs[fd_select[fd]][subr] = true;
+        used_subrs[fd_select[fd]!]![subr as unknown as number] = true;
       }
     }
 
@@ -90,7 +89,7 @@ export default class CFFSubset extends Subset {
         dict.Private = Object.assign({}, dict.Private);
         dict.Private.Subrs = this.subsetSubrs(
           dict.Private.Subrs,
-          used_subrs[i],
+          used_subrs[i]!,
         );
       }
     }
@@ -99,13 +98,13 @@ export default class CFFSubset extends Subset {
   }
 
   createCIDFontdict(topDict: any): any {
-    const used_subrs = {};
+    const used_subrs: Record<number, boolean> = {};
     for (const gid of this.glyphs) {
       const glyph = this.font.getGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
 
       for (const subr in glyph._usedSubrs) {
-        used_subrs[subr] = true;
+        used_subrs[subr as unknown as number] = true;
       }
     }
 

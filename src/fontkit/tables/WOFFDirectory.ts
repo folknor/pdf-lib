@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 
 const WOFFDirectoryEntry = new r.Struct({
@@ -26,13 +25,13 @@ const WOFFDirectory = new r.Struct({
   tables: new r.Array(WOFFDirectoryEntry, 'numTables'),
 });
 
-WOFFDirectory.process = function () {
-  const processedTables = {};
-  for (const table of this.tables) {
+WOFFDirectory.process = function (this: Record<string, unknown>) {
+  const processedTables: Record<string, unknown> = {};
+  for (const table of this['tables'] as any[]) {
     processedTables[table.tag] = table;
   }
 
-  this.tables = processedTables;
+  this['tables'] = processedTables;
 };
 
 export default WOFFDirectory;

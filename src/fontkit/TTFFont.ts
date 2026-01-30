@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
@@ -74,7 +73,7 @@ export default class TTFFont {
     if (!(table.tag in this._tables)) {
       try {
         this._tables[table.tag] = this._decodeTable(table);
-      } catch (e) {
+      } catch (e: any) {
         if (fontkit.logErrors) {
           console.error(`Error decoding table ${table.tag}`);
           console.error(e.stack);
@@ -120,15 +119,16 @@ export default class TTFFont {
     key: string,
     lang: string = this.defaultLanguage || fontkit.defaultLanguage,
   ): string | null {
-    const record = this.name?.records[key];
+    const record = this['name']?.records[key];
     if (record) {
       // Attempt to retrieve the entry, depending on which translation is available:
+      const firstKey = Object.keys(record)[0];
       return (
         record[lang] ||
-        record[this.defaultLanguage] ||
+        (this.defaultLanguage ? record[this.defaultLanguage] : null) ||
         record[fontkit.defaultLanguage] ||
         record['en'] ||
-        record[Object.keys(record)[0]] || // Seriously, ANY language would be fine
+        (firstKey ? record[firstKey] : null) || // Seriously, ANY language would be fine
         null
       );
     }
@@ -185,19 +185,19 @@ export default class TTFFont {
   }
 
   /**
-   * The font’s [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
+   * The font's [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
    * @type {number}
    */
   get ascent() {
-    return this.hhea.ascent;
+    return this['hhea'].ascent;
   }
 
   /**
-   * The font’s [descender](https://en.wikipedia.org/wiki/Descender)
+   * The font's [descender](https://en.wikipedia.org/wiki/Descender)
    * @type {number}
    */
   get descent() {
-    return this.hhea.descent;
+    return this['hhea'].descent;
   }
 
   /**
@@ -205,7 +205,7 @@ export default class TTFFont {
    * @type {number}
    */
   get lineGap() {
-    return this.hhea.lineGap;
+    return this['hhea'].lineGap;
   }
 
   /**
@@ -213,7 +213,7 @@ export default class TTFFont {
    * @type {number}
    */
   get underlinePosition() {
-    return this.post.underlinePosition;
+    return this['post'].underlinePosition;
   }
 
   /**
@@ -221,7 +221,7 @@ export default class TTFFont {
    * @type {number}
    */
   get underlineThickness() {
-    return this.post.underlineThickness;
+    return this['post'].underlineThickness;
   }
 
   /**
@@ -229,7 +229,7 @@ export default class TTFFont {
    * @type {number}
    */
   get italicAngle() {
-    return this.post.italicAngle;
+    return this['post'].italicAngle;
   }
 
   /**
@@ -257,31 +257,31 @@ export default class TTFFont {
    * @type {number}
    */
   get numGlyphs() {
-    return this.maxp.numGlyphs;
+    return this['maxp'].numGlyphs;
   }
 
   /**
-   * The size of the font’s internal coordinate grid
+   * The size of the font's internal coordinate grid
    * @type {number}
    */
   get unitsPerEm() {
-    return this.head.unitsPerEm;
+    return this['head'].unitsPerEm;
   }
 
   /**
-   * The font’s bounding box, i.e. the box that encloses all glyphs in the font.
+   * The font's bounding box, i.e. the box that encloses all glyphs in the font.
    * @type {BBox}
    */
   @cache
   get bbox() {
     return Object.freeze(
-      new BBox(this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax),
+      new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax),
     );
   }
 
   @cache
   get _cmapProcessor() {
-    return new CmapProcessor(this.cmap);
+    return new CmapProcessor(this['cmap']);
   }
 
   /**
@@ -323,8 +323,8 @@ export default class TTFFont {
    * @param {string} string
    * @return {Glyph[]}
    */
-  glyphsForString(string: string): Glyph[] {
-    const glyphs = [];
+  glyphsForString(string: string): (Glyph | null)[] {
+    const glyphs: (Glyph | null)[] = [];
     const len = string.length;
     let idx = 0;
     let last = -1;
@@ -407,7 +407,7 @@ export default class TTFFont {
    * Returns an array of strings that map to the given glyph id.
    * @param {number} gid - glyph id
    */
-  stringsForGlyph(gid: number): Set<string> {
+  stringsForGlyph(gid: number): string[] {
     return this._layoutEngine.stringsForGlyph(gid);
   }
 
@@ -420,10 +420,10 @@ export default class TTFFont {
    * @type {string[]}
    */
   get availableFeatures() {
-    return this._layoutEngine.getAvailableFeatures();
+    return this._layoutEngine.getAvailableFeatures('DFLT', 'dflt');
   }
 
-  getAvailableFeatures(script?: string, language?: string): string[] {
+  getAvailableFeatures(script: string = 'DFLT', language: string = 'dflt'): string[] {
     return this._layoutEngine.getAvailableFeatures(script, language);
   }
 
@@ -482,13 +482,13 @@ export default class TTFFont {
    * @type {object}
    */
   @cache
-  get variationAxes() {
-    const res = {};
-    if (!this.fvar) {
+  get variationAxes(): Record<string, any> {
+    const res: Record<string, any> = {};
+    if (!this['fvar']) {
       return res;
     }
 
-    for (const axis of this.fvar.axis) {
+    for (const axis of this['fvar'].axis) {
       res[axis.axisTag.trim()] = {
         name: axis.name.en,
         min: axis.minValue,
@@ -508,16 +508,16 @@ export default class TTFFont {
    * @type {object}
    */
   @cache
-  get namedVariations() {
-    const res = {};
-    if (!this.fvar) {
+  get namedVariations(): Record<string, any> {
+    const res: Record<string, any> = {};
+    if (!this['fvar']) {
       return res;
     }
 
-    for (const instance of this.fvar.instance) {
-      const settings = {};
-      for (let i = 0; i < this.fvar.axis.length; i++) {
-        const axis = this.fvar.axis[i];
+    for (const instance of this['fvar'].instance) {
+      const settings: Record<string, any> = {};
+      for (let i = 0; i < this['fvar'].axis.length; i++) {
+        const axis = this['fvar'].axis[i];
         settings[axis.axisTag.trim()] = instance.coord[i];
       }
 
@@ -559,12 +559,12 @@ export default class TTFFont {
     }
 
     // normalize the coordinates
-    const coords = this.fvar.axis.map((axis, _i) => {
+    const coords = this['fvar'].axis.map((axis: any, _i: number) => {
       const axisTag = axis.axisTag.trim();
-      if (axisTag in settings) {
+      if (axisTag in (settings as Record<string, number>)) {
         return Math.max(
           axis.minValue,
-          Math.min(axis.maxValue, settings[axisTag]),
+          Math.min(axis.maxValue, (settings as Record<string, number>)[axisTag]!),
         );
       } else {
         return axis.defaultValue;
@@ -582,22 +582,22 @@ export default class TTFFont {
 
   @cache
   get _variationProcessor() {
-    if (!this.fvar) {
+    if (!this['fvar']) {
       return null;
     }
 
     let variationCoords = this.variationCoords;
 
     // Ignore if no variation coords and not CFF2
-    if (!variationCoords && !this.CFF2) {
+    if (!variationCoords && !this['CFF2']) {
       return null;
     }
 
     if (!variationCoords) {
-      variationCoords = this.fvar.axis.map((axis) => axis.defaultValue);
+      variationCoords = this['fvar'].axis.map((axis: any) => axis.defaultValue);
     }
 
-    return new GlyphVariationProcessor(this, variationCoords);
+    return new GlyphVariationProcessor(this, variationCoords!);
   }
 
   // Standardized format plugin API

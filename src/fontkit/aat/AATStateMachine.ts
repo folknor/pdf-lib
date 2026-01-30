@@ -1,15 +1,13 @@
-// @ts-nocheck
-
 import type Glyph from '../glyph/Glyph.js';
 import AATLookupTable from './AATLookupTable.js';
 
 const START_OF_TEXT_STATE = 0;
-const _START_OF_LINE_STATE = 1;
+// const START_OF_LINE_STATE = 1;
 
 const END_OF_TEXT_CLASS = 0;
 const OUT_OF_BOUNDS_CLASS = 1;
 const DELETED_GLYPH_CLASS = 2;
-const _END_OF_LINE_CLASS = 3;
+// const END_OF_LINE_CLASS = 3;
 
 const DONT_ADVANCE = 0x4000;
 
@@ -56,7 +54,7 @@ export default class AATStateMachine {
       if (index === glyphs.length || index === -1) {
         classCode = END_OF_TEXT_CLASS;
       } else {
-        glyph = glyphs[index];
+        glyph = glyphs[index]!;
         if (glyph.id === 0xffff) {
           // deleted glyph
           classCode = DELETED_GLYPH_CLASS;
@@ -76,7 +74,7 @@ export default class AATStateMachine {
         classCode !== END_OF_TEXT_CLASS &&
         classCode !== DELETED_GLYPH_CLASS
       ) {
-        processEntry(glyph, entry, index);
+        processEntry(glyph!, entry, index);
         shouldAdvance = !(entry.flags & DONT_ADVANCE);
       }
 

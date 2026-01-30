@@ -1,4 +1,3 @@
-// @ts-nocheck
 import cloneDeep from 'clone';
 import TTFGlyphEncoder from '../glyph/TTFGlyphEncoder.js';
 import Directory from '../tables/directory.js';

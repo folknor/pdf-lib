@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 const SubHeader = new r.Struct({
     firstCode: r.uint16,

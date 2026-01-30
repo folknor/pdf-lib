@@ -1,4 +1,3 @@
-// @ts-nocheck
 import AATLayoutEngine from '../aat/AATLayoutEngine.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
 import GlyphPosition from './GlyphPosition.js';
@@ -52,14 +51,16 @@ export default class LayoutEngine {
             }
             glyphs = string;
         }
-        const glyphRun = new GlyphRun(glyphs, features, script, language, direction);
+        // Normalize script to a string
+        const scriptStr = Array.isArray(script) ? script[0] ?? 'zzzz' : script;
+        const glyphRun = new GlyphRun(glyphs, features ?? [], scriptStr, language ?? null, direction ?? null);
         // Return early if there are no glyphs
         if (glyphs.length === 0) {
             glyphRun.positions = [];
             return glyphRun;
         }
         // Setup the advanced layout engine
-        if (this.engine?.setup) {
+        if (this.engine && 'setup' in this.engine && this.engine.setup) {
             this.engine.setup(glyphRun);
         }
         // Substitute and position the glyphs
@@ -67,7 +68,7 @@ export default class LayoutEngine {
         this.position(glyphRun);
         this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions);
         // Let the layout engine clean up any state it might have
-        if (this.engine?.cleanup) {
+        if (this.engine && 'cleanup' in this.engine && this.engine.cleanup) {
             this.engine.cleanup();
         }
         return glyphRun;
@@ -83,7 +84,7 @@ export default class LayoutEngine {
         glyphRun.positions = glyphRun.glyphs.map((glyph) => new GlyphPosition(glyph.advanceWidth));
         let positioned = null;
         // Call the advanced layout engine. Returns the features applied.
-        if (this.engine?.position) {
+        if (this.engine && 'position' in this.engine && this.engine.position) {
             positioned = this.engine.position(glyphRun);
         }
         // if there is no GPOS table, use unicode properties to position marks.
@@ -94,20 +95,21 @@ export default class LayoutEngine {
             this.unicodeLayoutEngine.positionGlyphs(glyphRun.glyphs, glyphRun.positions);
         }
         // if kerning is not supported by GPOS, do kerning with the TrueType/AAT kern table
-        if ((!positioned || !positioned.kern) &&
-            glyphRun.features.kern !== false &&
+        if ((!positioned || !positioned['kern']) &&
+            glyphRun.features['kern'] !== false &&
             this.font.kern) {
             if (!this.kernProcessor) {
                 this.kernProcessor = new KernProcessor(this.font);
             }
             this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions);
-            glyphRun.features.kern = true;
+            glyphRun.features['kern'] = true;
         }
     }
     hideDefaultIgnorables(glyphs, positions) {
         const space = this.font.glyphForCodePoint(0x20);
         for (let i = 0; i < glyphs.length; i++) {
-            if (this.isDefaultIgnorable(glyphs[i].codePoints[0])) {
+            const codePoint = glyphs[i].codePoints[0];
+            if (codePoint !== undefined && this.isDefaultIgnorable(codePoint)) {
                 glyphs[i] = space;
                 positions[i].xAdvance = 0;
                 positions[i].yAdvance = 0;
@@ -172,7 +174,7 @@ export default class LayoutEngine {
         for (const codePoint of codePoints) {
             result.add(String.fromCodePoint(codePoint));
         }
-        if (this.engine?.stringsForGlyph) {
+        if (this.engine && 'stringsForGlyph' in this.engine) {
             for (const string of this.engine.stringsForGlyph(gid)) {
                 result.add(string);
             }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { LookupTable, StateTable, UnboundedArray } from './aat.js';
 const LigatureData = {
@@ -18,16 +17,16 @@ const SubstitutionTable = new r.Struct({
 const SubtableData = new r.VersionedStruct('type', {
     0: {
         // Indic Rearrangement Subtable
-        stateTable: new StateTable(),
+        stateTable: StateTable(),
     },
     1: {
         // Contextual Glyph Substitution Subtable
-        stateTable: new StateTable(ContextualData),
+        stateTable: StateTable(ContextualData),
         substitutionTable: new r.Pointer(r.uint32, SubstitutionTable),
     },
     2: {
         // Ligature subtable
-        stateTable: new StateTable(LigatureData),
+        stateTable: StateTable(LigatureData),
         ligatureActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint32)),
         components: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
         ligatureList: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
@@ -38,7 +37,7 @@ const SubtableData = new r.VersionedStruct('type', {
     },
     5: {
         // Glyph Insertion Subtable
-        stateTable: new StateTable(InsertionData),
+        stateTable: StateTable(InsertionData),
         insertionActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint16)),
     },
 });

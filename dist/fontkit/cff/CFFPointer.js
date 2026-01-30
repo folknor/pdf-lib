@@ -1,17 +1,20 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
+// CFFPointer uses a custom approach where offsetType is dynamically replaced
+// with partial implementations. We cast to any to allow this flexibility.
 export default class CFFPointer extends r.Pointer {
     constructor(type, options = {}) {
-        if (options.type == null) {
-            options.type = 'global';
+        if (options['type'] == null) {
+            options['type'] = 'global';
         }
-        super(null, type, options);
+        // Pass a dummy NumberT - it will be replaced dynamically
+        super(r.uint8, type, options);
     }
     decode(stream, parent, operands) {
+        // Replace offsetType with a minimal implementation that returns the operand
         this.offsetType = {
-            decode: () => operands[0],
+            decode: () => operands?.[0] ?? 0,
         };
-        return super.decode(stream, parent, operands);
+        return super.decode(stream, parent);
     }
     encode(stream, value, ctx) {
         if (!stream) {

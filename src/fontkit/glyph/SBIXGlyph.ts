@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import TTFGlyph from './TTFGlyph.js';
 
@@ -13,14 +12,17 @@ const SBIXImage = new r.Struct({
   originX: r.uint16,
   originY: r.uint16,
   type: new r.String(4),
-  data: new r.Buffer((t) => t.parent.buflen - t._currentOffset),
+  data: new r.Buffer(
+    ((t: { parent: { buflen: number }; _currentOffset: number }) =>
+      t.parent.buflen - t._currentOffset) as (parent: unknown) => number,
+  ),
 });
 
 /**
  * Represents a color (e.g. emoji) glyph in Apple's SBIX format.
  */
 export default class SBIXGlyph extends TTFGlyph {
-  type = 'SBIX';
+  override type = 'SBIX';
 
   /**
    * Returns an object representing a glyph image at the given point size.
@@ -45,7 +47,9 @@ export default class SBIXGlyph extends TTFGlyph {
     }
 
     this._font.stream.pos = start;
-    return SBIXImage.decode(this._font.stream, { buflen: end - start });
+    return SBIXImage.decode(this._font.stream, {
+      buflen: end - start,
+    }) as unknown as SBIXImageData;
   }
 
   override render(ctx: any, size: number): void {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { isMark } from '../../vendors/unicode-properties/index.js';
 import OTProcessor from './OTProcessor.js';
 export default class GlyphInfo {

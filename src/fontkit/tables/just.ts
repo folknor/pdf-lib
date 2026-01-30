@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as r from '../../vendors/restructure/index.js';
 import { LookupTable, StateTable1 } from './aat.js';
 
@@ -6,7 +5,7 @@ const ClassTable = new r.Struct({
   length: r.uint16,
   coverage: r.uint16,
   subFeatureFlags: r.uint32,
-  stateTable: new StateTable1(),
+  stateTable: StateTable1(),
 });
 
 const WidthDeltaRecord = new r.Struct({
@@ -64,7 +63,7 @@ const Action = new r.Struct({
   actionType: r.uint16,
   actionLength: r.uint32,
   actionData: ActionData,
-  padding: new r.Reserved(r.uint8, (t) => t.actionLength - t._currentOffset),
+  padding: new r.Reserved(r.uint8, (t: any) => t.actionLength - t._currentOffset),
 });
 
 const PostcompensationAction = new r.Array(Action, r.uint32);
@@ -81,7 +80,7 @@ const JustificationTable = new r.Struct({
   widthDeltaClusters: LookupTable(
     new r.Pointer(r.uint16, WidthDeltaCluster, {
       type: 'parent',
-      relativeTo: (ctx) => ctx.wdcOffset,
+      relativeTo: (ctx: any) => ctx.wdcOffset,
     }),
   ),
 });

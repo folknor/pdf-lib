@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getCombiningClass } from '../../vendors/unicode-properties/index.js';
 /**
  * This class is used when GPOS does not define 'mark' or 'mkmk' features

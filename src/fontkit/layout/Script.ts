@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { getScript } from '../../vendors/unicode-properties/index.js';
 
 // This maps the Unicode Script property to an OpenType script tag
@@ -141,7 +140,7 @@ for (const script in UNICODE_SCRIPTS) {
     for (const t of tag) {
       OPENTYPE_SCRIPTS[t] = script;
     }
-  } else {
+  } else if (tag !== undefined) {
     OPENTYPE_SCRIPTS[tag] = script;
   }
 }
@@ -173,23 +172,23 @@ export function forString(string: string): string | string[] {
 
     const script = getScript(code);
     if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-      return UNICODE_SCRIPTS[script];
+      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
     }
   }
 
-  return UNICODE_SCRIPTS.Unknown;
+  return UNICODE_SCRIPTS['Unknown']!;
 }
 
 export function forCodePoints(codePoints: number[]): string | string[] {
   for (let i = 0; i < codePoints.length; i++) {
-    const codePoint = codePoints[i];
+    const codePoint = codePoints[i]!;
     const script = getScript(codePoint);
     if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-      return UNICODE_SCRIPTS[script];
+      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
     }
   }
 
-  return UNICODE_SCRIPTS.Unknown;
+  return UNICODE_SCRIPTS['Unknown']!;
 }
 
 // The scripts in this map are written from right to left
@@ -224,7 +223,8 @@ const RTL: Record<string, boolean> = {
 };
 
 export function direction(script: string | string[]): 'ltr' | 'rtl' {
-  if (RTL[script]) {
+  const scriptKey = Array.isArray(script) ? script[0] : script;
+  if (scriptKey && RTL[scriptKey]) {
     return 'rtl';
   }
 

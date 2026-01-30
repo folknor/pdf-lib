@@ -22,7 +22,7 @@ export default class GlyphIterator {
         return this.glyphs[this.index] || null;
     }
     shouldIgnore(glyph) {
-        return ((this.flags.ignoreMarks && glyph.isMark) ||
+        return !!((this.flags.ignoreMarks && glyph.isMark) ||
             (this.flags.ignoreBaseGlyphs && glyph.isBase) ||
             (this.flags.ignoreLigatures && glyph.isLigature) ||
             (this.markAttachmentType &&
@@ -39,7 +39,7 @@ export default class GlyphIterator {
         if (0 > this.index || this.index >= this.glyphs.length) {
             return null;
         }
-        return this.glyphs[this.index];
+        return this.glyphs[this.index] ?? null;
     }
     next() {
         return this.move(+1);
@@ -66,7 +66,7 @@ export default class GlyphIterator {
         while (count--) {
             this.move(dir);
         }
-        return this.glyphs[this.index];
+        return this.glyphs[this.index] ?? null;
     }
 }
 //# sourceMappingURL=GlyphIterator.js.map

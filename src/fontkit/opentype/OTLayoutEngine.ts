@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type GlyphPosition from '../layout/GlyphPosition.js';
 import type GlyphRun from '../layout/GlyphRun.js';
 import GlyphInfo from './GlyphInfo.js';
@@ -60,8 +59,8 @@ export default class OTLayoutEngine {
 
     // Choose a shaper based on the script, and setup a shaping plan.
     // This determines which features to apply to which glyphs.
-    this.shaper = Shapers.choose(script);
-    this.plan = new ShapingPlan(this.font, script, glyphRun.direction);
+    this.shaper = Shapers.choose(script ?? 'DFLT');
+    this.plan = new ShapingPlan(this.font, script ?? 'DFLT', glyphRun.direction);
     this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
 
     // Assign chosen features to output glyph run
@@ -71,7 +70,7 @@ export default class OTLayoutEngine {
   }
 
   substitute(glyphRun: GlyphRun): void {
-    if (this.GSUBProcessor) {
+    if (this.GSUBProcessor && this.plan && this.glyphInfos) {
       this.plan.process(this.GSUBProcessor, this.glyphInfos);
 
       // Map glyph infos back to normal Glyph objects
@@ -82,11 +81,11 @@ export default class OTLayoutEngine {
   }
 
   position(glyphRun: GlyphRun): Record<string, any> | undefined {
-    if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS') {
+    if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS' && glyphRun.positions) {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
-    if (this.GPOSProcessor) {
+    if (this.GPOSProcessor && this.plan && this.glyphInfos && glyphRun.positions) {
       this.plan.process(
         this.GPOSProcessor,
         this.glyphInfos,
@@ -94,12 +93,12 @@ export default class OTLayoutEngine {
       );
     }
 
-    if (this.shaper.zeroMarkWidths === 'AFTER_GPOS') {
+    if (this.shaper.zeroMarkWidths === 'AFTER_GPOS' && glyphRun.positions) {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
     // Reverse the glyphs and positions if the script is right-to-left
-    if (glyphRun.direction === 'rtl') {
+    if (glyphRun.direction === 'rtl' && glyphRun.positions) {
       glyphRun.glyphs.reverse();
       glyphRun.positions.reverse();
     }
@@ -108,10 +107,11 @@ export default class OTLayoutEngine {
   }
 
   zeroMarkAdvances(positions: GlyphPosition[]): void {
+    if (!this.glyphInfos) return;
     for (let i = 0; i < this.glyphInfos.length; i++) {
-      if (this.glyphInfos[i].isMark) {
-        positions[i].xAdvance = 0;
-        positions[i].yAdvance = 0;
+      if (this.glyphInfos[i]!.isMark) {
+        positions[i]!.xAdvance = 0;
+        positions[i]!.yAdvance = 0;
       }
     }
   }

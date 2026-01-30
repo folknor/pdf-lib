@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { binarySearch } from '../utils.js';
 export default class KernProcessor {
     kern;
