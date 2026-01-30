@@ -1172,7 +1172,7 @@ class AESBaseCipher {
     const sourceLength = data.length;
     let buffer = this.buffer,
       bufferLength = this.bufferPosition;
-    const result = [];
+    const result: Uint8Array[] = [];
 
     if (!iv) {
       iv = new Uint8Array(16);

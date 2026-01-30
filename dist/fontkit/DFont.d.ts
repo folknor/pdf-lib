@@ -8,6 +8,6 @@ export default class DFont {
     static probe(buffer: Uint8Array): boolean;
     constructor(stream: r.DecodeStream);
     getFont(name: string | Uint8Array): TTFFont | null;
-    get fonts(): any[];
+    get fonts(): TTFFont[];
 }
 //# sourceMappingURL=DFont.d.ts.map

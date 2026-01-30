@@ -27,14 +27,14 @@
 
     // Type Checking - Strict
     "strict": true,
-    "noImplicitAny": false,  // TODO: re-enable after fontkit migration
-    "strictNullChecks": false,  // TODO: re-enable after fontkit migration
-    "strictFunctionTypes": false,  // TODO: re-enable after fontkit migration
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
     "strictBindCallApply": true,
-    "strictPropertyInitialization": false,  // TODO: re-enable (requires strictNullChecks)
+    "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    // "useUnknownInCatchVariables": true,  // TODO: re-enable after fontkit migration
+    "useUnknownInCatchVariables": true,
 
     // Type Checking - Additional
     "noUnusedLocals": true,
@@ -45,9 +45,9 @@
 
     // These are valuable but need codebase refactoring:
     "noImplicitOverride": true,
-    // "noUncheckedIndexedAccess": true,  // TODO: re-enable after fontkit migration
-    // "exactOptionalPropertyTypes": true,  // TODO: re-enable after fontkit migration
-    // "noPropertyAccessFromIndexSignature": true,  // TODO: re-enable after fontkit migration
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
 
     // Skip
     "skipLibCheck": true

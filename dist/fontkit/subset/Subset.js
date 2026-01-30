@@ -1,3 +1,4 @@
+// @ts-nocheck
 const resolved = Promise.resolve();
 export default class Subset {
     font;

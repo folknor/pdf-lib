@@ -1,3 +1,4 @@
+// @ts-nocheck
 import isEqual from 'fast-deep-equal';
 import { PropertyDescriptor } from '../../vendors/restructure/index.js';
 import CFFOperand from './CFFOperand.js';

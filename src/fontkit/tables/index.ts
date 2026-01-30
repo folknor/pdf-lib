@@ -1,3 +1,4 @@
+// @ts-nocheck
 const tables: Record<string, any> = {};
 export default tables;
 

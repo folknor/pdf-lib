@@ -1206,7 +1206,11 @@ export default class PDFDocument {
     const EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
     if (!EFNames) return [];
 
-    const rawAttachments = [];
+    const rawAttachments: {
+      fileName: PDFHexString | PDFString;
+      fileSpec: PDFDict;
+      specRef: PDFRef;
+    }[] = [];
     for (let idx = 0, len = EFNames.size(); idx < len; idx += 2) {
       const fileName = EFNames.lookup(idx) as PDFHexString | PDFString;
       const fileSpec = EFNames.lookupMaybe(idx + 1, PDFDict);

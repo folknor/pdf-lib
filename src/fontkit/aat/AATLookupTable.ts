@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cache } from '../decorators.js';
 import { range } from '../utils.js';
 

@@ -82,7 +82,7 @@ class PDFXRefStreamParser {
   }
 
   private parseEntries(): Entry[] {
-    const entries = [];
+    const entries: Entry[] = [];
     const [typeFieldWidth, offsetFieldWidth, genFieldWidth] = this.byteWidths;
 
     for (

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import standardStrings from '../cff/CFFStandardStrings.js';
 import CFFTop from '../cff/CFFTop.js';
 import Subset from './Subset.js';

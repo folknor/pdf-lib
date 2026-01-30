@@ -1,5 +1,5 @@
 export declare const toCharCode: (character: string) => number;
-export declare const toCodePoint: (character: string) => number;
+export declare const toCodePoint: (character: string) => number | undefined;
 export declare const toHexStringOfMinLength: (num: number, minLength: number) => string;
 export declare const toHexString: (num: number) => string;
 export declare const charFromCode: (code: number) => string;
@@ -20,7 +20,7 @@ export declare const charSplit: (text: string) => string[];
 export declare const breakTextIntoLines: (text: string, wordBreaks: string[], maxWidth: number, computeWidthOfText: (t: string) => number) => string[];
 export declare const parseDate: (dateStr: string) => Date | undefined;
 export declare const findLastMatch: (value: string, regex: RegExp) => {
-    match: RegExpMatchArray;
+    match: RegExpMatchArray | undefined;
     pos: number;
 };
 //# sourceMappingURL=strings.d.ts.map

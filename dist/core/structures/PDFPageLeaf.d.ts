@@ -57,7 +57,7 @@ declare class PDFPageLeaf extends PDFDict {
     normalizedEntries(): {
         Annots: PDFArray;
         Resources: PDFDict;
-        Contents: PDFArray;
+        Contents: PDFArray | undefined;
         Font: PDFDict;
         XObject: PDFDict;
         ExtGState: PDFDict;

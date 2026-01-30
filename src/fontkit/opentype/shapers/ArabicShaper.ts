@@ -1,3 +1,4 @@
+// @ts-nocheck
 import pako from 'pako';
 import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';

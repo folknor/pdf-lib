@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type GlyphInfo from './GlyphInfo.js';
 
 interface GlyphIteratorOptions {

@@ -88,7 +88,7 @@ import { toHexString } from './strings.js';
  *
  */
 export const utf8Encode = (input: string, byteOrderMark = true): Uint8Array => {
-  const encoded = [];
+  const encoded: number[] = [];
 
   if (byteOrderMark) encoded.push(0xef, 0xbb, 0xbf);
 
@@ -204,7 +204,7 @@ export const utf16Encode = (
   input: string,
   byteOrderMark = true,
 ): Uint16Array => {
-  const encoded = [];
+  const encoded: number[] = [];
 
   if (byteOrderMark) encoded.push(0xfeff);
 

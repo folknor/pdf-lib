@@ -30,6 +30,6 @@ export declare const colorString: (color: string) => {
 };
 export declare const setFillingColor: (color: Color) => import("../index.js").PDFOperator;
 export declare const setStrokingColor: (color: Color) => import("../index.js").PDFOperator;
-export declare const componentsToColor: (comps?: number[], scale?: number) => Grayscale | RGB | CMYK;
+export declare const componentsToColor: (comps?: number[], scale?: number) => Grayscale | RGB | CMYK | undefined;
 export declare const colorToComponents: (color: Color) => number[];
 //# sourceMappingURL=colors.d.ts.map

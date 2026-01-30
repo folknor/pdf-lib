@@ -7,6 +7,6 @@ export default class TrueTypeCollection {
     static probe(buffer: Uint8Array): boolean;
     constructor(stream: r.DecodeStream);
     getFont(name: string | Uint8Array): TTFFont | null;
-    get fonts(): any[];
+    get fonts(): TTFFont[];
 }
 //# sourceMappingURL=TrueTypeCollection.d.ts.map

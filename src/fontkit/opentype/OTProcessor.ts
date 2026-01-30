@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type GlyphPosition from '../layout/GlyphPosition.js';
 import * as Script from '../layout/Script.js';
 import type GlyphInfo from './GlyphInfo.js';

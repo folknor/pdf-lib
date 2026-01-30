@@ -37,32 +37,32 @@ export default class TTFFont {
      * The unique PostScript name for this font, e.g. "Helvetica-Bold"
      * @type {string}
      */
-    get postscriptName(): string;
+    get postscriptName(): string | null;
     /**
      * The font's full name, e.g. "Helvetica Bold"
      * @type {string}
      */
-    get fullName(): string;
+    get fullName(): string | null;
     /**
      * The font's family name, e.g. "Helvetica"
      * @type {string}
      */
-    get familyName(): string;
+    get familyName(): string | null;
     /**
      * The font's sub-family, e.g. "Bold".
      * @type {string}
      */
-    get subfamilyName(): string;
+    get subfamilyName(): string | null;
     /**
      * The font's copyright information
      * @type {string}
      */
-    get copyright(): string;
+    get copyright(): string | null;
     /**
      * The font's version number
      * @type {string}
      */
-    get version(): string;
+    get version(): string | null;
     /**
      * The font’s [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
      * @type {number}
@@ -219,7 +219,7 @@ export default class TTFFont {
      * @return {TTFFont}
      */
     getVariation(settings: string | Record<string, number>): TTFFont;
-    get _variationProcessor(): GlyphVariationProcessor;
+    get _variationProcessor(): GlyphVariationProcessor | null;
     getFont(name: string): TTFFont;
 }
 //# sourceMappingURL=TTFFont.d.ts.map

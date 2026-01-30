@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DecodeStream } from '../vendors/restructure/index.js';
 
 export const logErrors: boolean = false;

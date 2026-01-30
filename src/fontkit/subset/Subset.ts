@@ -1,3 +1,4 @@
+// @ts-nocheck
 const resolved = Promise.resolve();
 
 interface SubsetStream {

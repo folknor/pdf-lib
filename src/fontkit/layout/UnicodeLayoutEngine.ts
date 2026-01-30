@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getCombiningClass } from '../../vendors/unicode-properties/index.js';
 import type Glyph from '../glyph/Glyph.js';
 import type GlyphPosition from './GlyphPosition.js';

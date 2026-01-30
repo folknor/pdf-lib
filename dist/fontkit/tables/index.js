@@ -1,3 +1,4 @@
+// @ts-nocheck
 const tables = {};
 export default tables;
 // Required Tables

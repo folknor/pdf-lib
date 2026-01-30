@@ -13,8 +13,8 @@ declare class ARCFourCipher {
 }
 declare const calculateMD5: (data: Uint8Array, offset: number, length: number) => Uint8Array<ArrayBuffer>;
 declare const calculateSHA256: (data: Uint8Array, offset: number, length: number) => Uint8Array<ArrayBuffer>;
-declare const calculateSHA512: (data: Uint8Array, offset: number, length: number, mode384?: boolean) => any;
-declare function calculateSHA384(data: Uint8Array, offset: number, length: number): any;
+declare const calculateSHA512: (data: Uint8Array, offset: number, length: number, mode384?: boolean) => Uint8Array<ArrayBuffer>;
+declare function calculateSHA384(data: Uint8Array, offset: number, length: number): Uint8Array<ArrayBuffer>;
 declare class NullCipher {
     decryptBlock(data: Uint8Array): Uint8Array<ArrayBufferLike>;
     encrypt(data: Uint8Array): Uint8Array<ArrayBufferLike>;
@@ -86,9 +86,9 @@ declare class CipherTransformFactory {
     private identityName;
     constructor(dict: PDFDict, fileIdBytes: Uint8Array, password?: string);
     createCipherTransform(num: number, gen: number): CipherTransform;
-    createEncryptionKey20(revision: number, password: Uint8Array | undefined, ownerPassword: Uint8Array, ownerValidationSalt: Uint8Array, ownerKeySalt: Uint8Array, uBytes: Uint8Array, userPassword: Uint8Array, userValidationSalt: Uint8Array, userKeySalt: Uint8Array, ownerEncryption: Uint8Array, userEncryption: Uint8Array, _perms: Uint8Array): any;
-    prepareKeyData(fileId: Uint8Array, password: Uint8Array | undefined, ownerPassword: Uint8Array, userPassword: Uint8Array, flags: number, revision: number, keyLength: number, encryptMetadata: boolean): Uint8Array<ArrayBuffer>;
-    decodeUserPassword(password: Uint8Array, ownerPassword: Uint8Array, revision: number, keyLength: number): any;
+    createEncryptionKey20(revision: number, password: Uint8Array | undefined, ownerPassword: Uint8Array, ownerValidationSalt: Uint8Array, ownerKeySalt: Uint8Array, uBytes: Uint8Array, userPassword: Uint8Array, userValidationSalt: Uint8Array, userKeySalt: Uint8Array, ownerEncryption: Uint8Array, userEncryption: Uint8Array, _perms: Uint8Array): Uint8Array<ArrayBufferLike> | null;
+    prepareKeyData(fileId: Uint8Array, password: Uint8Array | undefined, ownerPassword: Uint8Array, userPassword: Uint8Array, flags: number, revision: number, keyLength: number, encryptMetadata: boolean): Uint8Array<ArrayBuffer> | null;
+    decodeUserPassword(password: Uint8Array, ownerPassword: Uint8Array, revision: number, keyLength: number): Uint8Array<ArrayBufferLike>;
     buildObjectKey(num: number, gen: number, encryptionKey: Uint8Array, isAes?: boolean): Uint8Array<ArrayBuffer>;
     buildCipherConstructor(cf: PDFDict, name: PDFName, num: number, gen: number, key: Uint8Array): (() => NullCipher) | (() => AES256Cipher);
 }

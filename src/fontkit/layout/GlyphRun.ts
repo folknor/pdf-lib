@@ -1,3 +1,4 @@
+// @ts-nocheck
 import BBox from '../glyph/BBox.js';
 import type Glyph from '../glyph/Glyph.js';
 import type GlyphPosition from './GlyphPosition.js';

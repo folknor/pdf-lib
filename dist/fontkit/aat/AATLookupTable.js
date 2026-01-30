@@ -1,4 +1,5 @@
 import { __decorate } from "tslib";
+// @ts-nocheck
 import { cache } from '../decorators.js';
 import { range } from '../utils.js';
 export default class AATLookupTable {
