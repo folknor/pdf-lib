@@ -1,6 +1,5 @@
-import { __decorate } from "tslib";
 import { isMark } from '../../vendors/unicode-properties/index.js';
-import { cache } from '../decorators.js';
+import { cacheValue } from '../decorators.js';
 import Path from './Path.js';
 import StandardNames from './StandardNames.js';
 /**
@@ -100,14 +99,14 @@ export default class Glyph {
      * for a more detailed description.
      */
     get cbox() {
-        return this._getCBox();
+        return cacheValue(this, 'cbox', this._getCBox());
     }
     /**
      * The glyph's bounding box, i.e. the rectangle that encloses the
      * glyph outline as tightly as possible.
      */
     get bbox() {
-        return this._getBBox();
+        return cacheValue(this, 'bbox', this._getBBox());
     }
     /**
      * A vector Path object representing the glyph outline.
@@ -115,7 +114,7 @@ export default class Glyph {
     get path() {
         // Cache the path so we only decode it once
         // Decoding is actually performed by subclasses
-        return this._getPath();
+        return cacheValue(this, 'path', this._getPath());
     }
     /**
      * Returns a path scaled to the given font size.
@@ -128,13 +127,13 @@ export default class Glyph {
      * The glyph's advance width.
      */
     get advanceWidth() {
-        return this._getMetrics().advanceWidth;
+        return cacheValue(this, 'advanceWidth', this._getMetrics().advanceWidth);
     }
     /**
      * The glyph's advance height.
      */
     get advanceHeight() {
-        return this._getMetrics().advanceHeight;
+        return cacheValue(this, 'advanceHeight', this._getMetrics().advanceHeight);
     }
     get ligatureCaretPositions() {
         return undefined;
@@ -166,7 +165,7 @@ export default class Glyph {
      * The glyph's name
      */
     get name() {
-        return this._getName();
+        return cacheValue(this, 'name', this._getName());
     }
     /**
      * Renders the glyph to the given graphics context, at the specified font size.
@@ -181,22 +180,4 @@ export default class Glyph {
         ctx.restore();
     }
 }
-__decorate([
-    cache
-], Glyph.prototype, "cbox", null);
-__decorate([
-    cache
-], Glyph.prototype, "bbox", null);
-__decorate([
-    cache
-], Glyph.prototype, "path", null);
-__decorate([
-    cache
-], Glyph.prototype, "advanceWidth", null);
-__decorate([
-    cache
-], Glyph.prototype, "advanceHeight", null);
-__decorate([
-    cache
-], Glyph.prototype, "name", null);
 //# sourceMappingURL=Glyph.js.map

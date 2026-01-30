@@ -1,4 +1,3 @@
-import { cache } from '../decorators.js';
 import type Glyph from '../glyph/Glyph.js';
 import AATLookupTable from './AATLookupTable.js';
 import AATStateMachine from './AATStateMachine.js';
@@ -59,6 +58,7 @@ export default class AATMorxProcessor {
   firstGlyph!: number | null;
   lastGlyph!: number | null;
   markedIndex!: number | null;
+  private _stateMachineCache?: Map<any, AATStateMachine>;
 
   constructor(font: any) {
     this.processIndicRearragement = this.processIndicRearragement.bind(this);
@@ -134,9 +134,16 @@ export default class AATMorxProcessor {
     return stateMachine.process(this.glyphs, reverse, process);
   }
 
-  @cache
   getStateMachine(subtable: any): AATStateMachine {
-    return new AATStateMachine(subtable.table.stateTable);
+    if (!this._stateMachineCache) {
+      this._stateMachineCache = new Map();
+    }
+    if (this._stateMachineCache.has(subtable)) {
+      return this._stateMachineCache.get(subtable)!;
+    }
+    const machine = new AATStateMachine(subtable.table.stateTable);
+    this._stateMachineCache.set(subtable, machine);
+    return machine;
   }
 
   getProcessor(): (

@@ -1,40 +1,44 @@
 /**
- * This decorator caches the results of a getter or method such that
- * the results are lazily computed once, and then cached.
- * @private
+ * Caches a computed value by replacing the getter with a direct property.
+ * Call this at the end of a getter to cache the result.
+ *
+ * @example
+ * get bbox() {
+ *   return cacheValue(this, 'bbox', computeBbox());
+ * }
  */
-export function cache(
-  _target: unknown,
-  key: string,
-  descriptor: PropertyDescriptor,
-): PropertyDescriptor | void {
-  if (descriptor.get) {
-    const get = descriptor.get;
-    descriptor.get = function (this: object) {
-      const value = get.call(this);
-      Object.defineProperty(this, key, { value });
-      return value;
-    };
-  } else if (typeof descriptor.value === 'function') {
-    const fn = descriptor.value as (...args: unknown[]) => unknown;
+export function cacheValue<T>(obj: object, key: string, value: T): T {
+  Object.defineProperty(obj, key, { value, writable: false, configurable: true });
+  return value;
+}
 
-    return {
-      get(this: object) {
-        const memoCache = new Map<unknown, unknown>();
-        const memoized = (...args: unknown[]) => {
-          const cacheKey = args.length > 0 ? args[0] : 'value';
-          if (memoCache.has(cacheKey)) {
-            return memoCache.get(cacheKey);
-          }
-
-          const result = fn.apply(this, args);
-          memoCache.set(cacheKey, result);
-          return result;
-        };
-
-        Object.defineProperty(this, key, { value: memoized });
-        return memoized;
-      },
-    };
+/**
+ * Creates a memoized version of a method that caches results by first argument.
+ * Replaces the method on first call for efficiency.
+ *
+ * @example
+ * class MyClass {
+ *   private _memoizedMethod?: (arg: number) => Result;
+ *   method(arg: number): Result {
+ *     return memoize(this, '_memoizedMethod', arg, () => computeResult(arg));
+ *   }
+ * }
+ */
+export function memoize<T, K>(
+  obj: object & { [key: string]: Map<K, T> | undefined },
+  cacheKey: string,
+  argKey: K,
+  compute: () => T,
+): T {
+  let cache = obj[cacheKey] as Map<K, T> | undefined;
+  if (!cache) {
+    cache = new Map<K, T>();
+    obj[cacheKey] = cache;
   }
+  if (cache.has(argKey)) {
+    return cache.get(argKey)!;
+  }
+  const result = compute();
+  cache.set(argKey, result);
+  return result;
 }

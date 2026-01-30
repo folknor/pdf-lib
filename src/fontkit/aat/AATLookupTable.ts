@@ -1,8 +1,8 @@
-import { cache } from '../decorators.js';
 import { range } from '../utils.js';
 
 export default class AATLookupTable {
   table: any;
+  private _glyphsCache?: Map<number, number[]>;
 
   constructor(table: any) {
     this.table = table;
@@ -77,8 +77,14 @@ export default class AATLookupTable {
     }
   }
 
-  @cache
   glyphsForValue(classValue: number): number[] {
+    if (!this._glyphsCache) {
+      this._glyphsCache = new Map();
+    }
+    if (this._glyphsCache.has(classValue)) {
+      return this._glyphsCache.get(classValue)!;
+    }
+
     const res: number[] = [];
 
     switch (this.table.version) {
@@ -125,6 +131,7 @@ export default class AATLookupTable {
         throw new Error(`Unknown lookup table format: ${this.table.version}`);
     }
 
+    this._glyphsCache.set(classValue, res);
     return res;
   }
 }

@@ -1,4 +1,3 @@
-import { cache } from './decorators.js';
 import { getEncoding, getEncodingMapping } from './encodings.js';
 import { binarySearch, range } from './utils.js';
 
@@ -6,6 +5,8 @@ export default class CmapProcessor {
   encoding: Map<number, number> | null;
   cmap: any;
   uvs: any;
+  private _characterSet?: number[];
+  private _codePointsCache?: Map<number, number[]>;
 
   constructor(cmapTable: any) {
     // Attempt to find a Unicode cmap first
@@ -185,23 +186,28 @@ export default class CmapProcessor {
     return 0;
   }
 
-  @cache
   getCharacterSet(): number[] {
+    if (this._characterSet) {
+      return this._characterSet;
+    }
+
     const cmap = this.cmap;
+    let result: number[];
     switch (cmap.version) {
       case 0:
-        return range(0, cmap.codeMap.length);
+        result = range(0, cmap.codeMap.length);
+        break;
 
       case 4: {
-        const res = [];
+        const res: number[] = [];
         const endCodes = cmap.endCode.toArray();
         for (let i = 0; i < endCodes.length; i++) {
           const tail = endCodes[i] + 1;
           const start = cmap.startCode.get(i);
           res.push(...range(start, tail));
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       case 8:
@@ -209,16 +215,17 @@ export default class CmapProcessor {
 
       case 6:
       case 10:
-        return range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+        result = range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+        break;
 
       case 12:
       case 13: {
-        const res = [];
+        const res: number[] = [];
         for (const group of cmap.groups.toArray()) {
           res.push(...range(group.startCharCode, group.endCharCode + 1));
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       case 14:
@@ -227,25 +234,35 @@ export default class CmapProcessor {
       default:
         throw new Error(`Unknown cmap format ${cmap.version}`);
     }
+
+    this._characterSet = result;
+    return result;
   }
 
-  @cache
   codePointsForGlyph(gid: number): number[] {
+    if (!this._codePointsCache) {
+      this._codePointsCache = new Map();
+    }
+    if (this._codePointsCache.has(gid)) {
+      return this._codePointsCache.get(gid)!;
+    }
+
     const cmap = this.cmap;
+    let result: number[];
     switch (cmap.version) {
       case 0: {
-        const res = [];
+        const res: number[] = [];
         for (let i = 0; i < 256; i++) {
           if (cmap.codeMap.get(i) === gid) {
             res.push(i);
           }
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       case 4: {
-        const res = [];
+        const res: number[] = [];
         for (let i = 0; i < cmap.segCount; i++) {
           const end = cmap.endCode.get(i);
           const start = cmap.startCode.get(i);
@@ -269,12 +286,12 @@ export default class CmapProcessor {
             }
           }
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       case 12: {
-        const res = [];
+        const res: number[] = [];
         for (const group of cmap.groups.toArray()) {
           if (
             gid >= group.glyphID &&
@@ -283,23 +300,26 @@ export default class CmapProcessor {
             res.push(group.startCharCode + (gid - group.glyphID));
           }
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       case 13: {
-        const res = [];
+        const res: number[] = [];
         for (const group of cmap.groups.toArray()) {
           if (gid === group.glyphID) {
             res.push(...range(group.startCharCode, group.endCharCode + 1));
           }
         }
-
-        return res;
+        result = res;
+        break;
       }
 
       default:
         throw new Error(`Unknown cmap format ${cmap.version}`);
     }
+
+    this._codePointsCache.set(gid, result);
+    return result;
   }
 }

@@ -1,7 +1,7 @@
 import * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
-import { cache } from './decorators.js';
+import { cacheValue } from './decorators.js';
 import BBox from './glyph/BBox.js';
 import CFFGlyph from './glyph/CFFGlyph.js';
 import COLRGlyph from './glyph/COLRGlyph.js';
@@ -272,25 +272,26 @@ export default class TTFFont {
    * The font's bounding box, i.e. the box that encloses all glyphs in the font.
    * @type {BBox}
    */
-  @cache
   get bbox() {
-    return Object.freeze(
-      new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax),
+    return cacheValue(
+      this,
+      'bbox',
+      Object.freeze(
+        new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax),
+      ),
     );
   }
 
-  @cache
   get _cmapProcessor() {
-    return new CmapProcessor(this['cmap']);
+    return cacheValue(this, '_cmapProcessor', new CmapProcessor(this['cmap']));
   }
 
   /**
    * An array of all of the unicode code points supported by the font.
    * @type {number[]}
    */
-  @cache
   get characterSet() {
-    return this._cmapProcessor.getCharacterSet();
+    return cacheValue(this, 'characterSet', this._cmapProcessor.getCharacterSet());
   }
 
   /**
@@ -372,9 +373,8 @@ export default class TTFFont {
     return glyphs;
   }
 
-  @cache
   get _layoutEngine() {
-    return new LayoutEngine(this);
+    return cacheValue(this, '_layoutEngine', new LayoutEngine(this));
   }
 
   /**
@@ -481,11 +481,10 @@ export default class TTFFont {
    *
    * @type {object}
    */
-  @cache
   get variationAxes(): Record<string, any> {
     const res: Record<string, any> = {};
     if (!this['fvar']) {
-      return res;
+      return cacheValue(this, 'variationAxes', res);
     }
 
     for (const axis of this['fvar'].axis) {
@@ -497,7 +496,7 @@ export default class TTFFont {
       };
     }
 
-    return res;
+    return cacheValue(this, 'variationAxes', res);
   }
 
   /**
@@ -507,11 +506,10 @@ export default class TTFFont {
    *
    * @type {object}
    */
-  @cache
   get namedVariations(): Record<string, any> {
     const res: Record<string, any> = {};
     if (!this['fvar']) {
-      return res;
+      return cacheValue(this, 'namedVariations', res);
     }
 
     for (const instance of this['fvar'].instance) {
@@ -524,7 +522,7 @@ export default class TTFFont {
       res[instance.name.en] = settings;
     }
 
-    return res;
+    return cacheValue(this, 'namedVariations', res);
   }
 
   /**
@@ -580,24 +578,27 @@ export default class TTFFont {
     return font;
   }
 
-  @cache
   get _variationProcessor() {
     if (!this['fvar']) {
-      return null;
+      return cacheValue(this, '_variationProcessor', null);
     }
 
     let variationCoords = this.variationCoords;
 
     // Ignore if no variation coords and not CFF2
     if (!variationCoords && !this['CFF2']) {
-      return null;
+      return cacheValue(this, '_variationProcessor', null);
     }
 
     if (!variationCoords) {
       variationCoords = this['fvar'].axis.map((axis: any) => axis.defaultValue);
     }
 
-    return new GlyphVariationProcessor(this, variationCoords!);
+    return cacheValue(
+      this,
+      '_variationProcessor',
+      new GlyphVariationProcessor(this, variationCoords!),
+    );
   }
 
   // Standardized format plugin API

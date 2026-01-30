@@ -1,8 +1,7 @@
-import { __decorate } from "tslib";
 import * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
-import { cache } from './decorators.js';
+import { cacheValue } from './decorators.js';
 import BBox from './glyph/BBox.js';
 import CFFGlyph from './glyph/CFFGlyph.js';
 import COLRGlyph from './glyph/COLRGlyph.js';
@@ -229,17 +228,17 @@ export default class TTFFont {
      * @type {BBox}
      */
     get bbox() {
-        return Object.freeze(new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax));
+        return cacheValue(this, 'bbox', Object.freeze(new BBox(this['head'].xMin, this['head'].yMin, this['head'].xMax, this['head'].yMax)));
     }
     get _cmapProcessor() {
-        return new CmapProcessor(this['cmap']);
+        return cacheValue(this, '_cmapProcessor', new CmapProcessor(this['cmap']));
     }
     /**
      * An array of all of the unicode code points supported by the font.
      * @type {number[]}
      */
     get characterSet() {
-        return this._cmapProcessor.getCharacterSet();
+        return cacheValue(this, 'characterSet', this._cmapProcessor.getCharacterSet());
     }
     /**
      * Returns whether there is glyph in the font for the given unicode code point.
@@ -312,7 +311,7 @@ export default class TTFFont {
         return glyphs;
     }
     get _layoutEngine() {
-        return new LayoutEngine(this);
+        return cacheValue(this, '_layoutEngine', new LayoutEngine(this));
     }
     /**
      * Returns a GlyphRun object, which includes an array of Glyphs and GlyphPositions for the given string.
@@ -402,7 +401,7 @@ export default class TTFFont {
     get variationAxes() {
         const res = {};
         if (!this['fvar']) {
-            return res;
+            return cacheValue(this, 'variationAxes', res);
         }
         for (const axis of this['fvar'].axis) {
             res[axis.axisTag.trim()] = {
@@ -412,7 +411,7 @@ export default class TTFFont {
                 max: axis.maxValue,
             };
         }
-        return res;
+        return cacheValue(this, 'variationAxes', res);
     }
     /**
      * Returns an object describing the named variation instances
@@ -424,7 +423,7 @@ export default class TTFFont {
     get namedVariations() {
         const res = {};
         if (!this['fvar']) {
-            return res;
+            return cacheValue(this, 'namedVariations', res);
         }
         for (const instance of this['fvar'].instance) {
             const settings = {};
@@ -434,7 +433,7 @@ export default class TTFFont {
             }
             res[instance.name.en] = settings;
         }
-        return res;
+        return cacheValue(this, 'namedVariations', res);
     }
     /**
      * Returns a new font with the given variation settings applied.
@@ -474,42 +473,21 @@ export default class TTFFont {
     }
     get _variationProcessor() {
         if (!this['fvar']) {
-            return null;
+            return cacheValue(this, '_variationProcessor', null);
         }
         let variationCoords = this.variationCoords;
         // Ignore if no variation coords and not CFF2
         if (!variationCoords && !this['CFF2']) {
-            return null;
+            return cacheValue(this, '_variationProcessor', null);
         }
         if (!variationCoords) {
             variationCoords = this['fvar'].axis.map((axis) => axis.defaultValue);
         }
-        return new GlyphVariationProcessor(this, variationCoords);
+        return cacheValue(this, '_variationProcessor', new GlyphVariationProcessor(this, variationCoords));
     }
     // Standardized format plugin API
     getFont(name) {
         return this.getVariation(name);
     }
 }
-__decorate([
-    cache
-], TTFFont.prototype, "bbox", null);
-__decorate([
-    cache
-], TTFFont.prototype, "_cmapProcessor", null);
-__decorate([
-    cache
-], TTFFont.prototype, "characterSet", null);
-__decorate([
-    cache
-], TTFFont.prototype, "_layoutEngine", null);
-__decorate([
-    cache
-], TTFFont.prototype, "variationAxes", null);
-__decorate([
-    cache
-], TTFFont.prototype, "namedVariations", null);
-__decorate([
-    cache
-], TTFFont.prototype, "_variationProcessor", null);
 //# sourceMappingURL=TTFFont.js.map

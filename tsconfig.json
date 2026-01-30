@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    // Decorators
-    "experimentalDecorators": true,
-
     // Output
     "target": "ES2022",
     "module": "nodenext",
@@ -19,7 +16,6 @@
     "importHelpers": true,
 
     // Interop
-    "allowJs": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,

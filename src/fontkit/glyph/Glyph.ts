@@ -1,5 +1,5 @@
 import { isMark } from '../../vendors/unicode-properties/index.js';
-import { cache } from '../decorators.js';
+import { cacheValue } from '../decorators.js';
 import type BBox from './BBox.js';
 import Path from './Path.js';
 import StandardNames from './StandardNames.js';
@@ -134,28 +134,25 @@ export default class Glyph {
    * See [here](http://www.freetype.org/freetype2/docs/glyphs/glyphs-6.html#section-2)
    * for a more detailed description.
    */
-  @cache
   get cbox(): BBox {
-    return this._getCBox();
+    return cacheValue(this, 'cbox', this._getCBox());
   }
 
   /**
    * The glyph's bounding box, i.e. the rectangle that encloses the
    * glyph outline as tightly as possible.
    */
-  @cache
   get bbox(): BBox {
-    return this._getBBox();
+    return cacheValue(this, 'bbox', this._getBBox());
   }
 
   /**
    * A vector Path object representing the glyph outline.
    */
-  @cache
   get path(): Path {
     // Cache the path so we only decode it once
     // Decoding is actually performed by subclasses
-    return this._getPath();
+    return cacheValue(this, 'path', this._getPath());
   }
 
   /**
@@ -169,17 +166,15 @@ export default class Glyph {
   /**
    * The glyph's advance width.
    */
-  @cache
   get advanceWidth(): number {
-    return this._getMetrics().advanceWidth;
+    return cacheValue(this, 'advanceWidth', this._getMetrics().advanceWidth);
   }
 
   /**
    * The glyph's advance height.
    */
-  @cache
   get advanceHeight(): number {
-    return this._getMetrics().advanceHeight;
+    return cacheValue(this, 'advanceHeight', this._getMetrics().advanceHeight);
   }
 
   get ligatureCaretPositions(): number[] | undefined {
@@ -219,9 +214,8 @@ export default class Glyph {
   /**
    * The glyph's name
    */
-  @cache
   get name(): string | null | undefined {
-    return this._getName();
+    return cacheValue(this, 'name', this._getName());
   }
 
   /**

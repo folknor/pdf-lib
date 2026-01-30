@@ -1,5 +1,3 @@
-import { __decorate } from "tslib";
-import { cache } from '../decorators.js';
 import AATLookupTable from './AATLookupTable.js';
 import AATStateMachine from './AATStateMachine.js';
 // indic replacement flags
@@ -36,6 +34,7 @@ export default class AATMorxProcessor {
     firstGlyph;
     lastGlyph;
     markedIndex;
+    _stateMachineCache;
     constructor(font) {
         this.processIndicRearragement = this.processIndicRearragement.bind(this);
         this.processContextualSubstitution =
@@ -101,7 +100,15 @@ export default class AATMorxProcessor {
         return stateMachine.process(this.glyphs, reverse, process);
     }
     getStateMachine(subtable) {
-        return new AATStateMachine(subtable.table.stateTable);
+        if (!this._stateMachineCache) {
+            this._stateMachineCache = new Map();
+        }
+        if (this._stateMachineCache.has(subtable)) {
+            return this._stateMachineCache.get(subtable);
+        }
+        const machine = new AATStateMachine(subtable.table.stateTable);
+        this._stateMachineCache.set(subtable, machine);
+        return machine;
     }
     getProcessor() {
         switch (this.subtable.type) {
@@ -312,9 +319,6 @@ export default class AATMorxProcessor {
         });
     }
 }
-__decorate([
-    cache
-], AATMorxProcessor.prototype, "getStateMachine", null);
 // swaps the glyphs in rangeA with those in rangeB
 // reverse the glyphs inside those ranges if specified
 // ranges are in [offset, length] format

@@ -25,6 +25,7 @@ export default class AATMorxProcessor {
     firstGlyph: number | null;
     lastGlyph: number | null;
     markedIndex: number | null;
+    private _stateMachineCache?;
     constructor(font: any);
     process(glyphs: Glyph[], features?: MorxFeatures): Glyph[];
     processSubtable(subtable: any, glyphs: Glyph[]): Glyph[] | void;

@@ -1,11 +1,11 @@
-import { __decorate } from "tslib";
-import { cache } from './decorators.js';
 import { getEncoding, getEncodingMapping } from './encodings.js';
 import { binarySearch, range } from './utils.js';
 export default class CmapProcessor {
     encoding;
     cmap;
     uvs;
+    _characterSet;
+    _codePointsCache;
     constructor(cmapTable) {
         // Attempt to find a Unicode cmap first
         this.encoding = null;
@@ -158,10 +158,15 @@ export default class CmapProcessor {
         return 0;
     }
     getCharacterSet() {
+        if (this._characterSet) {
+            return this._characterSet;
+        }
         const cmap = this.cmap;
+        let result;
         switch (cmap.version) {
             case 0:
-                return range(0, cmap.codeMap.length);
+                result = range(0, cmap.codeMap.length);
+                break;
             case 4: {
                 const res = [];
                 const endCodes = cmap.endCode.toArray();
@@ -170,29 +175,41 @@ export default class CmapProcessor {
                     const start = cmap.startCode.get(i);
                     res.push(...range(start, tail));
                 }
-                return res;
+                result = res;
+                break;
             }
             case 8:
                 throw new Error('TODO: cmap format 8');
             case 6:
             case 10:
-                return range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+                result = range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+                break;
             case 12:
             case 13: {
                 const res = [];
                 for (const group of cmap.groups.toArray()) {
                     res.push(...range(group.startCharCode, group.endCharCode + 1));
                 }
-                return res;
+                result = res;
+                break;
             }
             case 14:
                 throw new Error('TODO: cmap format 14');
             default:
                 throw new Error(`Unknown cmap format ${cmap.version}`);
         }
+        this._characterSet = result;
+        return result;
     }
     codePointsForGlyph(gid) {
+        if (!this._codePointsCache) {
+            this._codePointsCache = new Map();
+        }
+        if (this._codePointsCache.has(gid)) {
+            return this._codePointsCache.get(gid);
+        }
         const cmap = this.cmap;
+        let result;
         switch (cmap.version) {
             case 0: {
                 const res = [];
@@ -201,7 +218,8 @@ export default class CmapProcessor {
                         res.push(i);
                     }
                 }
-                return res;
+                result = res;
+                break;
             }
             case 4: {
                 const res = [];
@@ -227,7 +245,8 @@ export default class CmapProcessor {
                         }
                     }
                 }
-                return res;
+                result = res;
+                break;
             }
             case 12: {
                 const res = [];
@@ -237,7 +256,8 @@ export default class CmapProcessor {
                         res.push(group.startCharCode + (gid - group.glyphID));
                     }
                 }
-                return res;
+                result = res;
+                break;
             }
             case 13: {
                 const res = [];
@@ -246,17 +266,14 @@ export default class CmapProcessor {
                         res.push(...range(group.startCharCode, group.endCharCode + 1));
                     }
                 }
-                return res;
+                result = res;
+                break;
             }
             default:
                 throw new Error(`Unknown cmap format ${cmap.version}`);
         }
+        this._codePointsCache.set(gid, result);
+        return result;
     }
 }
-__decorate([
-    cache
-], CmapProcessor.prototype, "getCharacterSet", null);
-__decorate([
-    cache
-], CmapProcessor.prototype, "codePointsForGlyph", null);
 //# sourceMappingURL=CmapProcessor.js.map
