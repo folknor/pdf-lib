@@ -56,16 +56,10 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ## Dependency Cleanup
 
-### Remove (High Priority)
+### ✅ Removed
 
-- [ ] **`clone`** → Replace with native `structuredClone()` (Node 17+, all modern browsers)
-  - Only used in `src/fontkit/subset/TTFSubset.js` to clone font table objects (maxp, head, hhea)
-  - These are simple data objects, `structuredClone()` handles them fine
-  - Removes a dependency entirely
-
-- [ ] **`release-it`** (dev dependency) → Remove if not using automated releases
-  - Evaluate if current release workflow needs it
-  - If using manual releases or different CI/CD, can be removed
+- ✅ **`clone`** → Replaced with native `structuredClone()` in `TTFSubset.ts`
+- ✅ **`release-it`** → Removed, release script now uses `npm publish` directly
 
 ### Upgrade (Medium Priority)
 
