@@ -91,59 +91,8 @@ Overall: 70% statements, 56% branches, 75% functions, 70% lines.
 
 ## Consider Implementing
 
-- [ ] **#1388 - Prevent xref fragmentation** — Important for digital signature workflows. Adobe invalidates signatures when xref has gaps. Fix: fill gaps with deleted ('f') entries instead of creating new subsections. https://github.com/Hopding/pdf-lib/issues/1388
-
 - [ ] **#1230 - Copy fields for printing** — Users want to extract form field data for printing. Phase 1: expose internal `getFontSize()` and `getFontColor()` getters that already exist internally. Phase 2: proper field cloning. https://github.com/Hopding/pdf-lib/issues/1230
-
----
-
-## Dependency Cleanup
-
-### ✅ Removed
-
-- ✅ **`clone`** → Replaced with native `structuredClone()` in `TTFSubset.ts`
-- ✅ **`release-it`** → Removed, release script now uses `npm publish` directly
-- ✅ **`pako` + `tiny-inflate`** → Replaced with **`fflate`**
-  - Smaller bundle (8kB vs 45kB), 30-60% faster compression
-  - Updated 10 source files and 8 test files
-
-### Keep As-Is
-
-| Package | Reason |
-|---------|--------|
-| **`fast-deep-equal`** | Only used in 1 file (`CFFDict.ts`), well-maintained (50M+ downloads/week), no practical benefit to change |
-| **`dfa`** | Specialized DFA compiler for text shaping in fontkit. XState has completely different API/purpose. Used in `src/fontkit/opentype/shapers/`. |
-| **`unicode-trie`** | Ported from ICU for fast Unicode character metadata lookup. No modern alternative exists. Used in fontkit shapers. |
-
----
 
 ## TypeScript Strict Mode Cleanup
 
-### ✅ Completed: All Strict Options Re-enabled
-
-All strict options are now enabled in `tsconfig.json`:
-- `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`
-- `strictPropertyInitialization`, `useUnknownInCatchVariables`
-- `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`
-
-### ✅ Completed: Remove @ts-nocheck from Fontkit (74 of 75 files)
-
-Removed `// @ts-nocheck` and fixed type errors in 74 files:
-- ✅ Tables: 28 files
-- ✅ Glyphs: 9 files
-- ✅ CFF: 6 files
-- ✅ Layout: 5 files
-- ✅ Subset: 3 files
-- ✅ OpenType: 11 files (except IndicShaper.ts)
-- ✅ AAT: 4 files
-- ✅ Core: 8 files
-
-### Remaining: 1 file
-
 - [ ] **`opentype/shapers/IndicShaper.ts`** — 1100+ lines, ~126 type errors. Complex Indic script shaping state machine. Requires significant refactoring.
-
-### ✅ Completed: Final Cleanup
-
-- ✅ **Remove `allowJs: true`** — Removed, not needed after migration
-- ✅ **Replace `@cache` decorator** — Converted to `cacheValue()` helper in `decorators.ts`, removed `experimentalDecorators`
-  - Updated: TTFFont.ts (7 usages), Glyph.ts (6 usages), CmapProcessor.ts, AATLookupTable.ts, AATMorxProcessor.ts

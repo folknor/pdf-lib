@@ -28,6 +28,7 @@
         "noFloatingPromises": "error"
       },
       "complexity": {
+        "useLiteralKeys": "off",
         "noBannedTypes": "error",
         "useSimplifiedLogicExpression": "off",
         "noUselessSwitchCase": "off",
