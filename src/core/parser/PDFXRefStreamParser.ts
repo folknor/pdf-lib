@@ -8,6 +8,8 @@ import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import ByteStream from './ByteStream.js';
 
+const SizeName = PDFName.of('Size');
+
 export interface Entry {
   ref: PDFRef;
   offset: number;
@@ -36,8 +38,9 @@ class PDFXRefStreamParser {
     this.dict = rawStream.dict;
     this.bytes = ByteStream.fromPDFRawStream(rawStream);
     this.context = this.dict.context;
+    this.context.pdfFileDetails.useObjectStreams = true;
 
-    const Size = this.dict.lookup(PDFName.of('Size'), PDFNumber);
+    const Size = this.dict.lookup(SizeName, PDFNumber);
 
     const Index = this.dict.lookup(PDFName.of('Index'));
     if (Index instanceof PDFArray) {
@@ -64,12 +67,19 @@ class PDFXRefStreamParser {
     }
     this.alreadyParsed = true;
 
+    const Size = this.dict.lookupMaybe(SizeName, PDFNumber);
+
     this.context.trailerInfo = {
+      Size: Size || this.context.trailerInfo.Size,
       Root: this.dict.get(PDFName.of('Root')),
       Encrypt: this.dict.get(PDFName.of('Encrypt')),
       Info: this.dict.get(PDFName.of('Info')),
       ID: this.dict.get(PDFName.of('ID')),
     };
+
+    if (Size && this.context.pdfFileDetails.originalBytes) {
+      this.context.largestObjectNumber = Size.asNumber() - 1;
+    }
 
     const entries = this.parseEntries();
 
@@ -112,8 +122,10 @@ class PDFXRefStreamParser {
         if (typeFieldWidth === 0) type = 1;
 
         const objectNumber = firstObjectNumber + objIdx;
+        // Type-2 entries are compressed objects in an object stream;
+        // the third field is the index within the stream, not a generation number
         const entry = {
-          ref: PDFRef.of(objectNumber, generationNumber),
+          ref: PDFRef.of(objectNumber, type === 2 ? 0 : generationNumber),
           offset,
           deleted: type === 0,
           inObjectStream: type === 2,

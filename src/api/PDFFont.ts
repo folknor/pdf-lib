@@ -43,7 +43,7 @@ export default class PDFFont implements Embeddable {
   /** The name of this font. */
   readonly name: string;
 
-  private modified = true;
+  private alreadyEmbedded = false;
   private readonly embedder: FontEmbedder;
 
   private constructor(ref: PDFRef, doc: PDFDocument, embedder: FontEmbedder) {
@@ -73,7 +73,6 @@ export default class PDFFont implements Embeddable {
    */
   encodeText(text: string): PDFHexString {
     assertIs(text, 'text', ['string']);
-    this.modified = true;
     return this.embedder.encodeText(text);
   }
 
@@ -150,9 +149,9 @@ export default class PDFFont implements Embeddable {
    * @returns Resolves when the embedding is complete.
    */
   async embed(): Promise<void> {
-    if (this.modified) {
+    if (!this.alreadyEmbedded) {
       await this.embedder.embedIntoContext(this.doc.context, this.ref);
-      this.modified = false;
+      this.alreadyEmbedded = true;
     }
   }
 }
