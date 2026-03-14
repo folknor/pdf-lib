@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.7/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -11,20 +11,13 @@
     "rules": {
       "recommended": true,
       "nursery": {
-        "useMaxParams": "off",
         "useExplicitType": "off",
-        "useConsistentArrowReturn": "error",
         "useAwaitThenable": "off",
         "useArraySortCompare": "error",
-        "noUselessUndefined": "error",
-        "noUselessCatchBinding": "error",
-        "noUnusedExpressions": "error",
-        "noUnresolvedImports": "off",
         "noUnnecessaryConditions": "off",
         "noShadow": "error",
         "noParametersOnlyUsedInRecursion": "off",
         "noMisusedPromises": "error",
-        "noImportCycles": "off",
         "noFloatingPromises": "error"
       },
       "complexity": {
@@ -34,16 +27,22 @@
         "noUselessSwitchCase": "off",
         "noUselessStringConcat": "error",
         "noImplicitCoercions": "off",
-        "noForEach": "error"
+        "noForEach": "error",
+        "useMaxParams": "off",
+        "noUselessUndefined": "error",
+        "noUselessCatchBinding": "error",
+        "noStaticOnlyClass": "off"
       },
       "correctness": {
         "noUndeclaredVariables": "error",
-        "noProcessGlobal": "error"
+        "noProcessGlobal": "error",
+        "noUnresolvedImports": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "error",
-        "useLiteralEnumMembers": "off"
+        "useLiteralEnumMembers": "off",
+        "useConsistentArrowReturn": "error"
       },
       "performance": {
         "noNamespaceImport": "off",
@@ -66,7 +65,9 @@
         "noEvolvingTypes": "off",
         "useIterableCallbackReturn": "error",
         "noControlCharactersInRegex": "off",
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "noUnusedExpressions": "error",
+        "noImportCycles": "off"
       }
     }
   },

@@ -1240,9 +1240,7 @@ export default class PDFDocument {
       const afr = fileSpec.lookup(PDFName.of('AFRelationship'));
       const afRelationship =
         afr instanceof PDFName
-          ? afr
-              .toString()
-              .slice(1) // Remove leading slash
+          ? afr.toString().slice(1) // Remove leading slash
           : afr instanceof PDFString
             ? afr.decodeText()
             : undefined;
