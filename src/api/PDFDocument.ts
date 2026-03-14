@@ -1772,12 +1772,11 @@ export default class PDFDocument {
    * @returns Resolves with the bytes of the serialized document.
    */
   async save(options: SaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
-    // Check PDF version to determine default useObjectStreams
     const vparts = this.context.header.getVersionString().split('.');
-    const uOS =
-      options.rewrite || Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+    const pdfVersionSupportsObjectStreams =
+      Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+
     const {
-      useObjectStreams = uOS,
       addDefaultPage = true,
       objectsPerTick = 50,
       updateFieldAppearances = true,
@@ -1785,6 +1784,25 @@ export default class PDFDocument {
       compress = false,
       fillXrefGaps = false,
     } = options;
+    let { useObjectStreams } = options;
+
+    const incrementalUpdate =
+      !rewrite &&
+      this.context.pdfFileDetails.originalBytes &&
+      this.context.snapshot;
+
+    // For full rewrites of documents loaded from an existing PDF, default to
+    // not using object streams, as PDFStreamWriter can produce invalid
+    // cross-reference streams in some cases. For incremental saves and new
+    // documents, keep the version-based default.
+    if (useObjectStreams === undefined) {
+      const isLoadedDocument = !!this.context.pdfFileDetails.originalBytes;
+      if (incrementalUpdate || !isLoadedDocument) {
+        useObjectStreams = pdfVersionSupportsObjectStreams;
+      } else {
+        useObjectStreams = false;
+      }
+    }
 
     assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
     assertIs(addDefaultPage, 'addDefaultPage', ['boolean']);
@@ -1793,11 +1811,6 @@ export default class PDFDocument {
     assertIs(rewrite, 'rewrite', ['boolean']);
     assertIs(compress, 'compress', ['boolean']);
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
-
-    const incrementalUpdate =
-      !rewrite &&
-      this.context.pdfFileDetails.originalBytes &&
-      this.context.snapshot;
 
     if (incrementalUpdate) {
       options.addDefaultPage = false;
@@ -1886,9 +1899,9 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
-    // Check PDF version
     const vparts = this.context.header.getVersionString().split('.');
-    const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+    const pdfVersionSupportsObjectStreams =
+      Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
     const {
       objectsPerTick = 50,
       compress = false,
@@ -1900,7 +1913,7 @@ export default class PDFDocument {
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
 
     const saveOptions: SaveOptions = {
-      useObjectStreams: uOS,
+      useObjectStreams: pdfVersionSupportsObjectStreams,
       ...options,
       addDefaultPage: false,
       updateFieldAppearances: false,
