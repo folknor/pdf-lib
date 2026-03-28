@@ -2,6 +2,9 @@
 
 Fork of [cantoo-scribe/pdf-lib](https://github.com/cantoo-scribe/pdf-lib), which is a fork of [Hopding/pdf-lib](https://github.com/Hopding/pdf-lib).
 
+Built with LLMs. See [LLM.md](LLM.md).
+
+
 ## Changes from upstream
 
 - ESM-only (no CJS/UMD)
