@@ -92,5 +92,5 @@ declare class CipherTransformFactory {
     buildObjectKey(num: number, gen: number, encryptionKey: Uint8Array, isAes?: boolean): Uint8Array<ArrayBuffer>;
     buildCipherConstructor(cf: PDFDict, name: PDFName, num: number, gen: number, key: Uint8Array): (() => NullCipher) | (() => AES256Cipher);
 }
-export { AES128Cipher, AES256Cipher, ARCFourCipher, calculateMD5, calculateSHA256, calculateSHA384, calculateSHA512, CipherTransformFactory, CipherTransform, PDF17, PDF20, };
+export { AES128Cipher, AES256Cipher, ARCFourCipher, CipherTransform, CipherTransformFactory, calculateMD5, calculateSHA256, calculateSHA384, calculateSHA512, PDF17, PDF20, };
 //# sourceMappingURL=crypto.d.ts.map

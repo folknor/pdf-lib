@@ -1,4 +1,4 @@
-import { type PDFAnnotation, PDFLinkAnnotation, PDFName, PDFOperator, PDFPageLeaf, PDFRef, PDFTextMarkupAnnotation } from '../core/index.js';
+import { type PDFAnnotation, type PDFLinkAnnotation, PDFName, PDFOperator, PDFPageLeaf, PDFRef, PDFTextMarkupAnnotation } from '../core/index.js';
 import { type Color } from './colors.js';
 import PDFDocument from './PDFDocument.js';
 import PDFEmbeddedPage from './PDFEmbeddedPage.js';

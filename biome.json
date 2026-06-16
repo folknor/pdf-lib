@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.7/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -9,14 +9,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "nursery": {
         "useExplicitType": "off",
         "useAwaitThenable": "off",
-        "useArraySortCompare": "error",
-        "noUnnecessaryConditions": "off",
-        "noShadow": "error",
-        "noParametersOnlyUsedInRecursion": "off",
         "noMisusedPromises": "error",
         "noFloatingPromises": "error"
       },
@@ -67,7 +63,11 @@
         "noControlCharactersInRegex": "off",
         "noAssignInExpressions": "off",
         "noUnusedExpressions": "error",
-        "noImportCycles": "off"
+        "noImportCycles": "off",
+        "useArraySortCompare": "error",
+        "noUnnecessaryConditions": "off",
+        "noShadow": "error",
+        "noParametersOnlyUsedInRecursion": "off"
       }
     }
   },

@@ -18,6 +18,11 @@
     // Interop
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+
+    // TS 6.0 changed `types` to default to [] (no longer auto-includes
+    // everything under node_modules/@types). Restore @types/node so
+    // built-in module imports like `node:module` resolve.
+    "types": ["node"],
     "resolveJsonModule": true,
     "isolatedModules": true,
 

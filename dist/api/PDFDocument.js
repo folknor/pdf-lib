@@ -558,7 +558,9 @@ export default class PDFDocument {
         if (this.pageCount === 0)
             throw new RemovePageFromEmptyDocumentError();
         assertRange(index, 'index', 0, pageCount - 1);
+        const page = this.getPages()[index];
         this.catalog.removeLeafNode(index);
+        this.context.delete(page.ref);
         this.pageCache.invalidate();
         this.pageCount = pageCount - 1;
     }
@@ -1007,9 +1009,7 @@ export default class PDFDocument {
                 return [];
             const afr = fileSpec.lookup(PDFName.of('AFRelationship'));
             const afRelationship = afr instanceof PDFName
-                ? afr
-                    .toString()
-                    .slice(1) // Remove leading slash
+                ? afr.toString().slice(1) // Remove leading slash
                 : afr instanceof PDFString
                     ? afr.decodeText()
                     : undefined;
@@ -1465,10 +1465,26 @@ export default class PDFDocument {
      * @returns Resolves with the bytes of the serialized document.
      */
     async save(options = {}) {
-        // Check PDF version to determine default useObjectStreams
         const vparts = this.context.header.getVersionString().split('.');
-        const uOS = options.rewrite || Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
-        const { useObjectStreams = uOS, addDefaultPage = true, objectsPerTick = 50, updateFieldAppearances = true, rewrite = false, compress = false, fillXrefGaps = false, } = options;
+        const pdfVersionSupportsObjectStreams = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+        const { addDefaultPage = true, objectsPerTick = 50, updateFieldAppearances = true, rewrite = false, compress = false, fillXrefGaps = false, } = options;
+        let { useObjectStreams } = options;
+        const incrementalUpdate = !rewrite &&
+            this.context.pdfFileDetails.originalBytes &&
+            this.context.snapshot;
+        // For full rewrites of documents loaded from an existing PDF, default to
+        // not using object streams, as PDFStreamWriter can produce invalid
+        // cross-reference streams in some cases. For incremental saves and new
+        // documents, keep the version-based default.
+        if (useObjectStreams === undefined) {
+            const isLoadedDocument = !!this.context.pdfFileDetails.originalBytes;
+            if (incrementalUpdate || !isLoadedDocument) {
+                useObjectStreams = pdfVersionSupportsObjectStreams;
+            }
+            else {
+                useObjectStreams = false;
+            }
+        }
         assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
         assertIs(addDefaultPage, 'addDefaultPage', ['boolean']);
         assertIs(objectsPerTick, 'objectsPerTick', ['number']);
@@ -1476,9 +1492,6 @@ export default class PDFDocument {
         assertIs(rewrite, 'rewrite', ['boolean']);
         assertIs(compress, 'compress', ['boolean']);
         assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
-        const incrementalUpdate = !rewrite &&
-            this.context.pdfFileDetails.originalBytes &&
-            this.context.snapshot;
         if (incrementalUpdate) {
             options.addDefaultPage = false;
             options.updateFieldAppearances = false;
@@ -1529,15 +1542,14 @@ export default class PDFDocument {
      * @returns Resolves with the bytes of the serialized document.
      */
     async saveIncremental(snapshot, options = {}) {
-        // Check PDF version
         const vparts = this.context.header.getVersionString().split('.');
-        const uOS = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+        const pdfVersionSupportsObjectStreams = Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
         const { objectsPerTick = 50, compress = false, fillXrefGaps = false, } = options;
         assertIs(objectsPerTick, 'objectsPerTick', ['number']);
         assertIs(compress, 'compress', ['boolean']);
         assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
         const saveOptions = {
-            useObjectStreams: uOS,
+            useObjectStreams: pdfVersionSupportsObjectStreams,
             ...options,
             addDefaultPage: false,
             updateFieldAppearances: false,

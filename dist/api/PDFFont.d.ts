@@ -25,7 +25,7 @@ export default class PDFFont implements Embeddable {
     readonly doc: PDFDocument;
     /** The name of this font. */
     readonly name: string;
-    private modified;
+    private alreadyEmbedded;
     private readonly embedder;
     private constructor();
     /**

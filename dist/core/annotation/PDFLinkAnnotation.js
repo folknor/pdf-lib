@@ -31,7 +31,7 @@ class PDFLinkAnnotation extends PDFAnnotation {
             dest instanceof PDFString) {
             return dest;
         }
-        return undefined;
+        return;
     }
     /**
      * Get the URL from a URI action if present.
@@ -41,11 +41,11 @@ class PDFLinkAnnotation extends PDFAnnotation {
     getUrl() {
         const action = this.A();
         if (!action)
-            return undefined;
+            return;
         // Check that this is a URI action
         const actionType = action.lookup(PDFName.of('S'), PDFName);
         if (!actionType || actionType.toString() !== '/URI')
-            return undefined;
+            return;
         // Get the URI value - can be PDFString, PDFHexString, or PDFName
         const uri = action.get(PDFName.of('URI'));
         if (uri instanceof PDFString) {
@@ -58,7 +58,7 @@ class PDFLinkAnnotation extends PDFAnnotation {
             // PDFName.decodeText() already strips the leading '/'
             return uri.decodeText();
         }
-        return undefined;
+        return;
     }
     /**
      * Get the destination for internal document links.

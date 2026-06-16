@@ -51,7 +51,7 @@ class PDFLinkAnnotation extends PDFAnnotation {
 
     // Check that this is a URI action
     const actionType = action.lookup(PDFName.of('S'), PDFName);
-    if (!actionType || actionType.toString() !== '/URI') return;
+    if (actionType?.toString() !== '/URI') return;
 
     // Get the URI value - can be PDFString, PDFHexString, or PDFName
     const uri = action.get(PDFName.of('URI'));

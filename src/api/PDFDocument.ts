@@ -199,10 +199,7 @@ export default class PDFDocument {
       undefined,
       forIncrementalUpdate,
     ).parseDocument();
-    if (
-      Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
-      password !== undefined
-    ) {
+    if (context.lookup(context.trailerInfo.Encrypt) && password !== undefined) {
       // Decrypt
       const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
       const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
@@ -279,10 +276,7 @@ export default class PDFDocument {
     this.context = context;
     this.catalog = context.lookup(context.trailerInfo.Root) as PDFCatalog;
 
-    if (
-      Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
-      context.isDecrypted
-    ) {
+    if (context.lookup(context.trailerInfo.Encrypt) && context.isDecrypted) {
       // context.delete(context.trailerInfo.Encrypt);
       context.trailerInfo.Encrypt = undefined;
     }

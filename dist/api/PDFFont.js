@@ -24,7 +24,7 @@ export default class PDFFont {
     doc;
     /** The name of this font. */
     name;
-    modified = true;
+    alreadyEmbedded = false;
     embedder;
     constructor(ref, doc, embedder) {
         assertIs(ref, 'ref', [[PDFRef, 'PDFRef']]);
@@ -50,7 +50,6 @@ export default class PDFFont {
      */
     encodeText(text) {
         assertIs(text, 'text', ['string']);
-        this.modified = true;
         return this.embedder.encodeText(text);
     }
     /**
@@ -123,9 +122,9 @@ export default class PDFFont {
      * @returns Resolves when the embedding is complete.
      */
     async embed() {
-        if (this.modified) {
+        if (!this.alreadyEmbedded) {
             await this.embedder.embedIntoContext(this.doc.context, this.ref);
-            this.modified = false;
+            this.alreadyEmbedded = true;
         }
     }
 }
