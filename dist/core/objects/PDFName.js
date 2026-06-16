@@ -3,6 +3,13 @@ import { PrivateConstructorError } from '../errors.js';
 import CharCodes from '../syntax/CharCodes.js';
 import { IsIrregular } from '../syntax/Irregular.js';
 import PDFObject from './PDFObject.js';
+/**
+ * Decodes `#XX` hex escapes in a name token read from PDF syntax. Unlike
+ * {@link decodeName} (applied to every `PDFName.of` argument, so kept
+ * uppercase-only to avoid mangling app-supplied literals), the PDF spec
+ * permits lowercase hex digits in serialized names, so this is case-insensitive.
+ */
+export const decodePdfNameEscapes = (name) => name.replace(/#([0-9A-Fa-f]{2})/g, (_, hex) => charFromHexCode(hex));
 const decodeName = (name) => name.replace(/#([\dABCDEF]{2})/g, (_, hex) => charFromHexCode(hex));
 const isRegularChar = (charCode) => charCode >= CharCodes.ExclamationPoint &&
     charCode <= CharCodes.Tilde &&

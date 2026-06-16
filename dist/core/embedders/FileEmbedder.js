@@ -12,7 +12,7 @@ export var AFRelationship;
     AFRelationship["Alternative"] = "Alternative";
     AFRelationship["Supplement"] = "Supplement";
     AFRelationship["EncryptedPayload"] = "EncryptedPayload";
-    AFRelationship["FormData"] = "EncryptedPayload";
+    AFRelationship["FormData"] = "FormData";
     AFRelationship["Schema"] = "Schema";
     AFRelationship["Unspecified"] = "Unspecified";
 })(AFRelationship || (AFRelationship = {}));

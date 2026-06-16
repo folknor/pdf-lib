@@ -97,11 +97,11 @@ export default class GPOSProcessor extends OTProcessor {
                     return false;
                 }
                 const curRecord = table.entryExitRecords[this.coverageIndex(table.coverage)];
-                if (!curRecord || !curRecord.exitAnchor) {
+                if (!curRecord?.exitAnchor) {
                     return false;
                 }
                 const nextRecord = table.entryExitRecords[this.coverageIndex(table.coverage, nextGlyph.id)];
-                if (!nextRecord || !nextRecord.entryAnchor) {
+                if (!nextRecord?.entryAnchor) {
                     return false;
                 }
                 const entry = this.getAnchor(nextRecord.entryAnchor);
@@ -196,7 +196,7 @@ export default class GPOSProcessor extends OTProcessor {
                 // get the previous mark to attach to
                 const prevIndex = this.glyphIterator.peekIndex(-1);
                 const prev = this.glyphs[prevIndex];
-                if (!prev || !prev.isMark) {
+                if (!prev?.isMark) {
                     return false;
                 }
                 const cur = this.glyphIterator.cur;

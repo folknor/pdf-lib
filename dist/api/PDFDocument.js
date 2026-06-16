@@ -85,8 +85,7 @@ export default class PDFDocument {
         assertIs(forIncrementalUpdate, 'forIncrementalUpdate', ['boolean']);
         const bytes = toUint8Array(pdf);
         const context = await PDFParser.forBytesWithOptions(bytes, parseSpeed, throwOnInvalidObject, undefined, capNumbers, undefined, forIncrementalUpdate).parseDocument();
-        if (Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
-            password !== undefined) {
+        if (context.lookup(context.trailerInfo.Encrypt) && password !== undefined) {
             // Decrypt
             const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
             const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
@@ -139,8 +138,7 @@ export default class PDFDocument {
         assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
         this.context = context;
         this.catalog = context.lookup(context.trailerInfo.Root);
-        if (Boolean(context.lookup(context.trailerInfo.Encrypt)) &&
-            context.isDecrypted) {
+        if (context.lookup(context.trailerInfo.Encrypt) && context.isDecrypted) {
             // context.delete(context.trailerInfo.Encrypt);
             context.trailerInfo.Encrypt = undefined;
         }

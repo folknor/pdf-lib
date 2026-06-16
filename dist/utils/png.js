@@ -47,7 +47,14 @@ export class PNG {
         const UPNGmod = UPNG.decode
             ? UPNG
             : UPNG.default;
-        const upng = UPNGmod.decode(pngData.buffer);
+        // Use only the bytes this view spans: a Uint8Array with a non-zero
+        // byteOffset (e.g. from subarray) would otherwise decode the wrong region
+        // of its backing ArrayBuffer.
+        const buffer = pngData.byteOffset === 0 &&
+            pngData.byteLength === pngData.buffer.byteLength
+            ? pngData.buffer
+            : pngData.buffer.slice(pngData.byteOffset, pngData.byteOffset + pngData.byteLength);
+        const upng = UPNGmod.decode(buffer);
         const frames = UPNGmod.toRGBA8(upng);
         if (frames.length > 1)
             throw new Error('Animated PNGs are not supported');

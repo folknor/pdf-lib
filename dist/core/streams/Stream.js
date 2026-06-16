@@ -14,7 +14,7 @@ class Stream {
         this.bytes = buffer;
         this.start = start || 0;
         this.pos = this.start;
-        this.end = !!start && !!length ? start + length : this.bytes.length;
+        this.end = start && length ? start + length : this.bytes.length;
     }
     get length() {
         return this.end - this.start;

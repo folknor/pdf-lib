@@ -10,7 +10,7 @@ import PDFArray from '../objects/PDFArray.js';
 import PDFBool from '../objects/PDFBool.js';
 import PDFDict, { type DictMap } from '../objects/PDFDict.js';
 import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
+import PDFName, { decodePdfNameEscapes } from '../objects/PDFName.js';
 import PDFNull from '../objects/PDFNull.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
@@ -183,7 +183,7 @@ class PDFObjectParser extends BaseParser {
       this.bytes.next();
     }
 
-    return PDFName.of(name);
+    return PDFName.of(decodePdfNameEscapes(name));
   }
 
   protected parseArray(ref?: PDFRef): PDFArray {

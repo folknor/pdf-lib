@@ -95,7 +95,7 @@ export default class LayoutEngine {
             this.unicodeLayoutEngine.positionGlyphs(glyphRun.glyphs, glyphRun.positions);
         }
         // if kerning is not supported by GPOS, do kerning with the TrueType/AAT kern table
-        if ((!positioned || !positioned['kern']) &&
+        if (!positioned?.['kern'] &&
             glyphRun.features['kern'] !== false &&
             this.font.kern) {
             if (!this.kernProcessor) {

@@ -1,4 +1,11 @@
 import PDFObject from './PDFObject.js';
+/**
+ * Decodes `#XX` hex escapes in a name token read from PDF syntax. Unlike
+ * {@link decodeName} (applied to every `PDFName.of` argument, so kept
+ * uppercase-only to avoid mangling app-supplied literals), the PDF spec
+ * permits lowercase hex digits in serialized names, so this is case-insensitive.
+ */
+export declare const decodePdfNameEscapes: (name: string) => string;
 declare class PDFName extends PDFObject {
     static of: (name: string) => PDFName;
     static readonly Length: PDFName;
