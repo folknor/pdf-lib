@@ -6,3 +6,8 @@ coverage
 *.tgz
 .DS_Store
 out.pdf
+
+.claude
+.agents
+.codex
+.maki
