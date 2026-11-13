@@ -36,11 +36,15 @@ describe('PDFCrossRefStream', () => {
     expect(String(clone)).toBe(String(original));
   });
 
+  it('points the free-list head at the first free entry added', () => {
+    expect(String(stream1)).toContain('stream\n01');
+  });
+
   it('can be converted to a string', () => {
     expect(String(stream1)).toEqual(
       '<<\n/Type /XRef\n/Length 16\n/W [ 1 1 2 ]\n/Index [ 0 3 21 1 ]\n>>\n' +
         'stream\n' +
-        '001111111111111111010110101111100101000101011010110011' +
+        '011111111111111111010110101111100101000101011010110011' +
         '\nendstream',
     );
   });
@@ -69,7 +73,7 @@ describe('PDFCrossRefStream', () => {
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
-      0, 0, 255, 255, 0, 11, 0, 2, 1, 30, 0, 40, 2, 5, 2, 179,
+      0, 1, 255, 255, 0, 11, 0, 2, 1, 30, 0, 40, 2, 5, 2, 179,
     ]);
 
     expect(stream1.copyBytesInto(buffer, 2)).toBe(95);

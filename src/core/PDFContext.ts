@@ -145,6 +145,9 @@ class PDFContext {
     if (ref.objectNumber > this.largestObjectNumber) {
       this.largestObjectNumber = ref.objectNumber;
     }
+    // Under a snapshot every assignment is a change to write, and it voids
+    // any deletion recorded for the number.
+    if (this.snapshot) this.snapshot.markRefAssigned(ref);
   }
 
   nextRef(): PDFRef {
@@ -162,8 +165,11 @@ class PDFContext {
   }
 
   delete(ref: PDFRef): boolean {
-    if (this.snapshot) this.snapshot.markDeletedRef(ref);
-    return this.indirectObjects.delete(ref);
+    // Only a removal is a deletion: deleting a ref the context does not hold
+    // (another generation, a number never loaded) frees nothing.
+    const removed = this.indirectObjects.delete(ref);
+    if (removed && this.snapshot) this.snapshot.markDeletedRef(ref);
+    return removed;
   }
 
   lookupMaybe(ref: LookupKey, type: typeof PDFArray): PDFArray | undefined;

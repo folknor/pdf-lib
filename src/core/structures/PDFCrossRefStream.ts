@@ -91,7 +91,20 @@ class PDFCrossRefStream extends PDFFlateStream {
     entries.splice(lo, 0, entry);
   }
 
+  /**
+   * The first free entry added after the object 0 head becomes the head's
+   * successor, as PDFCrossRefSection does: add free entries in chain order.
+   */
   addDeletedEntry(ref: PDFRef, nextFreeObjectNumber: number) {
+    const head = this.entries[0];
+    if (
+      ref.objectNumber !== 0 &&
+      head?.type === EntryType.Deleted &&
+      head.ref.objectNumber === 0 &&
+      head.nextFreeObjectNumber === 0
+    ) {
+      head.nextFreeObjectNumber = ref.objectNumber;
+    }
     const type = EntryType.Deleted;
     this.appendEntry({ type, ref, nextFreeObjectNumber });
     this.entryTuplesCache.invalidate();

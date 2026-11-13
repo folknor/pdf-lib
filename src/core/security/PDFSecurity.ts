@@ -626,8 +626,7 @@ export class BaselineEncryption implements ObjectEncryptor {
     context: PDFContext,
     snapshot: {
       shouldSave: (objectNumber: number) => boolean;
-      deletedCount: number;
-      deletedRef: (index: number) => PDFRef | undefined;
+      deletedRefs: () => PDFRef[];
     },
   ): void {
     if (!this.encryptRef) {
@@ -640,9 +639,8 @@ export class BaselineEncryption implements ObjectEncryptor {
     let touched = guardedRefs.some((ref) =>
       snapshot.shouldSave(ref.objectNumber),
     );
-    for (let idx = 0; !touched && idx < snapshot.deletedCount; idx++) {
-      const ref = snapshot.deletedRef(idx);
-      if (ref && guarded.has(ref.objectNumber)) touched = true;
+    for (const ref of snapshot.deletedRefs()) {
+      if (guarded.has(ref.objectNumber)) touched = true;
     }
     if (touched) {
       throw new Error(
@@ -685,8 +683,7 @@ export class BaselineEncryption implements ObjectEncryptor {
    */
   commitEmitted(snapshot: {
     shouldSave: (objectNumber: number) => boolean;
-    deletedCount: number;
-    deletedRef: (index: number) => PDFRef | undefined;
+    deletedRefs: () => PDFRef[];
   }): void {
     for (const objectNumber of [...this.plans.keys()]) {
       if (
@@ -699,9 +696,8 @@ export class BaselineEncryption implements ObjectEncryptor {
     for (const [objectNumber, plan] of this.emitted) {
       if (plan) this.plans.set(objectNumber, plan);
     }
-    for (let idx = 0; idx < snapshot.deletedCount; idx++) {
-      const ref = snapshot.deletedRef(idx);
-      if (ref) this.plans.delete(ref.objectNumber);
+    for (const ref of snapshot.deletedRefs()) {
+      this.plans.delete(ref.objectNumber);
     }
     this.emitted = new Map();
   }

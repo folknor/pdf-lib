@@ -5,23 +5,27 @@ paths, `src/core/writers`). Each entry stands alone; remove it when it is
 fixed or ruled against (leaving a comment at the code site in the second
 case).
 
-## Deleted objects are written from a log, not from final dispositions
+## An increment's free list ignores earlier revisions
 
-`context.delete()` appends to the snapshot's deletion log, and
-`PDFWriter.computeBufferSize` turns that log straight into free entries.
-Nothing reconciles the log with what is written: a number deleted and then
-assigned again is emitted both in use and free, and both xref encoders
-assume unique, ascending numbers, so the duplicate shifts every later
-entry in its subsection by one (the free entry lands on the next number,
-whose offset moves to the one after). A deletion of a ref that never
-existed is logged too, and the generation is incremented without
-saturating at 65535. `PDFStreamWriter` writes no free entries at all, so an
-increment with object streams silently keeps a deleted object live (and
-its `PDFCrossRefStream` free-list head stays 0). The fix is one final
-disposition per object number before either xref is built (live wins over
-a stale deletion; the free chain is built from the surviving deletions;
-deletions of numbers the file never had, including ones above the
-original `largestObjectNumber`, are dropped), shared by both writers.
+Each increment's free entries come from `freeEntries()` in
+`src/core/writers/PDFWriter.ts`, which knows only this revision's
+deletions: the chain runs from object 0 through them and ends at 0, so a
+number freed by an earlier revision (including one this library committed)
+drops out of the newest chain while keeping a generation below 65535, which
+ISO 32000-1 7.5.4 allows only for 65535 entries. The freed generation is
+the one of the removed object as the context holds it, not the file's
+effective one. Both need the parser to keep the effective xref of the file
+(`PDFParser.parseDocumentSection` discards every parsed table), the same
+baseline state the `fillXrefGaps` entry below needs.
+
+## The context can hold several generations of one number
+
+The parser assigns every object body it scans, so a file whose history
+deleted `12 0` and reused the number as `12 1` loads with both refs live; it
+never selects the generation its xref names. Any write that emits that
+number then has two in-use candidates; `freeEntries()` refuses such a write
+rather than emit a duplicate xref entry. A fix picks the effective
+generation from the xref at load.
 
 ## `fillXrefGaps` frees inherited objects in an increment
 
@@ -31,7 +35,9 @@ unchanged objects of earlier revisions, and, after a commit with object
 streams, the object streams their type-2 entries name; filling them
 deletes them for any reader that honours the newest section. Filling an
 incremental section needs the inherited entries, or the option must be
-refused for increments.
+refused for increments. The encryption guard (`assertUntouchedBy`) checks
+only recorded deletions, so a filled gap can also free an object the guard
+protects.
 
 ## The trailer /ID never changes between revisions
 

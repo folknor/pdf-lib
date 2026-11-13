@@ -4,7 +4,6 @@ import type { DocumentSnapshot } from './DocumentSnapshot.js';
 export class DefaultDocumentSnapshot implements DocumentSnapshot {
   pdfSize = 0;
   prevStartXRef = 0;
-  deletedCount = 0;
 
   shouldSave(_objectNumber: number): boolean {
     return true;
@@ -26,7 +25,7 @@ export class DefaultDocumentSnapshot implements DocumentSnapshot {
     throw new Error('This method should not be called.');
   }
 
-  markDeletedObj(_obj: PDFObject): void {
+  markRefAssigned(_ref: PDFRef): void {
     throw new Error('This method should not be called.');
   }
 
@@ -34,8 +33,8 @@ export class DefaultDocumentSnapshot implements DocumentSnapshot {
     throw new Error('This method should not be called.');
   }
 
-  deletedRef(_index: number): PDFRef | undefined {
-    throw new Error('This method should not be called.');
+  deletedRefs(): PDFRef[] {
+    return [];
   }
 }
 

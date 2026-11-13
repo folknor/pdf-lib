@@ -17,7 +17,7 @@ import PDFCrossRefStream from '../structures/PDFCrossRefStream.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import PDFPageLeaf from '../structures/PDFPageLeaf.js';
 import PDFPageTree from '../structures/PDFPageTree.js';
-import PDFWriter, { writeEncryption } from './PDFWriter.js';
+import PDFWriter, { freeEntries, writeEncryption } from './PDFWriter.js';
 
 class PDFStreamWriter extends PDFWriter {
   static override forContext = (
@@ -154,6 +154,15 @@ class PDFStreamWriter extends PDFWriter {
         xrefStream.addCompressedEntry(ref, objectStreamRef!, chunk.length);
         chunk.push(indirectObject);
       }
+    }
+
+    const inUse = uncompressedObjects.map(([ref]) => ref);
+    for (const chunk of compressedObjects) {
+      for (const [ref] of chunk) inUse.push(ref);
+    }
+    const free = freeEntries(this.context, this.snapshot, inUse);
+    for (const { ref, nextFreeObjectNumber } of free) {
+      xrefStream.addDeletedEntry(ref, nextFreeObjectNumber);
     }
 
     for (let idx = 0, len = compressedObjects.length; idx < len; idx++) {

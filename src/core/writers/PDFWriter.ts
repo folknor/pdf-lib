@@ -25,6 +25,50 @@ import { withoutCryptFilter } from '../security/streamCrypt.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 
+export interface FreeEntry {
+  /** The freed number with the generation its next use would carry. */
+  ref: PDFRef;
+  nextFreeObjectNumber: number;
+}
+
+/**
+ * One disposition per object number, shared by both writers. `inUse` is
+ * every ref the writer emits in use; a number may appear there once. A
+ * deletion is freed only when no generation of its number is still held by
+ * the context (live wins), with its generation raised by one and capped at
+ * 65535 (ISO 32000-1 7.5.4: such an entry is never reused). The chain runs
+ * in ascending order and ends at 0.
+ *
+ * The chain covers this revision's deletions only: the parser keeps no
+ * earlier xref, so free entries of earlier revisions are not linked in.
+ */
+export const freeEntries = (
+  context: PDFContext,
+  snapshot: DocumentSnapshot,
+  inUse: readonly PDFRef[],
+): FreeEntry[] => {
+  const written = new Set<number>();
+  for (const ref of inUse) {
+    if (written.has(ref.objectNumber)) {
+      throw new Error(
+        `Cannot write object number ${ref.objectNumber} twice: the document holds more than one generation of it.`,
+      );
+    }
+    written.add(ref.objectNumber);
+  }
+  const deleted = snapshot.deletedRefs();
+  if (deleted.length === 0) return [];
+  const live = new Set<number>();
+  for (const [ref] of context.enumerateIndirectObjects()) {
+    live.add(ref.objectNumber);
+  }
+  const freed = deleted.filter((ref) => !live.has(ref.objectNumber));
+  return freed.map((ref, idx) => ({
+    ref: PDFRef.of(ref.objectNumber, Math.min(ref.generationNumber + 1, 65535)),
+    nextFreeObjectNumber: freed[idx + 1]?.objectNumber ?? 0,
+  }));
+};
+
 export interface SerializationInfo {
   size: number;
   header: PDFHeader;
@@ -332,16 +376,13 @@ class PDFWriter {
       size += this.computeIndirectObjectSize(written);
       if (this.shouldWaitForTick(1)) await waitForTick();
     }
-    // Deleted objects
-    for (let idx = 0; idx < this.snapshot.deletedCount; idx++) {
-      const dref = this.snapshot.deletedRef(idx);
-      if (!dref) break;
-      const nextdref = this.snapshot.deletedRef(idx + 1);
-      // Add 1 to generation number for deleted ref
-      xref.addDeletedEntry(
-        PDFRef.of(dref.objectNumber, dref.generationNumber + 1),
-        nextdref ? nextdref.objectNumber : 0,
-      );
+    const free = freeEntries(
+      this.context,
+      this.snapshot,
+      indirectObjects.map(([ref]) => ref),
+    );
+    for (const { ref, nextFreeObjectNumber } of free) {
+      xref.addDeletedEntry(ref, nextFreeObjectNumber);
     }
 
     // Fill gaps in xref to prevent fragmentation (important for digital signatures)

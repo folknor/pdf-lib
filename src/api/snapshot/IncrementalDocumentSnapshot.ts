@@ -4,10 +4,8 @@ import type { DocumentSnapshot } from './DocumentSnapshot.js';
 export class IncrementalDocumentSnapshot implements DocumentSnapshot {
   pdfSize: number;
   prevStartXRef: number;
-  deletedCount: number = 0;
 
-  private deleted: PDFRef[] = [];
-  private deletedObjectNumbers: Set<number> = new Set();
+  private deleted: Map<number, PDFRef> = new Map();
   private lastObjectNumber: number;
   private changedObjects: Set<number>;
 
@@ -56,20 +54,26 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
     );
   }
 
+  markRefAssigned(ref: PDFRef): void {
+    this.deleted.delete(ref.objectNumber);
+    this.changedObjects.add(ref.objectNumber);
+  }
+
+  /**
+   * Keeps the latest removal per number. A number above the snapshot's
+   * largest was born in this revision and never reached the file, so there
+   * is nothing to free.
+   */
   markDeletedRef(ref: PDFRef): void {
-    if (!this.deletedObjectNumbers.has(ref.objectNumber)) {
-      this.deletedObjectNumbers.add(ref.objectNumber);
-      this.deletedCount = this.deleted.push(ref);
+    if (ref.objectNumber === 0 || ref.objectNumber > this.lastObjectNumber) {
+      return;
     }
+    this.deleted.set(ref.objectNumber, ref);
   }
 
-  markDeletedObj(obj: PDFObject): void {
-    const oref = this.context.getRef(obj);
-    if (oref) this.markDeletedRef(oref);
-  }
-
-  deletedRef(index: number): PDFRef | undefined {
-    if (index < 0 || index >= this.deleted.length) return;
-    return this.deleted[index];
+  deletedRefs(): PDFRef[] {
+    return [...this.deleted.values()].sort(
+      (a, b) => a.objectNumber - b.objectNumber,
+    );
   }
 }
