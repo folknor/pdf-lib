@@ -77,6 +77,12 @@ class PDFContext {
     prevStartXRef: number;
     useObjectStreams: boolean;
     originalBytes?: Uint8Array;
+    /**
+     * The header of `originalBytes`, as the parser read it. Increments are
+     * appended under this header whatever `header` has since become, so
+     * their version checks use it (`getIncrementVersion` in pdfVersion.ts).
+     */
+    originalHeader?: PDFHeader;
   };
   snapshot?: DocumentSnapshot;
 

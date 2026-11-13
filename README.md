@@ -13,6 +13,8 @@ Built with LLMs. See [LLM.md](LLM.md).
 - Vitest instead of Jest
 - pnpm instead of yarn
 - Truncated PDFs (an indirect object with no `endobj`) are rejected on load rather than silently dropping the unfinished object
+- No `convertToPDFA()`. Upstream's version writes a PDF/A identification, output intent and XMP packet without converting or checking content (unembedded standard fonts, uncovered device colour and the like still claim conformance), regenerates XMP from the Info dictionary at every save (losing richer or XMP-only values), and drops XMP blocks that mix its namespaces with others. A declaration-only facility that preserves existing metadata may come later.
+- Saving with `useObjectStreams: true` raises the declared version to 1.5 when it is lower: the header on a full save, the catalog `/Version` in an increment (whose header is the original file's)
 
 ## Install
 

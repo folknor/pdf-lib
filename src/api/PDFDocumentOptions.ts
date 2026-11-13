@@ -11,6 +11,12 @@ export enum ParseSpeeds {
 export type AttachmentOptions = EmbeddedFileOptions;
 
 export interface SaveOptions {
+  /**
+   * Write object and cross-reference streams. These need PDF 1.5: when the
+   * document declares less, a full save raises the header to 1.5 and an
+   * increment raises the catalog /Version to 1.5 (an increment cannot change
+   * the original file's header). A malformed catalog /Version throws.
+   */
   useObjectStreams?: boolean;
   addDefaultPage?: boolean;
   objectsPerTick?: number;
@@ -29,6 +35,12 @@ export interface SaveOptions {
 
 export interface IncrementalSaveOptions {
   objectsPerTick?: number;
+  /**
+   * Write object and cross-reference streams. These need PDF 1.5: when the
+   * document declares less, a full save raises the header to 1.5 and an
+   * increment raises the catalog /Version to 1.5 (an increment cannot change
+   * the original file's header). A malformed catalog /Version throws.
+   */
   useObjectStreams?: boolean;
   /** Compress uncompressed streams using FlateDecode to reduce file size */
   compress?: boolean;

@@ -118,6 +118,9 @@ class PDFParser extends PDFObjectParser {
     this.alreadyParsed = true;
 
     this.context.header = this.parseHeader();
+    if (this.context.pdfFileDetails.originalBytes) {
+      this.context.pdfFileDetails.originalHeader = this.context.header;
+    }
 
     let prevOffset;
     while (!this.bytes.done()) {

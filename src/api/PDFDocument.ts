@@ -6,6 +6,8 @@ import {
 import { CipherTransformFactory } from '../core/crypto.js';
 import {
   getEffectiveVersion,
+  getIncrementVersion,
+  planObjectStreamVersion,
   supportsObjectStreams,
 } from '../core/document/pdfVersion.js';
 import FileEmbedder, {
@@ -1851,10 +1853,6 @@ export default class PDFDocument {
    * @returns Resolves with the bytes of the serialized document.
    */
   async save(options: SaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
-    const pdfVersionSupportsObjectStreams = supportsObjectStreams(
-      getEffectiveVersion(this.context),
-    );
-
     const {
       addDefaultPage = true,
       objectsPerTick = 50,
@@ -1887,7 +1885,11 @@ export default class PDFDocument {
     if (useObjectStreams === undefined) {
       const isLoadedDocument = !!this.context.pdfFileDetails.originalBytes;
       if (incrementalUpdate || !isLoadedDocument) {
-        useObjectStreams = pdfVersionSupportsObjectStreams;
+        useObjectStreams = supportsObjectStreams(
+          incrementalUpdate
+            ? getIncrementVersion(this.context)
+            : getEffectiveVersion(this.context),
+        );
       } else {
         useObjectStreams = false;
       }
@@ -1901,12 +1903,18 @@ export default class PDFDocument {
     assertIs(compress, 'compress', ['boolean']);
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
 
+    // Validated before prepareForSave changes anything, applied after it.
+    const declareObjectStreamVersion = useObjectStreams
+      ? planObjectStreamVersion(this.context, !!incrementalUpdate)
+      : undefined;
+
     if (incrementalUpdate) {
       options.addDefaultPage = false;
       options.updateFieldAppearances = false;
     }
 
     await this.prepareForSave(options);
+    declareObjectStreamVersion?.();
 
     if (useObjectStreams) {
       if (incrementalUpdate) {
@@ -2009,9 +2017,6 @@ export default class PDFDocument {
         'saveIncremental() requires the installed snapshot for this document serialized bytes; the snapshot may belong to another document or an earlier commit',
       );
     }
-    const pdfVersionSupportsObjectStreams = supportsObjectStreams(
-      getEffectiveVersion(this.context),
-    );
     const {
       objectsPerTick = 50,
       compress = false,
@@ -2025,12 +2030,19 @@ export default class PDFDocument {
     writeEncryption(this.context, snapshot, true);
 
     const saveOptions: SaveOptions = {
-      useObjectStreams: pdfVersionSupportsObjectStreams,
+      useObjectStreams: supportsObjectStreams(
+        getIncrementVersion(this.context),
+      ),
       ...options,
       addDefaultPage: false,
       updateFieldAppearances: false,
     };
+    // Validated before prepareForSave changes anything, applied after it.
+    const declareObjectStreamVersion = saveOptions.useObjectStreams
+      ? planObjectStreamVersion(this.context, true)
+      : undefined;
     await this.prepareForSave(saveOptions);
+    declareObjectStreamVersion?.();
 
     if (saveOptions.useObjectStreams) {
       return PDFStreamWriter.forContextWithSnapshot(
