@@ -1,6 +1,14 @@
-import isEqual from 'fast-deep-equal';
 import { PropertyDescriptor } from '../../vendors/restructure/index.js';
 import CFFOperand from './CFFOperand.js';
+
+/** Compares a dict value with its default: primitives, or nested arrays. */
+const isEqual = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+    return false;
+  }
+  return a.every((item, idx) => isEqual(item, b[idx]));
+};
 
 export type CFFDictOp = [number | [number, number], string, any, any];
 
