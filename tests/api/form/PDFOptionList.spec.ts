@@ -1,5 +1,11 @@
 import fs from 'fs';
-import { AnnotationFlags, PDFDocument } from '../../../src/index';
+import {
+  AnnotationFlags,
+  PDFArray,
+  PDFDocument,
+  PDFName,
+  type PDFNumber,
+} from '../../../src/index';
 
 const fancyFieldsPdfBytes = fs.readFileSync('assets/pdfs/fancy_fields.pdf');
 
@@ -132,6 +138,28 @@ describe('PDFOptionList', () => {
 
       optionList.setOptions(['X', 'Y']);
       expect(optionList.getOptions()).toEqual(['X', 'Y']);
+    });
+
+    it('writes selected indices (/I) in ascending numeric order', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const optionList = form.createOptionList('many.list');
+      optionList.addToPage(page);
+      optionList.enableMultiselect();
+      optionList.setOptions(
+        Array.from({ length: 12 }, (_, idx) => `Option ${idx}`),
+      );
+
+      optionList.select(['Option 10', 'Option 2']);
+
+      const indices = optionList.acroField.dict.lookup(
+        PDFName.of('I'),
+        PDFArray,
+      );
+      expect(indices.asArray().map((n) => (n as PDFNumber).asNumber())).toEqual(
+        [2, 10],
+      );
     });
 
     it('can set an empty options list', async () => {
