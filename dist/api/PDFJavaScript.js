@@ -1,4 +1,5 @@
-import { PDFArray, PDFDict, PDFHexString, PDFName, } from '../core/index.js';
+import { PDFDict, PDFHexString, PDFName } from '../core/index.js';
+import { addNameTreeEntry } from './nameTree.js';
 /**
  * Represents JavaScript that has been embedded in a [[PDFDocument]].
  */
@@ -47,12 +48,8 @@ export default class PDFJavaScript {
                 Names.set(PDFName.of('JavaScript'), context.obj({}));
             }
             const Javascript = Names.lookup(PDFName.of('JavaScript'), PDFDict);
-            if (!Javascript.has(PDFName.of('Names'))) {
-                Javascript.set(PDFName.of('Names'), context.obj([]));
-            }
-            const JSNames = Javascript.lookup(PDFName.of('Names'), PDFArray);
-            JSNames.push(PDFHexString.fromText(this.embedder.scriptName));
-            JSNames.push(ref);
+            // Flat `/Names` only - leave `/Kids` (and other incompatible) trees alone.
+            addNameTreeEntry(Javascript, PDFHexString.fromText(this.embedder.scriptName), ref);
             this.alreadyEmbedded = true;
         }
     }

@@ -128,6 +128,34 @@ describe('PDFDocument', () => {
       expect(pdfDoc.isEncrypted).toBe(true);
     });
 
+    it('decrypts when the crypt filters are indirect objects', async () => {
+      const secret = 'Indirect crypt filter secret';
+      const pdfDoc = await PDFDocument.create({ updateMetadata: false });
+      pdfDoc.addPage([300, 200]);
+      pdfDoc.setTitle(secret);
+      pdfDoc.encrypt({ userPassword: '', ownerPassword: 'owner-secret' });
+
+      // Some producers (e.g. iText 2.x) write /CF and each crypt filter as
+      // indirect objects instead of inline dictionaries.
+      const encrypted = await PDFDocument.load(await pdfDoc.save(), {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      });
+      const { context } = encrypted;
+      const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
+      const cf = encryptDict.lookup(PDFName.of('CF'), PDFDict);
+      const stdCf = cf.lookup(PDFName.of('StdCF'), PDFDict);
+      cf.set(PDFName.of('StdCF'), context.register(stdCf));
+      encryptDict.set(PDFName.of('CF'), context.register(cf));
+      const bytes = await encrypted.save({ useObjectStreams: false });
+
+      const reopened = await PDFDocument.load(bytes, {
+        password: '',
+        updateMetadata: false,
+      });
+      expect(reopened.getTitle()).toBe(secret);
+    });
+
     it('does not throw an error for invalid PDFs when throwOnInvalidObject=false', async () => {
       await expect(
         PDFDocument.load(invalidObjectsPdfBytes, {
@@ -513,6 +541,41 @@ describe('PDFDocument', () => {
       expect(JSNames.lookup(0, PDFHexString).decodeText()).toEqual('first');
       expect(JSNames.lookup(2, PDFHexString).decodeText()).toEqual('second');
     });
+
+    it('sorts JavaScript name tree entries lexically', async () => {
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.addJavaScript('zebra', 'console.println("z");');
+      pdfDoc.addJavaScript('alpha', 'console.println("a");');
+      pdfDoc.addJavaScript('middle', 'console.println("m");');
+      await pdfDoc.flush();
+
+      const Names = pdfDoc.catalog.lookup(PDFName.of('Names'), PDFDict);
+      const Javascript = Names.lookup(PDFName.of('JavaScript'), PDFDict);
+      const JSNames = Javascript.lookup(PDFName.of('Names'), PDFArray);
+      const names = [0, 2, 4].map((idx) =>
+        JSNames.lookup(idx, PDFHexString).decodeText(),
+      );
+
+      expect(names).toEqual(['alpha', 'middle', 'zebra']);
+    });
+
+    it('does not add Names alongside an existing Kids JavaScript tree', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        pdfDoc.context.obj({ JavaScript: { Kids: [leafRef] } }),
+      );
+
+      pdfDoc.addJavaScript('newScript', 'console.println("x");');
+      await pdfDoc.flush();
+
+      const Javascript = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('JavaScript'), PDFDict);
+      expect(Javascript.has(PDFName.of('Kids'))).toBe(true);
+      expect(Javascript.has(PDFName.of('Names'))).toBe(false);
+    });
   });
 
   describe('embedPng() method', () => {
@@ -759,6 +822,28 @@ describe('PDFDocument', () => {
 
       // Lexical sort: "1.txt" < "10.txt" < "2.txt" < "3.txt"
       expect(names).toEqual(['1.txt', '10.txt', '2.txt', '3.txt']);
+    });
+
+    it('does not add Names alongside an existing Kids EmbeddedFiles tree', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        pdfDoc.context.obj({ EmbeddedFiles: { Kids: [leafRef] } }),
+      );
+
+      await pdfDoc.attach(new Uint8Array([1, 2, 3]), 'new.txt');
+      await pdfDoc.save();
+
+      const EmbeddedFiles = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      expect(EmbeddedFiles.has(PDFName.of('Kids'))).toBe(true);
+      expect(EmbeddedFiles.has(PDFName.of('Names'))).toBe(false);
+
+      // File stream is still embedded and listed under AF.
+      const AF = pdfDoc.catalog.lookup(PDFName.of('AF'), PDFArray);
+      expect(AF.size()).toBe(1);
     });
   });
 

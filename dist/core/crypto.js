@@ -1418,14 +1418,14 @@ class CipherTransformFactory {
             }
             else {
                 // Trying to find default handler -- it usually has Length.
-                const cfDict = dict.get(PDFName.of('CF'));
-                const streamCryptoName = dict.get(PDFName.of('StmF'));
+                const cfDict = dict.lookup(PDFName.of('CF'));
+                const streamCryptoName = dict.lookup(PDFName.of('StmF'));
                 if (cfDict instanceof PDFDict && streamCryptoName instanceof PDFName) {
                     cfDict.suppressEncryption = true;
-                    const handlerDict = cfDict.get(PDFName.of(streamCryptoName.asString()));
+                    const handlerDict = cfDict.lookup(streamCryptoName);
                     let keyLen = null;
                     if (handlerDict) {
-                        keyLen = handlerDict.get(PDFName.of('Length'));
+                        keyLen = handlerDict.lookup(PDFName.of('Length'));
                     }
                     keyLength = keyLen?.asNumber() || 128;
                     if (keyLength < 40) {
@@ -1495,7 +1495,7 @@ class CipherTransformFactory {
         }
         this.encryptionKey = encryptionKey;
         if (algorithm >= 4) {
-            const cf = dict.get(PDFName.of('CF'));
+            const cf = dict.lookup(PDFName.of('CF'));
             if (cf instanceof PDFDict) {
                 // The 'CF' dictionary itself should not be encrypted, and by setting
                 // `suppressEncryption` we can prevent an infinite loop inside of
@@ -1505,10 +1505,10 @@ class CipherTransformFactory {
             }
             this.cf = cf;
             this.stmf =
-                dict.get(PDFName.of('StmF')) || this.identityName;
+                dict.lookup(PDFName.of('StmF')) || this.identityName;
             this.strf =
-                dict.get(PDFName.of('StrF')) || this.identityName;
-            this.eff = dict.get(PDFName.of('EFF')) || this.stmf;
+                dict.lookup(PDFName.of('StrF')) || this.identityName;
+            this.eff = dict.lookup(PDFName.of('EFF')) || this.stmf;
         }
     }
     createCipherTransform(num, gen) {
@@ -1683,10 +1683,10 @@ class CipherTransformFactory {
         if (!(name instanceof PDFName)) {
             throw new Error('Invalid crypt filter name.');
         }
-        const cryptFilter = cf.get(PDFName.of(name.asString().replace('/', '')));
+        const cryptFilter = cf.lookup(name);
         let cfm;
         if (cryptFilter !== null && cryptFilter !== undefined) {
-            cfm = cryptFilter.get(PDFName.of('CFM'));
+            cfm = cryptFilter.lookup(PDFName.of('CFM'));
         }
         if (!cfm || cfm.asString() === '/None') {
             return function cipherTransformFactoryBuildCipherConstructorNone() {

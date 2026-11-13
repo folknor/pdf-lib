@@ -11,7 +11,7 @@ import {
   PDFName,
   PDFOptionList,
   PDFRadioGroup,
-  type PDFRef,
+  PDFRef,
   PDFSignature,
   PDFTextField,
   type PDFWidgetAnnotation,
@@ -378,6 +378,148 @@ describe('PDFForm', () => {
     expect(refs2.includes(tf.ref)).toBe(false);
     cbWidgetRefs.forEach((ref) => expect(refs2).not.toContain(ref));
     tfWidgetRefs.forEach((ref) => expect(refs2).not.toContain(ref));
+  });
+
+  it('flattens orphaned widget annotations not registered in AcroForm.Fields', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    const textApRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
+    );
+    const textWidgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        FT: 'Tx',
+        T: 'OrphanText',
+        Rect: [50, 700, 150, 720],
+        AP: { N: textApRef },
+      }),
+    );
+    page.node.addAnnot(textWidgetRef);
+
+    const onApRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
+    );
+    const offApRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
+    );
+    const checkWidgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        FT: 'Btn',
+        T: 'OrphanCheck',
+        V: 'Yes',
+        AS: 'Yes',
+        Rect: [50, 650, 70, 670],
+        AP: { N: { Yes: onApRef, Off: offApRef } },
+      }),
+    );
+    page.node.addAnnot(checkWidgetRef);
+
+    expect(form.getFields()).toHaveLength(0);
+    expect(page.node.Annots()!.size()).toBe(2);
+
+    form.flatten();
+
+    expect(page.node.Annots()?.size() ?? 0).toBe(0);
+    expect(context.lookup(textWidgetRef)).toBe(undefined);
+    expect(context.lookup(checkWidgetRef)).toBe(undefined);
+    // Appearance streams stay alive and are referenced from page XObjects
+    expect(context.lookup(textApRef)).toBeTruthy();
+    expect(context.lookup(onApRef)).toBeTruthy();
+    const xObjects = page.node
+      .Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    const xObjectValues = xObjects.values();
+    expect(xObjectValues).toContain(textApRef);
+    expect(xObjectValues).toContain(onApRef);
+    expect(xObjectValues).not.toContain(offApRef);
+  });
+
+  it('leaves orphaned widgets without appearances untouched', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    const widgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        FT: 'Tx',
+        T: 'NoAppearance',
+        Rect: [50, 700, 150, 720],
+      }),
+    );
+    page.node.addAnnot(widgetRef);
+
+    form.flatten();
+
+    expect(page.node.Annots()!.size()).toBe(1);
+    expect(page.node.Annots()!.get(0)).toBe(widgetRef);
+    // Must not invent an /AP entry
+    expect(context.lookup(widgetRef, PDFDict).has(PDFName.of('AP'))).toBe(
+      false,
+    );
+  });
+
+  it('skips orphaned widgets with malformed or dangling appearances', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    const orphan = (name: string, AP: unknown) =>
+      context.register(
+        context.obj({
+          Type: 'Annot',
+          Subtype: 'Widget',
+          FT: 'Tx',
+          T: name,
+          Rect: [50, 700, 150, 720],
+          AP: AP as never,
+        }),
+      );
+
+    const malformedRef = orphan('Malformed', 123);
+    const danglingRef = orphan('Dangling', { N: PDFRef.of(999) });
+    const notAStreamRef = orphan('NotAStream', {
+      N: context.register(context.obj([1, 2])),
+    });
+    for (const ref of [malformedRef, danglingRef, notAStreamRef]) {
+      page.node.addAnnot(ref);
+    }
+
+    expect(() => form.flatten()).not.toThrow();
+
+    const annots = page.node.Annots()!;
+    expect(annots.size()).toBe(3);
+    for (const ref of [malformedRef, danglingRef, notAStreamRef]) {
+      expect(context.lookup(ref)).toBeInstanceOf(PDFDict);
+    }
+  });
+
+  it('still flattens registered fields without leaving their widgets behind', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+
+    const tf = form.createTextField('registered.text');
+    tf.setText('hi');
+    tf.addToPage(page);
+
+    expect(form.getFields()).toHaveLength(1);
+    expect(page.node.Annots()!.size()).toBe(1);
+
+    form.flatten();
+
+    expect(form.getFields()).toHaveLength(0);
+    expect(page.node.Annots()?.size() ?? 0).toBe(0);
   });
 
   // TODO: Add method to remove APs and use `NeedsAppearances`? How would this

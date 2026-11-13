@@ -73,4 +73,26 @@ describe('Incremental Save', () => {
     const incrementalStart = incrementalBytes.slice(0, 100);
     expect(Array.from(incrementalStart)).toEqual(Array.from(originalStart));
   });
+
+  it('keeps largestObjectNumber and trailer entries across linearized sections', async () => {
+    const pdfBytes = fs.readFileSync(
+      './assets/pdfs/linearized_with_object_streams.pdf',
+    );
+    const pdfDoc = await PDFDocument.load(pdfBytes, {
+      forIncrementalUpdate: true,
+      updateMetadata: false,
+    });
+
+    // This fixture's final trailer Size is lower than the true max object
+    // number; largestObjectNumber must not collapse to that smaller Size-1.
+    const finalSize = pdfDoc.context.trailerInfo.Size!.asNumber();
+    expect(pdfDoc.context.largestObjectNumber).toBeGreaterThan(finalSize - 1);
+    expect(pdfDoc.context.largestObjectNumber).toBe(85334);
+
+    // The final XRef stream omits Root/Info/ID; they must be kept from
+    // earlier sections.
+    expect(pdfDoc.context.trailerInfo.Root).toBeTruthy();
+    expect(pdfDoc.context.trailerInfo.Info).toBeTruthy();
+    expect(pdfDoc.context.trailerInfo.ID).toBeTruthy();
+  }, 30000);
 });

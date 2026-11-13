@@ -322,9 +322,13 @@ class PDFParser extends PDFObjectParser {
       ID: dict.get(PDFName.of('ID')) || context.trailerInfo.ID,
     };
     // If open for incremental update, then deleted objects need to be preserved,
-    // and largestObjectNumber has to be Size-1
+    // and largestObjectNumber has to be at least Size-1. Use Math.max so a
+    // later section with a smaller Size (e.g. linearized PDFs) cannot lower it.
     if (context.trailerInfo.Size && context.pdfFileDetails.originalBytes) {
-      context.largestObjectNumber = context.trailerInfo.Size.asNumber() - 1;
+      context.largestObjectNumber = Math.max(
+        context.largestObjectNumber,
+        context.trailerInfo.Size.asNumber() - 1,
+      );
     }
   }
 

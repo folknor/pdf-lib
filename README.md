@@ -8,10 +8,11 @@ Built with LLMs. See [LLM.md](LLM.md).
 ## Changes from upstream
 
 - ESM-only (no CJS/UMD)
-- TypeScript 5.x with stricter settings
+- TypeScript with stricter settings
 - Biome instead of ESLint/Prettier
 - Vitest instead of Jest
 - pnpm instead of yarn
+- Truncated PDFs (an indirect object with no `endobj`) are rejected on load rather than silently dropping the unfinished object
 
 ## Install
 

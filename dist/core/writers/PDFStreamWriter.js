@@ -47,6 +47,9 @@ class PDFStreamWriter extends PDFWriter {
             if (!this.snapshot.shouldSave(ref.objectNumber)) {
                 continue;
             }
+            if (!incremental && this.shouldSkipCopiedObjectStream(object)) {
+                continue;
+            }
             const shouldNotCompress = ref === this.context.trailerInfo.Encrypt ||
                 object instanceof PDFStream ||
                 object instanceof PDFInvalidObject ||

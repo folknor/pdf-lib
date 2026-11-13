@@ -491,6 +491,19 @@ export default class PDFForm {
     fieldIsDirty(fieldRef: PDFRef): boolean;
     getDefaultFont(): PDFFont;
     private findWidgetPage;
+    private flattenWidgetOntoPage;
+    /**
+     * Flatten Widget annotations that carry field properties (/FT) directly on
+     * the annot dict but are not reachable via AcroForm.Fields. Widgets without
+     * a usable normal appearance are left untouched.
+     */
+    private flattenOrphanWidgets;
+    /**
+     * Resolve /AP/N for orphaned widgets without creating missing appearances.
+     * Only returns a ref that resolves to an actual appearance stream, so a
+     * dangling or mistyped reference leaves the widget untouched.
+     */
+    private findOrphanWidgetAppearanceRef;
     private findWidgetAppearanceRef;
     private findOrCreateNonTerminals;
     private findNonTerminal;

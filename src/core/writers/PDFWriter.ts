@@ -123,6 +123,9 @@ class PDFWriter {
       if (!this.shouldSave(incremental, ref.objectNumber, object)) {
         continue;
       }
+      if (!incremental && this.shouldSkipCopiedObjectStream(object)) {
+        continue;
+      }
 
       const objectNumber = String(ref.objectNumber);
       offset += copyStringIntoBuffer(objectNumber, buffer, offset);
@@ -222,6 +225,9 @@ class PDFWriter {
       const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
       if (!this.shouldSave(incremental, ref.objectNumber, object)) continue;
+      // See shouldSkipCopiedObjectStream. Incremental snapshots already
+      // exclude these containers.
+      if (!incremental && this.shouldSkipCopiedObjectStream(object)) continue;
       if (this.shouldCompress) this.compress(object);
       if (security) this.encrypt(ref, object, security);
       xref.addEntry(ref, size);
@@ -291,6 +297,21 @@ class PDFWriter {
       const encryptedContents = encryptFn(unencryptedContents);
       object.updateContents(encryptedContents);
     }
+  }
+
+  /**
+   * Object streams (/Type /ObjStm) copied from the source PDF must not be
+   * re-serialised on full saves: their contents were already extracted and
+   * registered individually at parse time. Writing the stale container would
+   * let its old copies overwrite the current objects on the next load.
+   * Object streams created while saving are PDFObjectStream, not
+   * PDFRawStream, so they are unaffected.
+   */
+  protected shouldSkipCopiedObjectStream(object: PDFObject): boolean {
+    return (
+      object instanceof PDFRawStream &&
+      object.dict.lookup(PDFName.of('Type')) === PDFName.of('ObjStm')
+    );
   }
 
   protected shouldWaitForTick = (n: number) => {

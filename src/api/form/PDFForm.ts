@@ -12,9 +12,11 @@ import {
   PDFAcroText,
   PDFDict,
   PDFName,
+  type PDFObject,
   type PDFOperator,
   PDFRef,
-  type PDFWidgetAnnotation,
+  PDFStream,
+  PDFWidgetAnnotation,
 } from '../../core/index.js';
 import { assertIs, assertOrUndefined, Cache } from '../../utils/index.js';
 import {
@@ -710,25 +712,14 @@ export default class PDFForm {
 
         if (!(page && widgetRef)) continue;
 
-        const xObjectKey = page.node.getOrCreateXObject(
-          'FlatWidget',
-          widgetRef,
-        );
-
-        const rectangle = widget.getRectangle();
-        const operators = [
-          pushGraphicsState(),
-          translate(rectangle.x, rectangle.y),
-          ...rotateInPlace({ ...rectangle, rotation: 0 }),
-          drawObject(xObjectKey),
-          popGraphicsState(),
-        ].filter(Boolean) as PDFOperator[];
-
-        page.pushOperators(...operators);
+        this.flattenWidgetOntoPage(page, widget, widgetRef);
       }
 
       this.removeField(field);
     }
+
+    // Widgets with /FT on the annot itself but missing from AcroForm.Fields
+    this.flattenOrphanWidgets();
 
     // Clean up AcroForm properties that may reference deleted fields
     // /CO (calculation order) contains refs to fields - these become orphans
@@ -885,6 +876,111 @@ export default class PDFForm {
       page = this.doc.findPageForAnnotationRef(widgetRef);
     }
     return page;
+  }
+
+  private flattenWidgetOntoPage(
+    page: PDFPage,
+    widget: PDFWidgetAnnotation,
+    appearanceRef: PDFRef,
+  ) {
+    const xObjectKey = page.node.getOrCreateXObject(
+      'FlatWidget',
+      appearanceRef,
+    );
+
+    const rectangle = widget.getRectangle();
+    const operators = [
+      pushGraphicsState(),
+      translate(rectangle.x, rectangle.y),
+      ...rotateInPlace({ ...rectangle, rotation: 0 }),
+      drawObject(xObjectKey),
+      popGraphicsState(),
+    ].filter(Boolean) as PDFOperator[];
+
+    page.pushOperators(...operators);
+  }
+
+  /**
+   * Flatten Widget annotations that carry field properties (/FT) directly on
+   * the annot dict but are not reachable via AcroForm.Fields. Widgets without
+   * a usable normal appearance are left untouched.
+   */
+  private flattenOrphanWidgets(): void {
+    const pages = this.doc.getPages();
+
+    for (let p = 0, pageCount = pages.length; p < pageCount; p++) {
+      const page = pages[p]!;
+      const annots = page.node.Annots();
+      if (!annots) continue;
+
+      const annotsToRemove: PDFRef[] = [];
+
+      for (let i = 0, len = annots.size(); i < len; i++) {
+        const annotRef = annots.get(i);
+        if (!(annotRef instanceof PDFRef)) continue;
+
+        const dict = this.doc.context.lookup(annotRef);
+        if (!(dict instanceof PDFDict)) continue;
+        if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
+          continue;
+        }
+        // Only self-contained field widgets (kids inherit /FT from /Parent,
+        // and those are handled via AcroForm.Fields above).
+        if (!dict.has(PDFName.of('FT'))) continue;
+
+        const widget = PDFWidgetAnnotation.fromDict(dict);
+        // A malformed /AP on one orphan must not abort the whole flatten.
+        let appearanceRef: PDFRef | undefined;
+        try {
+          appearanceRef = this.findOrphanWidgetAppearanceRef(widget);
+        } catch {
+          continue;
+        }
+        if (!appearanceRef) continue;
+
+        this.flattenWidgetOntoPage(page, widget, appearanceRef);
+        annotsToRemove.push(annotRef);
+      }
+
+      for (let i = 0, len = annotsToRemove.length; i < len; i++) {
+        const ref = annotsToRemove[i]!;
+        page.node.removeAnnot(ref);
+        this.doc.context.delete(ref);
+      }
+    }
+  }
+
+  /**
+   * Resolve /AP/N for orphaned widgets without creating missing appearances.
+   * Only returns a ref that resolves to an actual appearance stream, so a
+   * dangling or mistyped reference leaves the widget untouched.
+   */
+  private findOrphanWidgetAppearanceRef(
+    widget: PDFWidgetAnnotation,
+  ): PDFRef | undefined {
+    let refOrDict = widget.getNormalAppearance();
+    if (!refOrDict) return;
+
+    if (refOrDict instanceof PDFRef) {
+      const lookedUp = this.doc.context.lookup(refOrDict);
+      if (lookedUp instanceof PDFDict) refOrDict = lookedUp;
+    }
+
+    let ref: PDFObject | undefined = refOrDict;
+    // An appearance stream is not a PDFDict (it's a PDFStream), so a dict
+    // here means a state-keyed subdictionary (checkbox / radio).
+    if (refOrDict instanceof PDFDict) {
+      const value = widget.dict.lookup(PDFName.of('V'));
+      const state =
+        widget.getAppearanceState() ??
+        (value instanceof PDFName ? value : undefined) ??
+        PDFName.of('Off');
+      ref = refOrDict.get(state) ?? refOrDict.get(PDFName.of('Off'));
+    }
+
+    if (!(ref instanceof PDFRef)) return;
+    if (!(this.doc.context.lookup(ref) instanceof PDFStream)) return;
+    return ref;
   }
 
   private findWidgetAppearanceRef(

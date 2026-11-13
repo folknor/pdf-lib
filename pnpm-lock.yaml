@@ -27,8 +27,8 @@ importers:
         specifier: ^0.8.3
         version: 0.8.3
       node-html-better-parser:
-        specifier: ^1.5.8
-        version: 1.5.8
+        specifier: ^1.5.9
+        version: 1.5.9
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -503,6 +503,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -710,8 +711,8 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  node-html-better-parser@1.5.8:
-    resolution: {integrity: sha512-t/wAKvaTSKco43X+yf9+76RiMt18MtMmzd4wc7rKj+fWav6DV4ajDEKdWlLzSE8USDF5zr/06uGj0Wr/dGAFtw==}
+  node-html-better-parser@1.5.9:
+    resolution: {integrity: sha512-z1I5UINMezJXYL9cH3h0a9KBth2G978gSLlfkpQ+CQzzVHVQy9gpARgm9eDsz1O4gn1HtgUqjdAIYxKFZm6uHQ==}
 
   node-releases@2.0.47:
     resolution: {integrity: sha512-Uzmd6LXpouKo8EUK68IjH4+E01w/hXyV3R3g/geCJo+rXLNfh1xucB+LOzYEOQPSiUK3h/xZf0cQGcSsmyL2Og==}
@@ -1496,7 +1497,7 @@ snapshots:
 
   nanoid@3.3.12: {}
 
-  node-html-better-parser@1.5.8:
+  node-html-better-parser@1.5.9:
     dependencies:
       html-entities: 2.6.0
 

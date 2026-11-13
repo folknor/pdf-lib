@@ -51,6 +51,15 @@ declare class PDFWriter {
     protected computeBufferSize(incremental: boolean): Promise<SerializationInfo>;
     protected compress(object: PDFObject): void;
     protected encrypt(ref: PDFRef, object: PDFObject, security: PDFSecurity): void;
+    /**
+     * Object streams (/Type /ObjStm) copied from the source PDF must not be
+     * re-serialised on full saves: their contents were already extracted and
+     * registered individually at parse time. Writing the stale container would
+     * let its old copies overwrite the current objects on the next load.
+     * Object streams created while saving are PDFObjectStream, not
+     * PDFRawStream, so they are unaffected.
+     */
+    protected shouldSkipCopiedObjectStream(object: PDFObject): boolean;
     protected shouldWaitForTick: (n: number) => boolean;
 }
 export default PDFWriter;

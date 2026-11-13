@@ -1,4 +1,5 @@
-import { PDFArray, PDFDict, PDFHexString, PDFName, PDFString, } from '../core/index.js';
+import { PDFArray, PDFDict, PDFHexString, PDFName, } from '../core/index.js';
+import { addNameTreeEntry } from './nameTree.js';
 /**
  * Represents a file that has been embedded in a [[PDFDocument]].
  */
@@ -48,32 +49,10 @@ export default class PDFEmbeddedFile {
                 EmbeddedFiles = this.doc.context.obj({});
                 Names.set(PDFName.of('EmbeddedFiles'), EmbeddedFiles);
             }
-            let EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
-            if (!EFNames) {
-                EFNames = this.doc.context.obj([]);
-                EmbeddedFiles.set(PDFName.of('Names'), EFNames);
-            }
-            // PDF spec requires Names array to be lexically sorted by name.
-            // Acrobat Reader uses binary search on this array, so unsorted names
-            // can cause attachments to not be found. Insert at correct position.
-            const newName = this.embedder.fileName;
-            let insertIndex = EFNames.size(); // Default to end
-            for (let i = 0; i < EFNames.size(); i += 2) {
-                const nameObj = EFNames.get(i);
-                let existingName;
-                if (nameObj instanceof PDFHexString) {
-                    existingName = nameObj.decodeText();
-                }
-                else if (nameObj instanceof PDFString) {
-                    existingName = nameObj.decodeText();
-                }
-                if (existingName !== undefined && newName < existingName) {
-                    insertIndex = i;
-                    break;
-                }
-            }
-            EFNames.insert(insertIndex, PDFHexString.fromText(newName));
-            EFNames.insert(insertIndex + 1, ref);
+            // PDF spec requires the Names array to be sorted in byte (lexical)
+            // order; readers binary-search it. Flat `/Names` only - `/Kids` (and
+            // other incompatible) trees are left alone rather than corrupted.
+            addNameTreeEntry(EmbeddedFiles, PDFHexString.fromText(this.embedder.fileName), ref);
             /**
              * The AF-Tag is needed to achieve PDF-A3 compliance for embedded files
              *
