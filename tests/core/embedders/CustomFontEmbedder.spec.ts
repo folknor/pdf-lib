@@ -3,11 +3,17 @@ import fs from 'fs';
 
 import {
   CustomFontEmbedder,
+  decodePDFRawStream,
+  PDFArray,
   PDFContext,
   PDFDict,
   PDFHexString,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
   PDFRef,
 } from '../../../src/index';
+import { compressWidths } from '../../../src/core/embedders/CustomFontEmbedder';
 
 const ubuntuFont = fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf');
 
@@ -114,4 +120,122 @@ describe('CustomFontEmbedder', () => {
     await embedder.embedIntoContext(context, predefinedRef);
     expect(context.enumerateIndirectObjects().length).toBe(5);
   });
+
+  it('writes the width of every glyph, including glyphs without code points', async () => {
+    const context = PDFContext.create();
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const { font } = embedder;
+
+    const ref = await embedder.embedIntoContext(context);
+    const widths = widthsOf(context, ref);
+
+    expect(widths.size).toBe(font.numGlyphs);
+    for (let id = 0; id < font.numGlyphs; id++) {
+      expect(widths.get(id)).toBeCloseTo(
+        font.getGlyph(id).advanceWidth * (1000 / font.unitsPerEm),
+      );
+    }
+  });
+
+  it('writes the width of ligature glyphs produced by shaping', async () => {
+    const context = PDFContext.create();
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const { font } = embedder;
+
+    const { glyphs } = font.layout('Stuff');
+    const ligature = glyphs.find((glyph) => glyph.codePoints.length > 1);
+    expect(ligature).toBeDefined();
+
+    const ref = await embedder.embedIntoContext(context);
+    expect(widthsOf(context, ref).get(ligature!.id)).toBeCloseTo(
+      ligature!.advanceWidth * (1000 / font.unitsPerEm),
+    );
+  });
+
+  it('keeps ToUnicode mappings and omits glyphs without code points', async () => {
+    const context = PDFContext.create();
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+
+    const ref = await embedder.embedIntoContext(context);
+    const cmap = toUnicodeOf(context, ref);
+
+    expect(cmap).not.toMatch(/<[0-9a-f]{4}> <>/i);
+    // 'A' (glyph 0x24 in Ubuntu) must survive /W touching every glyph first.
+    expect(cmap).toContain('<0024> <0041>');
+  });
 });
+
+describe('compressWidths', () => {
+  it('returns an empty array for no glyphs', () => {
+    expect(compressWidths([])).toEqual([]);
+  });
+
+  it('groups consecutive ids into sections', () => {
+    expect(
+      compressWidths([
+        [1, 10],
+        [2, 20],
+        [3, 10],
+        [7, 5],
+        [8, 6],
+      ]),
+    ).toEqual([1, [10, 20, 10], 7, [5, 6]]);
+  });
+
+  it('writes runs of equal widths as ranges', () => {
+    expect(
+      compressWidths([
+        [0, 7],
+        [1, 500],
+        [2, 500],
+        [3, 500],
+        [4, 500],
+        [5, 8],
+        [6, 9],
+        [10, 1],
+        [11, 1],
+        [12, 1],
+      ]),
+    ).toEqual([0, [7], 1, 4, 500, 5, [8, 9], 10, [1, 1, 1]]);
+  });
+
+  it('compresses a font with many same-width glyphs', async () => {
+    const entries: [number, number][] = [];
+    for (let id = 0; id < 20000; id++) entries.push([id, 1000]);
+    expect(compressWidths(entries)).toEqual([0, 19999, 1000]);
+  });
+});
+
+const widthsOf = (context: PDFContext, fontRef: PDFRef) => {
+  const cidFontDict = context
+    .lookup(fontRef, PDFDict)
+    .lookup(PDFName.of('DescendantFonts'), PDFArray)
+    .lookup(0, PDFDict);
+  const W = cidFontDict.lookup(PDFName.of('W'), PDFArray);
+
+  const widths = new Map<number, number>();
+  let idx = 0;
+  while (idx < W.size()) {
+    const first = W.lookup(idx, PDFNumber).asNumber();
+    const next = W.lookup(idx + 1);
+    if (next instanceof PDFArray) {
+      next.asArray().forEach((width, offset) => {
+        widths.set(first + offset, (width as PDFNumber).asNumber());
+      });
+      idx += 2;
+    } else {
+      const last = (next as PDFNumber).asNumber();
+      const width = W.lookup(idx + 2, PDFNumber).asNumber();
+      for (let id = first; id <= last; id++) widths.set(id, width);
+      idx += 3;
+    }
+  }
+  return widths;
+};
+
+const toUnicodeOf = (context: PDFContext, fontRef: PDFRef) => {
+  const stream = context
+    .lookup(fontRef, PDFDict)
+    .lookup(PDFName.of('ToUnicode'), PDFRawStream);
+  return new TextDecoder().decode(decodePDFRawStream(stream).decode());
+};

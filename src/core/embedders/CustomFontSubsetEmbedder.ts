@@ -78,6 +78,11 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     return glyph ? this.glyphIdMap.get(glyph.id)! : -1;
   }
 
+  // A subset only carries the glyphs actually used, all of which are cached.
+  protected override glyphsForWidths(): Glyph[] {
+    return this.glyphCache.access();
+  }
+
   protected override serializeFont(): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
       const parts: Uint8Array[] = [];

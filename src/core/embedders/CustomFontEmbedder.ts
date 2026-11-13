@@ -229,7 +229,11 @@ class CustomFontEmbedder {
   }
 
   protected embedUnicodeCmap(context: PDFContext): PDFRef {
-    const cmap = createCmap(this.glyphCache.access(), this.glyphId.bind(this));
+    // A bfchar entry with an empty destination (`<0003> <>`) is malformed.
+    const glyphs = this.glyphCache
+      .access()
+      .filter((glyph) => glyph.codePoints.length > 0);
+    const cmap = createCmap(glyphs, this.glyphId.bind(this));
     const cmapStream = context.flateStream(cmap);
 
     // Reuse existing ref to avoid orphans on re-embedding
@@ -245,33 +249,32 @@ class CustomFontEmbedder {
     return glyph ? glyph.id : -1;
   }
 
-  protected computeWidths(): (number | number[])[] {
-    const glyphs = this.glyphCache.access();
-
-    const widths: (number | number[])[] = [];
-    let currSection: number[] = [];
-
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const currGlyph = glyphs[idx]!;
-      const prevGlyph = glyphs[idx - 1];
-
-      const currGlyphId = this.glyphId(currGlyph);
-      const prevGlyphId = this.glyphId(prevGlyph);
-
-      if (idx === 0) {
-        widths.push(currGlyphId);
-      } else if (currGlyphId - prevGlyphId !== 1) {
-        widths.push(currSection);
-        widths.push(currGlyphId);
-        currSection = [];
-      }
-
-      currSection.push(currGlyph.advanceWidth * this.scale);
+  /**
+   * The glyphs whose widths go into /W. For a full (non-subset) embed this is
+   * every glyph in the font, so glyphs reachable only through shaping
+   * (ligatures, alternates) still get their real width instead of /DW.
+   */
+  protected glyphsForWidths(): Glyph[] {
+    // fontkit caches glyph objects by id, and the first creation fixes their
+    // codePoints. getGlyph(id) without code points would leave mapped glyphs
+    // with empty codePoints and drop them from ToUnicode, so create the
+    // characterSet glyphs (with their code points) first.
+    this.glyphCache.access();
+    const glyphs: Glyph[] = [];
+    for (let id = 0, len = this.font.numGlyphs; id < len; id++) {
+      const glyph = this.font.getGlyph(id);
+      if (glyph) glyphs.push(glyph);
     }
+    return glyphs;
+  }
 
-    widths.push(currSection);
-
-    return widths;
+  protected computeWidths(): (number | number[])[] {
+    return compressWidths(
+      this.glyphsForWidths().map((glyph) => [
+        this.glyphId(glyph),
+        glyph.advanceWidth * this.scale,
+      ]),
+    );
   }
 
   private allGlyphsInFontSortedById = (): Glyph[] => {
@@ -283,5 +286,54 @@ class CustomFontEmbedder {
     return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);
   };
 }
+
+/** Runs of at least this many equal widths are written as `first last w`. */
+const MIN_WIDTH_RANGE = 4;
+
+/**
+ * Build a CIDFont /W array from `[cid, width]` pairs (sorted by ascending,
+ * unique cid). Consecutive cids go into `c [w1 w2 ...]` sections, and runs of
+ * identical widths use the `cFirst cLast w` form (PDF 32000-1:2008 9.7.4.3),
+ * which keeps /W small for large fonts with many same-width glyphs (CJK).
+ */
+export const compressWidths = (
+  entries: [number, number][],
+): (number | number[])[] => {
+  const widths: (number | number[])[] = [];
+  let section: number[] | undefined;
+  let prevId = Number.NaN;
+
+  let idx = 0;
+  while (idx < entries.length) {
+    const [id, width] = entries[idx]!;
+
+    let end = idx;
+    while (
+      end + 1 < entries.length &&
+      entries[end + 1]![0] === entries[end]![0] + 1 &&
+      entries[end + 1]![1] === width
+    ) {
+      end++;
+    }
+
+    if (end - idx + 1 >= MIN_WIDTH_RANGE) {
+      widths.push(id, entries[end]![0], width);
+      section = undefined;
+      prevId = entries[end]![0];
+      idx = end + 1;
+      continue;
+    }
+
+    if (section === undefined || id !== prevId + 1) {
+      section = [];
+      widths.push(id, section);
+    }
+    section.push(width);
+    prevId = id;
+    idx++;
+  }
+
+  return widths;
+};
 
 export default CustomFontEmbedder;
