@@ -217,12 +217,13 @@ export default class TTFGlyphEncoder {
     };
 
     const size = Glyf.size(glyf);
-    const tail = 4 - (size % 4);
+    // Pad each glyph record to a 4-byte length (none when already aligned),
+    // so loca offsets stay aligned (and even, as short loca requires).
+    const tail = (4 - (size % 4)) % 4;
 
     const stream = new r.EncodeStream(new Uint8Array(size + tail));
     Glyf.encode(stream, glyf);
 
-    // Align to 4-byte length
     if (tail !== 0) {
       stream.fill(0, tail);
     }

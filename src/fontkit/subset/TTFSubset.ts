@@ -1,6 +1,6 @@
 import { toTrueTypeOutline } from '../glyph/quadraticOutline.js';
 import TTFGlyphEncoder from '../glyph/TTFGlyphEncoder.js';
-import Directory from '../tables/directory.js';
+import { encodeSfnt } from '../tables/directory.js';
 import Subset from './Subset.js';
 
 interface LocaTable {
@@ -356,25 +356,23 @@ export default class TTFSubset extends Subset {
     //     ]
 
     // TODO: subset prep, cvt, fpgm?
-    return Directory.toBuffer({
-      tables: {
-        head,
-        hhea,
-        loca: this.loca,
-        maxp,
-        // The synthesized maxp declares no instruction resources, so no
-        // programs go with it.
-        'cvt ': outlineless ? undefined : this.font['cvt '],
-        prep: outlineless ? undefined : this.font.prep,
-        glyf: this.glyf,
-        hmtx: this.hmtx,
-        fpgm: outlineless ? undefined : this.font.fpgm,
+    return encodeSfnt({
+      head,
+      hhea,
+      loca: this.loca,
+      maxp,
+      // The synthesized maxp declares no instruction resources, so no
+      // programs go with it.
+      'cvt ': outlineless ? undefined : this.font['cvt '],
+      prep: outlineless ? undefined : this.font.prep,
+      glyf: this.glyf,
+      hmtx: this.hmtx,
+      fpgm: outlineless ? undefined : this.font.fpgm,
 
-        // name: clone @font.name
-        // 'OS/2': clone @font['OS/2']
-        // post: clone @font.post
-        // cmap: cmap
-      },
+      // name: clone @font.name
+      // 'OS/2': clone @font['OS/2']
+      // post: clone @font.post
+      // cmap: cmap
     });
   }
 }

@@ -17,14 +17,6 @@ Google code, a licensing call under LLM.md) or a clean-room decoder written
 by a session that has not read it. WOFF is fully bounded (fflate never grows
 the caller's buffer).
 
-## Encoded sfnt directories are not well-formed
-
-`tables/directory.ts` writes every table record with a zero checksum, in the
-insertion order of the tables object rather than sorted by tag, under the
-`true` sfnt tag rather than `0x00010000`, and the cloned `head` keeps the
-source's `checkSumAdjustment`. PDF viewers accept this, but strict sfnt
-validators (OTS, the OpenType spec) do not.
-
 ## Bitmap glyphs are never drawn in the PDF
 
 A CBDT/EBDT bitmap-only font embeds (whole or subset) as a TrueType font whose

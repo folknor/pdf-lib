@@ -316,7 +316,7 @@ describe('CustomFontEmbedder', () => {
 
       const { key, bytes } = fontFileOf(context, ref);
       expect(key).toBe('FontFile2');
-      expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('true');
+      expectWellFormedSfnt(bytes);
 
       const source = embedder.font as any;
       const embedded = fontkit.create(bytes);
@@ -362,7 +362,9 @@ describe('CustomFontEmbedder', () => {
       embedder.encodeText('A');
       const ref = await embedder.embedIntoContext(context);
 
-      const embedded = fontkit.create(fontFileOf(context, ref).bytes);
+      const { bytes } = fontFileOf(context, ref);
+      expectWellFormedSfnt(bytes);
+      const embedded = fontkit.create(bytes);
       const source = embedder.font as any;
       const expected = source.glyphForCodePoint(0x41);
       const actual = embedded.getGlyph(1);
@@ -509,6 +511,54 @@ const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
     : 'FontFile3';
   const stream = descriptor.lookup(PDFName.of(key), PDFRawStream);
   return { key, bytes: decodePDFRawStream(stream).decode() };
+};
+
+// Checks the sfnt layout from the raw bytes, independently of the encoder:
+// TrueType signature, search fields, records sorted by tag, 4-aligned table
+// offsets, per-table checksums (head taken with checkSumAdjustment zero) and
+// the whole-file sum 0xB1B0AFBA.
+const expectWellFormedSfnt = (bytes: Uint8Array) => {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const sum = (start: number, length: number) => {
+    let total = 0;
+    for (let i = 0; i < length; i += 4) {
+      let word = 0;
+      for (let b = 0; b < 4; b++) {
+        const at = start + i + b;
+        word = word * 256 + (i + b < length ? bytes[at]! : 0);
+      }
+      total = (total + word) % 2 ** 32;
+    }
+    return total;
+  };
+
+  expect(view.getUint32(0)).toBe(0x00010000);
+  const numTables = view.getUint16(4);
+  const searchRange = 2 ** Math.floor(Math.log2(numTables)) * 16;
+  expect(view.getUint16(6)).toBe(searchRange);
+  expect(view.getUint16(8)).toBe(Math.log2(searchRange / 16));
+  expect(view.getUint16(10)).toBe(numTables * 16 - searchRange);
+
+  const tags: string[] = [];
+  for (let i = 0; i < numTables; i++) {
+    const record = 12 + 16 * i;
+    const tag = String.fromCharCode(...bytes.subarray(record, record + 4));
+    const checkSum = view.getUint32(record + 4);
+    const offset = view.getUint32(record + 8);
+    const length = view.getUint32(record + 12);
+    tags.push(tag);
+    expect(offset % 4).toBe(0);
+    expect(offset + length).toBeLessThanOrEqual(bytes.length);
+    let expected = sum(offset, length);
+    if (tag === 'head') {
+      expected = (expected - view.getUint32(offset + 8) + 2 ** 32) % 2 ** 32;
+    }
+    expect(checkSum).toBe(expected);
+  }
+  expect(tags).toEqual([...tags].sort());
+  expect(tags).toContain('head');
+  expect(bytes.length % 4).toBe(0);
+  expect(sum(0, bytes.length)).toBe(0xb1b0afba);
 };
 
 const expectBBoxClose = (
