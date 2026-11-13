@@ -18,9 +18,10 @@ import { arrayAsString, isArrayEqual } from '../utils/arrays.js';
 import { stringAsByteArray } from '../utils/strings.js';
 import type PDFBool from './objects/PDFBool.js';
 import PDFDict from './objects/PDFDict.js';
+import PDFHexString from './objects/PDFHexString.js';
 import PDFName from './objects/PDFName.js';
 import type PDFNumber from './objects/PDFNumber.js';
-import type PDFString from './objects/PDFString.js';
+import PDFString from './objects/PDFString.js';
 import { r6PasswordCandidates } from './security/passwordPrep.js';
 import DecryptStream from './streams/DecryptStream.js';
 import type { StreamType } from './streams/Stream.js';
@@ -1593,6 +1594,47 @@ class CipherTransform {
   }
 }
 
+/**
+ * ISO 32000-2 Algorithm 13: decrypts /Perms (one AES-256 block, ECB, i.e.
+ * CBC with a zero IV) with the recovered file key and checks the 'adb'
+ * marker, the permissions against /P and byte 8 against /EncryptMetadata.
+ * Returns a description of the first inconsistency, or undefined.
+ *
+ * Callers only warn. PDF encryption carries no integrity, and a failure
+ * cannot tell a damaged /Perms from a damaged /UE or /OE (a wrong key), so
+ * refusing the file would also refuse recoverable ones; PDFBox relaxes this
+ * check for buggy encoders and qpdf only warns.
+ */
+const permsInconsistency = (
+  perms: unknown,
+  key: Uint8Array,
+  p: number,
+  encryptMetadata: boolean,
+): string | undefined => {
+  if (!(perms instanceof PDFString || perms instanceof PDFHexString)) {
+    return 'is missing or not a string';
+  }
+  const bytes = perms.asBytes();
+  if (bytes.length !== 16) return `has ${bytes.length} bytes, not 16`;
+  const clear = new AES256Cipher(key).decryptBlock(
+    bytes,
+    false,
+    new Uint8Array(16),
+  );
+  if (clear[9] !== 0x61 || clear[10] !== 0x64 || clear[11] !== 0x62) {
+    return 'does not decrypt to the adb marker under the file key';
+  }
+  const permissions =
+    clear[0]! | (clear[1]! << 8) | (clear[2]! << 16) | (clear[3]! << 24);
+  if (permissions !== (p | 0)) {
+    return `holds permissions ${permissions}, but /P is ${p}`;
+  }
+  if (clear[8] !== (encryptMetadata ? 0x54 : 0x46)) {
+    return `disagrees with /EncryptMetadata ${encryptMetadata}`;
+  }
+  return undefined;
+};
+
 class CipherTransformFactory {
   encryptMetadata: boolean;
   encryptionKey: Uint8Array;
@@ -1720,7 +1762,6 @@ class CipherTransformFactory {
       const userEncryption = (
         dict.get(PDFName.of('UE')) as PDFString
       ).asBytes();
-      const perms = (dict.get(PDFName.of('Perms')) as PDFString).asBytes();
       const keyFor = (bytes: Uint8Array | undefined) =>
         this.createEncryptionKey20(
           revision,
@@ -1734,7 +1775,6 @@ class CipherTransformFactory {
           userKeySalt,
           ownerEncryption,
           userEncryption,
-          perms,
         );
       encryptionKey = keyFor(passwordBytes);
       for (const fallback of fallbackPasswordBytes) {
@@ -1769,6 +1809,18 @@ class CipherTransformFactory {
     }
 
     this.encryptionKey = encryptionKey;
+
+    if (algorithm === 5) {
+      const problem = permsInconsistency(
+        dict.get(PDFName.of('Perms')),
+        encryptionKey,
+        flags,
+        encryptMetadata,
+      );
+      if (problem) {
+        console.warn(`Encryption dictionary /Perms ${problem}`);
+      }
+    }
 
     if (algorithm >= 4) {
       const cf = dict.lookup(PDFName.of('CF')) as PDFDict;
@@ -1832,7 +1884,6 @@ class CipherTransformFactory {
     userKeySalt: Uint8Array,
     ownerEncryption: Uint8Array,
     userEncryption: Uint8Array,
-    _perms: Uint8Array,
   ) {
     if (password) {
       const passwordLength = Math.min(127, password.length);

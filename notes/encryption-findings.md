@@ -36,9 +36,3 @@ The proper fix carries the Unicode 3.2 normalisation (and, for the writer to
 accept right-to-left passwords, the RFC 3454 D.1/D.2 bidi tables). The writer
 side is unaffected: it only accepts passwords whose prepared form is the same
 under every Unicode version.
-
-## Decryption never checks /Perms
-
-`createEncryptionKey20` in `src/core/crypto.ts` takes `_perms` and ignores it.
-ISO 32000-2 Algorithm 13 decrypts /Perms with the file key and checks the
-'adb' marker and that the permissions match /P; a mismatch is tampering.

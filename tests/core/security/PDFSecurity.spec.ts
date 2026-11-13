@@ -326,8 +326,12 @@ describe('PDFSecurity', () => {
         O: concat(digest('sha256', concat(owner, ovs, U)), ovs, oks),
         UE: aes('aes-256-cbc', digest('sha256', concat(user, uks)), zero, key),
         OE: aes('aes-256-cbc', digest('sha256', concat(owner, oks, U)), zero, key),
-        Perms: new Uint8Array(16),
+        // -3904 little endian, 0xffffffff, 'Tadb', filler.
+        Perms: aes('aes-256-ecb', key, null, concat(
+          new Uint8Array([0xc0, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+          new Uint8Array([0x54, 0x61, 0x64, 0x62, 0, 0, 0, 0]))),
       } as any) as PDFDict;
+      const warn = vi.spyOn(console, 'warn');
       const pad = 16 - (PLAINTEXT.length % 16);
       const ciphertext = concat(zero, aes('aes-256-cbc', key, zero,
         concat(PLAINTEXT, new Uint8Array(pad).fill(pad))));
@@ -336,6 +340,8 @@ describe('PDFSecurity', () => {
         expect(Array.from(factory.createCipherTransform(7, 0).decryptBytes(ciphertext)))
           .toEqual(Array.from(PLAINTEXT));
       }
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     },
   );
 
@@ -727,6 +733,46 @@ describe('PDFSecurity', () => {
       expect(
         Array.from(factory.createCipherTransform(7, 0).decryptBytes(ciphertext)),
       ).toEqual(Array.from(PLAINTEXT));
+    });
+
+    it.each([
+      ['a consistent dictionary', {}, undefined],
+      ['/P stored unsigned', { P: 4294963392 }, undefined],
+      ['another /P', { P: -4 }, 'holds permissions -3904, but /P is -4'],
+      ['/EncryptMetadata false', { EncryptMetadata: false },
+        'disagrees with /EncryptMetadata false'],
+      ['a damaged /Perms', { Perms: new Uint8Array(16) },
+        'does not decrypt to the adb marker under the file key'],
+      ['a short /Perms', { Perms: new Uint8Array(12) }, 'has 12 bytes, not 16'],
+      ['no /Perms', { Perms: undefined }, 'is missing or not a string'],
+    ] as const)('checks /Perms on read, given %s', (_, change, problem) => {
+      // ISO 32000-2 Algorithm 13. Inconsistencies only warn: the file key
+      // still decrypts.
+      resetRandom();
+      const ref = referenceR6(utf8('u'), utf8('o'), -3904);
+      const entries: Record<string, unknown> = {
+        Filter: 'Standard', V: 5, R: 6, Length: 256, P: -3904,
+        CF: { StdCF: { AuthEvent: 'DocOpen', CFM: 'AESV3', Length: 32 } },
+        StmF: 'StdCF', StrF: 'StdCF',
+        O: ref.O, U: ref.U, OE: ref.OE, UE: ref.UE, Perms: ref.Perms,
+        ...change,
+      };
+      if (entries.Perms === undefined) delete entries.Perms;
+      const dict = contextFor(1, 7).obj(entries as any) as PDFDict;
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const factory = new CipherTransformFactory(dict, ref.id, 'u');
+        expect(Array.from(factory.encryptionKey)).toEqual(Array.from(ref.key));
+        if (problem) {
+          expect(warn).toHaveBeenCalledExactlyOnceWith(
+            `Encryption dictionary /Perms ${problem}`,
+          );
+        } else {
+          expect(warn).not.toHaveBeenCalled();
+        }
+      } finally {
+        warn.mockRestore();
+      }
     });
   });
 
