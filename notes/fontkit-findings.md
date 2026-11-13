@@ -39,12 +39,21 @@ Google code, a licensing call under LLM.md) or a clean-room decoder written
 by a session that has not read it. WOFF is fully bounded (fflate never grows
 the caller's buffer).
 
-## CFF2 fonts subset through TTFSubset
+## Encoded sfnt directories are not well-formed
 
-`TTFFont.createSubset` picks `CFFSubset` only for a `CFF ` table; a CFF2 font
-falls through to `TTFSubset`, which reads glyf/loca the font does not have.
-Subsetting CFF2 (variable OpenType) fonts is therefore unsupported, varied or
-not.
+`tables/directory.ts` writes every table record with a zero checksum, in the
+insertion order of the tables object rather than sorted by tag, under the
+`true` sfnt tag rather than `0x00010000`, and the cloned `head` keeps the
+source's `checkSumAdjustment`. PDF viewers accept this, but strict sfnt
+validators (OTS, the OpenType spec) do not.
+
+## Flattened subsets keep head.flags bit 1 from the source
+
+A re-encoded TrueType subset (variation instance, WOFF2 transformed glyf, or
+converted CFF2) clones `head.flags`. Bit 1 promises that every glyph's left
+side bearing equals its xMin; the converted CFF2 subset makes it true, but a
+flattened gvar subset writes phantom-point bearings that need not match the
+re-encoded xMin (see "Varied bearings are measured from unvaried extents").
 
 ## Bitmap glyphs are never drawn in the PDF
 

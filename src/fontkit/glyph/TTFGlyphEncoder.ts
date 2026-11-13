@@ -40,8 +40,35 @@ const Glyf = new r.Struct({
 /**
  * Encodes TrueType glyph outlines
  */
+const OVERLAP_SIMPLE = 1 << 6;
+
+const INT16_MIN = -32768;
+const INT16_MAX = 32767;
+
+const checkInt16 = (value: number, what: string): void => {
+  if (value < INT16_MIN || value > INT16_MAX) {
+    throw new Error(`Glyph ${what} ${value} does not fit a glyf int16`);
+  }
+};
+
+export interface EncodeSimpleOptions {
+  instructions?: number[];
+  /** Set OVERLAP_SIMPLE: the contours may overlap (nonzero fill). */
+  overlapping?: boolean;
+}
+
 export default class TTFGlyphEncoder {
-  encodeSimple(path: PathType, instructions: number[] = []): Uint8Array {
+  /**
+   * Encodes a path of lines and quadratic curves as a simple glyph. Cubic
+   * curves have no glyf form; convert them first (quadraticOutline.ts).
+   * Coordinates are rounded to integers; a glyph whose coordinates, deltas,
+   * contour or point counts exceed what glyf can hold is refused rather than
+   * wrapped.
+   */
+  encodeSimple(
+    path: PathType,
+    { instructions = [], overlapping = false }: EncodeSimpleOptions = {},
+  ): Uint8Array {
     const endPtsOfContours: number[] = [];
     const xPoints: number[] = [];
     const yPoints: number[] = [];
@@ -50,8 +77,6 @@ export default class TTFGlyphEncoder {
     let lastX = 0,
       lastY = 0,
       lastFlag = 0;
-    let rawLastX = 0,
-      rawLastY = 0;
     let pointCount = 0;
     // The glyf header bbox spans every encoded point, off-curve included.
     let xMin = Infinity;
@@ -62,34 +87,44 @@ export default class TTFGlyphEncoder {
     for (let i = 0; i < path.commands.length; i++) {
       const c = path.commands[i];
       if (!c) continue;
+      if (c.command === 'bezierCurveTo') {
+        throw new Error('glyf cannot hold cubic curves; convert them first');
+      }
 
       for (let j = 0; j < c.args.length; j += 2) {
-        const rawX = c.args[j] ?? 0;
-        const rawY = c.args[j + 1] ?? 0;
+        // glyf stores integer coordinates. Paths can hold fractions (scaled
+        // composite components, variation deltas); writing fractional deltas
+        // would truncate each one and let the error accumulate.
+        const x = Math.round(c.args[j] ?? 0);
+        const y = Math.round(c.args[j + 1] ?? 0);
         let flag = 0;
 
-        // If the ending point of a quadratic curve is the midpoint
-        // between the control point and the control point of the next
-        // quadratic curve, we can omit the ending point.
+        // If the ending point of a quadratic curve is the midpoint between
+        // its control point and the next quadratic's, it can be omitted: a
+        // decoder implies it. The decoder implies the midpoint of the rounded
+        // controls, so omit the point when that midpoint is the point itself
+        // or its rounding (it is then at least as close as writing it).
         if (c.command === 'quadraticCurveTo' && j === 2) {
           const next = path.commands[i + 1];
           if (next && next.command === 'quadraticCurveTo') {
-            const midX = (rawLastX + (next.args[0] ?? 0)) / 2;
-            const midY = (rawLastY + (next.args[1] ?? 0)) / 2;
-
-            if (rawX === midX && rawY === midY) {
+            const rawX = c.args[j] ?? 0;
+            const rawY = c.args[j + 1] ?? 0;
+            const midX2 = lastX + Math.round(next.args[0] ?? 0);
+            const midY2 = lastY + Math.round(next.args[1] ?? 0);
+            if (
+              (2 * rawX === midX2 || 2 * x === midX2) &&
+              (2 * rawY === midY2 || 2 * y === midY2)
+            ) {
               continue;
             }
           }
         }
 
-        // glyf stores integer coordinates. Paths can hold fractions (scaled
-        // composite components, variation deltas); writing fractional deltas
-        // would truncate each one and let the error accumulate.
-        rawLastX = rawX;
-        rawLastY = rawY;
-        const x = Math.round(rawX);
-        const y = Math.round(rawY);
+        checkInt16(x, 'x coordinate');
+        checkInt16(y, 'y coordinate');
+        checkInt16(x - lastX, 'x delta');
+        checkInt16(y - lastY, 'y delta');
+        if (pointCount === 0 && overlapping) flag |= OVERLAP_SIMPLE;
 
         // All points except control points are on curve.
         if (!(c.command === 'quadraticCurveTo' && j === 0)) {
@@ -158,6 +193,13 @@ export default class TTFGlyphEncoder {
       lastCmd.command !== 'closePath'
     ) {
       endPtsOfContours.push(pointCount - 1);
+    }
+
+    // numberOfContours is signed, and maxp.maxPoints caps a glyph's points.
+    if (endPtsOfContours.length > INT16_MAX || pointCount > 0xffff) {
+      throw new Error(
+        `Glyph has ${endPtsOfContours.length} contours and ${pointCount} points, more than glyf can hold`,
+      );
     }
 
     if (pointCount === 0) xMin = yMin = xMax = yMax = 0;

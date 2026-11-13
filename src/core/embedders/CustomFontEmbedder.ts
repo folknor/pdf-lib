@@ -95,7 +95,8 @@ class CustomFontEmbedder {
     const glyphs = this.font.glyphsForString(text) as (Glyph | null)[];
     let totalWidth = 0;
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      totalWidth += glyphs[idx]?.advanceWidth ?? 0;
+      // Rounded per glyph, as /W writes it (computeWidths).
+      totalWidth += Math.round(glyphs[idx]?.advanceWidth ?? 0);
     }
     return (totalWidth * size) / this.font.unitsPerEm;
   }
@@ -155,6 +156,7 @@ class CustomFontEmbedder {
 
   // Our fontkit has no `font.cff` (other fontkit builds may); it exposes the
   // table as 'CFF ', so look in the table directory, which avoids decoding it.
+  // CFF2 is deliberately not CFF here: it embeds converted to TrueType.
   protected isCFF(): boolean {
     const font = this.font as {
       cff?: unknown;
@@ -240,9 +242,12 @@ class CustomFontEmbedder {
    *   charset of a CID-keyed font maps them differently (Source Han: GID 365
    *   is CID 621), so the re-encoded CFF gets an identity charset (CID ==
    *   GID). This also avoids FontFile3 /OpenType, which needs PDF 1.6.
+   * - CFF2 (variable PostScript-outline) OpenType: converted to a TrueType
+   *   font (see TTFSubset._fromCFF2), so it is a FontFile2 like any other
+   *   TrueType, from the instance's own outlines when it is a variation.
    */
   protected async serializeFont(): Promise<Uint8Array> {
-    if (isWebFont(this.font) || this.isCFF()) {
+    if (isWebFont(this.font) || this.isCFF() || isCFF2(this.font)) {
       return encodeWholeFont(this.font);
     }
     return this.fontData;
@@ -306,7 +311,9 @@ class CustomFontEmbedder {
     return compressWidths(
       this.glyphsForWidths().map((glyph) => [
         this.glyphId(glyph),
-        glyph.advanceWidth * this.scale,
+        // A variation instance's advance can be fractional; the embedded
+        // font's hmtx holds it rounded (TTFSubset._pushGlyph), and /W agrees.
+        Math.round(glyph.advanceWidth) * this.scale,
       ]),
     );
   }
@@ -350,6 +357,13 @@ export const asFont = (font: unknown): Font => {
     throw new Error('fontkit.create() did not return a usable font.');
   }
   return font as Font;
+};
+
+const isCFF2 = (font: Font): boolean => {
+  const { directory } = font as {
+    directory?: { tables?: Record<string, unknown> };
+  };
+  return !!directory?.tables?.['CFF2'];
 };
 
 const isWebFont = (font: Font): boolean => {

@@ -370,6 +370,49 @@ describe('CustomFontEmbedder', () => {
       expectBBoxClose(actual.path.bbox, expected.path.bbox);
     });
   });
+
+  describe('with a CFF2 (variable PostScript-outline) source font', () => {
+    const otf = fs.readFileSync(
+      './assets/fonts/fonttest/AdobeVFPrototype-Subset.otf',
+    );
+
+    for (const subset of [false, true]) {
+      it(`embeds a converted TrueType font (${subset ? 'subset' : 'whole'})`, async () => {
+        const context = PDFContext.create();
+        const embedder = subset
+          ? await CustomFontSubsetEmbedder.for(fontkit, otf)
+          : await CustomFontEmbedder.for(fontkit, otf);
+        embedder.encodeText('$');
+        const ref = await embedder.embedIntoContext(context);
+
+        const { key, bytes } = fontFileOf(context, ref);
+        expect(key).toBe('FontFile2');
+        const cidFont = context
+          .lookup(ref, PDFDict)
+          .lookup(PDFName.of('DescendantFonts'), PDFArray)
+          .lookup(0, PDFDict);
+        expect(cidFont.get(PDFName.of('Subtype'))).toBe(
+          PDFName.of('CIDFontType2'),
+        );
+
+        const embedded = fontkit.create(bytes) as any;
+        expect(embedded.directory.tables.glyf).toBeDefined();
+        const source = embedder.font as any;
+        const expected = source.glyphForCodePoint(0x24);
+        const actual = embedded.getGlyph(subset ? 1 : expected.id);
+        expect(actual.advanceWidth).toBe(Math.round(expected.advanceWidth));
+        // /W carries the same (rounded) advance the font file holds.
+        expect(widthsOf(context, ref).get(subset ? 1 : expected.id)).toBe(
+          actual.advanceWidth,
+        );
+        const a = actual.path.bbox;
+        const e = expected.path.bbox;
+        for (const k of ['minX', 'minY', 'maxX', 'maxY'] as const) {
+          expect(Math.abs(a[k] - e[k])).toBeLessThanOrEqual(1);
+        }
+      });
+    }
+  });
 });
 
 describe('deriveFontFlags', () => {

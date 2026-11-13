@@ -392,16 +392,16 @@ export default class CFFGlyph extends Glyph {
                   stack.push(a + b);
                   break;
 
-                case 11: // sub
+                case 11: // sub: num1 num2 -> num1 - num2
                   a = stack.pop() ?? 0;
                   b = stack.pop() ?? 0;
-                  stack.push(a - b);
+                  stack.push(b - a);
                   break;
 
-                case 12: // div
+                case 12: // div: num1 num2 -> num1 / num2
                   a = stack.pop() ?? 0;
                   b = stack.pop() ?? 0;
-                  stack.push(a / b);
+                  stack.push(b / a);
                   break;
 
                 case 14: // neg
@@ -512,7 +512,7 @@ export default class CFFGlyph extends Glyph {
                   break;
                 }
 
-                case 34: // hflex
+                case 34: // hflex: the second curve comes back down by dy2
                   c1x = x + (stack.shift() ?? 0);
                   c1y = y;
                   c2x = c1x + (stack.shift() ?? 0);
@@ -522,7 +522,7 @@ export default class CFFGlyph extends Glyph {
                   c4x = c3x + (stack.shift() ?? 0);
                   c4y = c3y;
                   c5x = c4x + (stack.shift() ?? 0);
-                  c5y = c4y;
+                  c5y = y;
                   c6x = c5x + (stack.shift() ?? 0);
                   c6y = c5y;
                   x = c6x;
@@ -558,7 +558,8 @@ export default class CFFGlyph extends Glyph {
                   c5x = c4x + (stack.shift() ?? 0);
                   c5y = c4y + (stack.shift() ?? 0);
                   c6x = c5x + (stack.shift() ?? 0);
-                  c6y = c5y;
+                  // hflex1 ends at the starting y.
+                  c6y = y;
                   x = c6x;
                   y = c6y;
 

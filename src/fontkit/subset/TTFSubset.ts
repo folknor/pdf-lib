@@ -1,3 +1,4 @@
+import { toTrueTypeOutline } from '../glyph/quadraticOutline.js';
 import TTFGlyphEncoder from '../glyph/TTFGlyphEncoder.js';
 import Directory from '../tables/directory.js';
 import Subset from './Subset.js';
@@ -31,9 +32,27 @@ export default class TTFSubset extends Subset {
   // exist only after decoding, while the subset carries no gvar.
   get _flattenGlyphs(): boolean {
     return (
+      this._fromCFF2 ||
       !!this.font.directory.tables.glyf?.transformed ||
       !!this.font._variationProcessor
     );
+  }
+
+  // A CFF2 font becomes a TrueType subset. CFF v1 is the other format PDF
+  // embeds, but its charstrings fill even-odd, while CFF2 fills nonzero and
+  // variable outlines overlap routinely, so a CFF v1 copy would need overlap
+  // removal (a cubic Boolean union). glyf fills nonzero, so each instanced
+  // outline converts with its overlaps intact: cubics become quadratics within
+  // _cff2Tolerance and contours are reversed (quadraticOutline.ts). Hints are
+  // not carried over.
+  get _fromCFF2(): boolean {
+    const tables = this.font.directory.tables;
+    return !!tables.CFF2 && !tables.glyf;
+  }
+
+  // Half a unit at 1000 units per em, before rounding to the integer grid.
+  get _cff2Tolerance(): number {
+    return this.font.unitsPerEm / 2000;
   }
 
   // A bitmap-only (CBDT/EBDT) font has no glyf, loca, or CFF to copy from.
@@ -62,6 +81,23 @@ export default class TTFSubset extends Subset {
     // getGlyph() returns a COLR wrapper in color fonts; the outline glyph is
     // what goes into glyf.
     const glyph = this.font._getBaseGlyph(gid) ?? this.font.getGlyph(gid);
+
+    if (this._fromCFF2) {
+      const outline = toTrueTypeOutline(glyph.path, this._cff2Tolerance);
+      const buffer =
+        outline.commands.length > 0
+          ? this.glyphEncoder.encodeSimple(outline, { overlapping: true })
+          : new Uint8Array(0);
+      // The left side bearing is the converted glyph's xMin, so the outline
+      // keeps its position relative to the origin.
+      const xMin =
+        buffer.length > 0
+          ? new DataView(buffer.buffer, buffer.byteOffset).getInt16(2)
+          : 0;
+      this._pushGlyph(glyph, buffer, xMin);
+      return this.glyf.length - 1;
+    }
+
     const glyf = glyph._decode();
 
     let buffer: Uint8Array;
@@ -130,6 +166,58 @@ export default class TTFSubset extends Subset {
     maxp.maxComponentDepth = 0;
   }
 
+  /**
+   * Re-encoded glyphs (instanced, converted, rounded) no longer have the
+   * source font's extents, so head's bounding box and hhea's extremes are
+   * recomputed from the glyf headers and hmtx entries actually written.
+   */
+  _updateExtents(head: any, hhea: any): void {
+    let xMin = Infinity;
+    let yMin = Infinity;
+    let xMax = -Infinity;
+    let yMax = -Infinity;
+    let advanceWidthMax = 0;
+    let minLeftSideBearing = Infinity;
+    let minRightSideBearing = Infinity;
+    let xMaxExtent = -Infinity;
+    this.glyf.forEach((buffer, i) => {
+      const { advance, bearing } = this.hmtx.metrics[i]!;
+      advanceWidthMax = Math.max(advanceWidthMax, advance);
+      if (buffer.length < 10) return;
+      const view = new DataView(buffer.buffer, buffer.byteOffset, 10);
+      const gxMin = view.getInt16(2);
+      const gxMax = view.getInt16(6);
+      xMin = Math.min(xMin, gxMin);
+      yMin = Math.min(yMin, view.getInt16(4));
+      xMax = Math.max(xMax, gxMax);
+      yMax = Math.max(yMax, view.getInt16(8));
+      minLeftSideBearing = Math.min(minLeftSideBearing, bearing);
+      minRightSideBearing = Math.min(
+        minRightSideBearing,
+        advance - (bearing + gxMax - gxMin),
+      );
+      xMaxExtent = Math.max(xMaxExtent, bearing + gxMax - gxMin);
+    });
+    const any = xMin !== Infinity;
+    head.xMin = any ? xMin : 0;
+    head.yMin = any ? yMin : 0;
+    head.xMax = any ? xMax : 0;
+    head.yMax = any ? yMax : 0;
+    hhea.advanceWidthMax = advanceWidthMax;
+    hhea.minLeftSideBearing = any ? minLeftSideBearing : 0;
+    hhea.minRightSideBearing = any ? minRightSideBearing : 0;
+    hhea.xMaxExtent = any ? xMaxExtent : 0;
+    for (const key of [
+      'minLeftSideBearing',
+      'minRightSideBearing',
+      'xMaxExtent',
+    ] as const) {
+      if (hhea[key] < -32768 || hhea[key] > 32767) {
+        throw new Error(`hhea ${key} ${hhea[key]} does not fit an int16`);
+      }
+    }
+  }
+
   // A TrueType font needs a version 1.0 maxp; a bitmap-only source may carry
   // version 0.5, and its outline limits are all zero anyway.
   static _emptyMaxp(numGlyphs: number): any {
@@ -152,14 +240,25 @@ export default class TTFSubset extends Subset {
     };
   }
 
-  _pushGlyph(glyph: any, buffer: Uint8Array): void {
+  _pushGlyph(
+    glyph: any,
+    buffer: Uint8Array,
+    bearing: number = glyph._getMetrics().leftBearing,
+  ): void {
     this.glyf.push(buffer);
     this.loca.offsets.push(this.offset);
 
-    this.hmtx.metrics.push({
-      advance: glyph.advanceWidth,
-      bearing: glyph._getMetrics().leftBearing,
-    });
+    // hmtx holds integers; a varied (HVAR or phantom point) advance can be
+    // fractional, and the serializer would truncate it.
+    const advance = Math.round(glyph.advanceWidth);
+    if (advance < 0 || advance > 0xffff) {
+      throw new Error(`Glyph advance ${advance} does not fit hmtx`);
+    }
+    const lsb = Math.round(bearing);
+    if (lsb < -32768 || lsb > 32767) {
+      throw new Error(`Glyph left side bearing ${lsb} does not fit hmtx`);
+    }
+    this.hmtx.metrics.push({ advance, bearing: lsb });
 
     this.offset += buffer.length;
   }
@@ -199,23 +298,29 @@ export default class TTFSubset extends Subset {
     }
 
     const outlineless = this._outlineless;
-    const maxp = outlineless
-      ? TTFSubset._emptyMaxp(this.glyf.length)
-      : structuredClone(this.font.maxp);
+    // Neither a bitmap-only nor a CFF2 font has a TrueType maxp to clone
+    // (CFF fonts carry version 0.5).
+    const maxp =
+      outlineless || this._fromCFF2
+        ? TTFSubset._emptyMaxp(this.glyf.length)
+        : structuredClone(this.font.maxp);
     maxp.numGlyphs = this.glyf.length;
     if (this._flattenGlyphs) this._updateMaxpForFlattenedGlyphs(maxp);
 
     this.loca.offsets.push(this.offset);
-
-    // A zero-length glyf table is rejected by some consumers (OTS pads it
-    // the same way); loca still marks every glyph empty.
-    if (outlineless && this.offset === 0) this.glyf.push(new Uint8Array(1));
 
     const head = structuredClone(this.font.head);
     head.indexToLocFormat = this.loca.version;
 
     const hhea = structuredClone(this.font.hhea);
     hhea.numberOfMetrics = this.hmtx.metrics.length;
+
+    // Before the padding below, which is not a glyph entry.
+    if (this._flattenGlyphs) this._updateExtents(head, hhea);
+
+    // A zero-length glyf table is rejected by some consumers (OTS pads it
+    // the same way); loca still marks every glyph empty.
+    if (this.offset === 0) this.glyf.push(new Uint8Array(1));
 
     // map = []
     // for index in [0...256]

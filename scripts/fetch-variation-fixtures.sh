@@ -10,4 +10,7 @@ for n in TestGVAROne TestGVARTwo TestGVARThree TestGVARFour TestHVARTwo; do
       --header "Accept: application/vnd.github.raw" >"$dest/$n.$e"
   done
 done
+# CFF2 (variable PostScript-outline) font.
+gh api "repos/cantoo-scribe/fontkit/contents/test/data/fonttest/AdobeVFPrototype-Subset.otf?ref=836ca892" \
+  --header "Accept: application/vnd.github.raw" >"$dest/AdobeVFPrototype-Subset.otf"
 ls -la "$dest"
