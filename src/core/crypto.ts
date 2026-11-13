@@ -21,6 +21,7 @@ import PDFDict from './objects/PDFDict.js';
 import PDFName from './objects/PDFName.js';
 import type PDFNumber from './objects/PDFNumber.js';
 import type PDFString from './objects/PDFString.js';
+import { r6PasswordCandidates } from './security/passwordPrep.js';
 import DecryptStream from './streams/DecryptStream.js';
 import type { StreamType } from './streams/Stream.js';
 
@@ -1673,16 +1674,20 @@ class CipherTransformFactory {
     this.encryptMetadata = encryptMetadata;
 
     // R5/R6 passwords are UTF-8 (ISO 32000-2 7.6.4.3.3, Adobe ext. level 3).
-    // For R5, also accept the raw char codes: older writers (including this
-    // library before it UTF-8 encoded R5 passwords) produced those.
+    // R6: SASLprep-mapped and NFKC-normalised first, then raw UTF-8 (see
+    // passwordPrep.ts for what this does not cover). R5: UTF-8 without
+    // preparation, then the raw char codes older writers (including this
+    // library before it UTF-8 encoded R5 passwords) produced. Adobe's
+    // extension level 3 also calls for SASLprep on R5; not applied here.
     let passwordBytes: Uint8Array | undefined;
-    let legacyR5PasswordBytes: Uint8Array | undefined;
+    let fallbackPasswordBytes: Uint8Array[] = [];
     if (password) {
-      if (revision >= 5) {
+      if (revision === 6) {
+        [passwordBytes, ...fallbackPasswordBytes] =
+          r6PasswordCandidates(password);
+      } else if (revision === 5) {
         passwordBytes = new TextEncoder().encode(password);
-        if (revision === 5) {
-          legacyR5PasswordBytes = stringAsByteArray(password);
-        }
+        fallbackPasswordBytes = [stringAsByteArray(password)];
       } else {
         passwordBytes = stringAsByteArray(password);
       }
@@ -1730,8 +1735,9 @@ class CipherTransformFactory {
           perms,
         );
       encryptionKey = keyFor(passwordBytes);
-      if (!encryptionKey && legacyR5PasswordBytes) {
-        encryptionKey = keyFor(legacyR5PasswordBytes);
+      for (const fallback of fallbackPasswordBytes) {
+        if (encryptionKey) break;
+        encryptionKey = keyFor(fallback);
       }
     }
     if (!(encryptionKey || password)) {

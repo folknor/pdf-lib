@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import type { PDFAttachment } from '../../src/api/PDFDocument';
 import {
   AFRelationship,
+  decodePDFRawStream,
   Duplex,
   EncryptedPDFError,
   NonFullScreenPageMode,
@@ -12,9 +13,12 @@ import {
   PDFArray,
   PDFDict,
   PDFDocument,
+  PDFHeader,
   PDFHexString,
   PDFName,
+  PDFNumber,
   PDFPage,
+  type PDFRawStream,
   PrintScaling,
   ReadingDirection,
   ViewerPreferences,
@@ -126,6 +130,43 @@ describe('PDFDocument', () => {
       });
       expect(pdfDoc).toBeInstanceOf(PDFDocument);
       expect(pdfDoc.isEncrypted).toBe(true);
+    });
+
+    it('encrypts with AES-256 by default, whatever the header says', async () => {
+      const pdfDoc = await PDFDocument.create({ updateMetadata: false });
+      pdfDoc.context.header = PDFHeader.forVersion(1, 3);
+      pdfDoc.addPage([300, 200]).drawRectangle({ x: 1, y: 2, width: 3 });
+      pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'owner' });
+      // Strings are not encrypted by the writers yet, so this checks the
+      // page content stream rather than a string such as the title.
+      const bytes = await pdfDoc.save({ useObjectStreams: false });
+
+      expect(new TextDecoder().decode(bytes.subarray(0, 8))).toBe('%PDF-1.7');
+      const raw = await PDFDocument.load(bytes, {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      });
+      const encryptDict = raw.context.lookup(
+        raw.context.trailerInfo.Encrypt,
+        PDFDict,
+      );
+      expect(encryptDict.get(PDFName.of('V'))).toEqual(PDFNumber.of(5));
+      expect(encryptDict.get(PDFName.of('R'))).toEqual(PDFNumber.of(6));
+
+      for (const password of ['user', 'owner']) {
+        const reopened = await PDFDocument.load(bytes, {
+          password,
+          updateMetadata: false,
+        });
+        const contents = reopened.getPage(0).node.Contents();
+        const stream = (
+          contents instanceof PDFArray ? contents.lookup(0) : contents
+        ) as PDFRawStream;
+        const text = new TextDecoder().decode(
+          decodePDFRawStream(stream).decode(),
+        );
+        expect(text).toContain('1 0 0 1 1 102 cm');
+      }
     });
 
     it('decrypts when the crypt filters are indirect objects', async () => {

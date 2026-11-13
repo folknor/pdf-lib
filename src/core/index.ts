@@ -48,7 +48,10 @@ export { default as PDFObjectParser } from './parser/PDFObjectParser.js';
 export { default as PDFObjectStreamParser } from './parser/PDFObjectStreamParser.js';
 export { default as PDFParser } from './parser/PDFParser.js';
 export { default as PDFXRefStreamParser } from './parser/PDFXRefStreamParser.js';
-export type { SecurityOptions } from './security/PDFSecurity.js';
+export type {
+  EncryptionAlgorithm,
+  SecurityOptions,
+} from './security/PDFSecurity.js';
 export { default as PDFSecurity } from './security/PDFSecurity.js';
 export {
   DEFAULT_MAX_DECODED_SIZE,

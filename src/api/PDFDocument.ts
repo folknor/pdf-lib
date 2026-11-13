@@ -4,6 +4,10 @@ import {
   parse as parseHtml,
 } from 'node-html-better-parser';
 import { CipherTransformFactory } from '../core/crypto.js';
+import {
+  getEffectiveVersion,
+  supportsObjectStreams,
+} from '../core/document/pdfVersion.js';
 import FileEmbedder, {
   AFRelationship,
 } from '../core/embedders/FileEmbedder.js';
@@ -1759,6 +1763,19 @@ export default class PDFDocument {
     return embeddedPages;
   }
 
+  /**
+   * Encrypt this document with the standard security handler when it is
+   * saved. The cipher is `options.algorithm`, AES-256 (ISO 32000-2 /V 5 /R 6)
+   * by default; the document's PDF version does not choose it. The declared
+   * version is raised to the cipher's minimum if lower, and AES-256 under a
+   * PDF 1.x version declares Adobe extension level 8 in the catalog. Nothing
+   * is changed if the options or the document's version declarations are
+   * rejected.
+   *
+   * Only stream contents are encrypted today; strings are written in clear.
+   *
+   * @param options Passwords, permissions and cipher.
+   */
   encrypt(options: SecurityOptions) {
     this.context.security = PDFSecurity.create(this.context, options).encrypt();
   }
@@ -1798,9 +1815,9 @@ export default class PDFDocument {
    * @returns Resolves with the bytes of the serialized document.
    */
   async save(options: SaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
-    const vparts = this.context.header.getVersionString().split('.');
-    const pdfVersionSupportsObjectStreams =
-      Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+    const pdfVersionSupportsObjectStreams = supportsObjectStreams(
+      getEffectiveVersion(this.context),
+    );
 
     const {
       addDefaultPage = true,
@@ -1925,9 +1942,9 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
-    const vparts = this.context.header.getVersionString().split('.');
-    const pdfVersionSupportsObjectStreams =
-      Number(vparts[0]) > 1 || Number(vparts[1]) >= 5;
+    const pdfVersionSupportsObjectStreams = supportsObjectStreams(
+      getEffectiveVersion(this.context),
+    );
     const {
       objectsPerTick = 50,
       compress = false,
