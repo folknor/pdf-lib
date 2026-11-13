@@ -183,6 +183,7 @@ export default class TTFGlyph extends Glyph {
       this._decodeComposite(glyph, stream, startPos);
     }
 
+    this._applyVariation(glyph);
     return glyph;
   }
 
@@ -254,14 +255,6 @@ export default class TTFGlyph extends Glyph {
       }
     }
 
-    if (this._font._variationProcessor) {
-      const points = glyph.points.slice();
-      points.push(...this._getPhantomPoints(glyph));
-
-      this._font._variationProcessor.transformPoints(this.id, points);
-      glyph.phantomPoints = points.slice(-4);
-    }
-
     return;
   }
 
@@ -326,31 +319,41 @@ export default class TTFGlyph extends Glyph {
       glyph.components.push(component);
     }
 
-    if (this._font._variationProcessor) {
-      const points: Point[] = [];
-      for (let j = 0; j < glyph.components.length; j++) {
-        const comp = glyph.components[j];
-        if (comp) {
-          points.push(new Point(true, true, comp.dx, comp.dy));
-        }
-      }
+    return haveInstructions;
+  }
+
+  // Applies the font's gvar deltas, in place, to a decoded glyph's points or
+  // component offsets plus its four phantom points. Kept apart from parsing
+  // so that WOFF2Glyph, whose glyphs are pre-decoded from the transformed
+  // glyf table, varies them by the same rule.
+  _applyVariation(glyph: DecodedGlyph): void {
+    const processor = this._font._variationProcessor;
+    if (!processor) return;
+
+    if (glyph.numberOfContours > 0) {
+      const points = (glyph.points ?? []).slice();
+      points.push(...this._getPhantomPoints(glyph));
+
+      processor.transformPoints(this.id, points);
+      glyph.phantomPoints = points.slice(-4);
+    } else if (glyph.numberOfContours < 0) {
+      const components = glyph.components ?? [];
+      const points: Point[] = components.map(
+        (comp) => new Point(true, true, comp.dx, comp.dy),
+      );
 
       points.push(...this._getPhantomPoints(glyph));
 
-      this._font._variationProcessor.transformPoints(this.id, points);
+      processor.transformPoints(this.id, points);
       glyph.phantomPoints = points.splice(-4, 4);
 
       for (let i = 0; i < points.length; i++) {
-        const point = points[i];
-        const comp = glyph.components[i];
-        if (point && comp) {
-          comp.dx = point.x;
-          comp.dy = point.y;
-        }
+        const point = points[i]!;
+        const comp = components[i]!;
+        comp.dx = point.x;
+        comp.dy = point.y;
       }
     }
-
-    return haveInstructions;
   }
 
   _getPhantomPoints(glyph: DecodedGlyph): Point[] {

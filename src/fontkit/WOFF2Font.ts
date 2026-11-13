@@ -7,8 +7,15 @@ import TTFFont, { isOutlineGlyph } from './TTFFont.js';
 import WOFF2Directory from './tables/WOFF2Directory.js';
 import { asciiDecoder } from './utils.js';
 
-interface TransformedGlyph {
+// A glyph as decoded from the transformed glyf table, before any variation.
+// The bbox is the glyph header's: explicit in the bbox stream where the
+// encoder kept it (always for composites), otherwise computed from the points.
+export interface TransformedGlyph {
   numberOfContours: number;
+  xMin: number;
+  yMin: number;
+  xMax: number;
+  yMax: number;
   points?: Point[];
   components?: any[];
 }
@@ -35,7 +42,7 @@ export default class WOFF2Font extends TTFFont {
     this._dataPos = this.stream.pos;
   }
 
-  _decompress(): void {
+  override _decompress(): void {
     // decompress data and setup table offsets if we haven't already
     if (!this._decompressed) {
       this.stream.pos = this._dataPos;
@@ -57,11 +64,6 @@ export default class WOFF2Font extends TTFFont {
       this.stream = new r.DecodeStream(decompressed);
       this._decompressed = true;
     }
-  }
-
-  override _decodeTable(table: any): any {
-    this._decompress();
-    return super._decodeTable(table);
   }
 
   // Override this method to get a glyph and return our
@@ -96,9 +98,19 @@ export default class WOFF2Font extends TTFFont {
     this.stream.pos = this.directory.tables.glyf.offset;
     const table: any = GlyfTable.decode(this.stream);
     const glyphs: TransformedGlyph[] = [];
+    const bboxes: r.DecodeStream = table['bboxes'];
+    const bboxBitmap = bboxes.readBuffer(
+      4 * Math.floor((table['numGlyphs'] + 31) / 32),
+    );
 
     for (let index = 0; index < table['numGlyphs']; index++) {
-      const glyph: TransformedGlyph = { numberOfContours: 0 };
+      const glyph: TransformedGlyph = {
+        numberOfContours: 0,
+        xMin: 0,
+        yMin: 0,
+        xMax: 0,
+        yMax: 0,
+      };
       const nContours = table['nContours'].readInt16BE();
       glyph.numberOfContours = nContours;
 
@@ -132,6 +144,22 @@ export default class WOFF2Font extends TTFFont {
         );
         if (haveInstructions) {
           read255UInt16(table['glyphs']);
+        }
+      }
+
+      if (bboxBitmap[index >> 3]! & (0x80 >> (index & 7))) {
+        glyph.xMin = bboxes.readInt16BE();
+        glyph.yMin = bboxes.readInt16BE();
+        glyph.xMax = bboxes.readInt16BE();
+        glyph.yMax = bboxes.readInt16BE();
+      } else if (glyph.points?.length) {
+        glyph.xMin = glyph.yMin = Infinity;
+        glyph.xMax = glyph.yMax = -Infinity;
+        for (const { x, y } of glyph.points) {
+          glyph.xMin = Math.min(glyph.xMin, x);
+          glyph.yMin = Math.min(glyph.yMin, y);
+          glyph.xMax = Math.max(glyph.xMax, x);
+          glyph.yMax = Math.max(glyph.yMax, y);
         }
       }
 

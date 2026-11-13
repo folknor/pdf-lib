@@ -1,4 +1,4 @@
-import * as r from '../vendors/restructure/index.js';
+import type * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
 import { cacheValue } from './decorators.js';
@@ -63,17 +63,31 @@ export default class TTFFont {
     this._tables = {};
     this._glyphs = {};
     this._decodeDirectory();
+    this._installTableGetters();
+  }
 
-    // define properties for each table to lazily parse
+  // Defines a lazily-parsing property per table. Configurable so that
+  // getVariation() can re-bind them on an instance cloned from this one.
+  _installTableGetters(): void {
     for (const tag in this.directory.tables) {
       const table = this.directory.tables[tag];
       if (tables[tag] && table.length > 0) {
         Object.defineProperty(this, tag, {
           get: this._getTable.bind(this, table),
+          configurable: true,
         });
       }
     }
   }
+
+  /**
+   * Establishes the invariant every table reader relies on: `this.stream`
+   * holds each table at `directory.tables[tag].offset`, so offsets a table
+   * resolves (gvar glyph data, sbix images, glyf via loca) index `this.stream`.
+   * A plain SFNT already satisfies it. WOFF and WOFF2 override this to
+   * decompress every table into one buffer and rewrite the offsets.
+   */
+  _decompress(): void {}
 
   setDefaultLanguage(lang: string | null = null): void {
     this.defaultLanguage = lang;
@@ -95,6 +109,7 @@ export default class TTFFont {
   }
 
   _getTableStream(tag: string): r.DecodeStream | null {
+    this._decompress();
     const table = this.directory.tables[tag];
     if (table) {
       this.stream.pos = table.offset;
@@ -617,11 +632,20 @@ export default class TTFFont {
       }
     });
 
-    const stream = new r.DecodeStream(this.stream.buffer);
-    stream.pos = this._directoryPos;
-
-    const font = new TTFFont(stream, coords);
-    font._tables = this._tables;
+    // The instance is a clone, not a re-parse of the source bytes: it keeps
+    // the subclass (and so the WOFF/WOFF2 table access), the decompressed
+    // stream and the decoded tables. Re-parsing `this.stream` would read a
+    // WOFF/WOFF2 container as a plain SFNT directory. Decompress first so
+    // source and clone share one table space instead of each inflating it.
+    this._decompress();
+    const font: TTFFont = Object.create(Object.getPrototypeOf(this));
+    // Own enumerable fields only: memoised getters (cacheValue) are
+    // non-enumerable, so the clone recomputes them - notably
+    // _variationProcessor from its own coords.
+    Object.assign(font, this);
+    font.variationCoords = coords;
+    font._glyphs = {};
+    font._installTableGetters();
 
     return font;
   }

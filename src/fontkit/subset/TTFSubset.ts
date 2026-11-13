@@ -24,10 +24,16 @@ export default class TTFSubset extends Subset {
     this.glyphEncoder = new TTFGlyphEncoder();
   }
 
-  // WOFF2 usually stores glyf/loca in a transformed layout, so there are no
-  // raw glyf bytes or loca offsets to copy; glyphs are re-encoded instead.
-  get _glyfTransformed(): boolean {
-    return !!this.font.directory.tables.glyf?.transformed;
+  // Glyphs are re-encoded from their decoded path, not copied as raw glyf
+  // bytes, when the raw bytes are not the glyph: WOFF2 usually stores
+  // glyf/loca in a transformed layout with nothing to copy, and a variation
+  // instance's outlines (including composite component offsets moved by gvar)
+  // exist only after decoding, while the subset carries no gvar.
+  get _flattenGlyphs(): boolean {
+    return (
+      !!this.font.directory.tables.glyf?.transformed ||
+      !!this.font._variationProcessor
+    );
   }
 
   _addGlyph(gid: number): number {
@@ -37,7 +43,7 @@ export default class TTFSubset extends Subset {
     const glyf = glyph._decode();
 
     let buffer: Uint8Array;
-    if (this._glyfTransformed) {
+    if (this._flattenGlyphs) {
       // Composite glyphs are flattened into simple ones, so their components
       // need not be included. Hinting instructions are not preserved.
       buffer =
@@ -65,9 +71,6 @@ export default class TTFSubset extends Subset {
         gid = this.includeGlyph(component.glyphID);
         view.setUint16(component.pos, gid);
       }
-    } else if (glyf && this.font._variationProcessor) {
-      // If this is a TrueType variation glyph, re-encode the path
-      buffer = this.glyphEncoder.encodeSimple(glyph.path, glyf.instructions);
     }
 
     this._pushGlyph(glyph, buffer);
@@ -128,8 +131,9 @@ export default class TTFSubset extends Subset {
     this.offset = 0;
     this.loca = {
       offsets: [],
-      // A transformed WOFF2 loca is empty; long offsets are always valid.
-      version: this._glyfTransformed ? 1 : this.font.loca.version,
+      // Flattened glyphs have new sizes (and a transformed WOFF2 loca is
+      // empty); long offsets are always valid.
+      version: this._flattenGlyphs ? 1 : this.font.loca.version,
     };
 
     this.hmtx = {
@@ -147,7 +151,7 @@ export default class TTFSubset extends Subset {
 
     const maxp = structuredClone(this.font.maxp);
     maxp.numGlyphs = this.glyf.length;
-    if (this._glyfTransformed) this._updateMaxpForFlattenedGlyphs(maxp);
+    if (this._flattenGlyphs) this._updateMaxpForFlattenedGlyphs(maxp);
 
     this.loca.offsets.push(this.offset);
 

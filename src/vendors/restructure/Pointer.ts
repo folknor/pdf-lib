@@ -69,7 +69,10 @@ export class Pointer<T = unknown> extends Base<T | null> {
   // Note: Returns PropertyDescriptor or number for special cases (lazy, void pointer)
   // These are handled appropriately by fontkit's callers
   decode(stream: DecodeStream, ctx?: DecodeContext): T | null {
-    const offset = this.offsetType.decode(stream);
+    // The offset type gets the context too: gvar's offset width depends on the
+    // parent struct's `flags`. Dropping ctx here made every gvar decode throw,
+    // which the table getter swallowed, so variations silently did nothing.
+    const offset = (this.offsetType as Base<number>).decode(stream, ctx);
 
     if (offset === this.options.nullValue && this.options.allowNull) {
       return null;
