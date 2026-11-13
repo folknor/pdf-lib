@@ -1,9 +1,12 @@
 import { DecodeStream } from '../vendors/restructure/index.js';
+import type { FontOptions } from './TTFFont.js';
+
+export type { FontOptions };
 
 export const logErrors: boolean = false;
 
 export interface FontFormat {
-  new (stream: DecodeStream): any;
+  new (stream: DecodeStream, options?: FontOptions): any;
   probe(buffer: Uint8Array): boolean;
 }
 
@@ -13,11 +16,15 @@ export function registerFormat(format: FontFormat): void {
   formats.push(format);
 }
 
-export function create(buffer: Uint8Array, postscriptName?: string): any {
+export function create(
+  buffer: Uint8Array,
+  postscriptName?: string,
+  options?: FontOptions,
+): any {
   for (let i = 0; i < formats.length; i++) {
     const format = formats[i]!;
     if (format.probe(buffer)) {
-      const font = new format(new DecodeStream(buffer));
+      const font = new format(new DecodeStream(buffer), options);
       if (postscriptName) {
         // Collections (TTC, DFont): select the face by PostScript name.
         if ('fonts' in font) return font.getFont(postscriptName);

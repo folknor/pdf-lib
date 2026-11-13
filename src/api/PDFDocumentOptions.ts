@@ -59,7 +59,9 @@ export interface LoadOptions {
    * (protects against decompression bombs). Decoding a larger stream throws
    * `DecodedStreamTooLargeError`. Defaults to `DecodeStream.maxDecodedSize`
    * (512 MiB unless changed globally). Use `Infinity` to disable. The same
-   * cap applies to PNG images passed to this document's `embedPng`.
+   * cap applies to PNG images passed to this document's `embedPng`, and to
+   * the declared decompressed size of WOFF/WOFF2 fonts passed to `embedFont`
+   * (bundled fontkit only; WOFF2's brotli decoding itself is not bounded).
    */
   maxDecodedStreamSize?: number;
 }

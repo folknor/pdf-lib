@@ -46,7 +46,8 @@ class DecodeStream implements StreamType {
    * to `Infinity` to disable. PNG embedding inflates via fflate in
    * src/vendors/upng.ts rather than through DecodeStream, and applies the
    * same limit itself, checked against header-derived buffer sizes before
-   * inflating.
+   * inflating. The bundled fontkit checks WOFF/WOFF2 declared table sizes
+   * against it the same way.
    */
   static maxDecodedSize = DEFAULT_MAX_DECODED_SIZE;
 

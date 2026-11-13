@@ -1,4 +1,5 @@
 import { decompress as brotliDecompress } from 'brotli/decompress.js';
+import { DecodedStreamTooLargeError } from '../core/errors.js';
 import * as r from '../vendors/restructure/index.js';
 import type Glyph from './glyph/Glyph.js';
 import TTFGlyph, { Point } from './glyph/TTFGlyph.js';
@@ -30,7 +31,6 @@ export default class WOFF2Font extends TTFFont {
   // A plain field declaration would be re-initialised to undefined after
   // super() returns under define semantics for class fields.
   declare _dataPos: number;
-  declare _decompressed?: boolean;
   declare _transformedGlyphs?: TransformedGlyph[];
 
   static override probe(buffer: Uint8Array): boolean {
@@ -42,28 +42,35 @@ export default class WOFF2Font extends TTFFont {
     this._dataPos = this.stream.pos;
   }
 
-  override _decompress(): void {
-    // decompress data and setup table offsets if we haven't already
-    if (!this._decompressed) {
-      this.stream.pos = this._dataPos;
-      const buffer = this.stream.readBuffer(this.directory.totalCompressedSize);
+  // Decompresses the single brotli stream holding every table and points the
+  // directory offsets into it. The declared table space (sum of the stored,
+  // possibly transformed, lengths) is checked against the cap before
+  // decoding. That does not bound brotli itself: the `brotli` package
+  // enlarges its output whenever a meta-block declares more data than fits,
+  // whatever size it was given, and exports no way to limit that. Bounding it
+  // needs a brotli decoder with an output limit. A check of the output after
+  // decoding would not help: the memory is spent by then.
+  override _decompress(maxDecodedSize: number): void {
+    this.stream.pos = this._dataPos;
+    const buffer = this.stream.readBuffer(this.directory.totalCompressedSize);
 
-      let decompressedSize = 0;
-      for (const tag in this.directory.tables) {
-        const entry = this.directory.tables[tag];
-        entry.offset = decompressedSize;
-        decompressedSize +=
-          entry.transformLength != null ? entry.transformLength : entry.length;
-      }
-
-      const decompressed = brotliDecompress(buffer, decompressedSize);
-      if (!decompressed) {
-        throw new Error('Error decoding compressed data in WOFF2');
-      }
-
-      this.stream = new r.DecodeStream(decompressed);
-      this._decompressed = true;
+    let decompressedSize = 0;
+    for (const tag in this.directory.tables) {
+      const entry = this.directory.tables[tag];
+      entry.offset = decompressedSize;
+      decompressedSize +=
+        entry.transformLength != null ? entry.transformLength : entry.length;
     }
+    if (decompressedSize > maxDecodedSize) {
+      throw new DecodedStreamTooLargeError(decompressedSize, maxDecodedSize);
+    }
+
+    const decompressed = brotliDecompress(buffer, decompressedSize);
+    if (!decompressed) {
+      throw new Error('Error decoding compressed data in WOFF2');
+    }
+
+    this.stream = new r.DecodeStream(decompressed);
   }
 
   // Override this method to get a glyph and return our
@@ -94,7 +101,6 @@ export default class WOFF2Font extends TTFFont {
   }
 
   _transformGlyfTable(): void {
-    this._decompress();
     this.stream.pos = this.directory.tables.glyf.offset;
     const table: any = GlyfTable.decode(this.stream);
     const glyphs: TransformedGlyph[] = [];

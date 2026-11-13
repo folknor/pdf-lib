@@ -1,3 +1,4 @@
+import DecodeStream from '../core/streams/DecodeStream.js';
 import type * as r from '../vendors/restructure/index.js';
 import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
@@ -18,6 +19,15 @@ import TTFSubset from './subset/TTFSubset.js';
 import Directory from './tables/directory.js';
 import tables from './tables/index.js';
 import { asciiDecoder } from './utils.js';
+
+/** Options accepted by `create()` and every font format's constructor. */
+export interface FontOptions {
+  /**
+   * Largest decompressed table space, in bytes, a WOFF or WOFF2 container
+   * may declare. Defaults to `DecodeStream.maxDecodedSize` at construction.
+   */
+  maxDecodedSize?: number | undefined;
+}
 
 /**
  * Whether a cached glyph carries outlines (glyf/CFF, including SBIX and WOFF2
@@ -54,15 +64,19 @@ export default class TTFFont {
     );
   }
 
-  constructor(stream: r.DecodeStream, variationCoords: number[] | null = null) {
+  constructor(stream: r.DecodeStream, options: FontOptions = {}) {
     this.defaultLanguage = null;
     this.stream = stream;
-    this.variationCoords = variationCoords;
+    this.variationCoords = null;
 
     this._directoryPos = this.stream.pos;
     this._tables = {};
     this._glyphs = {};
     this._decodeDirectory();
+    // Eager, so that a font that exists has its table space, and so that a
+    // decompression failure (notably the size cap) propagates from create()
+    // instead of being swallowed by _getTable into missing tables.
+    this._decompress(options.maxDecodedSize ?? DecodeStream.maxDecodedSize);
     this._installTableGetters();
   }
 
@@ -85,9 +99,11 @@ export default class TTFFont {
    * holds each table at `directory.tables[tag].offset`, so offsets a table
    * resolves (gvar glyph data, sbix images, glyf via loca) index `this.stream`.
    * A plain SFNT already satisfies it. WOFF and WOFF2 override this to
-   * decompress every table into one buffer and rewrite the offsets.
+   * decompress every table into one buffer and rewrite the offsets, refusing
+   * (DecodedStreamTooLargeError) a declared table space over `maxDecodedSize`.
+   * Called once, from the constructor.
    */
-  _decompress(): void {}
+  _decompress(_maxDecodedSize: number): void {}
 
   setDefaultLanguage(lang: string | null = null): void {
     this.defaultLanguage = lang;
@@ -109,7 +125,6 @@ export default class TTFFont {
   }
 
   _getTableStream(tag: string): r.DecodeStream | null {
-    this._decompress();
     const table = this.directory.tables[tag];
     if (table) {
       this.stream.pos = table.offset;
@@ -649,9 +664,8 @@ export default class TTFFont {
     // The instance is a clone, not a re-parse of the source bytes: it keeps
     // the subclass (and so the WOFF/WOFF2 table access), the decompressed
     // stream and the decoded tables. Re-parsing `this.stream` would read a
-    // WOFF/WOFF2 container as a plain SFNT directory. Decompress first so
-    // source and clone share one table space instead of each inflating it.
-    this._decompress();
+    // WOFF/WOFF2 container as a plain SFNT directory. The source was
+    // decompressed at construction, so source and clone share one table space.
     const font: TTFFont = Object.create(Object.getPrototypeOf(this));
     // Own enumerable fields only: memoised getters (cacheValue) are
     // non-enumerable, so the clone recomputes them - notably

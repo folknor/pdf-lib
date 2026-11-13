@@ -1385,6 +1385,11 @@ export default class PDFDocument {
    * | `Uint8Array`    | The raw bytes of a font                                 |
    * | `ArrayBuffer`   | The raw bytes of a font                                 |
    *
+   * A WOFF or WOFF2 font whose declared decompressed size exceeds the
+   * document's `maxDecodedStreamSize` (see [[LoadOptions]]) is rejected with
+   * `DecodedStreamTooLargeError` by the bundled fontkit. For WOFF2 this checks
+   * the declared size only; the brotli decoder itself is not bounded.
+   *
    * For example:
    * ```js
    * // font=StandardFonts
@@ -1432,6 +1437,7 @@ export default class PDFDocument {
             customName,
             features,
             postscriptName,
+            this.context.maxDecodedStreamSize,
           )
         : await CustomFontEmbedder.for(
             fontkit,
@@ -1439,6 +1445,7 @@ export default class PDFDocument {
             customName,
             features,
             postscriptName,
+            this.context.maxDecodedStreamSize,
           );
     } else {
       throw new TypeError(

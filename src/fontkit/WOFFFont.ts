@@ -1,4 +1,5 @@
 import { inflateSync } from 'fflate';
+import { DecodedStreamTooLargeError } from '../core/errors.js';
 import * as r from '../vendors/restructure/index.js';
 import TTFFont from './TTFFont.js';
 import WOFFDirectory from './tables/WOFFDirectory.js';
@@ -6,7 +7,6 @@ import { asciiDecoder } from './utils.js';
 
 export default class WOFFFont extends TTFFont {
   override type: string = 'WOFF';
-  declare _decompressed?: boolean;
 
   static override probe(buffer: Uint8Array): boolean {
     return asciiDecoder.decode(buffer.slice(0, 4)) === 'wOFF';
@@ -21,13 +21,19 @@ export default class WOFFFont extends TTFFont {
   // inflated stream is not enough: gvar and sbix resolve their data offsets
   // against the table start and then read `this.stream`, so those offsets
   // must index the stream the font reads.
-  override _decompress(): void {
-    if (this._decompressed) return;
-
+  //
+  // The buffer is sized from the declared (untrusted uint32) table lengths
+  // and checked against the cap before anything is allocated. fflate never
+  // grows a caller-supplied output buffer, so the declared lengths bound the
+  // decoded table space.
+  override _decompress(maxDecodedSize: number): void {
     const entries = Object.values(this.directory.tables) as any[];
     let size = 0;
     for (const entry of entries) {
-      size += (entry.length + 3) & ~3;
+      size += padded(entry.length);
+    }
+    if (size > maxDecodedSize) {
+      throw new DecodedStreamTooLargeError(size, maxDecodedSize);
     }
 
     const out = new Uint8Array(size);
@@ -45,10 +51,12 @@ export default class WOFFFont extends TTFFont {
         out.set(this.stream.readBuffer(entry.length), pos);
       }
       entry.offset = pos;
-      pos += (entry.length + 3) & ~3;
+      pos += padded(entry.length);
     }
 
     this.stream = new r.DecodeStream(out);
-    this._decompressed = true;
   }
 }
+
+// Rounds a uint32 length up to a multiple of 4 without 32-bit wrapping.
+const padded = (length: number): number => length + ((4 - (length % 4)) % 4);

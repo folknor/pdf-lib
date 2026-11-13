@@ -31,8 +31,11 @@ class CustomFontEmbedder {
     customName?: string,
     fontFeatures?: TypeFeatures,
     postscriptName?: string,
+    maxDecodedSize?: number,
   ) {
-    const font = asFont(await fontkit.create(fontData, postscriptName));
+    const font = asFont(
+      await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
+    );
     return new CustomFontEmbedder(font, fontData, customName, fontFeatures);
   }
 

@@ -24,8 +24,11 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     customFontName?: string,
     fontFeatures?: TypeFeatures,
     postscriptName?: string,
+    maxDecodedSize?: number,
   ) {
-    const font = asFont(await fontkit.create(fontData, postscriptName));
+    const font = asFont(
+      await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
+    );
     return new CustomFontSubsetEmbedder(
       font,
       fontData,

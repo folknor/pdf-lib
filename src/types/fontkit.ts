@@ -636,5 +636,14 @@ export interface Font {
 }
 
 export interface Fontkit {
-  create(buffer: Uint8Array, postscriptName?: string): Font;
+  /**
+   * `options.maxDecodedSize` caps the decompressed table space a WOFF or
+   * WOFF2 font may declare. The bundled fontkit honours it; an external
+   * fontkit that does not know the argument ignores it.
+   */
+  create(
+    buffer: Uint8Array,
+    postscriptName?: string,
+    options?: { maxDecodedSize?: number | undefined },
+  ): Font;
 }

@@ -7,11 +7,13 @@ const Base128 = {
       const code = stream.readUInt8();
 
       // If any of the top seven bits are set then we're about to overflow.
-      if (result & 0xe0000000) {
+      // Accumulated arithmetically, not with `<<`, so the result stays an
+      // unsigned uint32 instead of wrapping negative.
+      if (result >= 0x2000000) {
         throw new Error('Overflow');
       }
 
-      result = (result << 7) | (code & 0x7f);
+      result = result * 128 + (code & 0x7f);
       if ((code & 0x80) === 0) {
         return result;
       }

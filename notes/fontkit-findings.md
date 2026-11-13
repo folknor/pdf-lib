@@ -15,17 +15,18 @@ to vary phantom points for empty glyphs, with base metrics taken from hmtx
 rather than from a glyf header that does not exist (`_getCBox(true)` returns
 a zero box for an empty TTF glyph).
 
-## WOFF and WOFF2 decompression is not covered by the decode cap
+## WOFF2 brotli decoding is not bounded by the decode cap
 
-`WOFFFont._decompress` allocates one buffer sized from the sum of the table
-directory's `length` fields (each an untrusted uint32) and inflates each table
-into a buffer of its declared length. Nothing checks these against
-`DecodeStream.maxDecodedSize` or the document's `maxDecodedStreamSize`, so a
-small WOFF passed to `embedFont` can request gigabytes. PNG embedding applies
-that cap to header-derived sizes before inflating (`src/vendors/upng.ts`);
-fonts would need the same check on the summed table lengths, with the limit
-threaded through `embedFont`. WOFF2 (brotli) was not inspected for the same
-shape.
+`WOFF2Font._decompress` checks the declared table space against the cap, but
+the `brotli` package's `decompress` enlarges its output buffer whenever a
+meta-block declares more data than fits (`dec/decode.js`, the growth before
+each meta-block), ignoring the size it was given. A meta-block of up to
+16 MiB costs a few compressed bytes, so a small WOFF2 can still expand to
+gigabytes. The package exports no hook or limit. Closing this needs a brotli
+decoder with an output limit: vendoring the package's decoder (Apache-2.0
+Google code, a licensing call under LLM.md) or a clean-room decoder written
+by a session that has not read it. WOFF is fully bounded (fflate never grows
+the caller's buffer).
 
 ## CFF2 fonts subset through TTFSubset
 
