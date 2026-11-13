@@ -254,7 +254,10 @@ class CustomFontEmbedder {
   }
 
   protected async embedFontStream(context: PDFContext): Promise<PDFRef> {
-    const fontStream = context.flateStream(await this.serializeFont(), {
+    const fontProgram = await this.serializeFont();
+    const fontStream = context.flateStream(fontProgram, {
+      // Table 127 requires the decoded program length for FontFile2 only.
+      Length1: this.isCFF() ? undefined : fontProgram.length,
       Subtype: this.fontFileSubtype(),
     });
 

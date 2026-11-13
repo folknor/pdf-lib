@@ -73,6 +73,26 @@ describe('CustomFontEmbedder', () => {
     expect(ref).toBe(predefinedRef);
   });
 
+  it.each([false, true])(
+    'writes the decoded TrueType program length (subset: %s)',
+    async (subset) => {
+      const context = PDFContext.create();
+      const embedder = subset
+        ? await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont)
+        : await CustomFontEmbedder.for(fontkit, ubuntuFont);
+      embedder.encodeText('A');
+      const ref = await embedder.embedIntoContext(context);
+      const { key, bytes, stream } = fontFileOf(context, ref);
+
+      expect(key).toBe('FontFile2');
+      expect(stream.dict.lookup(PDFName.of('Length1'), PDFNumber).asNumber()).toBe(
+        bytes.length,
+      );
+      if (!subset) expect(bytes.length).toBe(ubuntuFont.length);
+      else expect(bytes.length).toBeLessThan(ubuntuFont.length);
+    },
+  );
+
   it('can encode text strings into PDFHexString objects', async () => {
     const text = 'Stuff and thingz!';
     const hexCodes =
@@ -222,10 +242,12 @@ describe('CustomFontEmbedder', () => {
       const embedder = await CustomFontEmbedder.for(fontkit, webFont);
       const ref = await embedder.embedIntoContext(context);
 
-      const { key, bytes } = fontFileOf(context, ref);
+      const { key, bytes, stream } = fontFileOf(context, ref);
       expect(key).toBe('FontFile3');
       // CFF header: major version 1 (not the 'wOFF' signature).
       expect(bytes[0]).toBe(1);
+
+      expect(stream.dict.has(PDFName.of('Length1'))).toBe(false);
 
       const source = embedder.font as any;
       const embedded = CFFFont.decode(new DecodeStream(bytes));
@@ -314,8 +336,11 @@ describe('CustomFontEmbedder', () => {
       const embedder = await CustomFontEmbedder.for(fontkit, webFont);
       const ref = await embedder.embedIntoContext(context);
 
-      const { key, bytes } = fontFileOf(context, ref);
+      const { key, bytes, stream } = fontFileOf(context, ref);
       expect(key).toBe('FontFile2');
+      expect(stream.dict.lookup(PDFName.of('Length1'), PDFNumber).asNumber()).toBe(
+        bytes.length,
+      );
       expectWellFormedSfnt(bytes);
 
       const source = embedder.font as any;
@@ -387,8 +412,11 @@ describe('CustomFontEmbedder', () => {
         embedder.encodeText('$');
         const ref = await embedder.embedIntoContext(context);
 
-        const { key, bytes } = fontFileOf(context, ref);
+        const { key, bytes, stream } = fontFileOf(context, ref);
         expect(key).toBe('FontFile2');
+        expect(stream.dict.lookup(PDFName.of('Length1'), PDFNumber).asNumber()).toBe(
+          bytes.length,
+        );
         const cidFont = context
           .lookup(ref, PDFDict)
           .lookup(PDFName.of('DescendantFonts'), PDFArray)
@@ -510,7 +538,7 @@ const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
     ? 'FontFile2'
     : 'FontFile3';
   const stream = descriptor.lookup(PDFName.of(key), PDFRawStream);
-  return { key, bytes: decodePDFRawStream(stream).decode() };
+  return { key, bytes: decodePDFRawStream(stream).decode(), stream };
 };
 
 // Checks the sfnt layout from the raw bytes, independently of the encoder:
