@@ -330,7 +330,9 @@ describe('PDFDocument', () => {
       const pdfDoc = await PDFDocument.create({ updateMetadata: false });
       pdfDoc.addPage([300, 200]);
       pdfDoc.setTitle(secret);
-      pdfDoc.encrypt({ userPassword: '', ownerPassword: 'owner-secret' });
+      // A nonempty user password, so the ignoreEncryption load below stays
+      // keyless rather than opening with the empty password.
+      pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'owner-secret' });
 
       // Some producers (e.g. iText 2.x) write /CF and each crypt filter as
       // indirect objects instead of inline dictionaries.
@@ -349,10 +351,94 @@ describe('PDFDocument', () => {
       const bytes = await encrypted.save({ useObjectStreams: false });
 
       const reopened = await PDFDocument.load(bytes, {
-        password: '',
+        password: 'user',
         updateMetadata: false,
       });
       expect(reopened.getTitle()).toBe(secret);
+    });
+
+    describe('omitted password', () => {
+      const algorithms = ['AES-256', 'AES-128', 'RC4-128', 'RC4-40'] as const;
+      const title = 'Restricted title';
+      const encryptedBytes = async (
+        algorithm: (typeof algorithms)[number],
+        userPassword: string,
+      ) => {
+        const pdfDoc = await PDFDocument.create({ updateMetadata: false });
+        pdfDoc.addPage([300, 200]);
+        pdfDoc.setTitle(title);
+        pdfDoc.encrypt({ userPassword, ownerPassword: 'owner', algorithm });
+        return pdfDoc.save({ useObjectStreams: false });
+      };
+
+      for (const algorithm of algorithms) {
+        for (const ignoreEncryption of [false, true]) {
+          it(`opens a ${algorithm} owner-only file with the empty user password (ignoreEncryption=${ignoreEncryption})`, async () => {
+            const bytes = await encryptedBytes(algorithm, '');
+            const pdfDoc = await PDFDocument.load(bytes, {
+              ignoreEncryption,
+              updateMetadata: false,
+            });
+            expect(pdfDoc.isEncrypted).toBe(false);
+            expect(pdfDoc.context.isDecrypted).toBe(true);
+            expect(pdfDoc.getTitle()).toBe(title);
+
+            pdfDoc.setSubject('edited');
+            const saved = await pdfDoc.save({ useObjectStreams: false });
+            const reread = await PDFDocument.load(saved, {
+              updateMetadata: false,
+            });
+            expect(reread.getSubject()).toBe('edited');
+
+            const target = await PDFDocument.create();
+            const [page] = await target.copyPages(pdfDoc, [0]);
+            target.addPage(page);
+          });
+        }
+      }
+
+      it('increments an owner-only file under its own encryption', async () => {
+        const bytes = await encryptedBytes('AES-256', '');
+        const pdfDoc = await PDFDocument.load(bytes, {
+          forIncrementalUpdate: true,
+          updateMetadata: false,
+        });
+        pdfDoc.setSubject('incremented');
+        const saved = await pdfDoc.commit();
+        const reread = await PDFDocument.load(saved, { updateMetadata: false });
+        expect(reread.getTitle()).toBe(title);
+        expect(reread.getSubject()).toBe('incremented');
+        // Still encrypted: it was decrypted on load, not read in clear.
+        expect(reread.context.baselineEncryption).toBeDefined();
+        expect(reread.context.baselineEncryption).not.toBe('keyless');
+        await expect(
+          PDFDocument.load(saved, { password: 'wrong', updateMetadata: false }),
+        ).rejects.toThrow('Password incorrect');
+      });
+
+      it('still refuses a file with a nonempty user password', async () => {
+        const bytes = await encryptedBytes('AES-256', 'user');
+        await expect(
+          PDFDocument.load(bytes, { updateMetadata: false }),
+        ).rejects.toThrow(EncryptedPDFError);
+        const keyless = await PDFDocument.load(bytes, {
+          ignoreEncryption: true,
+          updateMetadata: false,
+        });
+        expect(keyless.isEncrypted).toBe(true);
+        expect(keyless.context.baselineEncryption).toBe('keyless');
+      });
+
+      it('throws on a wrong explicit password even with ignoreEncryption', async () => {
+        const bytes = await encryptedBytes('AES-256', '');
+        await expect(
+          PDFDocument.load(bytes, {
+            password: 'wrong',
+            ignoreEncryption: true,
+            updateMetadata: false,
+          }),
+        ).rejects.toThrow('Password incorrect');
+      });
     });
 
     it('does not throw an error for invalid PDFs when throwOnInvalidObject=false', async () => {

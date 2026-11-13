@@ -4,7 +4,7 @@
 export class EncryptedPDFError extends Error {
   constructor() {
     const msg =
-      'Input document to `PDFDocument.load` is encrypted. You can use `PDFDocument.load(..., { ignoreEncryption: true })` if you wish to load the document anyways.';
+      'Input document to `PDFDocument.load` is encrypted and cannot be opened with the empty user password. Pass its `password` to decrypt it, or use `PDFDocument.load(..., { ignoreEncryption: true })` to load it for inspection only.';
     super(msg);
   }
 }
@@ -121,7 +121,7 @@ export class InvalidMaxLengthError extends Error {
 export class EncryptedPDFCopyError extends Error {
   constructor() {
     const msg =
-      'Cannot copy or embed pages from an encrypted PDF that was loaded with `ignoreEncryption: true`. ' +
+      'Cannot copy or embed pages from an encrypted PDF that was loaded with `ignoreEncryption: true` and could not be decrypted. ' +
       'The content streams remain encrypted and will appear blank. ' +
       'Please provide the password when loading: `PDFDocument.load(bytes, { password: "..." })`';
     super(msg);

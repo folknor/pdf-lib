@@ -95,8 +95,9 @@ class PDFContext {
   /**
    * The encryption of the file this context was loaded from, which increments
    * appended to it must keep: undefined for a clear file, the retained
-   * handler for one decrypted with its password, and 'keyless' for one
-   * loaded encrypted without a password, which no write of any kind
+   * handler for one decrypted (with its password, or the empty user password
+   * tried when none is given), and 'keyless' for one loaded encrypted
+   * without a key (`ignoreEncryption`), which no write of any kind
    * accepts (`savableBaseline` in PDFWriter.ts). Tests that author
    * ciphertext fixtures clear 'keyless' to bypass that check; nothing else
    * reads it.

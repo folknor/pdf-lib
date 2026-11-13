@@ -62,9 +62,10 @@ export const savableBaseline = (
  * anything new with, a changed object cannot be told apart from the
  * ciphertext it was loaded with, and compression, object streams and the
  * file's own encrypted object streams all turn ciphertext into garbage.
- * Re-encrypting with a key derived some other way (the empty user password)
- * would double-encrypt loaded strings in edited objects, so it is not done.
- * A full write uses the handler `PDFDocument.encrypt` installed, if any. An
+ * Such a load is reached only when no key could be recovered, the empty user
+ * password included (load tries it when `password` is omitted), so there is
+ * no key to re-encrypt with; and re-encrypting loaded ciphertext would
+ * double-encrypt strings in edited objects in any case. A full write uses the handler `PDFDocument.encrypt` installed, if any. An
  * increment keeps the encryption of the file it extends, since the
  * revisions before it stay as they are: it refuses a newly installed
  * handler, any change to the file's encryption dictionary, and changes

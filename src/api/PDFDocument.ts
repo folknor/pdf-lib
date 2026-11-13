@@ -213,15 +213,35 @@ export default class PDFDocument {
       forIncrementalUpdate,
       maxDecodedStreamSize,
     ).parseDocument();
-    if (context.lookup(context.trailerInfo.Encrypt) && password !== undefined) {
-      // Decrypt
+    const encrypted = Boolean(context.lookup(context.trailerInfo.Encrypt));
+    const keyFor = (pw: string | undefined) => {
       const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
       const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
-      const cryptoFactory = new CipherTransformFactory(
+      return new CipherTransformFactory(
         encryptDict,
         (fileIds.get(0) as PDFHexString).asBytes(),
-        password,
+        pw,
       );
+    };
+    let cryptoFactory: CipherTransformFactory | undefined;
+    if (encrypted && password !== undefined) {
+      cryptoFactory = keyFor(password);
+    } else if (encrypted) {
+      // Like every standard reader, open with the empty user password when
+      // none is given, so owner-password-only ("restricted") files load
+      // decrypted and stay editable. Any failure to recover a key here
+      // (wrong password, unsupported handler, malformed /Encrypt or /ID)
+      // means no key: the file then throws EncryptedPDFError, or loads
+      // keyless under ignoreEncryption. Failures after a key is found
+      // propagate, as with an explicit password.
+      try {
+        cryptoFactory = keyFor(undefined);
+      } catch {
+        cryptoFactory = undefined;
+      }
+    }
+    if (cryptoFactory) {
+      // Decrypt
       const decryptingParser = PDFParser.forBytesWithOptions(
         bytes,
         parseSpeed,
@@ -247,7 +267,7 @@ export default class PDFDocument {
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
       return pdfDoc;
     } else {
-      if (context.lookup(context.trailerInfo.Encrypt)) {
+      if (encrypted) {
         context.baselineEncryption = 'keyless';
       }
       const pdfDoc = new PDFDocument(context, ignoreEncryption, updateMetadata);

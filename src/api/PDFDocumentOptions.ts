@@ -58,15 +58,16 @@ export interface Base64SaveOptions extends SaveOptions {
 
 export interface LoadOptions {
   /**
-   * Load an encrypted file without its password instead of throwing. Its
-   * objects stay ciphertext, so such a document is for inspection only:
-   * [[PDFDocument.save]], [[PDFDocument.saveIncremental]],
-   * [[PDFDocument.commit]] and [[PDFDocument.encrypt]] throw, and so does
-   * copying or embedding its pages into another document. Without the key
-   * nothing new can be encrypted, and an edited object cannot be told apart
-   * from the ciphertext it was loaded with. Load with the `password` option
-   * (an empty string included) to change the file. A file that is not
-   * encrypted, or is decrypted with `password`, is unaffected.
+   * Load an encrypted file that cannot be decrypted instead of throwing
+   * [[EncryptedPDFError]]. Its objects stay ciphertext, so such a document
+   * is for inspection only: [[PDFDocument.save]],
+   * [[PDFDocument.saveIncremental]], [[PDFDocument.commit]] and
+   * [[PDFDocument.encrypt]] throw, and so does copying or embedding its
+   * pages into another document. Without the key nothing new can be
+   * encrypted, and an edited object cannot be told apart from the
+   * ciphertext it was loaded with. Load with the right `password` to change
+   * the file. A file that is not encrypted, or that is decrypted (see
+   * `password`), is unaffected.
    */
   ignoreEncryption?: boolean;
   parseSpeed?: ParseSpeeds | number;
@@ -74,6 +75,13 @@ export interface LoadOptions {
   warnOnInvalidObjects?: boolean;
   updateMetadata?: boolean;
   capNumbers?: boolean;
+  /**
+   * The user or owner password of an encrypted file. When omitted, the
+   * empty user password is tried, as standard readers do, so a file
+   * protected only by an owner password ("restricted") loads decrypted and
+   * editable; its permission flags are not enforced. A given password that
+   * is wrong throws, whatever `ignoreEncryption` says.
+   */
   password?: string;
   /** Load document for incremental updates (preserves original bytes for digital signatures) */
   forIncrementalUpdate?: boolean;
