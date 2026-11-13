@@ -16,12 +16,16 @@ import type PDFString from './PDFString.js';
 class PDFArray extends PDFObject {
   static withContext = (context: PDFContext) => new PDFArray(context);
 
-  private readonly array: PDFObject[];
-  private readonly context: PDFContext;
+  /** Wraps `items` (taken, not copied) without registering a change. */
+  static fromArrayWithContext = (items: PDFObject[], context: PDFContext) =>
+    new PDFArray(context, items);
 
-  private constructor(context: PDFContext) {
+  private readonly array: PDFObject[];
+  readonly context: PDFContext;
+
+  private constructor(context: PDFContext, items: PDFObject[] = []) {
     super();
-    this.array = [];
+    this.array = items;
     this.context = context;
   }
 

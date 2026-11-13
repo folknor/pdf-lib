@@ -1772,7 +1772,8 @@ export default class PDFDocument {
    * is changed if the options or the document's version declarations are
    * rejected.
    *
-   * Only stream contents are encrypted today; strings are written in clear.
+   * Strings and stream contents are encrypted as they are written; the
+   * document's objects keep their plaintext.
    *
    * @param options Passwords, permissions and cipher.
    */

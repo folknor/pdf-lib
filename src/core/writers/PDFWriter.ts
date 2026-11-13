@@ -15,9 +15,7 @@ import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
 import type PDFContext from '../PDFContext.js';
-import type PDFSecurity from '../security/PDFSecurity.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 
@@ -219,19 +217,21 @@ class PDFWriter {
 
     const security = this.context.security;
 
-    const indirectObjects = this.context.enumerateIndirectObjects();
+    const indirectObjects: [PDFRef, PDFObject][] = [];
 
-    for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
-      const indirectObject = indirectObjects[idx]!;
-      const [ref, object] = indirectObject;
+    for (const [ref, object] of this.context.enumerateIndirectObjects()) {
       if (!this.shouldSave(incremental, ref.objectNumber, object)) continue;
       // See shouldSkipCopiedObjectStream. Incremental snapshots already
       // exclude these containers.
       if (!incremental && this.shouldSkipCopiedObjectStream(object)) continue;
       if (this.shouldCompress) this.compress(object);
-      if (security) this.encrypt(ref, object, security);
+      const written: [PDFRef, PDFObject] = [
+        ref,
+        security ? security.encryptIndirectObject(ref, object) : object,
+      ];
+      indirectObjects.push(written);
       xref.addEntry(ref, size);
-      size += this.computeIndirectObjectSize(indirectObject);
+      size += this.computeIndirectObjectSize(written);
       if (this.shouldWaitForTick(1)) await waitForTick();
     }
     // Deleted objects
@@ -285,18 +285,6 @@ class PDFWriter {
 
     object.updateContents(compressed as Uint8Array<ArrayBuffer>);
     object.dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
-  }
-
-  protected encrypt(ref: PDFRef, object: PDFObject, security: PDFSecurity) {
-    if (object instanceof PDFStream) {
-      const encryptFn = security.getEncryptFn(
-        ref.objectNumber,
-        ref.generationNumber,
-      );
-      const unencryptedContents = object.getContents();
-      const encryptedContents = encryptFn(unencryptedContents);
-      object.updateContents(encryptedContents);
-    }
   }
 
   /**

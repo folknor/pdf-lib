@@ -19,6 +19,7 @@ import {
   PDFNumber,
   PDFPage,
   type PDFRawStream,
+  PDFString,
   PrintScaling,
   ReadingDirection,
   ViewerPreferences,
@@ -137,8 +138,6 @@ describe('PDFDocument', () => {
       pdfDoc.context.header = PDFHeader.forVersion(1, 3);
       pdfDoc.addPage([300, 200]).drawRectangle({ x: 1, y: 2, width: 3 });
       pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'owner' });
-      // Strings are not encrypted by the writers yet, so this checks the
-      // page content stream rather than a string such as the title.
       const bytes = await pdfDoc.save({ useObjectStreams: false });
 
       expect(new TextDecoder().decode(bytes.subarray(0, 8))).toBe('%PDF-1.7');
@@ -167,6 +166,97 @@ describe('PDFDocument', () => {
         );
         expect(text).toContain('1 0 0 1 1 102 cm');
       }
+    });
+
+    describe('string encryption', () => {
+      const algorithms = ['AES-256', 'AES-128', 'RC4-128', 'RC4-40'] as const;
+      const secret = 'A (secret) title \\ with é';
+
+      const encryptedDoc = async (algorithm: (typeof algorithms)[number]) => {
+        const pdfDoc = await PDFDocument.create({ updateMetadata: false });
+        const page = pdfDoc.addPage([300, 200]);
+        page.node.set(PDFName.of('Note'), PDFString.of('page leaf string'));
+        pdfDoc.setTitle(secret);
+        pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'o', algorithm });
+        return pdfDoc;
+      };
+
+      for (const algorithm of algorithms) {
+        it(`round trips top-level strings under ${algorithm}`, async () => {
+          const pdfDoc = await encryptedDoc(algorithm);
+          const bytes = await pdfDoc.save({ useObjectStreams: false });
+          expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
+            'page leaf string',
+          );
+          const reopened = await PDFDocument.load(bytes, {
+            password: 'user',
+            updateMetadata: false,
+          });
+          expect(reopened.getTitle()).toBe(secret);
+          const note = reopened.getPage(0).node.get(PDFName.of('Note'));
+          expect(note).toBeInstanceOf(PDFHexString);
+          expect((note as PDFHexString).decodeText()).toBe('page leaf string');
+        });
+      }
+
+      it('encrypts strings in top-level objects with object streams', async () => {
+        const pdfDoc = await encryptedDoc('AES-256');
+        const bytes = await pdfDoc.save();
+        expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
+          'page leaf string',
+        );
+        const reopened = await PDFDocument.load(bytes, {
+          password: 'user',
+          updateMetadata: false,
+        });
+        const note = reopened.getPage(0).node.get(PDFName.of('Note'));
+        expect((note as PDFHexString).decodeText()).toBe('page leaf string');
+      });
+
+      it('leaves the document unchanged, so a second save reads back', async () => {
+        const pdfDoc = await encryptedDoc('AES-128');
+        pdfDoc.getPage(0).drawRectangle({ x: 1, y: 2, width: 3 });
+        await pdfDoc.save({ useObjectStreams: false });
+        expect(pdfDoc.getTitle()).toBe(secret);
+        const bytes = await pdfDoc.save({ useObjectStreams: false });
+        const reopened = await PDFDocument.load(bytes, {
+          password: 'user',
+          updateMetadata: false,
+        });
+        expect(reopened.getTitle()).toBe(secret);
+        const contents = reopened.getPage(0).node.Contents();
+        const stream = (
+          contents instanceof PDFArray ? contents.lookup(0) : contents
+        ) as PDFRawStream;
+        const text = new TextDecoder().decode(
+          decodePDFRawStream(stream).decode(),
+        );
+        expect(text).toContain('1 0 0 1 1 102 cm');
+      });
+
+      it('leaves signature /Contents in clear', async () => {
+        const pdfDoc = await encryptedDoc('RC4-128');
+        const sig = pdfDoc.context.obj({
+          Type: 'Sig',
+          Contents: PDFHexString.of('0badc0de'),
+          Name: PDFString.of('signer'),
+        });
+        const sigRef = pdfDoc.context.register(sig);
+        const bytes = await pdfDoc.save({ useObjectStreams: false });
+        expect(new TextDecoder('latin1').decode(bytes)).toContain('<0badc0de>');
+        const reopened = await PDFDocument.load(bytes, {
+          password: 'user',
+          updateMetadata: false,
+        });
+        const read = reopened.context.lookup(sigRef, PDFDict);
+        expect(read.get(PDFName.of('Contents'))).toEqual(
+          PDFHexString.of('0badc0de'),
+        );
+        expect(read.get(PDFName.of('Name'))).toBeInstanceOf(PDFHexString);
+        expect(
+          (read.get(PDFName.of('Name')) as PDFHexString).decodeText(),
+        ).toBe('signer');
+      });
     });
 
     it('decrypts when the crypt filters are indirect objects', async () => {

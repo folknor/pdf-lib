@@ -122,11 +122,14 @@ class PDFStreamWriter extends PDFWriter {
               PDFName.of('DocTimeStamp')));
 
       if (shouldNotCompress) {
-        uncompressedObjects.push(indirectObject);
         if (this.shouldCompress) this.compress(object);
-        if (security) this.encrypt(ref, object, security);
+        const written: [PDFRef, PDFObject] = [
+          ref,
+          security ? security.encryptIndirectObject(ref, object) : object,
+        ];
+        uncompressedObjects.push(written);
         xrefStream.addUncompressedEntry(ref, size);
-        size += this.computeIndirectObjectSize(indirectObject);
+        size += this.computeIndirectObjectSize(written);
         if (this.shouldWaitForTick(1)) await waitForTick();
       } else {
         let chunk = last(compressedObjects);
@@ -154,12 +157,19 @@ class PDFStreamWriter extends PDFWriter {
       );
       this.context.assign(ref, objectStream);
 
-      if (security) this.encrypt(ref, objectStream, security);
+      // Members are written in clear inside the container; encrypting the
+      // container covers them.
+      const written: [PDFRef, PDFObject] = [
+        ref,
+        security
+          ? security.encryptIndirectObject(ref, objectStream)
+          : objectStream,
+      ];
 
       xrefStream.addUncompressedEntry(ref, size);
-      size += this.computeIndirectObjectSize([ref, objectStream]);
+      size += this.computeIndirectObjectSize(written);
 
-      uncompressedObjects.push([ref, objectStream]);
+      uncompressedObjects.push(written);
 
       if (this.shouldWaitForTick(chunk.length)) await waitForTick();
     }

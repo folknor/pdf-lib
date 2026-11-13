@@ -1,4 +1,4 @@
-import { mergeUint8Arrays } from '../../utils/arrays.js';
+import { arrayAsString, mergeUint8Arrays } from '../../utils/arrays.js';
 import { getRandomBytes } from '../../utils/rng.js';
 import {
   AES128Cipher,
@@ -17,9 +17,15 @@ import {
   parsePDFVersion,
   versionString,
 } from '../document/pdfVersion.js';
+import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
+import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
+import type PDFObject from '../objects/PDFObject.js';
+import type PDFRef from '../objects/PDFRef.js';
+import PDFStream from '../objects/PDFStream.js';
+import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import { prepareR6PasswordForWriting } from './passwordPrep.js';
 
@@ -388,6 +394,33 @@ class PDFSecurity {
     return (buffer) => rc4(key, buffer);
   }
 
+  /**
+   * Returns what the writer serialises for the indirect object `ref`: the
+   * object with every string and stream body encrypted under that object's
+   * key (ISO 32000-2 7.6.2). The document is never changed, so saving twice
+   * encrypts the plaintext twice rather than the ciphertext. Each call draws
+   * fresh AES IVs: size and write the one result.
+   *
+   * Exempt, as the standard requires: the encryption dictionary itself and a
+   * string /Contents directly in a signature dictionary (mirroring
+   * PDFObjectParser.parseDict). The writers never pass the cross-reference
+   * stream, the trailer (and its /ID) is not an indirect object, and members
+   * of an object stream are covered by their container's encryption.
+   */
+  encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject {
+    if (ref === this.context.trailerInfo.Encrypt) return object;
+    const encryptFn = this.getEncryptFn(ref.objectNumber, ref.generationNumber);
+
+    if (object instanceof PDFStream) {
+      const contents = encryptFn(object.getContents());
+      const map = encryptDictEntries(object.dict, encryptFn);
+      map.set(PDFName.Length, PDFNumber.of(contents.length));
+      const dict = PDFDict.fromMapWithContext(map, object.dict.context);
+      return new EncryptedStream(dict, contents);
+    }
+    return encryptStrings(object, encryptFn);
+  }
+
   encrypt() {
     this.declareVersion();
 
@@ -400,6 +433,82 @@ class PDFSecurity {
     return this;
   }
 }
+
+/** A write-only stream whose contents and /Length are already final. */
+class EncryptedStream extends PDFStream {
+  private readonly contents: Uint8Array;
+
+  constructor(dict: PDFDict, contents: Uint8Array) {
+    super(dict);
+    this.contents = contents;
+  }
+
+  override getContents(): Uint8Array {
+    return this.contents;
+  }
+
+  override getContentsSize(): number {
+    return this.contents.length;
+  }
+
+  override getContentsString(): string {
+    return arrayAsString(this.contents);
+  }
+
+  override updateDict(): void {}
+}
+
+const isSignatureDict = (dict: PDFDict): boolean => {
+  const type = dict.get(PDFName.of('Type'));
+  return (
+    type === PDFName.of('Sig') ||
+    type === PDFName.of('DocTimeStamp') ||
+    (type === undefined && dict.get(PDFName.of('ByteRange')) !== undefined)
+  );
+};
+
+/** The dict's entries with strings encrypted; a new map, never the dict's. */
+const encryptDictEntries = (
+  dict: PDFDict,
+  encryptFn: EncryptFn,
+): Map<PDFName, PDFObject> => {
+  const keepContents = isSignatureDict(dict);
+  const map = new Map<PDFName, PDFObject>();
+  for (const [key, value] of dict.entries()) {
+    const keep =
+      keepContents &&
+      key === PDFName.of('Contents') &&
+      (value instanceof PDFString || value instanceof PDFHexString);
+    map.set(key, keep ? value : encryptStrings(value, encryptFn));
+  }
+  return map;
+};
+
+/**
+ * `object` with every string reachable through direct dicts and arrays
+ * encrypted, written as hex so ciphertext needs no escaping. Containers are
+ * rebuilt only where a string changed; references are not followed.
+ */
+const encryptStrings = (object: PDFObject, encryptFn: EncryptFn): PDFObject => {
+  if (object instanceof PDFString || object instanceof PDFHexString) {
+    return PDFHexString.fromBytes(encryptFn(object.asBytes()));
+  }
+  if (object instanceof PDFArray) {
+    const items = object.asArray();
+    const encrypted = items.map((item) => encryptStrings(item, encryptFn));
+    if (encrypted.every((item, idx) => item === items[idx])) return object;
+    return PDFArray.fromArrayWithContext(encrypted, object.context);
+  }
+  if (object instanceof PDFDict) {
+    const map = encryptDictEntries(object, encryptFn);
+    let changed = false;
+    for (const [key, value] of map) {
+      if (object.get(key) !== value) changed = true;
+    }
+    return changed ? PDFDict.fromMapWithContext(map, object.context) : object;
+  }
+  return object;
+};
 
 /**
  * A file ID is required if Encrypt entry is present in Trailer.
