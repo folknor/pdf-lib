@@ -4,18 +4,6 @@ Open findings about the vendored fontkit (`src/fontkit`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Varied bearings are measured from unvaried extents
-
-`TTFGlyph._resolve` derives `leftBearing` and `topBearing` of a varied
-glyph from the glyf header's `xMin`/`yMax`, not from the varied outline. A
-subset of a variation instance writes that `leftBearing` into hmtx while its
-re-encoded glyf header carries the varied `xMin`, so the two can disagree.
-With HVAR, `leftBearing` is the unvaried hmtx value; HVAR's LSB mapping is
-decoded but not read. For a composite with a `USE_MY_METRICS` component the
-phantom points are the component's, so the error can be larger than with the
-composite's own phantoms, whose deltas sometimes happened to track the
-outline's.
-
 ## Varied outlines are not shifted by a moved left phantom point
 
 When gvar moves a glyph's left phantom point (the horizontal origin), the
@@ -51,14 +39,6 @@ insertion order of the tables object rather than sorted by tag, under the
 `true` sfnt tag rather than `0x00010000`, and the cloned `head` keeps the
 source's `checkSumAdjustment`. PDF viewers accept this, but strict sfnt
 validators (OTS, the OpenType spec) do not.
-
-## Flattened subsets keep head.flags bit 1 from the source
-
-A re-encoded TrueType subset (variation instance, WOFF2 transformed glyf, or
-converted CFF2) clones `head.flags`. Bit 1 promises that every glyph's left
-side bearing equals its xMin; the converted CFF2 subset makes it true, but a
-flattened gvar subset writes phantom-point bearings that need not match the
-re-encoded xMin (see "Varied bearings are measured from unvaried extents").
 
 ## Bitmap glyphs are never drawn in the PDF
 

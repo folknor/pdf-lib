@@ -452,24 +452,27 @@ export default class TTFGlyph extends Glyph {
     // Publish the varied metrics. Horizontal ones come from HVAR when the
     // font has it, else from the phantom points; vertical ones always come
     // from the phantom points, since VVAR is not read. Bearings are measured
-    // from the unvaried glyph extents.
+    // from the varied outline's extents (every resolved point, off-curve and
+    // composite-transformed ones included, as a glyf header's are) to the
+    // selected phantom points, with or without HVAR: HVAR's LSB mapping is
+    // not read, since the bearing it would supply must equal this one, and
+    // without the mapping the spec derives it from the outline anyway. An
+    // empty glyph's extents are zero, as its decoded header's are.
     const [ph0, ph1, ph2, ph3] = phantoms ?? [];
     if (ph0 && ph1 && ph2 && ph3) {
-      const base = this._defaultMetrics!;
-      const horizontal = this._font.HVAR
-        ? {
-            advanceWidth: base.advanceWidth + this._getHVARAdjustment(),
-            leftBearing: base.leftBearing,
-          }
-        : {
-            advanceWidth: ph1.x - ph0.x,
-            leftBearing: glyph.xMin - ph0.x,
-          };
+      let xMin = points.length > 0 ? Infinity : glyph.xMin;
+      let yMax = points.length > 0 ? -Infinity : glyph.yMax;
+      for (const point of points) {
+        xMin = Math.min(xMin, point.x);
+        yMax = Math.max(yMax, point.y);
+      }
       this._metrics = {
-        advanceWidth: horizontal.advanceWidth,
-        leftBearing: horizontal.leftBearing,
+        advanceWidth: this._font.HVAR
+          ? this._defaultMetrics!.advanceWidth + this._getHVARAdjustment()
+          : ph1.x - ph0.x,
+        leftBearing: xMin - ph0.x,
         advanceHeight: ph2.y - ph3.y,
-        topBearing: ph2.y - glyph.yMax,
+        topBearing: ph2.y - yMax,
       };
     }
 

@@ -88,13 +88,7 @@ export default class TTFSubset extends Subset {
         outline.commands.length > 0
           ? this.glyphEncoder.encodeSimple(outline, { overlapping: true })
           : new Uint8Array(0);
-      // The left side bearing is the converted glyph's xMin, so the outline
-      // keeps its position relative to the origin.
-      const xMin =
-        buffer.length > 0
-          ? new DataView(buffer.buffer, buffer.byteOffset).getInt16(2)
-          : 0;
-      this._pushGlyph(glyph, buffer, xMin);
+      this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
       return this.glyf.length - 1;
     }
 
@@ -108,7 +102,16 @@ export default class TTFSubset extends Subset {
         glyf.numberOfContours !== 0
           ? this.glyphEncoder.encodeSimple(glyph.path)
           : new Uint8Array(0);
-      this._pushGlyph(glyph, buffer);
+      // A variation instance's outline is new geometry, written as the path
+      // (relative to the unvaried origin); its bearing is the written xMin.
+      // A static transformed WOFF2 glyph keeps the source's integer points,
+      // so its source hmtx bearing still describes them, even where it
+      // differs from xMin.
+      if (this.font._variationProcessor) {
+        this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
+      } else {
+        this._pushGlyph(glyph, buffer);
+      }
       return this.glyf.length - 1;
     }
 
@@ -238,6 +241,19 @@ export default class TTFSubset extends Subset {
       maxComponentElements: 0,
       maxComponentDepth: 0,
     };
+  }
+
+  // For instanced or converted outlines the hmtx left side bearing is the
+  // encoded glyph's own xMin (zero for an empty glyph), so the left phantom
+  // point is at zero: a renderer that translates the outline by it (FreeType)
+  // and one that draws glyf coordinates as they are (pdf.js) place the glyph
+  // identically. Reading it back from the header takes the encoder's
+  // rounding and all written points, off-curve ones included. This also
+  // keeps a cloned head.flags bit 1 (lsb equals xMin) true.
+  static _encodedXMin(buffer: Uint8Array): number {
+    return buffer.length > 0
+      ? new DataView(buffer.buffer, buffer.byteOffset).getInt16(2)
+      : 0;
   }
 
   _pushGlyph(

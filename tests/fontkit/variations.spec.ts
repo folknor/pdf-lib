@@ -73,6 +73,49 @@ describe('TrueType variations', () => {
     expect(glyph._getMetrics().advanceWidth).toBe(unvaried.advanceWidth + 50);
   });
 
+  // Bearings run from the varied outline's extents to the varied phantom
+  // points; the left origin is xMin - lsb, the top one yMax + tsb.
+  const origins = (glyph: any) => {
+    const { leftBearing, topBearing } = glyph._getMetrics();
+    return {
+      left: glyph.cbox.minX - leftBearing,
+      top: glyph.cbox.maxY + topBearing,
+    };
+  };
+
+  it('measures varied bearings from the varied outline', () => {
+    const moved: string[] = [];
+    for (const [file, settings, char] of [
+      ['TestGVAROne.ttf', { wght: 300 }, '彌'],
+      ['TestGVARFour.ttf', { wght: 150 }, 'O'],
+      ['TestHVARTwo.ttf', { wght: 400 }, 'A'],
+    ] as const) {
+      const { glyph } = variationGlyph(file, settings, char);
+      const unvaried = open(file).getGlyph(glyph.id);
+      if (glyph.cbox.minX !== unvaried.cbox.minX) moved.push(file);
+      // The fixtures leave the left origin alone but may move the top one.
+      expect(origins(glyph).left).toBe(origins(unvaried).left);
+      expect(origins(glyph).top).toBe(glyph._decode().phantomPoints[2].y);
+    }
+    // Only an outline whose extents moved tells the two measures apart.
+    expect(moved).toContain('TestGVARFour.ttf');
+  });
+
+  it('measures varied bearings from a moved left phantom point', () => {
+    const font = open('TestGVAROne.ttf').getVariation({ wght: 300 });
+    const processor = font._variationProcessor;
+    const transform = processor.transformPoints.bind(processor);
+    processor.transformPoints = (gid: number, points: any[]) => {
+      transform(gid, points);
+      points[points.length - 4].x += 20;
+    };
+    const glyph = font.glyphsForString('彌')[0];
+    const unvaried = open('TestGVAROne.ttf').getGlyph(glyph.id);
+    expect(glyph.cbox.minX - glyph._getMetrics().leftBearing).toBe(
+      origins(unvaried).left + 20,
+    );
+  });
+
   it('keeps the HVAR advance when the path is read first', () => {
     const { glyph } = variationGlyph('TestHVARTwo.ttf', { wght: 400 }, 'A');
     void glyph.path;
@@ -106,6 +149,26 @@ describe('subsetting a variation instance', () => {
       expect(reopened.getGlyph(id).path.toSVG()).toBe(GVAR_300_SVG);
     });
   }
+
+  // The written bearing is the written xMin even when gvar moves the left
+  // origin, so no renderer translates the outline by a phantom point.
+  it('writes each glyph bearing as its encoded xMin', () => {
+    const font = open('TestGVAROne.ttf').getVariation({ wght: 300 });
+    const processor = font._variationProcessor;
+    const transform = processor.transformPoints.bind(processor);
+    processor.transformPoints = (gid: number, points: any[]) => {
+      transform(gid, points);
+      points[points.length - 4].x += 20;
+    };
+    const subset = font.createSubset();
+    const id = subset.includeGlyph(font.glyphsForString('彌')[0].id);
+    const reopened: any = fontkit.create(subset.encode());
+    const written = reopened.getGlyph(id);
+    expect(written._getMetrics().leftBearing).toBe(written._decode().xMin);
+    expect(written._decode().xMin).toBe(
+      Math.round(font.glyphsForString('彌')[0].cbox.minX),
+    );
+  });
 });
 
 describe('WOFF and WOFF2 variations', () => {
