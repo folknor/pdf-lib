@@ -10,6 +10,7 @@ import {
   PDFAcroRadioButton,
   PDFAcroSignature,
   PDFAcroText,
+  PDFArray,
   PDFDict,
   PDFName,
   type PDFObject,
@@ -183,10 +184,15 @@ export default class PDFForm {
    */
   getFieldMaybe(name: string): PDFField | undefined {
     assertIs(name, 'name', ['string']);
-    const fields = this.getFields();
-    for (let idx = 0, len = fields.length; idx < len; idx++) {
-      const field = fields[idx]!;
-      if (field.getName() === name) return field;
+    // Compare names on the low-level fields and only convert matches, rather
+    // than converting every field via getFields(). Same order and name rule
+    // as getFields() + PDFField.getName(), so first-match is unchanged.
+    const allFields = this.acroForm.getAllFields();
+    for (let idx = 0, len = allFields.length; idx < len; idx++) {
+      const [acroField, ref] = allFields[idx]!;
+      if ((acroField.getFullyQualifiedName() ?? '') !== name) continue;
+      const field = convertToPDFField(acroField, ref, this.doc);
+      if (field) return field;
     }
     return;
   }
@@ -699,6 +705,11 @@ export default class PDFForm {
       this.updateFieldAppearances();
     }
 
+    // Snapshot every dict reachable from AcroForm /Fields before the main loop
+    // removes anything; the orphan pass must leave widgets that are, or
+    // descend from, any of these alone.
+    const reachable = this.collectReachableFieldDicts();
+
     const fields = this.getFields();
 
     for (let i = 0, lenFields = fields.length; i < lenFields; i++) {
@@ -718,8 +729,8 @@ export default class PDFForm {
       this.removeField(field);
     }
 
-    // Widgets with /FT on the annot itself but missing from AcroForm.Fields
-    this.flattenOrphanWidgets();
+    // Widgets with /FT (own or inherited) but missing from AcroForm.Fields
+    this.flattenOrphanWidgets(reachable);
 
     // Clean up AcroForm properties that may reference deleted fields
     // /CO (calculation order) contains refs to fields - these become orphans
@@ -883,6 +894,7 @@ export default class PDFForm {
     widget: PDFWidgetAnnotation,
     appearanceRef: PDFRef,
   ) {
+    this.ensureFormXObject(appearanceRef);
     const xObjectKey = page.node.getOrCreateXObject(
       'FlatWidget',
       appearanceRef,
@@ -901,11 +913,89 @@ export default class PDFForm {
   }
 
   /**
-   * Flatten Widget annotations that carry field properties (/FT) directly on
-   * the annot dict but are not reachable via AcroForm.Fields. Widgets without
-   * a usable normal appearance are left untouched.
+   * Appearance streams are implicitly form XObjects inside /AP, so some
+   * producers (e.g. Acrobat) omit /Type and /Subtype. Once drawn onto a page
+   * with `Do`, viewers such as PDF.js and Preview require /Subtype /Form and
+   * skip the XObject without it.
    */
-  private flattenOrphanWidgets(): void {
+  private ensureFormXObject(appearanceRef: PDFRef) {
+    const appearance = this.doc.context.lookup(appearanceRef);
+    if (!(appearance instanceof PDFStream)) return;
+    const { dict } = appearance;
+    if (!dict.has(PDFName.of('Type'))) {
+      dict.set(PDFName.of('Type'), PDFName.of('XObject'));
+    }
+    if (!dict.has(PDFName.of('Subtype'))) {
+      dict.set(PDFName.of('Subtype'), PDFName.of('Form'));
+    }
+  }
+
+  /**
+   * `dict` followed by its /Parent ancestors, stopping at the first
+   * non-dict or at a /Parent cycle.
+   */
+  private selfAndAncestors(dict: PDFDict): PDFDict[] {
+    const chain: PDFDict[] = [];
+    const seen = new Set<PDFDict>();
+    let node: PDFDict | undefined = dict;
+    while (node && !seen.has(node)) {
+      seen.add(node);
+      chain.push(node);
+      const parent: unknown = node.lookup(PDFName.of('Parent'));
+      node = parent instanceof PDFDict ? parent : undefined;
+    }
+    return chain;
+  }
+
+  /**
+   * Resolve an inheritable field attribute (e.g. /FT, /V) on `dict` or the
+   * nearest /Parent ancestor that has it.
+   */
+  private lookupInherited(dict: PDFDict, key: string): PDFObject | undefined {
+    const name = PDFName.of(key);
+    const chain = this.selfAndAncestors(dict);
+    for (let i = 0, len = chain.length; i < len; i++) {
+      if (chain[i]!.has(name)) return chain[i]!.lookup(name);
+    }
+    return undefined;
+  }
+
+  /**
+   * Every field/widget dict reachable from AcroForm /Fields via /Kids.
+   * Guards against /Kids cycles.
+   */
+  private collectReachableFieldDicts(): {
+    dicts: Set<PDFDict>;
+    refs: Set<PDFObject | undefined>;
+  } {
+    const dicts = new Set<PDFDict>();
+    const refs = new Set<PDFObject | undefined>();
+    const stack: PDFObject[] = [];
+    const fields = this.acroForm.dict.lookup(PDFName.of('Fields'));
+    if (fields instanceof PDFArray) stack.push(...fields.asArray());
+    while (stack.length > 0) {
+      const item = stack.pop()!;
+      if (item instanceof PDFRef) refs.add(item);
+      const dict =
+        item instanceof PDFRef ? this.doc.context.lookup(item) : item;
+      if (!(dict instanceof PDFDict) || dicts.has(dict)) continue;
+      dicts.add(dict);
+      const kids = dict.lookup(PDFName.of('Kids'));
+      if (kids instanceof PDFArray) stack.push(...kids.asArray());
+    }
+    return { dicts, refs };
+  }
+
+  /**
+   * Flatten Widget annotations that carry field properties (/FT), either on
+   * the annot dict or inherited via /Parent, but are not reachable via
+   * AcroForm.Fields (neither the widget nor any ancestor is in `reachable`).
+   * Widgets without a usable normal appearance are left untouched.
+   */
+  private flattenOrphanWidgets(reachable: {
+    dicts: Set<PDFDict>;
+    refs: Set<PDFObject | undefined>;
+  }): void {
     const pages = this.doc.getPages();
 
     for (let p = 0, pageCount = pages.length; p < pageCount; p++) {
@@ -924,9 +1014,23 @@ export default class PDFForm {
         if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
           continue;
         }
-        // Only self-contained field widgets (kids inherit /FT from /Parent,
-        // and those are handled via AcroForm.Fields above).
-        if (!dict.has(PDFName.of('FT'))) continue;
+        const chain = this.selfAndAncestors(dict);
+        // Part of the AcroForm.Fields tree (handled, or deliberately left
+        // alone, by the main pass): not an orphan. Also check raw /Parent
+        // refs, since the main pass may have deleted a reachable ancestor
+        // and its ref no longer resolves.
+        if (
+          reachable.refs.has(annotRef) ||
+          chain.some(
+            (d) =>
+              reachable.dicts.has(d) ||
+              reachable.refs.has(d.get(PDFName.of('Parent'))),
+          )
+        ) {
+          continue;
+        }
+        // Only field widgets: /FT on the widget or inherited via /Parent.
+        if (!chain.some((d) => d.has(PDFName.of('FT')))) continue;
 
         const widget = PDFWidgetAnnotation.fromDict(dict);
         // A malformed /AP on one orphan must not abort the whole flatten.
@@ -970,7 +1074,8 @@ export default class PDFForm {
     // An appearance stream is not a PDFDict (it's a PDFStream), so a dict
     // here means a state-keyed subdictionary (checkbox / radio).
     if (refOrDict instanceof PDFDict) {
-      const value = widget.dict.lookup(PDFName.of('V'));
+      // /V is inheritable, so resolve it up the /Parent chain.
+      const value = this.lookupInherited(widget.dict, 'V');
       const state =
         widget.getAppearanceState() ??
         (value instanceof PDFName ? value : undefined) ??

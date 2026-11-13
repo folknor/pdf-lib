@@ -13,6 +13,8 @@ import {
   PDFRadioGroup,
   PDFRef,
   PDFSignature,
+  PDFStream,
+  PDFString,
   PDFTextField,
   type PDFWidgetAnnotation,
 } from '../../../src/index';
@@ -501,6 +503,205 @@ describe('PDFForm', () => {
     expect(annots.size()).toBe(3);
     for (const ref of [malformedRef, danglingRef, notAStreamRef]) {
       expect(context.lookup(ref)).toBeInstanceOf(PDFDict);
+    }
+  });
+
+  it('flattens orphaned widgets whose /FT is inherited via /Parent (#153)', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    // Parent field carries /FT but is not listed in AcroForm /Fields.
+    const grandParentRef = context.register(
+      context.obj({ FT: 'Tx', T: 'GrandParent' }),
+    );
+    const parentRef = context.register(
+      context.obj({ T: 'Parent', Parent: grandParentRef }),
+    );
+    const apRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
+    );
+    const widgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        Parent: parentRef,
+        Rect: [50, 700, 150, 720],
+        AP: { N: apRef },
+      }),
+    );
+    page.node.addAnnot(widgetRef);
+
+    // A /Parent cycle without /FT anywhere must not hang and is not a field.
+    const cycleARef = context.nextRef();
+    const cycleBRef = context.register(context.obj({ Parent: cycleARef }));
+    context.assign(cycleARef, context.obj({ Parent: cycleBRef }));
+    const cycleWidgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        Parent: cycleARef,
+        Rect: [50, 600, 150, 620],
+        AP: { N: apRef },
+      }),
+    );
+    page.node.addAnnot(cycleWidgetRef);
+
+    form.flatten();
+
+    const annots = page.node.Annots()!;
+    expect(annots.size()).toBe(1);
+    expect(annots.get(0)).toBe(cycleWidgetRef);
+    expect(context.lookup(widgetRef)).toBe(undefined);
+    const xObjects = page.node
+      .Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    expect(xObjects.values()).toContain(apRef);
+  });
+
+  it('leaves widgets whose ancestor is reachable from AcroForm /Fields to the main pass', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    // Registered non-terminal carrying /FT /Tx with a field child (so the
+    // main pass converts and removes only the child), plus a page widget
+    // pointing at the non-terminal but not listed in its /Kids.
+    const parentRef = context.nextRef();
+    const childRef = context.register(
+      context.obj({ T: PDFString.of('child'), Parent: parentRef }),
+    );
+    context.assign(
+      parentRef,
+      context.obj({ FT: 'Tx', T: PDFString.of('parent'), Kids: [childRef] }),
+    );
+    form.acroForm.addField(parentRef);
+
+    const apRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
+    );
+    const widgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        Parent: parentRef,
+        Rect: [50, 700, 150, 720],
+        AP: { N: apRef },
+      }),
+    );
+    page.node.addAnnot(widgetRef);
+
+    form.flatten({ updateFieldAppearances: false });
+
+    expect(context.lookup(parentRef)).toBeInstanceOf(PDFDict);
+    expect(context.lookup(widgetRef)).toBeInstanceOf(PDFDict);
+    expect(page.node.Annots()!.asArray()).toContain(widgetRef);
+  });
+
+  it('resolves inherited /V when flattening orphaned checkbox widgets', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    const parentRef = context.register(
+      context.obj({ FT: 'Btn', T: PDFString.of('OrphanCheck'), V: 'Yes' }),
+    );
+    const onApRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
+    );
+    const offApRef = context.register(
+      context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
+    );
+    const widgetRef = context.register(
+      context.obj({
+        Type: 'Annot',
+        Subtype: 'Widget',
+        Parent: parentRef,
+        Rect: [50, 650, 70, 670],
+        AP: { N: { Yes: onApRef, Off: offApRef } },
+      }),
+    );
+    page.node.addAnnot(widgetRef);
+
+    form.flatten();
+
+    expect(context.lookup(widgetRef)).toBe(undefined);
+    const xObjectValues = page.node
+      .Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict)
+      .values();
+    expect(xObjectValues).toContain(onApRef);
+    expect(xObjectValues).not.toContain(offApRef);
+  });
+
+  it('marks reused appearance streams missing /Subtype as form XObjects when flattening (#86)', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const form = pdfDoc.getForm();
+    const { context } = pdfDoc;
+
+    const tf = form.createTextField('acrobat.filled');
+    tf.addToPage(page);
+
+    // Acrobat writes /AP /N streams with no /Type or /Subtype
+    const content = 'BT /Helv 12 Tf 2 4 Td (test) Tj ET';
+    const apRef = context.register(
+      context.stream(content, { BBox: [0, 0, 200, 20] }),
+    );
+    tf.acroField
+      .getWidgets()[0]!
+      .dict.set(PDFName.of('AP'), context.obj({ N: apRef }));
+
+    form.flatten({ updateFieldAppearances: false });
+
+    const ap = context.lookup(apRef, PDFStream);
+    expect(ap.dict.get(PDFName.of('Type'))).toBe(PDFName.of('XObject'));
+    expect(ap.dict.get(PDFName.of('Subtype'))).toBe(PDFName.of('Form'));
+    // The original appearance is reused, not regenerated
+    expect(new TextDecoder('latin1').decode(ap.getContents())).toBe(content);
+    const xObjects = page.node
+      .Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    expect(xObjects.values()).toContain(apRef);
+  });
+
+  it('getFieldMaybe returns the first field with a matching name and converts only matches (#173)', async () => {
+    const pdfDoc = await PDFDocument.create();
+    const form = pdfDoc.getForm();
+    const a = form.createTextField('a');
+    form.createCheckBox('b');
+    const c = form.createTextField('group.c');
+
+    expect(form.getFieldMaybe('a')?.ref).toBe(a.ref);
+    expect(form.getField('group.c').ref).toBe(c.ref);
+    expect(form.getFieldMaybe('group')).toBeUndefined();
+    expect(form.getFieldMaybe('missing')).toBeUndefined();
+
+    // Duplicate names: first in getFields() order wins.
+    const dupRef = pdfDoc.context.register(
+      pdfDoc.context.obj({ FT: 'Tx', T: PDFString.of('a') }),
+    );
+    form.acroForm.addField(dupRef);
+    const expected = form.getFields().find((f) => f.getName() === 'a')!;
+    expect(form.getFieldMaybe('a')?.ref).toBe(expected.ref);
+    expect(form.getFieldMaybe('a')?.ref).toBe(a.ref);
+
+    // Only the matching field is converted.
+    const textSpy = vi.spyOn(PDFTextField, 'of');
+    const checkSpy = vi.spyOn(PDFCheckBox, 'of');
+    try {
+      form.getFieldMaybe('group.c');
+      expect(textSpy).toHaveBeenCalledTimes(1);
+      expect(checkSpy).not.toHaveBeenCalled();
+      textSpy.mockClear();
+      form.getFieldMaybe('missing');
+      expect(textSpy).not.toHaveBeenCalled();
+    } finally {
+      textSpy.mockRestore();
+      checkSpy.mockRestore();
     }
   });
 

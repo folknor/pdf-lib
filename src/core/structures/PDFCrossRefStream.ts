@@ -71,11 +71,24 @@ class PDFCrossRefStream extends PDFFlateStream {
   }
 
   private appendEntry(entry: Entry): void {
-    const eind = this.entries.findIndex(
-      (e) => e.ref.objectNumber > entry.ref.objectNumber,
-    );
-    if (eind < 0 || eind > this.entries.length) this.entries.push(entry);
-    else this.entries.splice(eind, 0, entry);
+    // Insert after every entry whose object number is <= the new one (upper
+    // bound), so equal object numbers keep insertion order. Entries are kept
+    // sorted, so a binary search finds the slot in O(log n).
+    const { entries } = this;
+    const num = entry.ref.objectNumber;
+    const lastEntry = entries[entries.length - 1];
+    if (!lastEntry || lastEntry.ref.objectNumber <= num) {
+      entries.push(entry);
+      return;
+    }
+    let lo = 0;
+    let hi = entries.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (entries[mid]!.ref.objectNumber > num) hi = mid;
+      else lo = mid + 1;
+    }
+    entries.splice(lo, 0, entry);
   }
 
   addDeletedEntry(ref: PDFRef, nextFreeObjectNumber: number) {

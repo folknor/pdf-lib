@@ -133,4 +133,27 @@ describe('PDFCrossRefStream', () => {
       ),
     );
   });
+
+  it('keeps entries sorted by object number regardless of insertion order', () => {
+    const inOrder = PDFCrossRefStream.create(dict, false);
+    const shuffled = PDFCrossRefStream.create(dict, false);
+    const nums = [5, 1, 9000, 3, 2, 9001, 4, 7];
+    for (const n of [...nums].sort((a, b) => a - b)) {
+      inOrder.addUncompressedEntry(PDFRef.of(n), n * 10);
+    }
+    for (const n of nums) shuffled.addUncompressedEntry(PDFRef.of(n), n * 10);
+    expect(String(shuffled)).toBe(String(inOrder));
+  });
+
+  it('keeps insertion order among entries with equal object numbers', () => {
+    const stream = PDFCrossRefStream.create(dict, false);
+    stream.addUncompressedEntry(PDFRef.of(3), 30);
+    stream.addUncompressedEntry(PDFRef.of(2, 1), 21);
+    stream.addUncompressedEntry(PDFRef.of(2, 2), 22);
+    stream.addUncompressedEntry(PDFRef.of(1), 10);
+    const entries = (
+      stream as unknown as { entries: { ref: PDFRef }[] }
+    ).entries.map((e) => e.ref.toString());
+    expect(entries).toEqual(['0 65535 R', '1 0 R', '2 1 R', '2 2 R', '3 0 R']);
+  });
 });

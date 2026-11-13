@@ -68,4 +68,36 @@ describe('PDFStreamWriter', () => {
     expect(buffer.length).toBe(expectedPdfBytes.length);
     expect(buffer).toEqual(expectedPdfBytes);
   });
+
+  it('keeps /Sig and /DocTimeStamp dicts out of object streams', async () => {
+    const context = PDFContext.create();
+    const pagesRef = context.register(
+      context.obj({ Type: 'Pages', Kids: [], Count: 0 }),
+    );
+    context.trailerInfo.Root = context.register(
+      context.obj({ Type: 'Catalog', Pages: pagesRef }),
+    );
+    const sigRef = context.register(
+      context.obj({ Type: 'Sig', Filter: 'Adobe.PPKLite' }),
+    );
+    const tsRef = context.register(
+      context.obj({ Type: 'DocTimeStamp', Filter: 'Adobe.PPKLite' }),
+    );
+    const plainRef = context.register(context.obj({ Foo: 'Bar' }));
+
+    const buffer = await PDFStreamWriter.forContext(
+      context,
+      Infinity,
+      false,
+    ).serializeToBuffer();
+    const text = new TextDecoder('latin1').decode(buffer);
+
+    expect(text).toContain(`\n${sigRef.objectNumber} 0 obj\n<<\n/Type /Sig`);
+    expect(text).toContain(
+      `\n${tsRef.objectNumber} 0 obj\n<<\n/Type /DocTimeStamp`,
+    );
+    // Ordinary dicts still go into an object stream.
+    expect(text).not.toContain(`\n${plainRef.objectNumber} 0 obj`);
+    expect(text).toContain('/Foo /Bar');
+  });
 });
