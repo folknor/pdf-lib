@@ -107,8 +107,15 @@ export default class TTFGlyph extends Glyph {
       return this.path.cbox;
     }
 
+    // An empty glyph has no header; reading one would take the next glyph's
+    // bytes, or run off the end of glyf.
+    const offsets = this._font.loca.offsets;
+    if (offsets[this.id] === offsets[this.id + 1]) {
+      return Object.freeze(new BBox(0, 0, 0, 0));
+    }
+
     const stream = this._font._getTableStream('glyf');
-    stream.pos += this._font.loca.offsets[this.id];
+    stream.pos += offsets[this.id];
     const glyph = GlyfHeader.decode(stream) as {
       xMin: number;
       yMin: number;

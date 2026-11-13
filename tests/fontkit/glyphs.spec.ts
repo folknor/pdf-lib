@@ -94,6 +94,57 @@ describe('color and bitmap glyphs', () => {
     expect(glyph.path.commands).toEqual([]);
   });
 
+  it('subsets bitmap-only fonts into empty glyphs with their metrics', () => {
+    const font = openUbuntu();
+    const { glyf: _glyf, loca: _loca, ...tables } = font.directory.tables;
+    font.directory.tables = { ...tables, CBLC: {} };
+    const widths = [36, 37].map((id) => font.getGlyph(id).advanceWidth);
+
+    const subset = font.createSubset();
+    subset.includeGlyph(36);
+    subset.includeGlyph(37);
+    const out = fontkit.create(subset.encode()) as any;
+
+    expect(out.numGlyphs).toBe(3);
+    expect(out.maxp.version).toBe(0x00010000);
+    expect(out.maxp.maxZones).toBe(1);
+    expect(out.loca.offsets).toEqual([0, 0, 0, 0]);
+    expect(out.directory.tables.glyf.length).toBeGreaterThan(0);
+    expect(out.directory.tables.fpgm).toBeUndefined();
+    expect([1, 2].map((id) => out.getGlyph(id).advanceWidth)).toEqual(widths);
+    expect(out.getGlyph(1).path.commands).toEqual([]);
+  });
+
+  it('reads back a one-glyph bitmap-only subset', () => {
+    const font = openUbuntu();
+    const { glyf: _glyf, loca: _loca, ...tables } = font.directory.tables;
+    font.directory.tables = { ...tables, CBLC: {} };
+    const out = fontkit.create(font.createSubset().encode()) as any;
+    const glyph = out.getGlyph(0);
+    expect(glyph.advanceWidth).toBe(font.getGlyph(0).advanceWidth);
+    expect(glyph.cbox).toEqual(new BBox(0, 0, 0, 0));
+  });
+
+  it('reads a version 0.5 maxp as numGlyphs only', () => {
+    const otf = fontkit.create(
+      new Uint8Array(
+        fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
+      ),
+    ) as any;
+    expect(otf.maxp.version).toBe(0x00005000);
+    expect(Object.keys(otf.maxp)).not.toContain('maxPoints');
+    expect(otf.numGlyphs).toBeGreaterThan(0);
+  });
+
+  it('refuses to subset an sbix font without outlines', () => {
+    const font = openUbuntu();
+    const { glyf: _glyf, ...tables } = font.directory.tables;
+    font.directory.tables = { ...tables, sbix: {} };
+    const subset = font.createSubset();
+    subset.includeGlyph(36);
+    expect(() => subset.encode()).toThrow(/neither outlines nor CBDT/);
+  });
+
   it('keeps outline glyphs for fonts with embedded bitmaps next to glyf', () => {
     const font = openUbuntu();
     font.directory.tables = { ...font.directory.tables, EBLC: {} };

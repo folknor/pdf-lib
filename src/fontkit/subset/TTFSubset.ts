@@ -36,7 +36,29 @@ export default class TTFSubset extends Subset {
     );
   }
 
+  // A bitmap-only (CBDT/EBDT) font has no glyf, loca, or CFF to copy from.
+  // Its subset is a TrueType font whose glyphs are all empty but keep their
+  // hmtx metrics: PDF renders TrueType from glyf, so the bitmaps are not
+  // drawn either way, the same as embedding the whole font.
+  get _outlineless(): boolean {
+    const tables = this.font.directory.tables;
+    return !tables.glyf && !tables['CFF '] && !tables.CFF2;
+  }
+
   _addGlyph(gid: number): number {
+    if (this._outlineless) {
+      const glyph = this.font.getGlyph(gid);
+      // Only CBDT stubs get metrics without outline tables; an sbix glyph
+      // reads its bounding box from glyf.
+      if (glyph?.type !== 'CBDT') {
+        throw new Error(
+          'Cannot subset a font with neither outlines nor CBDT/EBDT bitmaps',
+        );
+      }
+      this._pushGlyph(glyph, new Uint8Array(0));
+      return this.glyf.length - 1;
+    }
+
     // getGlyph() returns a COLR wrapper in color fonts; the outline glyph is
     // what goes into glyf.
     const glyph = this.font._getBaseGlyph(gid) ?? this.font.getGlyph(gid);
@@ -108,6 +130,28 @@ export default class TTFSubset extends Subset {
     maxp.maxComponentDepth = 0;
   }
 
+  // A TrueType font needs a version 1.0 maxp; a bitmap-only source may carry
+  // version 0.5, and its outline limits are all zero anyway.
+  static _emptyMaxp(numGlyphs: number): any {
+    return {
+      version: 0x00010000,
+      numGlyphs,
+      maxPoints: 0,
+      maxContours: 0,
+      maxComponentPoints: 0,
+      maxComponentContours: 0,
+      maxZones: 1,
+      maxTwilightPoints: 0,
+      maxStorage: 0,
+      maxFunctionDefs: 0,
+      maxInstructionDefs: 0,
+      maxStackElements: 0,
+      maxSizeOfInstructions: 0,
+      maxComponentElements: 0,
+      maxComponentDepth: 0,
+    };
+  }
+
   _pushGlyph(glyph: any, buffer: Uint8Array): void {
     this.glyf.push(buffer);
     this.loca.offsets.push(this.offset);
@@ -133,7 +177,12 @@ export default class TTFSubset extends Subset {
       offsets: [],
       // Flattened glyphs have new sizes (and a transformed WOFF2 loca is
       // empty); long offsets are always valid.
-      version: this._flattenGlyphs ? 1 : this.font.loca.version,
+      // Outlineless subsets have no loca to follow; every offset is 0.
+      version: this._outlineless
+        ? 0
+        : this._flattenGlyphs
+          ? 1
+          : this.font.loca.version,
     };
 
     this.hmtx = {
@@ -149,11 +198,18 @@ export default class TTFSubset extends Subset {
       this._addGlyph(this.glyphs[i++]!);
     }
 
-    const maxp = structuredClone(this.font.maxp);
+    const outlineless = this._outlineless;
+    const maxp = outlineless
+      ? TTFSubset._emptyMaxp(this.glyf.length)
+      : structuredClone(this.font.maxp);
     maxp.numGlyphs = this.glyf.length;
     if (this._flattenGlyphs) this._updateMaxpForFlattenedGlyphs(maxp);
 
     this.loca.offsets.push(this.offset);
+
+    // A zero-length glyf table is rejected by some consumers (OTS pads it
+    // the same way); loca still marks every glyph empty.
+    if (outlineless && this.offset === 0) this.glyf.push(new Uint8Array(1));
 
     const head = structuredClone(this.font.head);
     head.indexToLocFormat = this.loca.version;
@@ -190,11 +246,13 @@ export default class TTFSubset extends Subset {
         hhea,
         loca: this.loca,
         maxp,
-        'cvt ': this.font['cvt '],
-        prep: this.font.prep,
+        // The synthesized maxp declares no instruction resources, so no
+        // programs go with it.
+        'cvt ': outlineless ? undefined : this.font['cvt '],
+        prep: outlineless ? undefined : this.font.prep,
         glyf: this.glyf,
         hmtx: this.hmtx,
-        fpgm: this.font.fpgm,
+        fpgm: outlineless ? undefined : this.font.fpgm,
 
         // name: clone @font.name
         // 'OS/2': clone @font['OS/2']
