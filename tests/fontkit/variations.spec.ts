@@ -37,6 +37,48 @@ describe('TrueType variations', () => {
     }
   });
 
+  // TestGVAR* glyph 1 is empty and has gvar data, but none of the fixtures
+  // move a phantom point, so these tests shift them through a wrapped
+  // transformPoints: +50 on the right origin, -30 on the bottom origin.
+  const shiftPhantoms = (font: any) => {
+    const processor = font._variationProcessor;
+    const transform = processor.transformPoints.bind(processor);
+    processor.transformPoints = (gid: number, points: any[]) => {
+      transform(gid, points);
+      points[points.length - 3].x += 50;
+      points[points.length - 1].y -= 30;
+    };
+  };
+
+  for (const ext of ['ttf', 'woff', 'woff2']) {
+    it(`varies an empty ${ext} glyph's metrics through its phantom points without HVAR`, () => {
+      const font = open(`TestGVAROne.${ext}`).getVariation({ wght: 300 });
+      expect(font.HVAR).toBeUndefined();
+      shiftPhantoms(font);
+      const empty = font.getGlyph(1);
+      expect(empty._decode().numberOfContours).toBe(0);
+      expect(empty.path.commands).toEqual([]);
+      const unvaried = open(`TestGVAROne.${ext}`).getGlyph(1);
+      expect(empty.advanceWidth).toBe(unvaried.advanceWidth + 50);
+      expect(empty.advanceHeight).toBe(unvaried.advanceHeight + 30);
+    });
+  }
+
+  it('applies phantom deltas once however often a glyph is decoded', () => {
+    const font = open('TestGVAROne.ttf').getVariation({ wght: 300 });
+    shiftPhantoms(font);
+    const glyph = font.glyphsForString('彌')[0];
+    const unvaried = open('TestGVAROne.ttf').getGlyph(glyph.id);
+    for (let i = 0; i < 3; i++) glyph._getContours();
+    expect(glyph._getMetrics().advanceWidth).toBe(unvaried.advanceWidth + 50);
+  });
+
+  it('keeps the HVAR advance when the path is read first', () => {
+    const { glyph } = variationGlyph('TestHVARTwo.ttf', { wght: 400 }, 'A');
+    void glyph.path;
+    expect(Math.round(glyph.advanceWidth)).toBe(584);
+  });
+
   it('uses HVAR for variation metrics', () => {
     expect(
       Math.round(
@@ -118,8 +160,6 @@ describe('WOFF and WOFF2 variations', () => {
     const woff2 = open('TestGVAROne.woff2');
     let compared = 0;
     for (let id = 0; id < ttf.numGlyphs; id++) {
-      // An empty TTF glyph has no header; its _getCBox reads the next one's.
-      if (!ttf.getGlyph(id)._decode()) continue;
       compared++;
       expect(woff2.getGlyph(id)._getCBox(true)).toEqual(
         ttf.getGlyph(id)._getCBox(true),

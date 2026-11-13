@@ -4,16 +4,27 @@ Open findings about the vendored fontkit (`src/fontkit`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Empty glyphs keep their default advance under gvar without HVAR
+## Composite variation metrics ignore USE_MY_METRICS
 
-`TTFGlyph._decode` returns null for a glyph with no glyf data, and
-`TTFGlyph._applyVariation` skips `numberOfContours === 0`. Neither path runs
-the four phantom points through `GlyphVariationProcessor`, so in a variable
-TrueType font with no HVAR table a varied empty glyph (typically space) keeps
-its default advance width. Upstream fontkit behaves the same. A fix would need
-to vary phantom points for empty glyphs, with base metrics taken from hmtx
-rather than from a glyf header that does not exist (`_getCBox(true)` returns
-a zero box for an empty TTF glyph).
+`TTFGlyph._decodeComposite` does not keep the `USE_MY_METRICS` component
+flag, so a varied composite takes its metrics from its own phantom points.
+The gvar spec says the flagged component's varied phantom points replace the
+composite's. Without HVAR this affects horizontal advances; vertical advances
+are affected in every variable font, since VVAR is not read and they always
+come from phantom points. Upstream fontkit has the same gap (foliojs #423).
+
+## Varied bearings are measured from unvaried extents
+
+`TTFGlyph._getContours` derives `leftBearing` and `topBearing` of a varied
+glyph from the glyf header's `xMin`/`yMax`, not from the varied outline. A
+subset of a variation instance writes that `leftBearing` into hmtx while its
+re-encoded glyf header carries the varied `xMin`, so the two can disagree.
+
+## COLR glyphs report unvaried metrics
+
+`COLRGlyph` inherits `Glyph._getMetrics` instead of asking its base outline
+glyph, so in a variable colour font without HVAR the COLR wrapper keeps the
+hmtx advance while the outline glyph (and so the subset) has the varied one.
 
 ## WOFF2 brotli decoding is not bounded by the decode cap
 

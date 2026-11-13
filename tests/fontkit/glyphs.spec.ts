@@ -13,7 +13,7 @@ const openUbuntu = () => fontkit.create(new Uint8Array(ubuntuBytes));
 const firstCompositeGlyph = (font: any) => {
   for (let id = 0; id < font.numGlyphs; id++) {
     const decoded = font.getGlyph(id)._decode();
-    if (decoded && decoded.numberOfContours < 0) return { id, decoded };
+    if (decoded.numberOfContours < 0) return { id, decoded };
   }
   throw new Error('no composite glyph in test font');
 };

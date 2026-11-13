@@ -155,13 +155,23 @@ export default class TTFGlyph extends Glyph {
 
   // Decodes the glyph data into points for simple glyphs,
   // or components for composite glyphs
-  _decode(): DecodedGlyph | null {
+  // A glyph with no glyf data decodes as zero contours with zero extents (the
+  // shape WOFF2Font._transformGlyfTable gives it), so that it still goes
+  // through _applyVariation: its phantom points carry its varied advance.
+  _decode(): DecodedGlyph {
     const glyfPos = this._font.loca.offsets[this.id];
     const nextPos = this._font.loca.offsets[this.id + 1];
 
-    // Nothing to do if there is no data for this glyph
     if (glyfPos === nextPos) {
-      return null;
+      const empty: DecodedGlyph = {
+        numberOfContours: 0,
+        xMin: 0,
+        yMin: 0,
+        xMax: 0,
+        yMax: 0,
+      };
+      this._applyVariation(empty);
+      return empty;
     }
 
     const stream = this._font._getTableStream('glyf');
@@ -337,13 +347,14 @@ export default class TTFGlyph extends Glyph {
     const processor = this._font._variationProcessor;
     if (!processor) return;
 
-    if (glyph.numberOfContours > 0) {
+    // An empty glyph (zero contours) has only the phantom points to vary.
+    if (glyph.numberOfContours >= 0) {
       const points = (glyph.points ?? []).slice();
       points.push(...this._getPhantomPoints(glyph));
 
       processor.transformPoints(this.id, points);
       glyph.phantomPoints = points.slice(-4);
-    } else if (glyph.numberOfContours < 0) {
+    } else {
       const components = glyph.components ?? [];
       const points: Point[] = components.map(
         (comp) => new Point(true, true, comp.dx, comp.dy),
@@ -363,29 +374,29 @@ export default class TTFGlyph extends Glyph {
     }
   }
 
+  // The four phantom points (left and right origin, top and bottom origin)
+  // are always built from the unvaried table metrics. A component glyph is
+  // decoded again for every composite that uses it, so building them from
+  // the varied _metrics would apply its deltas once per decode.
   _getPhantomPoints(glyph: DecodedGlyph): Point[] {
-    const cbox = this._getCBox(true);
-    if (this._metrics == null) {
-      this._metrics = Glyph.prototype._getMetrics.call(this, cbox);
-    }
-
+    this._defaultMetrics ??= this._getDefaultMetrics(this._getCBox(true));
     const { advanceWidth, advanceHeight, leftBearing, topBearing } =
-      this._metrics;
+      this._defaultMetrics;
 
+    const top = glyph.yMax + topBearing;
     return [
       new Point(false, true, glyph.xMin - leftBearing, 0),
       new Point(false, true, glyph.xMin - leftBearing + advanceWidth, 0),
-      new Point(false, true, 0, glyph.yMax + topBearing),
-      new Point(false, true, 0, glyph.yMax + topBearing + advanceHeight),
+      new Point(false, true, 0, top),
+      new Point(false, true, 0, top - advanceHeight),
     ];
   }
+
+  _defaultMetrics?: GlyphMetrics;
 
   // Decodes font data, resolves composite glyphs, and returns an array of contours
   _getContours(): Point[][] {
     const glyph = this._decode();
-    if (!glyph) {
-      return [];
-    }
 
     let points: Point[] = [];
 
@@ -419,18 +430,28 @@ export default class TTFGlyph extends Glyph {
       points = glyph.points || [];
     }
 
-    // Recompute and cache metrics if we performed variation processing, and don't have an HVAR table
-    if (glyph.phantomPoints && !this._font.directory.tables.HVAR) {
-      const ph0 = glyph.phantomPoints[0];
-      const ph1 = glyph.phantomPoints[1];
-      const ph2 = glyph.phantomPoints[2];
-      const ph3 = glyph.phantomPoints[3];
-      if (this._metrics && ph0 && ph1 && ph2 && ph3) {
-        this._metrics.advanceWidth = ph1.x - ph0.x;
-        this._metrics.advanceHeight = ph3.y - ph2.y;
-        this._metrics.leftBearing = glyph.xMin - ph0.x;
-        this._metrics.topBearing = ph2.y - glyph.yMax;
-      }
+    // Publish the varied metrics. Horizontal ones come from HVAR when the
+    // font has it, else from the phantom points; vertical ones always come
+    // from the phantom points, since VVAR is not read. Bearings are measured
+    // from the unvaried glyph extents.
+    const [ph0, ph1, ph2, ph3] = glyph.phantomPoints ?? [];
+    if (ph0 && ph1 && ph2 && ph3) {
+      const base = this._defaultMetrics!;
+      const horizontal = this._font.HVAR
+        ? {
+            advanceWidth: base.advanceWidth + this._getHVARAdjustment(),
+            leftBearing: base.leftBearing,
+          }
+        : {
+            advanceWidth: ph1.x - ph0.x,
+            leftBearing: glyph.xMin - ph0.x,
+          };
+      this._metrics = {
+        advanceWidth: horizontal.advanceWidth,
+        leftBearing: horizontal.leftBearing,
+        advanceHeight: ph2.y - ph3.y,
+        topBearing: ph2.y - glyph.yMax,
+      };
     }
 
     const contours: Point[][] = [];
@@ -454,16 +475,14 @@ export default class TTFGlyph extends Glyph {
       return this._metrics;
     }
 
-    const cbox = this._getCBox(true);
-    super._getMetrics(cbox);
-
-    if (this._font._variationProcessor && !this._font.HVAR) {
-      // No HVAR table, decode the glyph. This triggers recomputation of metrics.
-      const _path = this.path;
-      void _path;
+    if (this._font._variationProcessor) {
+      // Varied metrics come from the decoded glyph's phantom points (vertical
+      // always, horizontal without HVAR); _getContours publishes them.
+      this._getContours();
+      if (this._metrics) return this._metrics;
     }
 
-    return this._metrics!;
+    return super._getMetrics(this._getCBox(true));
   }
 
   // Converts contours to a Path object that can be rendered

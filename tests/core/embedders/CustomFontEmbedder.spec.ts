@@ -338,8 +338,8 @@ describe('CustomFontEmbedder', () => {
       let maxContours = 0;
       for (let id = 0; id < embedded.numGlyphs; id++) {
         const decoded = embedded.getGlyph(id)._decode();
-        if (!decoded) continue;
         expect(decoded.numberOfContours).toBeGreaterThanOrEqual(0);
+        if (decoded.numberOfContours === 0) continue;
         maxPoints = Math.max(maxPoints, decoded.points.length);
         maxContours = Math.max(maxContours, decoded.numberOfContours);
         // Every re-encoded outline decodes back to the source outline, up to

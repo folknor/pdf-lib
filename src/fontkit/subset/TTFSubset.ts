@@ -69,7 +69,7 @@ export default class TTFSubset extends Subset {
       // Composite glyphs are flattened into simple ones, so their components
       // need not be included. Hinting instructions are not preserved.
       buffer =
-        glyf && glyf.numberOfContours !== 0
+        glyf.numberOfContours !== 0
           ? this.glyphEncoder.encodeSimple(glyph.path)
           : new Uint8Array(0);
       this._pushGlyph(glyph, buffer);
@@ -86,7 +86,7 @@ export default class TTFSubset extends Subset {
     buffer = stream.readBuffer(nextOffset - curOffset);
 
     // if it is a compound glyph, include its components
-    if (glyf && glyf.numberOfContours < 0) {
+    if (glyf.numberOfContours < 0) {
       buffer = new Uint8Array(buffer);
       const view = new DataView(buffer.buffer);
       for (const component of glyf.components) {

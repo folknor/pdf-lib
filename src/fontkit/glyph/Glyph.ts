@@ -83,9 +83,27 @@ export default class Glyph {
       return this._metrics;
     }
 
-    let { advance: advanceWidth, bearing: leftBearing } = this._getTableMetrics(
-      this._font.hmtx,
-    );
+    const metrics = this._getDefaultMetrics(cbox);
+    metrics.advanceWidth += this._getHVARAdjustment();
+    return (this._metrics = metrics);
+  }
+
+  // The HVAR delta to the advance width; 0 for an unvaried font or one
+  // without HVAR.
+  _getHVARAdjustment(): number {
+    const processor = this._font._variationProcessor;
+    const hvar = this._font.HVAR;
+    return processor && hvar
+      ? processor.getAdvanceAdjustment(this.id, hvar)
+      : 0;
+  }
+
+  // The unvaried metrics from hmtx and vmtx (or OS/2 or hhea), in a fresh
+  // object each call. Neither reads nor writes the _metrics cache, so variation
+  // code can start from them without compounding earlier deltas.
+  _getDefaultMetrics(cbox?: BBox | null): GlyphMetrics {
+    const { advance: advanceWidth, bearing: leftBearing } =
+      this._getTableMetrics(this._font.hmtx);
 
     // For vertical metrics, use vmtx if available, or fall back to global data from OS/2 or hhea
     let advanceHeight;
@@ -110,19 +128,7 @@ export default class Glyph {
       }
     }
 
-    if (this._font._variationProcessor && this._font.HVAR) {
-      advanceWidth += this._font._variationProcessor.getAdvanceAdjustment(
-        this.id,
-        this._font.HVAR,
-      );
-    }
-
-    return (this._metrics = {
-      advanceWidth,
-      advanceHeight,
-      leftBearing,
-      topBearing,
-    });
+    return { advanceWidth, advanceHeight, leftBearing, topBearing };
   }
 
   /**

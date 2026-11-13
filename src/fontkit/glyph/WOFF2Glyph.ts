@@ -7,7 +7,7 @@ import TTFGlyph, { type DecodedGlyph } from './TTFGlyph.js';
 export default class WOFF2Glyph extends TTFGlyph {
   override type = 'WOFF2';
 
-  override _decode(): DecodedGlyph | null {
+  override _decode(): DecodedGlyph {
     // Glyphs are decoded in advance (WOFF2Font._transformGlyfTable) and shared
     // by every instance of the font, so vary a copy, never the cached one.
     const decoded: DecodedGlyph = this._font._transformedGlyphs[this.id];
