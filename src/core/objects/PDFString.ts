@@ -56,8 +56,11 @@ class PDFString extends PDFObject {
         else pushByte(byte);
       } else {
         if (byte === CharCodes.Newline) pushByte();
-        else if (byte === CharCodes.CarriageReturn) pushByte();
-        else if (byte === CharCodes.n) pushByte(CharCodes.Newline);
+        else if (byte === CharCodes.CarriageReturn) {
+          // Backslash + CRLF is a single line continuation.
+          if (nextChar === '\n') idx++;
+          pushByte();
+        } else if (byte === CharCodes.n) pushByte(CharCodes.Newline);
         else if (byte === CharCodes.r) pushByte(CharCodes.CarriageReturn);
         else if (byte === CharCodes.t) pushByte(CharCodes.Tab);
         else if (byte === CharCodes.b) pushByte(CharCodes.Backspace);

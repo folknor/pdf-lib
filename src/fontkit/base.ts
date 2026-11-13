@@ -19,7 +19,20 @@ export function create(buffer: Uint8Array, postscriptName?: string): any {
     if (format.probe(buffer)) {
       const font = new format(new DecodeStream(buffer));
       if (postscriptName) {
-        return font.getFont(postscriptName);
+        // Collections (TTC, DFont): select the face by PostScript name.
+        if ('fonts' in font) return font.getFont(postscriptName);
+        // Variable fonts: select a named instance if one matches.
+        if (
+          font.directory?.tables?.fvar &&
+          Object.prototype.hasOwnProperty.call(
+            font.namedVariations ?? {},
+            postscriptName,
+          )
+        ) {
+          return font.getFont(postscriptName);
+        }
+        // Single, non-variable font: the name is ignored (as upstream
+        // fontkit documents) rather than throwing.
       }
 
       return font;

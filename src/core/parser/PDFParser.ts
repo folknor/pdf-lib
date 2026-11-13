@@ -4,6 +4,7 @@ import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
 import PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import {
+  DecodedStreamTooLargeError,
   MissingKeywordError,
   MissingPDFHeaderError,
   PDFInvalidObjectParsingError,
@@ -35,6 +36,7 @@ class PDFParser extends PDFObjectParser {
     capNumbers?: boolean,
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate?: boolean,
+    maxDecodedStreamSize?: number,
   ) =>
     new PDFParser(
       pdfBytes,
@@ -44,6 +46,7 @@ class PDFParser extends PDFObjectParser {
       capNumbers,
       cryptoFactory,
       forIncrementalUpdate,
+      maxDecodedStreamSize,
     );
 
   private readonly objectsPerTick: number;
@@ -60,6 +63,7 @@ class PDFParser extends PDFObjectParser {
     capNumbers = false,
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate = false,
+    maxDecodedStreamSize?: number,
   ) {
     super(
       ByteStream.of(pdfBytes),
@@ -72,6 +76,9 @@ class PDFParser extends PDFObjectParser {
     this.warnOnInvalidObjects = warnOnInvalidObjects;
     this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
     this.context.pdfFileDetails.pdfSize = pdfBytes.length;
+    // Set before parsing so object/xref streams decoded during the parse
+    // are capped too.
+    this.context.maxDecodedStreamSize = maxDecodedStreamSize;
     if (forIncrementalUpdate) {
       this.context.pdfFileDetails.originalBytes = pdfBytes;
     }
@@ -94,6 +101,11 @@ class PDFParser extends PDFObjectParser {
       }
       prevOffset = offset;
     }
+
+    // Now that every object is known, fix up streams whose indirect /Length
+    // pointed forward (#180). Object and xref streams were already consumed
+    // during parsing and are not revisited.
+    this.resolvePendingStreamLengths();
 
     this.maybeRecoverRoot();
 
@@ -251,7 +263,10 @@ class PDFParser extends PDFObjectParser {
 
       try {
         await this.parseIndirectObject();
-      } catch {
+      } catch (e) {
+        // A decompression-bomb guard must abort loading, not be swallowed
+        // into an invalid object.
+        if (e instanceof DecodedStreamTooLargeError) throw e;
         // TODO: Add tracing/logging mechanism to track when this happens!
         this.bytes.moveTo(initialOffset);
         this.tryToParseInvalidIndirectObject();

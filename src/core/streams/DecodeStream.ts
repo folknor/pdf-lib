@@ -1,4 +1,7 @@
-import { MethodNotImplementedError } from '../errors.js';
+import {
+  DecodedStreamTooLargeError,
+  MethodNotImplementedError,
+} from '../errors.js';
 import Stream, { type StreamType } from './Stream.js';
 
 /*
@@ -16,9 +19,41 @@ import Stream, { type StreamType } from './Stream.js';
 const emptyBuffer = new Uint8Array(0);
 
 /**
+ * Default cap on a single decoded stream: 512 MiB. Real-world content streams
+ * and images rarely exceed tens of MB decoded (a 10000x10000 RGBA image is
+ * 400 MB), while this still stops bombs well before exhausting typical
+ * JS heaps.
+ */
+export const DEFAULT_MAX_DECODED_SIZE = 512 * 1024 * 1024;
+
+/**
+ * How far past the cap a buffer reservation may go. Decoders reserve at most
+ * a block ahead (Flate stored blocks <= 64 KiB, LZW/ASCIIHex/RunLength a few
+ * KiB), so 1 MiB of headroom never rejects legitimate estimates.
+ */
+const RESERVATION_SLACK = 1024 * 1024;
+
+/**
  * Super class for the decoding streams
  */
 class DecodeStream implements StreamType {
+  /**
+   * Default upper bound (in bytes) on the decoded size of a single stream,
+   * guarding against decompression bombs (a few KB of Flate data can expand
+   * to many GB). Applies to every DecodeStream (stream filters used while
+   * parsing, by forms, by embedders, ...); a document loaded with
+   * `LoadOptions.maxDecodedStreamSize` overrides it for its own streams. Set
+   * to `Infinity` to disable. Not covered: PNG embedding, which inflates via
+   * fflate in src/vendors/upng.ts rather than through DecodeStream.
+   */
+  static maxDecodedSize = DEFAULT_MAX_DECODED_SIZE;
+
+  /**
+   * Limit for this stream instance; defaults to the static value at
+   * construction time.
+   */
+  maxDecodedSize: number = DecodeStream.maxDecodedSize;
+
   protected bufferLength: number;
   protected buffer: Uint8Array;
   protected eof: boolean;
@@ -42,7 +77,7 @@ class DecodeStream implements StreamType {
 
   get isEmpty() {
     while (!this.eof && this.bufferLength === 0) {
-      this.readBlock();
+      this.readBlockChecked();
     }
     return this.bufferLength === 0;
   }
@@ -53,7 +88,7 @@ class DecodeStream implements StreamType {
       if (this.eof) {
         return -1;
       }
-      this.readBlock();
+      this.readBlockChecked();
     }
     return this.buffer[this.pos++]!;
   }
@@ -80,11 +115,13 @@ class DecodeStream implements StreamType {
     const pos = this.pos;
 
     if (length) {
-      this.ensureBuffer(pos + length);
+      // Reservation only; clamp so a large request can't trip the cap or
+      // allocate more than the stream may ever hold.
+      this.ensureBuffer(Math.min(pos + length, this.maxDecodedSize));
       end = pos + length;
 
       while (!this.eof && this.bufferLength < end) {
-        this.readBlock();
+        this.readBlockChecked();
       }
       const bufEnd = this.bufferLength;
       if (end > bufEnd) {
@@ -92,7 +129,7 @@ class DecodeStream implements StreamType {
       }
     } else {
       while (!this.eof) {
-        this.readBlock();
+        this.readBlockChecked();
       }
       end = this.bufferLength;
     }
@@ -131,13 +168,13 @@ class DecodeStream implements StreamType {
   makeSubStream(start: number, length: number /* dict */) {
     const end = start + length;
     while (this.bufferLength <= end && !this.eof) {
-      this.readBlock();
+      this.readBlockChecked();
     }
     return new Stream(this.buffer, start, length /* dict */);
   }
 
   decode(): Uint8Array {
-    while (!this.eof) this.readBlock();
+    while (!this.eof) this.readBlockChecked();
     return this.buffer.subarray(0, this.bufferLength);
   }
 
@@ -145,15 +182,40 @@ class DecodeStream implements StreamType {
     throw new MethodNotImplementedError(this.constructor.name, 'readBlock');
   }
 
+  /**
+   * Reads one block and enforces the decoded-size cap on the output actually
+   * produced (not on decoders' reservation estimates).
+   */
+  private readBlockChecked(): void {
+    this.readBlock();
+    if (this.bufferLength > this.maxDecodedSize) {
+      throw new DecodedStreamTooLargeError(
+        this.bufferLength,
+        this.maxDecodedSize,
+      );
+    }
+  }
+
   protected ensureBuffer(requested: number) {
     const buffer = this.buffer;
     if (requested <= buffer.byteLength) {
       return buffer;
     }
+    const max = this.maxDecodedSize;
+    // Decoders reserve ahead of what they produce (estimates, worst cases),
+    // so a reservation past the cap is not itself an error: the cap is
+    // enforced on produced output in readBlockChecked(). But a single
+    // readBlock() can emit arbitrarily much (one Flate block), so refuse
+    // growth once a reservation goes clearly beyond any per-call estimate.
+    if (requested > max + RESERVATION_SLACK) {
+      throw new DecodedStreamTooLargeError(requested, max);
+    }
     let size = this.minBufferLength;
     while (size < requested) {
       size *= 2;
     }
+    // Don't let power-of-two growth overshoot the cap needlessly.
+    if (size > max) size = Math.max(max, requested);
     const buffer2 = new Uint8Array(size);
     buffer2.set(buffer);
     return (this.buffer = buffer2);

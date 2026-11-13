@@ -1,6 +1,12 @@
-import DecodeStream from '../../../src/core/streams/DecodeStream';
+import DecodeStream, {
+  DEFAULT_MAX_DECODED_SIZE,
+} from '../../../src/core/streams/DecodeStream';
+import { DecodedStreamTooLargeError } from '../../../src/core/errors';
 import Stream from '../../../src/core/streams/Stream';
 import FlateStream from '../../../src/core/streams/FlateStream';
+import LZWStream from '../../../src/core/streams/LZWStream';
+import AsciiHexStream from '../../../src/core/streams/AsciiHexStream';
+import RunLengthStream from '../../../src/core/streams/RunLengthStream';
 import { zlibSync } from 'fflate';
 
 /**
@@ -429,6 +435,83 @@ describe('DecodeStream', () => {
 
       const decoded = stream.decode();
       expect(decoded).toEqual(data);
+    });
+  });
+
+  describe('maxDecodedSize', () => {
+    const original = DecodeStream.maxDecodedSize;
+    afterEach(() => {
+      DecodeStream.maxDecodedSize = original;
+    });
+
+    it('has a generous default', () => {
+      expect(DEFAULT_MAX_DECODED_SIZE).toBe(512 * 1024 * 1024);
+      expect(DecodeStream.maxDecodedSize).toBe(DEFAULT_MAX_DECODED_SIZE);
+    });
+
+    it('throws when the decoded data would exceed the cap', () => {
+      DecodeStream.maxDecodedSize = 1000;
+      const stream = new TestDecodeStream(new Uint8Array(2000));
+      expect(() => stream.decode()).toThrow(DecodedStreamTooLargeError);
+    });
+
+    it('allows data exactly at the cap, even when not a power of two', () => {
+      DecodeStream.maxDecodedSize = 1000;
+      const data = new Uint8Array(1000).fill(7);
+      const stream = new TestDecodeStream(data, undefined, 100);
+      expect(stream.decode()).toEqual(data);
+    });
+
+    it('stops a flate decompression bomb', () => {
+      DecodeStream.maxDecodedSize = 64 * 1024;
+      const compressed = zlibSync(new Uint8Array(1024 * 1024));
+      const flateStream = new FlateStream(new Stream(compressed));
+      expect(() => flateStream.decode()).toThrow(DecodedStreamTooLargeError);
+    });
+
+    it('stops a bomb far larger than the reservation slack', () => {
+      DecodeStream.maxDecodedSize = 64 * 1024;
+      const compressed = zlibSync(new Uint8Array(16 << 20));
+      const flateStream = new FlateStream(new Stream(compressed));
+      expect(() => flateStream.decode()).toThrow(DecodedStreamTooLargeError);
+    });
+
+    it('honours a per-instance limit over the static default', () => {
+      const stream = new TestDecodeStream(new Uint8Array(2000));
+      stream.maxDecodedSize = 1000;
+      expect(() => stream.decode()).toThrow(DecodedStreamTooLargeError);
+    });
+
+    it('does not reject getBytes(n) reservations beyond the cap', () => {
+      DecodeStream.maxDecodedSize = 1000;
+      const flateStream = new FlateStream(
+        new Stream(zlibSync(Uint8Array.of(42))),
+      );
+      expect(flateStream.getBytes(1001)).toEqual(Uint8Array.of(42));
+    });
+
+    it('does not reject LZW up-front reservations on an empty stream', () => {
+      DecodeStream.maxDecodedSize = 100;
+      const lzw = new LZWStream(new Stream(new Uint8Array(0)), undefined, 1);
+      expect(lzw.decode().length).toBe(0);
+    });
+
+    it('does not reject ASCIIHex worst-case reservations', () => {
+      DecodeStream.maxDecodedSize = 1;
+      // '4 1' decodes to one byte but reserves (len+1)>>1 = 3 bytes
+      const hex = new AsciiHexStream(
+        new Stream(Uint8Array.from([0x34, 0x20, 0x31, 0x20, 0x3e])),
+      );
+      expect(hex.decode()).toEqual(Uint8Array.of(0x41));
+    });
+
+    it('does not reject RunLength reservations', () => {
+      DecodeStream.maxDecodedSize = 2;
+      // repeat run: 255 => 'A' x2, but reserves n+1 = 3 bytes; then EOD
+      const rl = new RunLengthStream(
+        new Stream(Uint8Array.of(255, 0x41, 128, 0)),
+      );
+      expect(rl.decode()).toEqual(Uint8Array.of(0x41, 0x41));
     });
   });
 

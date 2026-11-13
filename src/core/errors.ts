@@ -3,6 +3,13 @@
 import { arrayAsString } from '../utils/index.js';
 import type PDFObject from './objects/PDFObject.js';
 
+export class DecodedStreamTooLargeError extends Error {
+  constructor(requested: number, max: number) {
+    const msg = `Decoded stream size (${requested} bytes) exceeds the maximum of ${max} bytes; the stream may be a decompression bomb. Raise DecodeStream.maxDecodedSize if this data is legitimate.`;
+    super(msg);
+  }
+}
+
 export class MethodNotImplementedError extends Error {
   constructor(className: string, methodName: string) {
     const msg = `Method ${className}.${methodName}() not implemented`;

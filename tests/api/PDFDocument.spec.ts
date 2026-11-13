@@ -197,6 +197,65 @@ describe('PDFDocument', () => {
 
       expect(savedDoc1).toEqual(savedDoc2);
     });
+
+    it('ignores postscriptName for a single, non-variable font', async () => {
+      const customFont = fs.readFileSync('assets/fonts/ubuntu/Ubuntu-B.ttf');
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
+
+      const font = await pdfDoc.embedFont(customFont, {
+        postscriptName: 'No-Such-Face',
+      });
+      const subset = await pdfDoc.embedFont(customFont, {
+        subset: true,
+        postscriptName: 'No-Such-Face',
+      });
+      expect(font.name).toContain('Ubuntu');
+      expect(subset.name).toContain('Ubuntu');
+      await expect(pdfDoc.save()).resolves.toBeInstanceOf(Uint8Array);
+    });
+
+    it('rejects a non-string postscriptName', async () => {
+      const customFont = fs.readFileSync('assets/fonts/ubuntu/Ubuntu-B.ttf');
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
+      await expect(
+        pdfDoc.embedFont(customFont, { postscriptName: 42 as any }),
+      ).rejects.toThrow();
+    });
+
+    it('selects a face from a font collection by postscriptName', async () => {
+      // No .ttc fixture exists, so register a fake collection format whose
+      // faces are real TTF fonts. Its magic bytes match nothing real.
+      const regular = fontkit.create(
+        fs.readFileSync('assets/fonts/ubuntu/Ubuntu-R.ttf'),
+      );
+      const bold = fontkit.create(
+        fs.readFileSync('assets/fonts/ubuntu/Ubuntu-B.ttf'),
+      );
+      const getFont = vi.fn((name: string) =>
+        [regular, bold].find((f) => f.postscriptName === name) ?? null,
+      );
+      class FakeCollection {
+        static probe(buffer: Uint8Array) {
+          return buffer[0] === 0xfe && buffer[1] === 0xed;
+        }
+        get fonts() {
+          return [regular, bold];
+        }
+        getFont = getFont;
+      }
+      fontkit.registerFormat(FakeCollection as any);
+
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
+      const font = await pdfDoc.embedFont(Uint8Array.of(0xfe, 0xed, 0, 0), {
+        postscriptName: bold.postscriptName!,
+      });
+
+      expect(getFont).toHaveBeenCalledWith(bold.postscriptName);
+      expect(font.name).toContain(bold.postscriptName);
+    });
   });
 
   describe('setLanguage() method', () => {

@@ -8,6 +8,7 @@ import {
   PDFRawStream,
   PDFArray,
   PDFNumber,
+  DecodedStreamTooLargeError,
 } from '../../../src/core';
 
 // Helper: encode text content as ASCII hex (e.g. "AB" -> "4142>")
@@ -113,6 +114,27 @@ describe('decodePDFRawStream', () => {
     dict.set(PDFName.of('Filter'), filterArray);
     return PDFRawStream.of(dict, contents);
   };
+
+  describe('with a per-document maxDecodedStreamSize', () => {
+    it('applies the context limit to the decoding chain', () => {
+      const ctx = PDFContext.create();
+      ctx.maxDecodedStreamSize = 64 * 1024;
+      const dict = PDFDict.withContext(ctx);
+      dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
+      const bomb = PDFRawStream.of(dict, zlibSync(new Uint8Array(4 << 20)));
+      expect(() => decodePDFRawStream(bomb).decode()).toThrow(
+        DecodedStreamTooLargeError,
+      );
+    });
+
+    it('leaves other documents on the global default', () => {
+      const rawStream = createRawStream(
+        zlibSync(new Uint8Array(128 * 1024)),
+        'FlateDecode',
+      );
+      expect(decodePDFRawStream(rawStream).decode().length).toBe(128 * 1024);
+    });
+  });
 
   describe('with no filter', () => {
     it('returns a stream wrapping the raw contents unchanged', () => {

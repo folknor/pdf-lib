@@ -51,6 +51,10 @@ export { default as PDFXRefStreamParser } from './parser/PDFXRefStreamParser.js'
 export type { SecurityOptions } from './security/PDFSecurity.js';
 export { default as PDFSecurity } from './security/PDFSecurity.js';
 export { decodePDFRawStream } from './streams/decode.js';
+export {
+  default as DecodeStream,
+  DEFAULT_MAX_DECODED_SIZE,
+} from './streams/DecodeStream.js';
 export { default as PDFCatalog } from './structures/PDFCatalog.js';
 export { default as PDFContentStream } from './structures/PDFContentStream.js';
 export { default as PDFCrossRefStream } from './structures/PDFCrossRefStream.js';

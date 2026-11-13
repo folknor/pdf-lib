@@ -54,6 +54,13 @@ export interface LoadOptions {
   password?: string;
   /** Load document for incremental updates (preserves original bytes for digital signatures) */
   forIncrementalUpdate?: boolean;
+  /**
+   * Maximum decoded size, in bytes, of any single stream in this document
+   * (protects against decompression bombs). Decoding a larger stream throws
+   * `DecodedStreamTooLargeError`. Defaults to `DecodeStream.maxDecodedSize`
+   * (512 MiB unless changed globally). Use `Infinity` to disable.
+   */
+  maxDecodedStreamSize?: number;
 }
 
 export interface CreateOptions {
@@ -64,6 +71,12 @@ export interface EmbedFontOptions {
   subset?: boolean;
   customName?: string;
   features?: TypeFeatures;
+  /**
+   * PostScript name of the face to embed when the font data is a collection
+   * (e.g. a `.ttc` file or a DFont). For a variable font it may name a named
+   * instance. Ignored for single, non-variable font files.
+   */
+  postscriptName?: string;
 }
 
 export interface SetTitleOptions {

@@ -54,6 +54,11 @@ const byAscendingObjectNumber = (
 
 class PDFContext {
   isDecrypted = true;
+  /**
+   * Per-document cap on the decoded size of a single stream. When undefined,
+   * the global `DecodeStream.maxDecodedSize` applies.
+   */
+  maxDecodedStreamSize: number | undefined;
   static create = () => new PDFContext();
 
   largestObjectNumber: number;

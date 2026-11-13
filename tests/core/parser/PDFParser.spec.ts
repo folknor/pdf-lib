@@ -1,14 +1,18 @@
 import fs from 'fs';
 import { vi } from 'vitest';
 
+import { zlibSync } from 'fflate';
+
 import {
   CharCodes,
+  DecodedStreamTooLargeError,
   mergeIntoTypedArray,
   PDFDict,
   PDFHeader,
   PDFInvalidObject,
   PDFPageLeaf,
   PDFParser,
+  PDFRawStream,
   PDFRef,
   PDFString,
   ReparseError,
@@ -59,6 +63,76 @@ describe('PDFParser', () => {
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     expect(context.lookup(PDFRef.of(1))).toBeInstanceOf(PDFString);
+  });
+
+  // https://github.com/cantoo-scribe/pdf-lib/issues/180
+  it('keeps a trailing \\r in a stream whose indirect /Length follows it', async () => {
+    // Avoid the word "stream" in the data: the fallback scanner would count it
+    // as a nested stream keyword.
+    const data = 'These payload bytes end in a CR byte.\r';
+    const input =
+      '%PDF-1.7\n' +
+      `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data}\nendstream\nendobj\n` +
+      `2 0 obj\n${data.length}\nendobj\n`;
+    const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
+    const context = await parser.parseDocument();
+    const stream = context.lookup(PDFRef.of(1));
+    expect(stream).toBeInstanceOf(PDFRawStream);
+    expect((stream as PDFRawStream).getContentsString()).toBe(data);
+  });
+
+  it('ignores a forward indirect /Length that is not followed by endstream', async () => {
+    const input =
+      '%PDF-1.7\n' +
+      '1 0 obj\n<< /Length 2 0 R >>\nstream\nabc\r\nendstream\nendobj\n' +
+      '2 0 obj\n2\nendobj\n';
+    const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
+    const context = await parser.parseDocument();
+    const stream = context.lookup(PDFRef.of(1)) as PDFRawStream;
+    expect(stream.getContentsString()).toBe('abc');
+  });
+
+  it('uses the final revision of an indirect /Length after an incremental update', async () => {
+    const data1 = 'Original payload bytes of the object.';
+    // Updated data's last byte is a space, so the stale length (one less)
+    // would still be followed by whitespace + endstream and pass validation.
+    const data2 = 'Updated payload bytes, one byte more. ';
+    const input =
+      '%PDF-1.7\n' +
+      `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data1}\nendstream\nendobj\n` +
+      `2 0 obj\n${data1.length}\nendobj\n` +
+      // Incremental update: the stream comes before its new length object.
+      `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data2}\nendstream\nendobj\n` +
+      `2 0 obj\n${data2.length}\nendobj\n`;
+    expect(data2.length).toBe(data1.length + 1);
+    const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
+    const context = await parser.parseDocument();
+    const stream = context.lookup(PDFRef.of(1)) as PDFRawStream;
+    expect(stream.getContentsString()).toBe(data2);
+  });
+
+  it('propagates DecodedStreamTooLargeError from an oversized object stream', async () => {
+    const compressed = zlibSync(new Uint8Array(4 << 20));
+    const input = mergeIntoTypedArray(
+      '%PDF-1.7\n',
+      '1 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      compressed,
+      '\nendstream\nendobj\n',
+    );
+    const parser = PDFParser.forBytesWithOptions(
+      input,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      1024,
+    );
+    await expect(parser.parseDocument()).rejects.toThrow(
+      DecodedStreamTooLargeError,
+    );
   });
 
   // https://github.com/cantoo-scribe/pdf-lib/issues/64

@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import ByteStream from '../../../src/core/parser/ByteStream';
 import PDFPageLeaf from '../../../src/core/structures/PDFPageLeaf';
 import {
   mergeIntoTypedArray,
@@ -671,6 +672,122 @@ describe('PDFObjectParser', () => {
       expect(String(object)).toBe(
         '<<\n/Length 40\n>>\nstream\nbitstream upstream downstream mainstream\nendstream',
       );
+    });
+  });
+
+  describe('when parsing streams with an indirect /Length (#180)', () => {
+    const parseWithLength = (input: string, length?: PDFNumber | PDFDict) => {
+      const context = PDFContext.create();
+      if (length) context.assign(PDFRef.of(5), length);
+      const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
+      return parser.parseObject() as PDFRawStream;
+    };
+    const input = '<< /Length 5 0 R >>\nstream\nabc\r\nendstream';
+
+    it('keeps a trailing \\r when the referenced length is available', () => {
+      const stream = parseWithLength(input, PDFNumber.of(4));
+      expect(stream.getContentsString()).toBe('abc\r');
+    });
+
+    it('re-slices a forward-referenced length once it becomes available', () => {
+      const context = PDFContext.create();
+      const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
+      const stream = parser.parseObject() as PDFRawStream;
+      // Not resolvable yet: scanning fallback is used for now.
+      expect(stream.getContentsString()).toBe('abc');
+      context.assign(PDFRef.of(5), PDFNumber.of(4));
+      parser.resolvePendingStreamLengths();
+      expect(stream.getContentsString()).toBe('abc\r');
+    });
+
+    it('decrypts the re-sliced bytes of a forward-referenced length', () => {
+      const xorFactory = {
+        createCipherTransform: () => ({
+          decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
+        }),
+      } as unknown as ConstructorParameters<typeof PDFObjectParser>[3];
+      const context = PDFContext.create();
+      const parser = new PDFObjectParser(
+        ByteStream.of(typedArrayFor(input)),
+        context,
+        false,
+        xorFactory,
+      );
+      const stream = parser.parseObject(PDFRef.of(1)) as PDFRawStream;
+      context.assign(PDFRef.of(5), PDFNumber.of(4));
+      parser.resolvePendingStreamLengths();
+      // 'a'^1='`', 'b'^1='c', 'c'^1='b', '\r'^1='\f'
+      expect(stream.getContentsString()).toBe('`cb\f');
+    });
+
+    it('keeps the fallback when a forward-referenced length never resolves', () => {
+      const context = PDFContext.create();
+      const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
+      const stream = parser.parseObject() as PDFRawStream;
+      parser.resolvePendingStreamLengths();
+      expect(stream.getContentsString()).toBe('abc');
+    });
+
+    it('falls back when the referenced length is not followed by endstream', () => {
+      const stream = parseWithLength(input, PDFNumber.of(2));
+      expect(stream.getContentsString()).toBe('abc');
+    });
+
+    it('falls back when the referenced object is not a valid length', () => {
+      expect(
+        parseWithLength(input, PDFNumber.of(-1)).getContentsString(),
+      ).toBe('abc');
+      expect(
+        parseWithLength(input, PDFDict.withContext(PDFContext.create()))
+          .getContentsString(),
+      ).toBe('abc');
+    });
+  });
+
+  describe('when decrypting signature dictionaries (#172)', () => {
+    // Fake cipher: XORs every byte with 1, so decryption is observable.
+    const xorFactory = {
+      createCipherTransform: () => ({
+        decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
+      }),
+    } as unknown as ConstructorParameters<typeof PDFObjectParser>[3];
+
+    const parseEncrypted = (input: string) => {
+      const context = PDFContext.create();
+      const parser = new PDFObjectParser(
+        ByteStream.of(typedArrayFor(input)),
+        context,
+        false,
+        xorFactory,
+      );
+      return parser.parseObject(PDFRef.of(1)) as PDFDict;
+    };
+
+    it('does not decrypt hex /Contents of a /Sig dict (Type after Contents)', () => {
+      const dict = parseEncrypted(
+        '<< /Contents <0A0B> /Name (ab) /Type /Sig >>',
+      );
+      expect(dict.get(PDFName.of('Contents'))).toBeInstanceOf(PDFHexString);
+      expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
+      // Other strings are still decrypted: 'a'^1='`', 'b'^1='c'
+      expect(String(dict.get(PDFName.of('Name')))).toBe('(`c)');
+    });
+
+    it('does not decrypt /Contents of an untyped dict with /ByteRange', () => {
+      const dict = parseEncrypted(
+        '<< /Contents <0A0B> /ByteRange [0 1 2 3] >>',
+      );
+      expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
+    });
+
+    it('does not decrypt literal /Contents of a /DocTimeStamp dict', () => {
+      const dict = parseEncrypted('<< /Type /DocTimeStamp /Contents (ab) >>');
+      expect(String(dict.get(PDFName.of('Contents')))).toBe('(ab)');
+    });
+
+    it('still decrypts /Contents of non-signature dicts', () => {
+      const dict = parseEncrypted('<< /Type /Annot /Contents (ab) >>');
+      expect(String(dict.get(PDFName.of('Contents')))).toBe('(`c)');
     });
   });
 

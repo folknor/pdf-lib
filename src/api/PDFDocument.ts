@@ -179,9 +179,14 @@ export default class PDFDocument {
       capNumbers = false,
       password,
       forIncrementalUpdate = false,
+      maxDecodedStreamSize,
     } = options;
 
     assertIs(pdf, 'pdf', ['string', Uint8Array, ArrayBuffer]);
+    assertIs(maxDecodedStreamSize, 'maxDecodedStreamSize', [
+      'number',
+      'undefined',
+    ]);
     assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
     assertIs(parseSpeed, 'parseSpeed', ['number']);
     assertIs(throwOnInvalidObject, 'throwOnInvalidObject', ['boolean']);
@@ -198,6 +203,7 @@ export default class PDFDocument {
       capNumbers,
       undefined,
       forIncrementalUpdate,
+      maxDecodedStreamSize,
     ).parseDocument();
     if (context.lookup(context.trailerInfo.Encrypt) && password !== undefined) {
       // Decrypt
@@ -215,6 +221,7 @@ export default class PDFDocument {
           password,
         ),
         forIncrementalUpdate,
+        maxDecodedStreamSize,
       ).parseDocument();
       const pdfDoc = new PDFDocument(decryptedContext, true, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
@@ -1406,10 +1413,11 @@ export default class PDFDocument {
     font: StandardFonts | string | Uint8Array<ArrayBuffer> | ArrayBuffer,
     options: EmbedFontOptions = {},
   ): Promise<PDFFont> {
-    const { subset = false, customName, features } = options;
+    const { subset = false, customName, features, postscriptName } = options;
 
     assertIs(font, 'font', ['string', Uint8Array, ArrayBuffer]);
     assertIs(subset, 'subset', ['boolean']);
+    assertOrUndefined(postscriptName, 'postscriptName', ['string']);
 
     let embedder: CustomFontEmbedder | StandardFontEmbedder;
     if (isStandardFont(font)) {
@@ -1423,8 +1431,15 @@ export default class PDFDocument {
             bytes,
             customName,
             features,
+            postscriptName,
           )
-        : await CustomFontEmbedder.for(fontkit, bytes, customName, features);
+        : await CustomFontEmbedder.for(
+            fontkit,
+            bytes,
+            customName,
+            features,
+            postscriptName,
+          );
     } else {
       throw new TypeError(
         '`font` must be one of `StandardFonts | string | Uint8Array | ArrayBuffer`',
