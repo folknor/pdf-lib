@@ -16,6 +16,7 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
+import type { ObjectEncryptor } from '../security/PDFSecurity.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 
@@ -27,6 +28,55 @@ export interface SerializationInfo {
   trailerDict?: PDFTrailerDict;
   trailer: PDFTrailer;
 }
+
+/** How one write encrypts its objects and what its trailer declares. */
+export interface WriteEncryption {
+  encryptor: ObjectEncryptor | undefined;
+  Encrypt: PDFObject | undefined;
+  ID: PDFObject | undefined;
+}
+
+/**
+ * The encryption a write uses. A full write uses the handler
+ * `PDFDocument.encrypt` installed, if any. An increment keeps the encryption
+ * of the file it extends, since the revisions before it stay as they are:
+ * it refuses a newly installed handler, a file loaded encrypted without a
+ * password, and any change to the file's encryption dictionary.
+ */
+export const writeEncryption = (
+  context: PDFContext,
+  snapshot: DocumentSnapshot,
+  incremental: boolean,
+): WriteEncryption => {
+  const { trailerInfo } = context;
+  if (!incremental) {
+    return {
+      encryptor: context.security,
+      Encrypt: trailerInfo.Encrypt,
+      ID: trailerInfo.ID,
+    };
+  }
+  if (context.security) {
+    throw new Error(
+      'An incremental update cannot change the encryption of a file; save it with a full rewrite after encrypt().',
+    );
+  }
+  const baseline = context.baselineEncryption;
+  if (baseline === 'keyless') {
+    throw new Error(
+      'An encrypted file loaded without its password cannot be updated incrementally.',
+    );
+  }
+  if (!baseline) {
+    return {
+      encryptor: undefined,
+      Encrypt: trailerInfo.Encrypt,
+      ID: trailerInfo.ID,
+    };
+  }
+  baseline.assertUntouchedBy(snapshot);
+  return { encryptor: baseline, Encrypt: baseline.encryptRef, ID: baseline.id };
+};
 
 class PDFWriter {
   static forContext = (
@@ -60,6 +110,13 @@ class PDFWriter {
    * be corrected, to be accurate.
    */
   protected _largestSkippedObjectNum: number = 0;
+
+  /** Set by computeBufferSize for the write in progress. */
+  protected encryption: WriteEncryption = {
+    encryptor: undefined,
+    Encrypt: undefined,
+    ID: undefined,
+  };
 
   protected constructor(
     context: PDFContext,
@@ -193,9 +250,9 @@ class PDFWriter {
     return this.context.obj({
       Size: size,
       Root: this.context.trailerInfo.Root,
-      Encrypt: this.context.trailerInfo.Encrypt,
+      Encrypt: this.encryption.Encrypt,
       Info: this.context.trailerInfo.Info,
-      ID: this.context.trailerInfo.ID,
+      ID: this.encryption.ID,
       Prev: prevStartXRef ? PDFNumber.of(prevStartXRef) : undefined,
     });
   }
@@ -204,6 +261,8 @@ class PDFWriter {
     incremental: boolean,
   ): Promise<SerializationInfo> {
     this._largestSkippedObjectNum = 0;
+    this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    const security = this.encryption.encryptor;
     // Use the header from the parsed PDF context to preserve the original version
     const header = this.context.header;
 
@@ -214,8 +273,6 @@ class PDFWriter {
     size += 1;
 
     const xref = PDFCrossRefSection.create();
-
-    const security = this.context.security;
 
     const indirectObjects: [PDFRef, PDFObject][] = [];
 

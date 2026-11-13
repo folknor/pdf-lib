@@ -4,6 +4,7 @@ import {
   AES128Cipher,
   AES256Cipher,
   ARCFourCipher,
+  type CipherTransformFactory,
   calculateMD5,
   PDF20,
 } from '../crypto.js';
@@ -23,7 +24,7 @@ import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
-import type PDFRef from '../objects/PDFRef.js';
+import PDFRef from '../objects/PDFRef.js';
 import PDFStream from '../objects/PDFStream.js';
 import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
@@ -363,35 +364,12 @@ class PDFSecurity {
 
   getEncryptFn(obj: number, gen: number): EncryptFn {
     const v = this.encryption.V;
-
-    if (v === 5) return aesEncryptFn(this.encryptionKey);
-
-    if (v !== 1 && v !== 2 && v !== 4) {
-      throw new Error(`Unsupported algorithm '${v}'.`);
+    if (v === 5) return objectEncryptFn('AESV3', this.encryptionKey, obj, gen);
+    if (v === 4) return objectEncryptFn('AESV2', this.encryptionKey, obj, gen);
+    if (v === 1 || v === 2) {
+      return objectEncryptFn('V2', this.encryptionKey, obj, gen);
     }
-
-    /*
-      7.6.2 Algorithm 1
-      The object key is derived from the file encryption key plus the low order
-      3 bytes of the object number and 2 bytes of the generation number.
-    */
-    const digest = mergeUint8Arrays([
-      this.encryptionKey,
-      new Uint8Array([
-        obj & 0xff,
-        (obj >> 8) & 0xff,
-        (obj >> 16) & 0xff,
-        gen & 0xff,
-        (gen >> 8) & 0xff,
-      ]),
-    ]);
-
-    if (v === 4) {
-      return aesEncryptFn(md5(mergeUint8Arrays([digest, AESV2_SALT])));
-    }
-
-    const key = md5(digest).subarray(0, Math.min(16, this.keyBits / 8 + 5));
-    return (buffer) => rc4(key, buffer);
+    throw new Error(`Unsupported algorithm '${v}'.`);
   }
 
   /**
@@ -410,15 +388,7 @@ class PDFSecurity {
   encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject {
     if (ref === this.context.trailerInfo.Encrypt) return object;
     const encryptFn = this.getEncryptFn(ref.objectNumber, ref.generationNumber);
-
-    if (object instanceof PDFStream) {
-      const contents = encryptFn(object.getContents());
-      const map = encryptDictEntries(object.dict, encryptFn);
-      map.set(PDFName.Length, PDFNumber.of(contents.length));
-      const dict = PDFDict.fromMapWithContext(map, object.dict.context);
-      return new EncryptedStream(dict, contents);
-    }
-    return encryptStrings(object, encryptFn);
+    return encryptObject(object, encryptFn, () => encryptFn);
   }
 
   encrypt() {
@@ -508,6 +478,206 @@ const encryptStrings = (object: PDFObject, encryptFn: EncryptFn): PDFObject => {
     return changed ? PDFDict.fromMapWithContext(map, object.context) : object;
   }
   return object;
+};
+
+/**
+ * What the writer serialises for an indirect object: strings encrypted with
+ * `stringFn`, a stream's body with what `streamFn` picks for its dictionary
+ * (undefined leaves the body clear). A cross-reference stream is never
+ * encrypted (ISO 32000-2 7.5.8.2).
+ */
+const encryptObject = (
+  object: PDFObject,
+  stringFn: EncryptFn,
+  streamFn: (dict: PDFDict) => EncryptFn | undefined,
+): PDFObject => {
+  if (object instanceof PDFStream) {
+    if (object.dict.get(PDFName.Type) === PDFName.of('XRef')) return object;
+    const bodyFn = streamFn(object.dict);
+    const plain = object.getContents();
+    const contents = bodyFn ? bodyFn(plain) : plain;
+    const map = encryptDictEntries(object.dict, stringFn);
+    map.set(PDFName.Length, PDFNumber.of(contents.length));
+    const dict = PDFDict.fromMapWithContext(map, object.dict.context);
+    return new EncryptedStream(dict, contents);
+  }
+  return encryptStrings(object, stringFn);
+};
+
+/** A crypt filter method (ISO 32000-2 Table 25 /CFM) the writer implements. */
+type CryptMethod = 'None' | 'V2' | 'AESV2' | 'AESV3';
+
+/**
+ * The cipher for one object under `key` (ISO 32000-2 7.6.2 Algorithm 1 for
+ * the per-object keys of RC4 and AESV2; AESV3 uses the file key itself).
+ */
+const objectEncryptFn = (
+  method: CryptMethod,
+  key: Uint8Array,
+  obj: number,
+  gen: number,
+): EncryptFn => {
+  if (method === 'None') return (buffer) => buffer;
+  if (method === 'AESV3') return aesEncryptFn(key);
+  const digest = mergeUint8Arrays([
+    key,
+    new Uint8Array([
+      obj & 0xff,
+      (obj >> 8) & 0xff,
+      (obj >> 16) & 0xff,
+      gen & 0xff,
+      (gen >> 8) & 0xff,
+    ]),
+  ]);
+  if (method === 'AESV2') {
+    return aesEncryptFn(md5(mergeUint8Arrays([digest, AESV2_SALT])));
+  }
+  const objectKey = md5(digest).subarray(0, Math.min(16, key.length + 5));
+  return (buffer) => rc4(objectKey, buffer);
+};
+
+/** Encrypts one indirect object as a writer emits it. */
+export interface ObjectEncryptor {
+  encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject;
+}
+
+/**
+ * The security handler of an encrypted file as it was loaded, for writing
+ * increments onto it. An increment appended to an encrypted file must be
+ * encrypted under the same /Encrypt dictionary and key as the revisions
+ * before it, and its trailer must name that dictionary and keep the first
+ * /ID element, which the key derivation of /R 2-4 depends on.
+ *
+ * Built from the undecrypted first parse: the decrypting parse also runs the
+ * /Encrypt strings and a cross-reference stream's /ID through decryption, so
+ * neither may be taken from it. The policy follows the dictionary, not this
+ * library's own writer: /StrF for strings, /EFF for embedded files, /StmF for
+ * other streams, and metadata streams left clear under /EncryptMetadata
+ * false. A stream naming a /Crypt filter of its own is refused rather than
+ * guessed at.
+ */
+export class BaselineEncryption implements ObjectEncryptor {
+  /**
+   * The /Encrypt dictionary every revision of the file shares; undefined
+   * when the trailer holds it directly, which the standard forbids and no
+   * increment is written for.
+   */
+  readonly encryptRef: PDFRef | undefined;
+  /** The trailer /ID of the loaded file. */
+  readonly id: PDFObject | undefined;
+  /** /Encrypt and every indirect object it depends on. */
+  readonly guardedRefs: readonly PDFRef[];
+
+  private readonly factory: CipherTransformFactory;
+
+  constructor(firstPass: PDFContext, factory: CipherTransformFactory) {
+    const encryptRef = firstPass.trailerInfo.Encrypt;
+    this.encryptRef = encryptRef instanceof PDFRef ? encryptRef : undefined;
+    this.id = firstPass.trailerInfo.ID;
+    this.guardedRefs = this.encryptRef
+      ? reachableRefs(firstPass, this.encryptRef)
+      : [];
+    this.factory = factory;
+  }
+
+  /**
+   * Throws unless an increment can be written: /Encrypt is indirect and
+   * `snapshot` neither rewrites nor deletes the encryption setup.
+   */
+  assertUntouchedBy(snapshot: {
+    shouldSave: (objectNumber: number) => boolean;
+    deletedCount: number;
+    deletedRef: (index: number) => PDFRef | undefined;
+  }): void {
+    if (!this.encryptRef) {
+      throw new Error(
+        'An encrypted file with a direct /Encrypt dictionary cannot be updated incrementally.',
+      );
+    }
+    const guarded = new Set(this.guardedRefs.map((ref) => ref.objectNumber));
+    let touched = this.guardedRefs.some((ref) =>
+      snapshot.shouldSave(ref.objectNumber),
+    );
+    for (let idx = 0; !touched && idx < snapshot.deletedCount; idx++) {
+      const ref = snapshot.deletedRef(idx);
+      if (ref && guarded.has(ref.objectNumber)) touched = true;
+    }
+    if (touched) {
+      throw new Error(
+        'An incremental update cannot change or delete the encryption dictionary of the file it extends.',
+      );
+    }
+  }
+
+  encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject {
+    if (ref === this.encryptRef) return object;
+    const { objectNumber: obj, generationNumber: gen } = ref;
+    const { factory } = this;
+    const fnFor = (filter: PDFName | undefined) =>
+      objectEncryptFn(this.methodOf(filter), factory.encryptionKey, obj, gen);
+    const stringFn = fnFor(factory.strf);
+    return encryptObject(object, stringFn, (dict) => {
+      if (namesCryptFilter(dict.get(PDFName.of('Filter')))) {
+        throw new Error(
+          `Object ${obj} ${gen} R names its own /Crypt filter, which incremental updates of encrypted files do not support.`,
+        );
+      }
+      const type = dict.get(PDFName.Type);
+      if (
+        type === PDFName.of('Metadata') &&
+        factory.algorithm >= 4 &&
+        !factory.encryptMetadata
+      ) {
+        return;
+      }
+      if (type === PDFName.of('EmbeddedFile')) return fnFor(factory.eff);
+      return fnFor(factory.stmf);
+    });
+  }
+
+  /** The method a crypt filter name selects; /V 1 and 2 are always RC4. */
+  private methodOf(filter: PDFName | undefined): CryptMethod {
+    const { factory } = this;
+    if (factory.algorithm < 4) return 'V2';
+    if (!filter || filter === PDFName.of('Identity')) return 'None';
+    const cryptFilter = factory.cf?.lookup(filter);
+    const cfm =
+      cryptFilter instanceof PDFDict
+        ? cryptFilter.lookup(PDFName.of('CFM'))
+        : undefined;
+    if (!(cfm instanceof PDFName) || cfm === PDFName.of('None')) return 'None';
+    const method = cfm.decodeText();
+    if (method === 'V2' || method === 'AESV2' || method === 'AESV3') {
+      return method;
+    }
+    throw new Error(`Unknown crypt filter method /${method}.`);
+  }
+}
+
+const namesCryptFilter = (filter: PDFObject | undefined): boolean => {
+  if (filter === PDFName.of('Crypt')) return true;
+  return (
+    filter instanceof PDFArray &&
+    filter.asArray().some((name) => name === PDFName.of('Crypt'))
+  );
+};
+
+/** `root` and every indirect object reachable from it in `context`. */
+const reachableRefs = (context: PDFContext, root: PDFRef): PDFRef[] => {
+  const seen = new Set<PDFRef>();
+  const visit = (object: PDFObject | undefined) => {
+    if (object instanceof PDFRef) {
+      if (seen.has(object)) return;
+      seen.add(object);
+      visit(context.lookup(object));
+    } else if (object instanceof PDFDict) {
+      for (const [, value] of object.entries()) visit(value);
+    } else if (object instanceof PDFArray) {
+      for (const item of object.asArray()) visit(item);
+    }
+  };
+  visit(root);
+  return [...seen];
 };
 
 /**

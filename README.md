@@ -53,6 +53,11 @@ const pdfDoc = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
 const pdfBytes = await pdfDoc.save(); // preserves original bytes
 ```
 
+An encrypted file loaded with its `password` is updated under its own
+encryption. After `encrypt()`, `save()` rewrites the whole file and
+`saveIncremental()`/`commit()` throw; a file loaded encrypted without a
+password cannot be updated incrementally.
+
 ### JPEG EXIF orientation
 
 Read EXIF orientation from JPEG images:

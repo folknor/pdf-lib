@@ -15,7 +15,7 @@ import PDFCrossRefStream from '../structures/PDFCrossRefStream.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import PDFPageLeaf from '../structures/PDFPageLeaf.js';
 import PDFPageTree from '../structures/PDFPageTree.js';
-import PDFWriter from './PDFWriter.js';
+import PDFWriter, { writeEncryption } from './PDFWriter.js';
 
 class PDFStreamWriter extends PDFWriter {
   static override forContext = (
@@ -74,6 +74,8 @@ class PDFStreamWriter extends PDFWriter {
 
   protected override async computeBufferSize(incremental: boolean) {
     this._refToDeleteAfterSave = 0;
+    this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    const security = this.encryption.encryptor;
     // Use the header from the parsed PDF context to preserve the original version
     const header = this.context.header;
 
@@ -91,8 +93,6 @@ class PDFStreamWriter extends PDFWriter {
     const uncompressedObjects: [PDFRef, PDFObject][] = [];
     const compressedObjects: [PDFRef, PDFObject][][] = [];
     const objectStreamRefs: PDFRef[] = [];
-
-    const security = this.context.security;
 
     const indirectObjects = this.context.enumerateIndirectObjects();
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {

@@ -19,6 +19,7 @@ import PDFString from './objects/PDFString.js';
 import PDFOperator from './operators/PDFOperator.js';
 import Ops from './operators/PDFOperatorNames.js';
 import type PDFSecurity from './security/PDFSecurity.js';
+import type { BaselineEncryption } from './security/PDFSecurity.js';
 import PDFContentStream from './structures/PDFContentStream.js';
 
 type LookupKey = PDFRef | PDFObject | undefined;
@@ -79,7 +80,19 @@ class PDFContext {
   };
   snapshot?: DocumentSnapshot;
 
+  /**
+   * The handler `PDFDocument.encrypt` installed. It applies to full writes
+   * only: an increment cannot change a file's encryption.
+   */
   security?: PDFSecurity;
+
+  /**
+   * The encryption of the file this context was loaded from, which increments
+   * appended to it must keep: undefined for a clear file, the retained
+   * handler for one decrypted with its password, and 'keyless' for one
+   * loaded encrypted without a password, which no increment can extend.
+   */
+  baselineEncryption?: BaselineEncryption | 'keyless';
 
   private readonly indirectObjects: Map<PDFRef, PDFObject>;
 

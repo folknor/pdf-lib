@@ -43,8 +43,10 @@ import {
 import type PDFObject from '../core/objects/PDFObject.js';
 import PDFRef from '../core/objects/PDFRef.js';
 import PDFSecurity, {
+  BaselineEncryption,
   type SecurityOptions,
 } from '../core/security/PDFSecurity.js';
+import { writeEncryption } from '../core/writers/PDFWriter.js';
 import type { Fontkit } from '../types/fontkit.js';
 import type { TransformationMatrix } from '../types/matrix.js';
 import {
@@ -213,24 +215,34 @@ export default class PDFDocument {
       // Decrypt
       const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
       const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
+      const cryptoFactory = new CipherTransformFactory(
+        encryptDict,
+        (fileIds.get(0) as PDFHexString).asBytes(),
+        password,
+      );
       const decryptedContext = await PDFParser.forBytesWithOptions(
         bytes,
         parseSpeed,
         throwOnInvalidObject,
         warnOnInvalidObjects,
         capNumbers,
-        new CipherTransformFactory(
-          encryptDict,
-          (fileIds.get(0) as PDFHexString).asBytes(),
-          password,
-        ),
+        cryptoFactory,
         forIncrementalUpdate,
         maxDecodedStreamSize,
       ).parseDocument();
+      // Increments onto this file stay under its own handler, taken from the
+      // undecrypted parse (see BaselineEncryption).
+      decryptedContext.baselineEncryption = new BaselineEncryption(
+        context,
+        cryptoFactory,
+      );
       const pdfDoc = new PDFDocument(decryptedContext, true, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
       return pdfDoc;
     } else {
+      if (context.lookup(context.trailerInfo.Encrypt)) {
+        context.baselineEncryption = 'keyless';
+      }
       const pdfDoc = new PDFDocument(context, ignoreEncryption, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
       return pdfDoc;
@@ -1775,6 +1787,10 @@ export default class PDFDocument {
    * Strings and stream contents are encrypted as they are written; the
    * document's objects keep their plaintext.
    *
+   * An increment cannot change a file's encryption, so after this call
+   * [[save]] always writes the whole file, and [[saveIncremental]] and
+   * [[commit]] throw.
+   *
    * @param options Passwords, permissions and cipher.
    */
   encrypt(options: SecurityOptions) {
@@ -1830,10 +1846,16 @@ export default class PDFDocument {
     } = options;
     let { useObjectStreams } = options;
 
+    // After encrypt() the file is rewritten: an increment cannot re-encrypt
+    // the revisions it is appended to.
     const incrementalUpdate =
       !rewrite &&
+      !this.context.security &&
       this.context.pdfFileDetails.originalBytes &&
       this.context.snapshot;
+    if (incrementalUpdate) {
+      writeEncryption(this.context, this.context.snapshot!, true);
+    }
 
     // For full rewrites of documents loaded from an existing PDF, default to
     // not using object streams, as PDFStreamWriter can produce invalid
@@ -1935,6 +1957,12 @@ export default class PDFDocument {
    * The changes are saved in an incremental way, the result buffer
    * will contain only the differences
    *
+   * An increment onto an encrypted file loaded with its password is
+   * encrypted under the file's own security handler and names its /Encrypt
+   * dictionary. This throws after [[encrypt]], for a file loaded encrypted
+   * without a password, and if the changes touch the file's encryption
+   * dictionary.
+   *
    * @param snapshot The snapshot to be used when saving the document.
    * @param options The options to be used when saving the document.
    * @returns Resolves with the bytes of the serialized document.
@@ -1955,6 +1983,8 @@ export default class PDFDocument {
     assertIs(objectsPerTick, 'objectsPerTick', ['number']);
     assertIs(compress, 'compress', ['boolean']);
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
+    // Refuse before prepareForSave changes anything.
+    writeEncryption(this.context, snapshot, true);
 
     const saveOptions: SaveOptions = {
       useObjectStreams: pdfVersionSupportsObjectStreams,

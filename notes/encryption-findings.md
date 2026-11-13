@@ -5,14 +5,25 @@ and the encryption paths of the writers). Each entry stands alone; remove it
 when it is fixed or ruled against (leaving a comment at the code site in the
 second case).
 
-## An encrypted document can be saved incrementally
+## The reader ignores per-stream crypt selection
 
-`context.security` is set only by `PDFDocument.encrypt`, which always mints a
-new key, yet `save()` (when the document was loaded for incremental update)
-and `saveIncremental()` both emit an increment. The original objects stay in
-the file in clear (or under the old key) and the increment declares
-/Encrypt. With a security handler set, `save()` should always rewrite and
-`saveIncremental()` should throw.
+`PDFObjectParser.decryptStreamBytes` runs every stream body through the
+/StmF filter. It ignores /EFF for embedded files, leaves no metadata stream
+clear under /EncryptMetadata false, and has no /Crypt stream filter (nor
+does `decode.ts`), so such streams load as garbage. The increment writer
+(`BaselineEncryption` in `src/core/security/PDFSecurity.ts`) applies those
+rules correctly, so any such stream an increment emits is re-encrypted from
+already-corrupted plaintext; it refuses a stream naming /Crypt outright. A
+full rewrite of a decrypted load also keeps old /Crypt filter declarations
+on what is now clear data.
+
+## Saving a document loaded with ignoreEncryption writes new objects in clear
+
+A file loaded encrypted without a password keeps /Encrypt and its objects
+stay ciphertext, which a full save re-emits consistently. Anything added or
+changed is written in clear under that /Encrypt, so readers decrypt it into
+garbage. Increments onto such a file are refused (`writeEncryption` in
+`src/core/writers/PDFWriter.ts`); full saves are not.
 
 ## Encrypted object-stream output does not reload its Info dictionary
 
