@@ -16,7 +16,10 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
-import type { ObjectEncryptor } from '../security/PDFSecurity.js';
+import type {
+  BaselineEncryption,
+  ObjectEncryptor,
+} from '../security/PDFSecurity.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 
@@ -37,11 +40,33 @@ export interface WriteEncryption {
 }
 
 /**
- * The encryption a write uses. A full write uses the handler
- * `PDFDocument.encrypt` installed, if any. An increment keeps the encryption
- * of the file it extends, since the revisions before it stay as they are:
- * it refuses a newly installed handler, a file loaded encrypted without a
- * password, any change to the file's encryption dictionary, and changes
+ * The encryption an increment must keep, throwing for a file loaded
+ * encrypted without its password, which no write accepts (see below).
+ */
+export const savableBaseline = (
+  context: PDFContext,
+): BaselineEncryption | undefined => {
+  const baseline = context.baselineEncryption;
+  if (baseline === 'keyless') {
+    throw new Error(
+      'An encrypted file loaded without its password cannot be saved or encrypted; load it with the `password` option.',
+    );
+  }
+  return baseline;
+};
+
+/**
+ * The encryption a write uses. No write, full or incremental, is made of a
+ * file loaded encrypted without its password: there is no key to encrypt
+ * anything new with, a changed object cannot be told apart from the
+ * ciphertext it was loaded with, and compression, object streams and the
+ * file's own encrypted object streams all turn ciphertext into garbage.
+ * Re-encrypting with a key derived some other way (the empty user password)
+ * would double-encrypt loaded strings in edited objects, so it is not done.
+ * A full write uses the handler `PDFDocument.encrypt` installed, if any. An
+ * increment keeps the encryption of the file it extends, since the
+ * revisions before it stay as they are: it refuses a newly installed
+ * handler, any change to the file's encryption dictionary, and changes
  * that would make an inherited stream read with another crypt filter.
  */
 export const writeEncryption = (
@@ -50,6 +75,7 @@ export const writeEncryption = (
   incremental: boolean,
 ): WriteEncryption => {
   const { trailerInfo } = context;
+  const baseline = savableBaseline(context);
   if (!incremental) {
     return {
       encryptor: context.security,
@@ -60,12 +86,6 @@ export const writeEncryption = (
   if (context.security) {
     throw new Error(
       'An incremental update cannot change the encryption of a file; save it with a full rewrite after encrypt().',
-    );
-  }
-  const baseline = context.baselineEncryption;
-  if (baseline === 'keyless') {
-    throw new Error(
-      'An encrypted file loaded without its password cannot be updated incrementally.',
     );
   }
   if (!baseline) {

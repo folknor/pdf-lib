@@ -57,6 +57,9 @@ const fixture = async (algorithm: EncryptionAlgorithm): Promise<Fixture> => {
     await doc.save({ useObjectStreams: false }),
     { ignoreEncryption: true, updateMetadata: false },
   );
+  // Bypass the keyless-save check to author ciphertext fixtures; saves of
+  // `raw` must stay full, uncompressed and without object streams.
+  raw.context.baselineEncryption = undefined;
   const encryptDict = raw.context.lookup(raw.context.trailerInfo.Encrypt, PDFDict);
   return { raw, encryptDict, plain, attachment, pageMetadata };
 };

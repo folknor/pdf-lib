@@ -44,6 +44,8 @@ describe('decrypted literal strings', () => {
         ignoreEncryption: true,
         updateMetadata: false,
       });
+      // Bypass the keyless-save check to author a ciphertext fixture.
+      ciphertextDoc.context.baselineEncryption = undefined;
       const info = ciphertextDoc.context.lookup(
         ciphertextDoc.context.trailerInfo.Info,
         PDFDict,
@@ -152,6 +154,26 @@ describe('incremental saves of encrypted files', () => {
     });
     await expect(doc.commit()).rejects.toThrow(/without its password/);
     await expect(doc.save()).rejects.toThrow(/without its password/);
+    await expect(doc.save({ rewrite: true })).rejects.toThrow(
+      /without its password/,
+    );
+  });
+
+  it('refuses full saves, encryption and page embedding of a keyless load', async () => {
+    const original = await encryptedBytes('AES-256');
+    const doc = await PDFDocument.load(original, { ignoreEncryption: true });
+    await expect(doc.save()).rejects.toThrow(/without its password/);
+    await expect(doc.save({ compress: true })).rejects.toThrow(
+      /without its password/,
+    );
+    await expect(doc.saveAsBase64()).rejects.toThrow(/without its password/);
+    expect(() =>
+      doc.encrypt({ userPassword: 'u', ownerPassword: 'o' }),
+    ).toThrow(/without its password/);
+    const target = await PDFDocument.create();
+    await expect(target.embedPage(doc.getPage(0))).rejects.toThrow(
+      /copy or embed pages/,
+    );
   });
 
   it('refuses an increment that rewrites the encryption dictionary', async () => {

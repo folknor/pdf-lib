@@ -299,6 +299,8 @@ describe('PDFDocument', () => {
           await pdfDoc.save({ useObjectStreams: false }),
           { ignoreEncryption: true, updateMetadata: false },
         );
+        // Bypass the keyless-save check to author a ciphertext fixture.
+        raw.context.baselineEncryption = undefined;
         const encryptDict = raw.context.lookup(
           raw.context.trailerInfo.Encrypt,
           PDFDict,
@@ -337,6 +339,8 @@ describe('PDFDocument', () => {
         updateMetadata: false,
       });
       const { context } = encrypted;
+      // Bypass the keyless-save check to author a ciphertext fixture.
+      context.baselineEncryption = undefined;
       const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
       const cf = encryptDict.lookup(PDFName.of('CF'), PDFDict);
       const stdCf = cf.lookup(PDFName.of('StdCF'), PDFDict);

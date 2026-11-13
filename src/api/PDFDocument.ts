@@ -46,7 +46,7 @@ import PDFSecurity, {
   BaselineEncryption,
   type SecurityOptions,
 } from '../core/security/PDFSecurity.js';
-import { writeEncryption } from '../core/writers/PDFWriter.js';
+import { savableBaseline, writeEncryption } from '../core/writers/PDFWriter.js';
 import type { Fontkit } from '../types/fontkit.js';
 import type { TransformationMatrix } from '../types/matrix.js';
 import {
@@ -1757,6 +1757,13 @@ export default class PDFDocument {
       }
     }
 
+    // As in copyPages: a source loaded encrypted without its password
+    // holds ciphertext that would be written in clear here.
+    const srcDoc = pages[0]!.doc;
+    if (srcDoc.isEncrypted && !srcDoc.context.isDecrypted) {
+      throw new EncryptedPDFCopyError();
+    }
+
     const context = pages[0]!.node.context;
     const maybeCopyPage =
       context === this.context
@@ -1796,9 +1803,13 @@ export default class PDFDocument {
    * [[save]] always writes the whole file, and [[saveIncremental]] and
    * [[commit]] throw.
    *
+   * This throws for a file loaded encrypted without its password: its
+   * objects are still ciphertext and would be encrypted a second time.
+   *
    * @param options Passwords, permissions and cipher.
    */
   encrypt(options: SecurityOptions) {
+    savableBaseline(this.context);
     this.context.security = PDFSecurity.create(this.context, options).encrypt();
   }
 
@@ -1833,6 +1844,9 @@ export default class PDFDocument {
    * * Download it as a Blob in the browser
    * * Render it in an `iframe`
    *
+   * This throws for a file loaded encrypted without its password (see
+   * `ignoreEncryption`).
+   *
    * @param options The options to be used when saving the document.
    * @returns Resolves with the bytes of the serialized document.
    */
@@ -1858,8 +1872,12 @@ export default class PDFDocument {
       !this.context.security &&
       this.context.pdfFileDetails.originalBytes &&
       this.context.snapshot;
+    // Refuse before prepareForSave changes anything; the writers check the
+    // same conditions again.
     if (incrementalUpdate) {
       writeEncryption(this.context, this.context.snapshot!, true);
+    } else {
+      savableBaseline(this.context);
     }
 
     // For full rewrites of documents loaded from an existing PDF, default to

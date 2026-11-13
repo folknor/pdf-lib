@@ -45,6 +45,17 @@ export interface Base64SaveOptions extends SaveOptions {
 }
 
 export interface LoadOptions {
+  /**
+   * Load an encrypted file without its password instead of throwing. Its
+   * objects stay ciphertext, so such a document is for inspection only:
+   * [[PDFDocument.save]], [[PDFDocument.saveIncremental]],
+   * [[PDFDocument.commit]] and [[PDFDocument.encrypt]] throw, and so does
+   * copying or embedding its pages into another document. Without the key
+   * nothing new can be encrypted, and an edited object cannot be told apart
+   * from the ciphertext it was loaded with. Load with the `password` option
+   * (an empty string included) to change the file. A file that is not
+   * encrypted, or is decrypted with `password`, is unaffected.
+   */
   ignoreEncryption?: boolean;
   parseSpeed?: ParseSpeeds | number;
   throwOnInvalidObject?: boolean;

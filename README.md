@@ -55,8 +55,9 @@ const pdfBytes = await pdfDoc.save(); // preserves original bytes
 
 An encrypted file loaded with its `password` is updated under its own
 encryption. After `encrypt()`, `save()` rewrites the whole file and
-`saveIncremental()`/`commit()` throw; a file loaded encrypted without a
-password cannot be updated incrementally.
+`saveIncremental()`/`commit()` throw. A file loaded encrypted with
+`ignoreEncryption` and no password is for inspection only: saving it in any
+way, encrypting it, and copying or embedding its pages all throw.
 
 ### JPEG EXIF orientation
 

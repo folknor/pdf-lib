@@ -30,14 +30,6 @@ increments refuse a stream naming /Crypt, but a stream the caller gives a
 /Crypt filter is written as is by a full save, which writes no /Encrypt for
 a decrypted load, so it names a crypt filter the output does not define.
 
-## Saving a document loaded with ignoreEncryption writes new objects in clear
-
-A file loaded encrypted without a password keeps /Encrypt and its objects
-stay ciphertext, which a full save re-emits consistently. Anything added or
-changed is written in clear under that /Encrypt, so readers decrypt it into
-garbage. Increments onto such a file are refused (`writeEncryption` in
-`src/core/writers/PDFWriter.ts`); full saves are not.
-
 ## R6 password preparation is incomplete on the read side
 
 `r6PasswordCandidates` (`src/core/security/passwordPrep.ts`) tries the SASLprep
