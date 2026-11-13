@@ -17,36 +17,17 @@ appears to leave the document's page tree, or the page cache, in a state the
 next edit cannot use; a save should not change what later edits see. Not
 investigated further.
 
-## PDF/A declaration facility (proposed, not built)
+## The trailer /ID never changes between revisions
 
-Upstream's `convertToPDFA()` was refused (README "Changes from upstream"),
-and the Factur-X e-invoice feature that builds on it needs some way to write a
-PDF/A-3 identification. The shape agreed under review, for whoever builds it:
-
-- It is named and documented as a declaration, not a conversion: it writes
-  the `pdfaid` identification, an output intent and a trailer `/ID`, and
-  promises nothing about content (fonts, colour, transparency, actions).
-- Whether a document declares PDF/A is read from its catalog XMP every time,
-  never from an in-memory flag, so a loaded PDF/A file is treated like one
-  this library declared.
-- XMP is read with a namespace-aware XML parser (prefixes do not matter;
-  attribute and element RDF forms, arrays, language alternatives), with
-  external entities off and parsing bounded. Undecodable or unparseable XMP
-  never counts as "not PDF/A", and contradictory identification throws.
-- Existing metadata is preserved: an explicit Info edit updates the matching
-  XMP property and nothing else; the packet is never rebuilt from Info, since
-  that loses XMP-only values, multiple authors and language alternatives.
-  Conflicting Info and XMP values are refused rather than resolved by
-  location. The strict Info/XMP equivalence rule is PDF/A-1's; parts 2 and 3
-  do not impose it the same way.
-- An existing `/OutputIntents` is not replaced silently.
-- Encryption is refused at output, not only in `encrypt()`: also for
-  increments of a password-loaded encrypted file (an increment keeps the
-  file's encryption) and for `encrypt()` before the declaration.
-- PDF/A-1 refuses object and cross-reference streams whatever the declared
-  version; PDF/A-1 does not require the header to say 1.4.
-- The catalog `/Metadata` stream must stay unfiltered for PDF/A-1, but
-  `save({ compress: true })` Flate-compresses every unfiltered stream
-  (`PDFWriter.compress`, `PDFStreamWriter`), metadata included.
-- Loaded A-level or part-4 declarations are not downgraded to the levels the
-  facility can write.
+ISO 32000-1 14.4 makes the second `/ID` string a changing identifier, new
+for each revision, with the first kept. The writers never maintain it: a full
+save or an increment writes `trailerInfo.ID` as loaded (or, for an encrypted
+increment, the file's own), `declarePDFA()` adds `[id id]` only when there is
+none, and `PDFSecurity.encrypt()` replaces both strings. PDF/A only requires
+that an `/ID` exist, so this is a general writer gap, not a PDF/A one. A fix
+would pick the revision's second string before either writer captures its
+trailer (`PDFStreamWriter` builds the xref-stream trailer before enumerating
+objects), keep the first, leave encrypted increments alone (the key of R2-R4
+handlers derives from the first string only, but the file's /ID must stay
+that of its encryption), and have `commit()` carry the emitted /ID into the
+next revision.

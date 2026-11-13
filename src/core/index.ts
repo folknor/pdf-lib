@@ -24,6 +24,12 @@ export {
   PrintScaling,
   ReadingDirection,
 } from './interactive/ViewerPreferences.js';
+export { getSRGBProfile } from './metadata/icc.js';
+export type {
+  DeclarePDFAOptions,
+  OutputIntentOptions,
+  PDFADeclaration,
+} from './metadata/pdfa.js';
 export { default as PDFArray } from './objects/PDFArray.js';
 export { default as PDFBool } from './objects/PDFBool.js';
 export { default as PDFDict } from './objects/PDFDict.js';

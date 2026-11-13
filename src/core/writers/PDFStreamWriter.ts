@@ -2,6 +2,7 @@ import type { DocumentSnapshot } from '../../api/snapshot/index.js';
 import { defaultDocumentSnapshot } from '../../api/snapshot/index.js';
 import { last, waitForTick } from '../../utils/index.js';
 import PDFTrailer from '../document/PDFTrailer.js';
+import { assertPDFAWrite } from '../metadata/pdfa.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFInvalidObject from '../objects/PDFInvalidObject.js';
 import PDFName from '../objects/PDFName.js';
@@ -75,6 +76,11 @@ class PDFStreamWriter extends PDFWriter {
   protected override async computeBufferSize(incremental: boolean) {
     this._refToDeleteAfterSave = 0;
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    assertPDFAWrite(this.context, {
+      encrypted: this.encryption.Encrypt !== undefined,
+      objectStreams: true,
+      incremental,
+    });
     const security = this.encryption.encryptor;
     // Use the header from the parsed PDF context to preserve the original version
     const header = this.context.header;

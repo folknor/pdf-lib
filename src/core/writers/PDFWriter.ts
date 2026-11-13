@@ -9,6 +9,7 @@ import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
 import type PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFTrailerDict from '../document/PDFTrailerDict.js';
+import { assertPDFAWrite, isCatalogMetadata } from '../metadata/pdfa.js';
 import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
@@ -292,6 +293,11 @@ class PDFWriter {
   ): Promise<SerializationInfo> {
     this._largestSkippedObjectNum = 0;
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    assertPDFAWrite(this.context, {
+      encrypted: this.encryption.Encrypt !== undefined,
+      objectStreams: false,
+      incremental,
+    });
     const security = this.encryption.encryptor;
     // Use the header from the parsed PDF context to preserve the original version
     const header = this.context.header;
@@ -355,6 +361,9 @@ class PDFWriter {
 
   protected compress(object: PDFObject): void {
     if (!(object instanceof PDFRawStream)) return;
+    // The document's XMP stays unfiltered: PDF/A-1 requires it (ISO 19005-1
+    // 6.7.2), and XMP is meant to be readable by tools that do not parse PDF.
+    if (isCatalogMetadata(this.context, object)) return;
 
     // Skip if already has a Filter (already compressed)
     const filter = object.dict.get(PDFName.of('Filter'));

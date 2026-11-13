@@ -89,15 +89,19 @@ describe('per-stream crypt filter selection on read', () => {
     try {
       const f = await fixture('AES-256');
       f.encryptDict.set(name('EncryptMetadata'), f.raw.context.obj(false));
+      // Real XMP: unreadable catalog XMP may declare PDF/A, which refuses
+      // writing a file that names /Encrypt.
+      const xmp =
+        '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>';
       const metadata = f.raw.context.register(
-        f.raw.context.stream('document metadata', {
+        f.raw.context.stream(xmp, {
           Type: 'Metadata',
           Subtype: 'XML',
         }),
       );
       f.raw.catalog.set(name('Metadata'), metadata);
       const doc = await open(await f.raw.save({ useObjectStreams: false }));
-      expect(text(doc, metadata)).toBe('document metadata');
+      expect(text(doc, metadata)).toBe(xmp);
       expect(text(doc, f.pageMetadata)).toBe('page metadata');
     } finally {
       warn.mockRestore();

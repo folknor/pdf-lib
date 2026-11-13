@@ -13,7 +13,7 @@ Built with LLMs. See [LLM.md](LLM.md).
 - Vitest instead of Jest
 - pnpm instead of yarn
 - Truncated PDFs (an indirect object with no `endobj`) are rejected on load rather than silently dropping the unfinished object
-- No `convertToPDFA()`. Upstream's version writes a PDF/A identification, output intent and XMP packet without converting or checking content (unembedded standard fonts, uncovered device colour and the like still claim conformance), regenerates XMP from the Info dictionary at every save (losing richer or XMP-only values), and drops XMP blocks that mix its namespaces with others. A declaration-only facility that preserves existing metadata may come later.
+- No `convertToPDFA()`. Upstream's version writes a PDF/A identification, output intent and XMP packet without converting or checking content (unembedded standard fonts, uncovered device colour and the like still claim conformance), regenerates XMP from the Info dictionary at every save (losing richer or XMP-only values), and drops XMP blocks that mix its namespaces with others. `declarePDFA()` (below) declares instead, preserving existing metadata.
 - Saving with `useObjectStreams: true` raises the declared version to 1.5 when it is lower: the header on a full save, the catalog `/Version` in an increment (whose header is the original file's)
 
 ## Install
@@ -33,6 +33,19 @@ const pdfBytes = await pdfDoc.save({ compress: true });
 ```
 
 Useful when loading PDFs with uncompressed streams - output will be smaller.
+The catalog XMP metadata stream is never compressed.
+
+### PDF/A declaration
+
+Declare a document PDF/A-1B, -2B, -2U, -3B or -3U:
+
+```ts
+pdfDoc.declarePDFA({ part: 3, conformance: 'B' });
+```
+
+This writes the `pdfaid` identification into the catalog XMP (editing an existing packet, never rebuilding it), an output intent (a generated sRGB profile unless `outputIntent` is given; existing output intents are kept, never replaced) and a trailer `/ID`. It is a declaration, not a conversion: fonts, colour, transparency and actions are neither checked nor changed. `getPDFADeclaration()` reads the identification from the XMP.
+
+Whether a document declares PDF/A is read from its XMP on every check, so a loaded PDF/A file is treated the same way, and XMP that cannot be read counts as a possible declaration. Such a document refuses `encrypt()` and every encrypted write (including increments of a file loaded with its password); for PDF/A-1 it writes no object or cross-reference streams and refuses increments onto a file that has them; Info setters also update the matching XMP property, and loading leaves its Info and XMP untouched.
 
 ### Widget page index
 

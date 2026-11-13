@@ -42,6 +42,17 @@ import {
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
 } from '../core/index.js';
+import {
+  assertMayEncrypt,
+  assertPDFAWrite,
+  type DeclarePDFAOptions,
+  declarePDFA,
+  forbidsObjectStreams,
+  getPDFAState,
+  type InfoKey,
+  type PDFADeclaration,
+  planInfoEdit,
+} from '../core/metadata/pdfa.js';
 import type PDFObject from '../core/objects/PDFObject.js';
 import PDFRef from '../core/objects/PDFRef.js';
 import PDFSecurity, {
@@ -95,7 +106,10 @@ import PDFSvg from './PDFSvg.js';
 import type { StandardFonts } from './StandardFonts.js';
 import { PageSizes } from './sizes.js';
 import type { DocumentSnapshot } from './snapshot/index.js';
-import { IncrementalDocumentSnapshot } from './snapshot/index.js';
+import {
+  defaultDocumentSnapshot,
+  IncrementalDocumentSnapshot,
+} from './snapshot/index.js';
 
 export type BasePDFAttachment = {
   name: string;
@@ -318,6 +332,8 @@ export default class PDFDocument {
   private readonly embeddedPages: PDFEmbeddedPage[];
   private readonly embeddedFiles: PDFEmbeddedFile[];
   private readonly javaScripts: PDFJavaScript[];
+  /** Whether the last saveIncremental wrote a cross-reference stream. */
+  private lastIncrementUsedObjectStreams = false;
 
   private constructor(
     context: PDFContext,
@@ -417,7 +433,7 @@ export default class PDFDocument {
    * @returns A string containing the title of this document, if it has one.
    */
   getTitle(): string | undefined {
-    const title = this.getInfoDict().lookup(PDFName.Title);
+    const title = this.lookupInfoDict()?.lookup(PDFName.Title);
     if (!title) return;
     assertIsLiteralOrHexString(title);
     return title.decodeText();
@@ -432,7 +448,7 @@ export default class PDFDocument {
    * @returns A string containing the author of this document, if it has one.
    */
   getAuthor(): string | undefined {
-    const author = this.getInfoDict().lookup(PDFName.Author);
+    const author = this.lookupInfoDict()?.lookup(PDFName.Author);
     if (!author) return;
     assertIsLiteralOrHexString(author);
     return author.decodeText();
@@ -447,7 +463,7 @@ export default class PDFDocument {
    * @returns A string containing the subject of this document, if it has one.
    */
   getSubject(): string | undefined {
-    const subject = this.getInfoDict().lookup(PDFName.Subject);
+    const subject = this.lookupInfoDict()?.lookup(PDFName.Subject);
     if (!subject) return;
     assertIsLiteralOrHexString(subject);
     return subject.decodeText();
@@ -462,7 +478,7 @@ export default class PDFDocument {
    * @returns A string containing the keywords of this document, if it has any.
    */
   getKeywords(): string | undefined {
-    const keywords = this.getInfoDict().lookup(PDFName.Keywords);
+    const keywords = this.lookupInfoDict()?.lookup(PDFName.Keywords);
     if (!keywords) return;
     assertIsLiteralOrHexString(keywords);
     return keywords.decodeText();
@@ -477,7 +493,7 @@ export default class PDFDocument {
    * @returns A string containing the creator of this document, if it has one.
    */
   getCreator(): string | undefined {
-    const creator = this.getInfoDict().lookup(PDFName.Creator);
+    const creator = this.lookupInfoDict()?.lookup(PDFName.Creator);
     if (!creator) return;
     assertIsLiteralOrHexString(creator);
     return creator.decodeText();
@@ -492,7 +508,7 @@ export default class PDFDocument {
    * @returns A string containing the producer of this document, if it has one.
    */
   getProducer(): string | undefined {
-    const producer = this.getInfoDict().lookup(PDFName.Producer);
+    const producer = this.lookupInfoDict()?.lookup(PDFName.Producer);
     if (!producer) return;
     assertIsLiteralOrHexString(producer);
     return producer.decodeText();
@@ -524,7 +540,7 @@ export default class PDFDocument {
    *          if it has one.
    */
   getCreationDate(): Date | undefined {
-    const creationDate = this.getInfoDict().lookup(PDFName.CreationDate);
+    const creationDate = this.lookupInfoDict()?.lookup(PDFName.CreationDate);
     if (!creationDate) return;
     assertIsLiteralOrHexString(creationDate);
     return creationDate.decodeDate();
@@ -541,7 +557,7 @@ export default class PDFDocument {
    *          if it has one.
    */
   getModificationDate(): Date | undefined {
-    const modificationDate = this.getInfoDict().lookup(PDFName.ModDate);
+    const modificationDate = this.lookupInfoDict()?.lookup(PDFName.ModDate);
     if (!modificationDate) return;
     assertIsLiteralOrHexString(modificationDate);
     return modificationDate.decodeDate();
@@ -566,8 +582,8 @@ export default class PDFDocument {
    */
   setTitle(title: string, options?: SetTitleOptions): void {
     assertIs(title, 'title', ['string']);
-    const key = PDFName.of('Title');
-    this.getInfoDict().set(key, PDFHexString.fromText(title));
+    const key = 'Title';
+    this.setInfo(key, PDFHexString.fromText(title), title);
 
     // Indicate that readers should display the title rather than the filename
     if (options?.showInWindowTitleBar) {
@@ -586,8 +602,8 @@ export default class PDFDocument {
    */
   setAuthor(author: string): void {
     assertIs(author, 'author', ['string']);
-    const key = PDFName.of('Author');
-    this.getInfoDict().set(key, PDFHexString.fromText(author));
+    const key = 'Author';
+    this.setInfo(key, PDFHexString.fromText(author), author);
   }
 
   /**
@@ -600,8 +616,8 @@ export default class PDFDocument {
    */
   setSubject(subject: string): void {
     assertIs(subject, 'author', ['string']);
-    const key = PDFName.of('Subject');
-    this.getInfoDict().set(key, PDFHexString.fromText(subject));
+    const key = 'Subject';
+    this.setInfo(key, PDFHexString.fromText(subject), subject);
   }
 
   /**
@@ -614,8 +630,9 @@ export default class PDFDocument {
    */
   setKeywords(keywords: string[]): void {
     assertIs(keywords, 'keywords', [Array]);
-    const key = PDFName.of('Keywords');
-    this.getInfoDict().set(key, PDFHexString.fromText(keywords.join(' ')));
+    const key = 'Keywords';
+    const joined = keywords.join(' ');
+    this.setInfo(key, PDFHexString.fromText(joined), joined);
   }
 
   /**
@@ -628,8 +645,8 @@ export default class PDFDocument {
    */
   setCreator(creator: string): void {
     assertIs(creator, 'creator', ['string']);
-    const key = PDFName.of('Creator');
-    this.getInfoDict().set(key, PDFHexString.fromText(creator));
+    const key = 'Creator';
+    this.setInfo(key, PDFHexString.fromText(creator), creator);
   }
 
   /**
@@ -642,8 +659,8 @@ export default class PDFDocument {
    */
   setProducer(producer: string): void {
     assertIs(producer, 'producer', ['string']);
-    const key = PDFName.of('Producer');
-    this.getInfoDict().set(key, PDFHexString.fromText(producer));
+    const key = 'Producer';
+    this.setInfo(key, PDFHexString.fromText(producer), producer);
   }
 
   /**
@@ -672,8 +689,8 @@ export default class PDFDocument {
    */
   setCreationDate(creationDate: Date): void {
     assertIs(creationDate, 'creationDate', [[Date, 'Date']]);
-    const key = PDFName.of('CreationDate');
-    this.getInfoDict().set(key, PDFString.fromDate(creationDate));
+    const key = 'CreationDate';
+    this.setInfo(key, PDFString.fromDate(creationDate), creationDate);
   }
 
   /**
@@ -687,8 +704,8 @@ export default class PDFDocument {
    */
   setModificationDate(modificationDate: Date): void {
     assertIs(modificationDate, 'modificationDate', [[Date, 'Date']]);
-    const key = PDFName.of('ModDate');
-    this.getInfoDict().set(key, PDFString.fromDate(modificationDate));
+    const key = 'ModDate';
+    this.setInfo(key, PDFString.fromDate(modificationDate), modificationDate);
   }
 
   /**
@@ -1830,13 +1847,87 @@ export default class PDFDocument {
    * [[commit]] throw.
    *
    * This throws for a file loaded encrypted without its password: its
-   * objects are still ciphertext and would be encrypted a second time.
+   * objects are still ciphertext and would be encrypted a second time. It
+   * also throws for a document that declares PDF/A, or whose catalog XMP
+   * cannot be read, since PDF/A forbids encryption (see [[declarePDFA]]).
    *
    * @param options Passwords, permissions and cipher.
    */
   encrypt(options: SecurityOptions) {
     savableBaseline(this.context);
+    assertMayEncrypt(this.context);
     this.context.security = PDFSecurity.create(this.context, options).encrypt();
+  }
+
+  /**
+   * Declare this document PDF/A-1B, -2B, -2U, -3B or -3U. For example:
+   * ```js
+   * pdfDoc.declarePDFA({ part: 3, conformance: 'B' })
+   * ```
+   *
+   * This is a declaration, not a conversion. It writes what identifies a
+   * PDF/A file: the `pdfaid` identification in the catalog XMP metadata, an
+   * output intent and a trailer `/ID`. It promises nothing about content:
+   * fonts must be embedded, colour, transparency, annotations and actions
+   * must follow the part's rules, and none of that is checked or changed.
+   *
+   * Existing metadata is kept: an existing XMP packet is edited, never
+   * rebuilt. For PDF/A-1, whose Info entries must equal their XMP
+   * counterparts, a missing counterpart is added from Info and a conflicting
+   * one is refused. An existing `/OutputIntents` is kept (and checked); the
+   * `outputIntent` option applies only when there is none, and defaults to
+   * an sRGB profile. An existing `/ID` is kept.
+   *
+   * Throws, changing nothing, when the document already declares a
+   * different PDF/A part or level (a declaration is never changed), when its
+   * catalog XMP cannot be read, after [[encrypt]], or for a PDF 2.0 file.
+   *
+   * Once a document declares PDF/A - whether by this call or as loaded - it
+   * is held to the rules a write can break: [[encrypt]] and every encrypted
+   * output throw (including increments of a file loaded with its password);
+   * for PDF/A-1, object and cross-reference streams are not written, and an
+   * increment onto a file that uses them throws; the Info setters update the
+   * matching XMP property as well. The catalog XMP is never compressed by
+   * `save({ compress: true })`.
+   *
+   * @param options The part, the conformance level and optionally the output
+   *                intent.
+   */
+  declarePDFA(options: DeclarePDFAOptions): void {
+    savableBaseline(this.context);
+    declarePDFA(this.context, options, (key) => {
+      switch (key) {
+        case 'Title':
+          return this.getTitle();
+        case 'Author':
+          return this.getAuthor();
+        case 'Subject':
+          return this.getSubject();
+        case 'Keywords':
+          return this.getKeywords();
+        case 'Creator':
+          return this.getCreator();
+        case 'Producer':
+          return this.getProducer();
+        case 'CreationDate':
+          return this.getCreationDate();
+        case 'ModDate':
+          return this.getModificationDate();
+      }
+    });
+  }
+
+  /**
+   * The PDF/A identification the document's catalog XMP states, read afresh
+   * on every call, or `undefined` when it declares none. Throws when the
+   * XMP cannot be read or states contradictory identification.
+   */
+  getPDFADeclaration(): PDFADeclaration | undefined {
+    const state = getPDFAState(this.context);
+    if (state.kind === 'unreadable') {
+      throw new Error(`The catalog XMP cannot be read: ${state.reason}`);
+    }
+    return state.kind === 'declared' ? { ...state.declaration } : undefined;
   }
 
   /**
@@ -1896,19 +1987,19 @@ export default class PDFDocument {
       this.context.snapshot;
     // Refuse before prepareForSave changes anything; the writers check the
     // same conditions again.
-    if (incrementalUpdate) {
-      writeEncryption(this.context, this.context.snapshot!, true);
-    } else {
-      savableBaseline(this.context);
-    }
+    const encryption = incrementalUpdate
+      ? writeEncryption(this.context, this.context.snapshot!, true)
+      : writeEncryption(this.context, defaultDocumentSnapshot, false);
 
     // For full rewrites of documents loaded from an existing PDF, default to
     // not using object streams, as PDFStreamWriter can produce invalid
     // cross-reference streams in some cases. For incremental saves and new
-    // documents, keep the version-based default.
+    // documents, keep the version-based default. PDF/A-1 forbids them.
     if (useObjectStreams === undefined) {
       const isLoadedDocument = !!this.context.pdfFileDetails.originalBytes;
-      if (incrementalUpdate || !isLoadedDocument) {
+      if (forbidsObjectStreams(getPDFAState(this.context))) {
+        useObjectStreams = false;
+      } else if (incrementalUpdate || !isLoadedDocument) {
         useObjectStreams = supportsObjectStreams(
           incrementalUpdate
             ? getIncrementVersion(this.context)
@@ -1926,6 +2017,11 @@ export default class PDFDocument {
     assertIs(rewrite, 'rewrite', ['boolean']);
     assertIs(compress, 'compress', ['boolean']);
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
+    assertPDFAWrite(this.context, {
+      encrypted: encryption.Encrypt !== undefined,
+      objectStreams: useObjectStreams,
+      incremental: !!incrementalUpdate,
+    });
 
     // Validated before prepareForSave changes anything, applied after it.
     const declareObjectStreamVersion = useObjectStreams
@@ -2051,16 +2147,22 @@ export default class PDFDocument {
     assertIs(compress, 'compress', ['boolean']);
     assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
     // Refuse before prepareForSave changes anything.
-    writeEncryption(this.context, snapshot, true);
+    const encryption = writeEncryption(this.context, snapshot, true);
 
     const saveOptions: SaveOptions = {
-      useObjectStreams: supportsObjectStreams(
-        getIncrementVersion(this.context),
-      ),
+      useObjectStreams:
+        !forbidsObjectStreams(getPDFAState(this.context)) &&
+        supportsObjectStreams(getIncrementVersion(this.context)),
       ...options,
       addDefaultPage: false,
       updateFieldAppearances: false,
     };
+    assertPDFAWrite(this.context, {
+      encrypted: encryption.Encrypt !== undefined,
+      objectStreams: !!saveOptions.useObjectStreams,
+      incremental: true,
+    });
+    this.lastIncrementUsedObjectStreams = !!saveOptions.useObjectStreams;
     // Validated before prepareForSave changes anything, applied after it.
     const declareObjectStreamVersion = saveOptions.useObjectStreams
       ? planObjectStreamVersion(this.context, true)
@@ -2161,6 +2263,9 @@ export default class PDFDocument {
 
     this.context.pdfFileDetails.originalBytes = newPdfBytes;
     this.context.pdfFileDetails.pdfSize = newPdfBytes.byteLength;
+    if (this.lastIncrementUsedObjectStreams) {
+      this.context.pdfFileDetails.useObjectStreams = true;
+    }
 
     const incrementalStr = new TextDecoder('latin1').decode(incrementalBytes);
     const startxrefMatch = incrementalStr.match(/startxref\s+(\d+)/);
@@ -2239,6 +2344,12 @@ export default class PDFDocument {
   }
 
   private updateInfoDict(): void {
+    // A document that declares PDF/A, or whose XMP cannot be read, is left
+    // exactly as loaded: changing Info here would have to change XMP too,
+    // could erase an Info/XMP conflict a declaration must see, and would be
+    // made before an incremental load installs its snapshot.
+    if (getPDFAState(this.context).kind !== 'none') return;
+
     const pdfLib = 'pdf-lib (https://github.com/Hopding/pdf-lib)';
     const now = new Date();
 
@@ -2251,9 +2362,26 @@ export default class PDFDocument {
     if (!info.get(PDFName.of('CreationDate'))) this.setCreationDate(now);
   }
 
-  private getInfoDict(): PDFDict {
+  /**
+   * Set an Info entry. On a document that declares PDF/A the matching XMP
+   * property is set too, and the edit is refused, changing neither, when
+   * that cannot be done (see `planInfoEdit`).
+   */
+  private setInfo(key: InfoKey, pdfValue: PDFObject, value: string | Date) {
+    const updateXmp = planInfoEdit(this.context, key, value);
+    this.getInfoDict().set(PDFName.of(key), pdfValue);
+    updateXmp();
+  }
+
+  /** The Info dictionary if there is one; reading never creates it. */
+  private lookupInfoDict(): PDFDict | undefined {
     const existingInfo = this.context.lookup(this.context.trailerInfo.Info);
-    if (existingInfo instanceof PDFDict) return existingInfo;
+    return existingInfo instanceof PDFDict ? existingInfo : undefined;
+  }
+
+  private getInfoDict(): PDFDict {
+    const existingInfo = this.lookupInfoDict();
+    if (existingInfo) return existingInfo;
 
     const newInfo = this.context.obj({});
     this.context.trailerInfo.Info = this.context.register(newInfo);

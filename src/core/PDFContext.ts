@@ -75,6 +75,11 @@ class PDFContext {
   pdfFileDetails: {
     pdfSize: number;
     prevStartXRef: number;
+    /**
+     * Whether `originalBytes` contains a cross-reference stream: set by the
+     * parser, and by `commit()` when its increment wrote one. PDF/A-1
+     * increments are refused onto such a file (`assertPDFAWrite`).
+     */
     useObjectStreams: boolean;
     originalBytes?: Uint8Array;
     /**
