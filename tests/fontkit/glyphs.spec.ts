@@ -213,6 +213,62 @@ describe('color and bitmap glyphs', () => {
   });
 });
 
+describe('composite variation metrics', () => {
+  // No variable fixture has a USE_MY_METRICS composite, so a stand-in
+  // variation processor varies Ubuntu: it moves only the given glyph's
+  // phantom points, +50 on the right origin and -30 on the bottom origin.
+  const varyPhantomsOf = (font: any, gid: number) => {
+    Object.defineProperty(font, '_variationProcessor', {
+      value: {
+        transformPoints: (id: number, points: any[]) => {
+          if (id !== gid) return;
+          points[points.length - 3].x += 50;
+          points[points.length - 1].y -= 30;
+        },
+      },
+    });
+  };
+
+  const flaggedComposite = (font: any) => {
+    for (let id = 0; id < font.numGlyphs; id++) {
+      const decoded = font.getGlyph(id)._decode();
+      if (decoded.numberOfContours >= 0) continue;
+      const flagged = decoded.components.filter((c: any) => c.useMyMetrics);
+      if (flagged.length !== 1) continue;
+      // An unflagged component that is a different glyph from the flagged one.
+      const other = decoded.components.find(
+        (c: any) => c.glyphID !== flagged[0].glyphID,
+      );
+      if (other) return { id, flagged: flagged[0].glyphID, other: other.glyphID };
+    }
+    throw new Error('no USE_MY_METRICS composite in test font');
+  };
+
+  it('takes the USE_MY_METRICS component phantom points', () => {
+    const { id, flagged } = flaggedComposite(openUbuntu());
+    const unvaried = openUbuntu().getGlyph(id);
+
+    const font: any = openUbuntu();
+    varyPhantomsOf(font, flagged);
+    const glyph = font.getGlyph(id);
+    expect(glyph.advanceWidth).toBe(unvaried.advanceWidth + 50);
+    expect(glyph.advanceHeight).toBe(unvaried.advanceHeight + 30);
+  });
+
+  it("ignores the composite's own and unflagged components' phantom points", () => {
+    const { id, other } = flaggedComposite(openUbuntu());
+    const unvaried = openUbuntu().getGlyph(id);
+
+    for (const gid of [id, other]) {
+      const font: any = openUbuntu();
+      varyPhantomsOf(font, gid);
+      const glyph = font.getGlyph(id);
+      expect(glyph.advanceWidth).toBe(unvaried.advanceWidth);
+      expect(glyph.advanceHeight).toBe(unvaried.advanceHeight);
+    }
+  });
+});
+
 describe('GPOSProcessor.applyAnchor', () => {
   const makeProcessor = () => {
     const processor = Object.create(GPOSProcessor.prototype);

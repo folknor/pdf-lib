@@ -43,7 +43,7 @@ const MORE_COMPONENTS = 1 << 5;
 const WE_HAVE_AN_X_AND_Y_SCALE = 1 << 6;
 const WE_HAVE_A_TWO_BY_TWO = 1 << 7;
 const WE_HAVE_INSTRUCTIONS = 1 << 8;
-// const USE_MY_METRICS = 1 << 9;
+const USE_MY_METRICS = 1 << 9;
 // const OVERLAP_COMPOUND = 1 << 10;
 // const SCALED_COMPONENT_OFFSET = 1 << 11;
 // const UNSCALED_COMPONENT_OFFSET = 1 << 12;
@@ -82,12 +82,15 @@ class Component {
   scaleY: number;
   scale01: number;
   scale10: number;
+  // The composite takes this component's metrics (its phantom points).
+  useMyMetrics: boolean;
 
   constructor(glyphID: number, dx: number, dy: number) {
     this.glyphID = glyphID;
     this.dx = dx;
     this.dy = dy;
     this.pos = 0;
+    this.useMyMetrics = false;
     this.scaleX = this.scaleY = 1;
     this.scale01 = this.scale10 = 0;
   }
@@ -305,6 +308,7 @@ export default class TTFGlyph extends Glyph {
 
       const component = new Component(glyphID, dx, dy);
       component.pos = gPos;
+      component.useMyMetrics = (flags & USE_MY_METRICS) !== 0;
 
       if (flags & WE_HAVE_A_SCALE) {
         // fixed number with 14 bits of fraction
@@ -396,9 +400,20 @@ export default class TTFGlyph extends Glyph {
 
   // Decodes font data, resolves composite glyphs, and returns an array of contours
   _getContours(): Point[][] {
+    return this._resolve().contours;
+  }
+
+  // Resolves the glyph's outline and the phantom points its metrics come
+  // from. A composite with a USE_MY_METRICS component takes that component's
+  // resolved phantom points in place of its own (the last flagged component
+  // wins, and a flagged composite component passes on its own choice), as the
+  // gvar spec and HarfBuzz do. They are the component's metrics, so they are
+  // taken before its offset and scale are applied.
+  _resolve(): { contours: Point[][]; phantoms: Point[] | undefined } {
     const glyph = this._decode();
 
     let points: Point[] = [];
+    let phantoms = glyph.phantomPoints;
 
     if (glyph.numberOfContours < 0) {
       // resolve composite glyphs
@@ -407,7 +422,11 @@ export default class TTFGlyph extends Glyph {
         // so ask for the outline glyph explicitly.
         const componentGlyph = this._font._getBaseGlyph(component.glyphID);
         if (!componentGlyph) continue;
-        const contours: Point[][] = componentGlyph._getContours();
+        const resolved = componentGlyph._resolve();
+        if (component.useMyMetrics && resolved.phantoms) {
+          phantoms = resolved.phantoms;
+        }
+        const contours: Point[][] = resolved.contours;
         for (let i = 0; i < contours.length; i++) {
           const contour = contours[i];
           if (!contour) continue;
@@ -434,7 +453,7 @@ export default class TTFGlyph extends Glyph {
     // font has it, else from the phantom points; vertical ones always come
     // from the phantom points, since VVAR is not read. Bearings are measured
     // from the unvaried glyph extents.
-    const [ph0, ph1, ph2, ph3] = glyph.phantomPoints ?? [];
+    const [ph0, ph1, ph2, ph3] = phantoms ?? [];
     if (ph0 && ph1 && ph2 && ph3) {
       const base = this._defaultMetrics!;
       const horizontal = this._font.HVAR
@@ -467,7 +486,7 @@ export default class TTFGlyph extends Glyph {
       }
     }
 
-    return contours;
+    return { contours, phantoms };
   }
 
   override _getMetrics(): GlyphMetrics {

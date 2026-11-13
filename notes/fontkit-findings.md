@@ -4,21 +4,26 @@ Open findings about the vendored fontkit (`src/fontkit`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Composite variation metrics ignore USE_MY_METRICS
-
-`TTFGlyph._decodeComposite` does not keep the `USE_MY_METRICS` component
-flag, so a varied composite takes its metrics from its own phantom points.
-The gvar spec says the flagged component's varied phantom points replace the
-composite's. Without HVAR this affects horizontal advances; vertical advances
-are affected in every variable font, since VVAR is not read and they always
-come from phantom points. Upstream fontkit has the same gap (foliojs #423).
-
 ## Varied bearings are measured from unvaried extents
 
-`TTFGlyph._getContours` derives `leftBearing` and `topBearing` of a varied
+`TTFGlyph._resolve` derives `leftBearing` and `topBearing` of a varied
 glyph from the glyf header's `xMin`/`yMax`, not from the varied outline. A
 subset of a variation instance writes that `leftBearing` into hmtx while its
 re-encoded glyf header carries the varied `xMin`, so the two can disagree.
+With HVAR, `leftBearing` is the unvaried hmtx value; HVAR's LSB mapping is
+decoded but not read. For a composite with a `USE_MY_METRICS` component the
+phantom points are the component's, so the error can be larger than with the
+composite's own phantoms, whose deltas sometimes happened to track the
+outline's.
+
+## Varied outlines are not shifted by a moved left phantom point
+
+When gvar moves a glyph's left phantom point (the horizontal origin), the
+advance and bearing follow it, but `TTFGlyph._getPath` emits the resolved
+outline unshifted, so the outline is not placed relative to the varied origin.
+HarfBuzz subtracts the resolved left phantom x once, at the top-level glyph
+(not per component). This is independent of which glyph supplies the
+phantom points.
 
 ## COLR glyphs report unvaried metrics
 
