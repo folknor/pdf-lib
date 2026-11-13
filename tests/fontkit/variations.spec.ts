@@ -73,6 +73,27 @@ describe('TrueType variations', () => {
     expect(glyph._getMetrics().advanceWidth).toBe(unvaried.advanceWidth + 50);
   });
 
+  it('gives COLR glyphs their varied base outline metrics', () => {
+    const font = open('TestGVAROne.ttf').getVariation({ wght: 300 });
+    expect(font.HVAR).toBeUndefined();
+    shiftPhantoms(font);
+    font.directory.tables = { ...font.directory.tables, COLR: {}, CPAL: {} };
+    Object.defineProperty(font, 'COLR', { value: { version: 1 } });
+    Object.defineProperty(font, 'CPAL', { value: {} });
+    const colr = font.glyphsForString('彌')[0];
+    expect(colr.type).toBe('COLR');
+    expect(font._glyphs[colr.id]).toBe(colr);
+    const unvaried = open('TestGVAROne.ttf').getGlyph(colr.id);
+    // Width first, as the embedder reads it, before any geometry.
+    expect(colr.advanceWidth).toBe(unvaried.advanceWidth + 50);
+    const metrics = colr._getMetrics();
+    const base = font._getBaseGlyph(colr.id)._getMetrics();
+    expect(metrics).toEqual(base);
+    expect(metrics).not.toBe(base);
+    expect(colr._getMetrics()).toBe(metrics);
+    expect(colr.name).toBe(font._getBaseGlyph(colr.id).name);
+  });
+
   // Bearings run from the varied outline's extents to the varied phantom
   // points; the left origin is xMin - lsb, the top one yMax + tsb.
   const origins = (glyph: any) => {

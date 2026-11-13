@@ -1,5 +1,5 @@
 import BBox from './BBox.js';
-import Glyph from './Glyph.js';
+import Glyph, { type GlyphMetrics } from './Glyph.js';
 import Path from './Path.js';
 
 interface COLRColor {
@@ -31,10 +31,27 @@ class COLRLayer {
 export default class COLRGlyph extends Glyph {
   type = 'COLR';
 
-  // path, cbox and bbox are the base (glyf/CFF) outline's geometry: that
+  // path, cbox, bbox, metrics and name are the base (glyf/CFF) glyph's: that
   // outline is what a PDF embeds and draws for a colour font (TTFSubset and
-  // CFFSubset both take it from _getBaseGlyph). The layer artwork drawn by
+  // CFFSubset both take it from _getBaseGlyph), so /W widths and text
+  // measurement must agree with the subset's hmtx, including varied advances
+  // and bearings that only TTFGlyph computes. The layer artwork drawn by
   // render() can extend beyond these bounds; no geometry API describes it.
+  override _getMetrics(): GlyphMetrics {
+    if (this._metrics) return this._metrics;
+    const base = this._font._getBaseGlyph(this.id);
+    if (!base) return super._getMetrics();
+    // A copy: the base may be the font's cached glyph, whose object must not
+    // be shared with (or mutated through) the wrapper.
+    return (this._metrics = { ...base._getMetrics() });
+  }
+
+  // CFF glyph names come from the charset, not post.
+  override _getName(): string | null | undefined {
+    const base = this._font._getBaseGlyph(this.id);
+    return base ? base._getName() : super._getName();
+  }
+
   override _getPath(): Path {
     return this._font._getBaseGlyph(this.id)?.path ?? new Path();
   }

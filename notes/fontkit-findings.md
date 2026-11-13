@@ -17,12 +17,6 @@ unaffected; the fix needs its own rule for the header cbox (static
 (`TTFSubset` writes the source lsb), which pdf.js draws untranslated while a
 TTF copy of the same font keeps its original bytes.
 
-## COLR glyphs report unvaried metrics
-
-`COLRGlyph` inherits `Glyph._getMetrics` instead of asking its base outline
-glyph, so in a variable colour font without HVAR the COLR wrapper keeps the
-hmtx advance while the outline glyph (and so the subset) has the varied one.
-
 ## WOFF2 brotli decoding is not bounded by the decode cap
 
 `WOFF2Font._decompress` checks the declared table space against the cap, but
