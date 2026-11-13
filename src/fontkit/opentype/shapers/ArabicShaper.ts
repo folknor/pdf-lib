@@ -1,6 +1,6 @@
 import { unzlibSync } from 'fflate';
-import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
+import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
 import { decodeBase64 } from '../../utils.js';
 import type GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';

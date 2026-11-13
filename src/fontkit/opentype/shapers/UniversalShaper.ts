@@ -1,6 +1,6 @@
-import StateMachine from 'dfa';
 import { unzlibSync } from 'fflate';
-import UnicodeTrie from 'unicode-trie';
+import StateMachine from '../../../vendors/dfa/index.js';
+import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';

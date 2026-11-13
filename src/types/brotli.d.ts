@@ -16,17 +16,3 @@ declare module 'brotli/decompress' {
 declare module 'brotli/decompress.js' {
   export { default } from 'brotli/decompress';
 }
-
-declare module 'unicode-trie' {
-  export default class UnicodeTrie {
-    constructor(data: Uint8Array);
-    get(codepoint: number): number;
-  }
-}
-
-declare module 'dfa' {
-  export default class StateMachine {
-    constructor(data: any);
-    match(input: number[]): Iterable<[number, number, string[]]>;
-  }
-}
