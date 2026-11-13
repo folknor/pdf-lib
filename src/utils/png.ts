@@ -1,3 +1,4 @@
+import DecodeStream from '../core/streams/DecodeStream.js';
 import UPNG from '../vendors/upng.js';
 
 const getImageType = (ctype: number) => {
@@ -38,7 +39,15 @@ export enum PngType {
 }
 
 export class PNG {
-  static load = (pngData: Uint8Array<ArrayBuffer>) => new PNG(pngData);
+  /**
+   * `maxDecodedSize` caps the decoded image (see DecodeStream.maxDecodedSize);
+   * an image whose header implies a larger buffer throws
+   * DecodedStreamTooLargeError before anything is inflated.
+   */
+  static load = (
+    pngData: Uint8Array<ArrayBuffer>,
+    maxDecodedSize: number = DecodeStream.maxDecodedSize,
+  ) => new PNG(pngData, maxDecodedSize);
 
   readonly rgbChannel: Uint8Array<ArrayBuffer>;
   readonly alphaChannel?: Uint8Array<ArrayBuffer>;
@@ -47,7 +56,10 @@ export class PNG {
   readonly height: number;
   readonly bitsPerComponent: number;
 
-  private constructor(pngData: Uint8Array<ArrayBuffer>) {
+  private constructor(
+    pngData: Uint8Array<ArrayBuffer>,
+    maxDecodedSize: number,
+  ) {
     const UPNGmod = (UPNG as typeof UPNG).decode
       ? UPNG
       : (UPNG as unknown as { default: typeof UPNG }).default;
@@ -63,12 +75,10 @@ export class PNG {
             pngData.byteOffset,
             pngData.byteOffset + pngData.byteLength,
           );
-    const upng = UPNGmod.decode(buffer);
-    const frames = UPNGmod.toRGBA8(upng);
+    const upng = UPNGmod.decode(buffer, maxDecodedSize);
+    if (upng.numFrames > 1) throw new Error('Animated PNGs are not supported');
 
-    if (frames.length > 1) throw new Error('Animated PNGs are not supported');
-
-    const frame = new Uint8Array(frames[0]!);
+    const frame = new Uint8Array(UPNGmod.toRGBA8(upng));
     const { rgbChannel, alphaChannel } = splitAlphaChannel(frame);
 
     this.rgbChannel = rgbChannel;

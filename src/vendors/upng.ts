@@ -3,10 +3,22 @@
  * Originally from https://github.com/photopea/UPNG.js
  * Absorbed and converted to TypeScript for pdf-lib
  *
- * Only includes decoding functionality (decode + toRGBA8)
+ * Only includes decoding of the static image (decode + toRGBA8), and every
+ * buffer it allocates is sized from the IHDR header and checked against a
+ * caller-supplied cap before allocation, so a decompression bomb cannot
+ * exhaust memory. pdf-lib's changes from upstream:
+ * - APNG frames are never decompressed: decode reports the frame count from
+ *   acTL and the caller rejects animated images. A single-frame APNG decodes
+ *   as its IDAT default image.
+ * - Only IHDR, PLTE, tRNS, IDAT, CgBI, acTL and IEND are read. Ancillary
+ *   chunks (iCCP, tEXt/zTXt/iTXt, pHYs, gAMA, ...) had no consumer, and the
+ *   compressed ones were an unbounded inflate.
+ * - IDAT data inflates into a buffer of exactly the filtered image size.
+ *   Like libpng, excess output is ignored and short output leaves zero rows.
  */
 
 import { inflateSync } from 'fflate';
+import { DecodedStreamTooLargeError } from '../core/errors.js';
 
 // Types
 export interface PNGImage {
@@ -14,42 +26,21 @@ export interface PNGImage {
   height: number;
   depth: number;
   ctype: number;
+  interlace: number;
   data: Uint8Array;
   tabs: PNGTabs;
-  frames: PNGFrame[];
+  /** Frame count declared by an APNG acTL chunk, 1 for a static PNG. */
+  numFrames: number;
 }
 
 interface PNGTabs {
-  acTL?: { num_frames: number; num_plays: number };
   PLTE?: number[];
   tRNS?: number | number[];
-  iCCP?: Uint8Array;
-  CgBI?: Uint8Array;
-  pHYs?: [number, number, number];
-  cHRM?: number[];
-  tEXt?: Record<string, string>;
-  zTXt?: Record<string, string>;
-  iTXt?: Record<string, string>;
-  gAMA?: number;
-  sRGB?: number;
-  bKGD?: number | number[];
-  [key: string]: unknown;
-}
-
-interface PNGFrame {
-  rect: { x: number; y: number; width: number; height: number };
-  delay: number;
-  dispose: number;
-  blend: number;
-  data?: Uint8Array;
+  CgBI?: boolean;
 }
 
 // Binary utilities
 const _bin = {
-  nextZero: (data: Uint8Array, p: number): number => {
-    while (data[p] !== 0) p++;
-    return p;
-  },
   readUshort: (buff: Uint8Array, p: number): number =>
     (buff[p]! << 8) | buff[p + 1]!,
   readUint: (buff: Uint8Array, p: number): number =>
@@ -65,55 +56,14 @@ const _bin = {
     for (let i = 0; i < l; i++) arr.push(buff[p + i]!);
     return arr;
   },
-  pad: (n: string): string => (n.length < 2 ? `0${n}` : n),
-  readUTF8: (buff: Uint8Array, p: number, l: number): string => {
-    let s = '';
-    for (let i = 0; i < l; i++) s += `%${_bin.pad(buff[p + i]!.toString(16))}`;
-    try {
-      return decodeURIComponent(s);
-    } catch {
-      return _bin.readASCII(buff, p, l);
-    }
-  },
 };
 
 /**
- * Convert decoded PNG to RGBA8 format
+ * Convert the decoded static image to RGBA8.
  */
-export function toRGBA8(out: PNGImage): ArrayBuffer[] {
-  const w = out.width;
-  const h = out.height;
-
-  if (out.tabs.acTL == null)
-    return [decodeImage(out.data, w, h, out).buffer as ArrayBuffer];
-
-  const frms: ArrayBuffer[] = [];
-  if (out.frames[0]!.data == null) out.frames[0]!.data = out.data;
-
-  const len = w * h * 4;
-  const img = new Uint8Array(len);
-  const empty = new Uint8Array(len);
-  const prev = new Uint8Array(len);
-
-  for (let i = 0; i < out.frames.length; i++) {
-    const frm = out.frames[i]!;
-    const fx = frm.rect.x;
-    const fy = frm.rect.y;
-    const fw = frm.rect.width;
-    const fh = frm.rect.height;
-    const fdata = decodeImage(frm.data!, fw, fh, out);
-
-    if (i !== 0) for (let j = 0; j < len; j++) prev[j] = img[j]!;
-
-    if (frm.blend === 0) _copyTile(fdata, fw, fh, img, w, h, fx, fy, 0);
-    else if (frm.blend === 1) _copyTile(fdata, fw, fh, img, w, h, fx, fy, 1);
-
-    frms.push(img.buffer.slice(0) as ArrayBuffer);
-
-    if (frm.dispose === 1) _copyTile(empty, fw, fh, img, w, h, fx, fy, 0);
-    else if (frm.dispose === 2) for (let j = 0; j < len; j++) img[j] = prev[j]!;
-  }
-  return frms;
+export function toRGBA8(out: PNGImage): ArrayBuffer {
+  return decodeImage(out.data, out.width, out.height, out)
+    .buffer as ArrayBuffer;
 }
 
 function decodeImage(
@@ -321,10 +271,48 @@ function decodeImage(
   return bf;
 }
 
+/** Valid bit depths per colour type (PNG spec table 11.1). */
+const VALID_DEPTHS: Record<number, number[]> = {
+  0: [1, 2, 4, 8, 16],
+  2: [8, 16],
+  3: [1, 2, 4, 8],
+  4: [8, 16],
+  6: [8, 16],
+};
+
+/** Adam7 pass origins and steps. */
+const starting_row = [0, 0, 4, 0, 2, 0, 1];
+const starting_col = [0, 4, 0, 2, 0, 1, 0];
+const row_increment = [8, 8, 8, 4, 4, 2, 2];
+const col_increment = [8, 8, 4, 4, 2, 2, 1];
+
+const passExtent = (size: number, start: number, step: number) =>
+  size > start ? Math.ceil((size - start) / step) : 0;
+
+/** Exact byte length of the inflated (still filtered) IDAT stream. */
+function _filteredSize(out: PNGImage): number {
+  const bpp = _getBPP(out);
+  const w = out.width;
+  const h = out.height;
+  if (out.interlace === 0) return h * (1 + Math.ceil((w * bpp) / 8));
+  let size = 0;
+  for (let pass = 0; pass < 7; pass++) {
+    const sw = passExtent(w, starting_col[pass]!, col_increment[pass]!);
+    const sh = passExtent(h, starting_row[pass]!, row_increment[pass]!);
+    if (sw !== 0 && sh !== 0) size += sh * (1 + Math.ceil((sw * bpp) / 8));
+  }
+  return size;
+}
+
 /**
- * Decode PNG data
+ * Decode PNG data. `maxDecodedSize` caps every buffer whose size the header
+ * dictates (the inflated IDAT stream and the RGBA8 image); exceeding it throws
+ * DecodedStreamTooLargeError before anything is inflated or allocated.
  */
-export function decode(buff: ArrayBuffer): PNGImage {
+export function decode(
+  buff: ArrayBuffer,
+  maxDecodedSize: number = Infinity,
+): PNGImage {
   const data = new Uint8Array(buff);
   let offset = 8;
   const bin = _bin;
@@ -335,203 +323,104 @@ export function decode(buff: ArrayBuffer): PNGImage {
     height: 0,
     depth: 0,
     ctype: 0,
+    interlace: 0,
     data: new Uint8Array(0),
     tabs: {},
-    frames: [],
+    numFrames: 1,
   };
-  const dd = new Uint8Array(data.length);
-  let doff = 0;
-  let fd: Uint8Array | undefined;
-  let foff = 0;
+  let sawIHDR = false;
+  const idat: Uint8Array[] = [];
 
   const mgck = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
   for (let i = 0; i < 8; i++)
     if (data[i] !== mgck[i]) throw new Error('The input is not a PNG file!');
 
   while (offset < data.length) {
+    if (offset + 8 > data.length) throw new Error('Truncated PNG chunk');
     const len = bin.readUint(data, offset);
     offset += 4;
     const type = bin.readASCII(data, offset, 4);
     offset += 4;
+    if (offset + len > data.length) throw new Error('Truncated PNG chunk');
 
     if (type === 'IHDR') {
+      if (len !== 13) throw new Error('Invalid PNG IHDR chunk');
       _IHDR(data, offset, out);
-    } else if (type === 'iCCP') {
-      let off = offset;
-      while (data[off] !== 0) off++;
-      const fil = data.slice(off + 2, offset + len);
-      let res: Uint8Array;
-      try {
-        res = _inflate(fil);
-      } catch {
-        res = inflateRaw(fil);
-      }
-      out.tabs[type] = res;
+      sawIHDR = true;
     } else if (type === 'CgBI') {
-      out.tabs[type] = data.slice(offset, offset + 4);
+      out.tabs.CgBI = true;
     } else if (type === 'IDAT') {
-      for (let i = 0; i < len; i++) dd[doff + i] = data[offset + i]!;
-      doff += len;
+      idat.push(data.subarray(offset, offset + len));
     } else if (type === 'acTL') {
-      out.tabs[type] = {
-        num_frames: rUi(data, offset),
-        num_plays: rUi(data, offset + 4),
-      };
-      fd = new Uint8Array(data.length);
-    } else if (type === 'fcTL') {
-      if (foff !== 0) {
-        const fr = out.frames[out.frames.length - 1]!;
-        fr.data = _decompress(
-          out,
-          fd!.slice(0, foff),
-          fr.rect.width,
-          fr.rect.height,
-        );
-        foff = 0;
-      }
-      const rct = {
-        x: rUi(data, offset + 12),
-        y: rUi(data, offset + 16),
-        width: rUi(data, offset + 4),
-        height: rUi(data, offset + 8),
-      };
-      let del = rUs(data, offset + 22);
-      del = rUs(data, offset + 20) / (del === 0 ? 100 : del);
-      const frm: PNGFrame = {
-        rect: rct,
-        delay: Math.round(del * 1000),
-        dispose: data[offset + 24]!,
-        blend: data[offset + 25]!,
-      };
-      out.frames.push(frm);
-    } else if (type === 'fdAT') {
-      for (let i = 0; i < len - 4; i++) fd![foff + i] = data[offset + i + 4]!;
-      foff += len - 4;
-    } else if (type === 'pHYs') {
-      out.tabs[type] = [
-        bin.readUint(data, offset),
-        bin.readUint(data, offset + 4),
-        data[offset + 8]!,
-      ];
-    } else if (type === 'cHRM') {
-      out.tabs[type] = [];
-      for (let i = 0; i < 8; i++)
-        (out.tabs[type] as number[]).push(bin.readUint(data, offset + i * 4));
-    } else if (type === 'tEXt' || type === 'zTXt') {
-      if (out.tabs[type] == null) out.tabs[type] = {};
-      const nz = bin.nextZero(data, offset);
-      const keyw = bin.readASCII(data, offset, nz - offset);
-      let text: string;
-      const tl = offset + len - nz - 1;
-      if (type === 'tEXt') text = bin.readASCII(data, nz + 1, tl);
-      else {
-        const bfr = _inflate(data.slice(nz + 2, nz + 2 + tl));
-        text = bin.readUTF8(bfr, 0, bfr.length);
-      }
-      (out.tabs[type] as Record<string, string>)[keyw] = text;
-    } else if (type === 'iTXt') {
-      if (out.tabs[type] == null) out.tabs[type] = {};
-      let nz = 0;
-      let off = offset;
-      nz = bin.nextZero(data, off);
-      const keyw = bin.readASCII(data, off, nz - off);
-      off = nz + 1;
-      const cflag = data[off]!;
-      off += 2;
-      nz = bin.nextZero(data, off);
-      off = nz + 1;
-      nz = bin.nextZero(data, off);
-      off = nz + 1;
-      let text: string;
-      const tl = len - (off - offset);
-      if (cflag === 0) text = bin.readUTF8(data, off, tl);
-      else {
-        const bfr = _inflate(data.slice(off, off + tl));
-        text = bin.readUTF8(bfr, 0, bfr.length);
-      }
-      (out.tabs[type] as Record<string, string>)[keyw] = text;
+      if (len !== 8) throw new Error('Invalid PNG acTL chunk');
+      out.numFrames = rUi(data, offset);
     } else if (type === 'PLTE') {
-      out.tabs[type] = bin.readBytes(data, offset, len);
-    } else if (type === 'hIST') {
-      const pl = (out.tabs.PLTE as number[]).length / 3;
-      out.tabs[type] = [];
-      for (let i = 0; i < pl; i++)
-        (out.tabs[type] as number[]).push(rUs(data, offset + i * 2));
+      if (len % 3 !== 0 || len > 768) throw new Error('Invalid PNG PLTE chunk');
+      out.tabs.PLTE = bin.readBytes(data, offset, len);
     } else if (type === 'tRNS') {
-      if (out.ctype === 3) out.tabs[type] = bin.readBytes(data, offset, len);
-      else if (out.ctype === 0) out.tabs[type] = rUs(data, offset);
-      else if (out.ctype === 2)
-        out.tabs[type] = [
+      if (out.ctype === 3 && len <= 256)
+        out.tabs.tRNS = bin.readBytes(data, offset, len);
+      else if (out.ctype === 0 && len === 2) out.tabs.tRNS = rUs(data, offset);
+      else if (out.ctype === 2 && len === 6)
+        out.tabs.tRNS = [
           rUs(data, offset),
           rUs(data, offset + 2),
           rUs(data, offset + 4),
         ];
-    } else if (type === 'gAMA') {
-      out.tabs[type] = bin.readUint(data, offset) / 100000;
-    } else if (type === 'sRGB') {
-      out.tabs[type] = data[offset]!;
-    } else if (type === 'bKGD') {
-      if (out.ctype === 0 || out.ctype === 4)
-        out.tabs[type] = [rUs(data, offset)];
-      else if (out.ctype === 2 || out.ctype === 6)
-        out.tabs[type] = [
-          rUs(data, offset),
-          rUs(data, offset + 2),
-          rUs(data, offset + 4),
-        ];
-      else if (out.ctype === 3) out.tabs[type] = data[offset]!;
     } else if (type === 'IEND') {
       break;
     }
     offset += len;
     offset += 4; // CRC
   }
-  if (foff !== 0) {
-    const fr = out.frames[out.frames.length - 1]!;
-    fr.data = _decompress(
-      out,
-      fd!.slice(0, foff),
-      fr.rect.width,
-      fr.rect.height,
-    );
-  }
-  out.data = _decompress(out, dd, out.width, out.height);
 
+  if (!sawIHDR) throw new Error('PNG has no IHDR chunk');
+  // An animated PNG is rejected by the caller; do not inflate anything.
+  if (out.numFrames > 1) return out;
+
+  const filtered = _filteredSize(out);
+  const rgba = out.width * out.height * 4;
+  const largest = Math.max(filtered, rgba);
+  if (largest > maxDecodedSize)
+    throw new DecodedStreamTooLargeError(largest, maxDecodedSize);
+
+  let dd: Uint8Array;
+  if (idat.length === 1) dd = idat[0]!;
+  else {
+    let total = 0;
+    for (const c of idat) total += c.length;
+    dd = new Uint8Array(total);
+    let pos = 0;
+    for (const c of idat) {
+      dd.set(c, pos);
+      pos += c.length;
+    }
+  }
+
+  out.data = _decompress(out, dd, filtered);
   return out;
 }
 
 function _decompress(
   out: PNGImage,
   dd: Uint8Array,
-  w: number,
-  h: number,
+  filtered: number,
 ): Uint8Array {
-  const bpp = _getBPP(out);
-  const bpl = Math.ceil((w * bpp) / 8);
-  const buff = new Uint8Array(
-    (bpl + 1 + (out as unknown as { interlace: number }).interlace) * h,
-  );
-  let result: Uint8Array;
-  if (out.tabs.CgBI) result = inflateRaw(dd, buff);
-  else result = _inflate(dd, buff);
+  // Inflate into a zero-filled buffer of exactly the filtered size. fflate
+  // never grows a caller-supplied buffer: Huffman output past its end is
+  // dropped, and a stored block that does not fit throws RangeError, which
+  // ends decoding with what was written so far. Short output leaves zeros.
+  const result = new Uint8Array(filtered);
+  const raw = out.tabs.CgBI ? dd : dd.subarray(2, Math.max(2, dd.length - 4)); // zlib header, adler32
+  try {
+    inflateSync(raw, { out: result });
+  } catch (e) {
+    if (!(e instanceof RangeError)) throw e;
+  }
 
-  const interlace = (out as unknown as { interlace: number }).interlace;
-  if (interlace === 0) result = _filterZero(result, out, 0, w, h);
-  else if (interlace === 1) result = _readInterlace(result, out);
-  return result;
-}
-
-function _inflate(data: Uint8Array, buff?: Uint8Array): Uint8Array {
-  const out = inflateRaw(
-    new Uint8Array(data.buffer, data.byteOffset + 2, data.length - 6),
-    buff,
-  );
-  return out;
-}
-
-// Minimal inflateRaw implementation
-function inflateRaw(data: Uint8Array, _buff?: Uint8Array): Uint8Array {
-  return inflateSync(data);
+  if (out.interlace === 0)
+    return _filterZero(result, out, 0, out.width, out.height);
+  return _readInterlace(result, out);
 }
 
 function _readInterlace(data: Uint8Array, out: PNGImage): Uint8Array {
@@ -542,11 +431,6 @@ function _readInterlace(data: Uint8Array, out: PNGImage): Uint8Array {
   const bpl = Math.ceil((w * bpp) / 8);
   const img = new Uint8Array(h * bpl);
   let di = 0;
-
-  const starting_row = [0, 0, 4, 0, 2, 0, 1];
-  const starting_col = [0, 4, 0, 2, 0, 1, 0];
-  const row_increment = [8, 8, 8, 4, 4, 2, 2];
-  const col_increment = [8, 8, 4, 4, 2, 2, 1];
 
   let pass = 0;
   while (pass < 7) {
@@ -681,64 +565,22 @@ function _IHDR(data: Uint8Array, offset: number, out: PNGImage): void {
   offset++;
   out.ctype = data[offset]!;
   offset++;
-  // compress, filter, interlace - stored internally
-  (out as unknown as { compress: number }).compress = data[offset]!;
+  const compress = data[offset]!;
   offset++;
-  (out as unknown as { filter: number }).filter = data[offset]!;
+  const filter = data[offset]!;
   offset++;
-  (out as unknown as { interlace: number }).interlace = data[offset]!;
-}
-
-function _copyTile(
-  sb: Uint8Array,
-  sw: number,
-  sh: number,
-  tb: Uint8Array,
-  tw: number,
-  th: number,
-  xoff: number,
-  yoff: number,
-  mode: number,
-): boolean {
-  const w = Math.min(sw, tw);
-  const h = Math.min(sh, th);
-  let si = 0;
-  let ti = 0;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      if (xoff >= 0 && yoff >= 0) {
-        si = (y * sw + x) << 2;
-        ti = ((yoff + y) * tw + xoff + x) << 2;
-      } else {
-        si = ((-yoff + y) * sw - xoff + x) << 2;
-        ti = (y * tw + x) << 2;
-      }
-
-      if (mode === 0) {
-        tb[ti] = sb[si]!;
-        tb[ti + 1] = sb[si + 1]!;
-        tb[ti + 2] = sb[si + 2]!;
-        tb[ti + 3] = sb[si + 3]!;
-      } else if (mode === 1) {
-        const fa = sb[si + 3]! * (1 / 255);
-        const fr = sb[si]! * fa;
-        const fg = sb[si + 1]! * fa;
-        const fb = sb[si + 2]! * fa;
-        const ba = tb[ti + 3]! * (1 / 255);
-        const br = tb[ti]! * ba;
-        const bg = tb[ti + 1]! * ba;
-        const bb = tb[ti + 2]! * ba;
-
-        const ifa = 1 - fa;
-        const oa = fa + ba * ifa;
-        const ioa = oa === 0 ? 0 : 1 / oa;
-        tb[ti + 3] = 255 * oa;
-        tb[ti + 0] = (fr + br * ifa) * ioa;
-        tb[ti + 1] = (fg + bg * ifa) * ioa;
-        tb[ti + 2] = (fb + bb * ifa) * ioa;
-      }
-    }
-  return true;
+  out.interlace = data[offset]!;
+  if (
+    out.width === 0 ||
+    out.height === 0 ||
+    out.width > 0x7fffffff ||
+    out.height > 0x7fffffff ||
+    !VALID_DEPTHS[out.ctype]?.includes(out.depth) ||
+    compress !== 0 ||
+    filter !== 0 ||
+    out.interlace > 1
+  )
+    throw new Error('Invalid PNG IHDR chunk');
 }
 
 // Default export for compatibility

@@ -1548,6 +1548,11 @@ export default class PDFDocument {
    * const image4 = await pdfDoc.embedPng(arrayBuffer)
    * ```
    *
+   * The decoded image is subject to the same decompression-bomb cap as
+   * decoded streams: this document's `maxDecodedStreamSize` load option, or
+   * else `DecodeStream.maxDecodedSize`. A PNG whose header implies a larger
+   * decoded buffer is rejected with `DecodedStreamTooLargeError`.
+   *
    * @param png The input data for a PNG image.
    * @returns Resolves with the embedded image.
    */
@@ -1556,7 +1561,10 @@ export default class PDFDocument {
   ): Promise<PDFImage> {
     assertIs(png, 'png', ['string', Uint8Array, ArrayBuffer]);
     const bytes = toUint8Array(png);
-    const embedder = await PngEmbedder.for(bytes);
+    const embedder = await PngEmbedder.for(
+      bytes,
+      this.context.maxDecodedStreamSize,
+    );
     const ref = this.context.nextRef();
     const pdfImage = PDFImage.of(ref, this, embedder);
     this.images.push(pdfImage);

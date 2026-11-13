@@ -15,6 +15,18 @@ to vary phantom points for empty glyphs, with base metrics taken from hmtx
 rather than from a glyf header that does not exist (`_getCBox(true)` on an
 empty TTF glyph reads the next glyph's header).
 
+## WOFF and WOFF2 decompression is not covered by the decode cap
+
+`WOFFFont._decompress` allocates one buffer sized from the sum of the table
+directory's `length` fields (each an untrusted uint32) and inflates each table
+into a buffer of its declared length. Nothing checks these against
+`DecodeStream.maxDecodedSize` or the document's `maxDecodedStreamSize`, so a
+small WOFF passed to `embedFont` can request gigabytes. PNG embedding applies
+that cap to header-derived sizes before inflating (`src/vendors/upng.ts`);
+fonts would need the same check on the summed table lengths, with the limit
+threaded through `embedFont`. WOFF2 (brotli) was not inspected for the same
+shape.
+
 ## CFF2 fonts subset through TTFSubset
 
 `TTFFont.createSubset` picks `CFFSubset` only for a `CFF ` table; a CFF2 font

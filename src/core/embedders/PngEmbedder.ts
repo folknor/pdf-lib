@@ -8,8 +8,11 @@ import type PDFContext from '../PDFContext.js';
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/png.coffee
  */
 class PngEmbedder {
-  static async for(imageData: Uint8Array<ArrayBuffer>) {
-    const png = PNG.load(imageData);
+  static async for(
+    imageData: Uint8Array<ArrayBuffer>,
+    maxDecodedSize?: number,
+  ) {
+    const png = PNG.load(imageData, maxDecodedSize);
     return new PngEmbedder(png);
   }
 

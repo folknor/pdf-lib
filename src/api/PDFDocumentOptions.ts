@@ -58,7 +58,8 @@ export interface LoadOptions {
    * Maximum decoded size, in bytes, of any single stream in this document
    * (protects against decompression bombs). Decoding a larger stream throws
    * `DecodedStreamTooLargeError`. Defaults to `DecodeStream.maxDecodedSize`
-   * (512 MiB unless changed globally). Use `Infinity` to disable.
+   * (512 MiB unless changed globally). Use `Infinity` to disable. The same
+   * cap applies to PNG images passed to this document's `embedPng`.
    */
   maxDecodedStreamSize?: number;
 }

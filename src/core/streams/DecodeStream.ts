@@ -43,8 +43,10 @@ class DecodeStream implements StreamType {
    * to many GB). Applies to every DecodeStream (stream filters used while
    * parsing, by forms, by embedders, ...); a document loaded with
    * `LoadOptions.maxDecodedStreamSize` overrides it for its own streams. Set
-   * to `Infinity` to disable. Not covered: PNG embedding, which inflates via
-   * fflate in src/vendors/upng.ts rather than through DecodeStream.
+   * to `Infinity` to disable. PNG embedding inflates via fflate in
+   * src/vendors/upng.ts rather than through DecodeStream, and applies the
+   * same limit itself, checked against header-derived buffer sizes before
+   * inflating.
    */
   static maxDecodedSize = DEFAULT_MAX_DECODED_SIZE;
 

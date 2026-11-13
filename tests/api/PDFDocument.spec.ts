@@ -655,6 +655,17 @@ describe('PDFDocument', () => {
 
       await expect(noErrorFunc()).resolves.not.toThrowError();
     });
+
+    it("applies the document's maxDecodedStreamSize", async () => {
+      const base = await PDFDocument.create();
+      const bytes = await base.save({ useObjectStreams: false });
+      const capped = await PDFDocument.load(bytes, { maxDecodedStreamSize: 16 });
+      await expect(capped.embedPng(examplePngImage)).rejects.toThrow(
+        'exceeds the maximum of 16 bytes',
+      );
+      const uncapped = await PDFDocument.load(bytes);
+      await expect(uncapped.embedPng(examplePngImage)).resolves.toBeDefined();
+    });
   });
 
   describe('save() method', () => {
