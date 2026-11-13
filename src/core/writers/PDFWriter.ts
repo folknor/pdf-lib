@@ -136,6 +136,15 @@ class PDFWriter {
   private parsedObjects = 0;
 
   /**
+   * The highest object number the last serialization emitted, including
+   * numbers the writer allocated for itself (object streams, the xref
+   * stream) that never enter the context. An increment that becomes the
+   * base of the next one must reserve these numbers: see
+   * PDFDocument.commit().
+   */
+  highestObjectNumber = 0;
+
+  /**
    * If PDF has an XRef Stream, then the last object will be probably be skipped on saving.
    * If that's the case, this property will have that object number, and the PDF /Size can
    * be corrected, to be accurate.
@@ -203,15 +212,11 @@ class PDFWriter {
     }
     buffer[offset++] = CharCodes.Newline;
 
+    // computeBufferSize chose the body and gave each object its xref offset;
+    // writing anything other than exactly that list misplaces every later
+    // offset.
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
       const [ref, object] = indirectObjects[idx]!;
-
-      if (!this.shouldSave(incremental, ref.objectNumber, object)) {
-        continue;
-      }
-      if (!incremental && this.shouldSkipCopiedObjectStream(object)) {
-        continue;
-      }
 
       const objectNumber = String(ref.objectNumber);
       offset += copyStringIntoBuffer(objectNumber, buffer, offset);
@@ -343,6 +348,8 @@ class PDFWriter {
     if (this.fillXrefGaps) {
       xref.fillGaps();
     }
+
+    this.highestObjectNumber = this.context.largestObjectNumber;
 
     const xrefOffset = size;
     size += xref.sizeInBytes() + 1; // '\n'

@@ -2110,23 +2110,16 @@ export default class PDFDocument {
       ? writeEncryption(this.context, this.context.snapshot!, true)
       : writeEncryption(this.context, defaultDocumentSnapshot, false);
 
-    // For full rewrites of documents loaded from an existing PDF, default to
-    // not using object streams, as PDFStreamWriter can produce invalid
-    // cross-reference streams in some cases. For incremental saves and new
-    // documents, keep the version-based default. PDF/A-1 forbids them.
+    // Object streams by default where the version allows them (an
+    // increment's version is the original file's); PDF/A-1 forbids them.
     if (useObjectStreams === undefined) {
-      const isLoadedDocument = !!this.context.pdfFileDetails.originalBytes;
-      if (forbidsObjectStreams(getPDFAState(this.context))) {
-        useObjectStreams = false;
-      } else if (incrementalUpdate || !isLoadedDocument) {
-        useObjectStreams = supportsObjectStreams(
+      useObjectStreams =
+        !forbidsObjectStreams(getPDFAState(this.context)) &&
+        supportsObjectStreams(
           incrementalUpdate
             ? getIncrementVersion(this.context)
             : getEffectiveVersion(this.context),
         );
-      } else {
-        useObjectStreams = false;
-      }
     }
 
     assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
@@ -2246,6 +2239,14 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
+    return (await this.writeIncrement(snapshot, options)).bytes;
+  }
+
+  /** saveIncremental(), also reporting the highest object number written. */
+  private async writeIncrement(
+    snapshot: DocumentSnapshot,
+    options: IncrementalSaveOptions,
+  ): Promise<{ bytes: Uint8Array<ArrayBuffer>; highestObjectNumber: number }> {
     if (!this.context.pdfFileDetails.originalBytes) {
       throw new Error(
         'saveIncremental() requires the document to be loaded with forIncrementalUpdate: true',
@@ -2289,25 +2290,24 @@ export default class PDFDocument {
     await this.prepareForSave(saveOptions);
     declareObjectStreamVersion?.();
 
-    if (saveOptions.useObjectStreams) {
-      return PDFStreamWriter.forContextWithSnapshot(
-        this.context,
-        objectsPerTick,
-        snapshot,
-        true,
-        50,
-        compress,
-      ).serializeToBuffer();
-    } else {
-      const writer = PDFWriter.forContextWithSnapshot(
-        this.context,
-        objectsPerTick,
-        snapshot,
-        compress,
-      );
-      writer.fillXrefGaps = fillXrefGaps;
-      return writer.serializeToBuffer();
-    }
+    const writer = saveOptions.useObjectStreams
+      ? PDFStreamWriter.forContextWithSnapshot(
+          this.context,
+          objectsPerTick,
+          snapshot,
+          true,
+          50,
+          compress,
+        )
+      : PDFWriter.forContextWithSnapshot(
+          this.context,
+          objectsPerTick,
+          snapshot,
+          compress,
+        );
+    if (!saveOptions.useObjectStreams) writer.fillXrefGaps = fillXrefGaps;
+    const bytes = await writer.serializeToBuffer();
+    return { bytes, highestObjectNumber: writer.highestObjectNumber };
   }
 
   /**
@@ -2367,7 +2367,15 @@ export default class PDFDocument {
       );
     }
     const { snapshot } = this.context;
-    const incrementalBytes = await this.saveIncremental(snapshot, options);
+    const { bytes: incrementalBytes, highestObjectNumber } =
+      await this.writeIncrement(snapshot, options);
+    // The increment's object streams and xref stream are not in the context,
+    // but their numbers are now taken in the file: a later revision reusing
+    // one would redirect the type-2 entries that name it.
+    this.context.largestObjectNumber = Math.max(
+      this.context.largestObjectNumber,
+      highestObjectNumber,
+    );
     // The increment is now part of the file the next one extends.
     if (this.context.baselineEncryption instanceof BaselineEncryption) {
       this.context.baselineEncryption.commitEmitted(snapshot);

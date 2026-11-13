@@ -5,17 +5,33 @@ paths, `src/core/writers`). Each entry stands alone; remove it when it is
 fixed or ruled against (leaving a comment at the code site in the second
 case).
 
-## A page cannot be added after a full save with object streams
+## Deleted objects are written from a log, not from final dispositions
 
-Load a one-page document with `forIncrementalUpdate: true, updateMetadata:
-false`, call `save({ rewrite: true, useObjectStreams: true })`, then
-`addPage()`: it throws `CorruptPageTreeError` from
-`PDFPageTree.insertLeafNode` ("one or more 'Count' entries are invalid"). The
-same sequence with `useObjectStreams: false` works, and the header version
-makes no difference. So the object-stream full-save path (`PDFStreamWriter`)
-appears to leave the document's page tree, or the page cache, in a state the
-next edit cannot use; a save should not change what later edits see. Not
-investigated further.
+`context.delete()` appends to the snapshot's deletion log, and
+`PDFWriter.computeBufferSize` turns that log straight into free entries.
+Nothing reconciles the log with what is written: a number deleted and then
+assigned again is emitted both in use and free, and both xref encoders
+assume unique, ascending numbers, so the duplicate shifts every later
+entry in its subsection by one (the free entry lands on the next number,
+whose offset moves to the one after). A deletion of a ref that never
+existed is logged too, and the generation is incremented without
+saturating at 65535. `PDFStreamWriter` writes no free entries at all, so an
+increment with object streams silently keeps a deleted object live (and
+its `PDFCrossRefStream` free-list head stays 0). The fix is one final
+disposition per object number before either xref is built (live wins over
+a stale deletion; the free chain is built from the surviving deletions;
+deletions of numbers the file never had, including ones above the
+original `largestObjectNumber`, are dropped), shared by both writers.
+
+## `fillXrefGaps` frees inherited objects in an increment
+
+`PDFCrossRefSection.fillGaps()` marks every number missing between the
+entries of a section as free. In an increment the missing numbers are the
+unchanged objects of earlier revisions, and, after a commit with object
+streams, the object streams their type-2 entries name; filling them
+deletes them for any reader that honours the newest section. Filling an
+incremental section needs the inherited entries, or the option must be
+refused for increments.
 
 ## The trailer /ID never changes between revisions
 

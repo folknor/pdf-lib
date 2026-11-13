@@ -435,7 +435,8 @@ class EncryptedStream extends PDFStream {
   override updateDict(): void {}
 }
 
-const isSignatureDict = (dict: PDFDict): boolean => {
+/** A /Sig or /DocTimeStamp dict, or an untyped one carrying /ByteRange. */
+export const isSignatureDict = (dict: PDFDict): boolean => {
   const type = dict.get(PDFName.of('Type'));
   return (
     type === PDFName.of('Sig') ||

@@ -11,6 +11,7 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRef from '../objects/PDFRef.js';
 import PDFStream from '../objects/PDFStream.js';
 import type PDFContext from '../PDFContext.js';
+import { isSignatureDict } from '../security/PDFSecurity.js';
 import PDFCatalog from '../structures/PDFCatalog.js';
 import PDFCrossRefStream from '../structures/PDFCrossRefStream.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
@@ -55,10 +56,6 @@ class PDFStreamWriter extends PDFWriter {
   private readonly encodeStreams: boolean;
   private readonly objectsPerStream: number;
 
-  // The process of saving uses references numbers, and creates new indirect objects
-  // that need to be deleted after saving
-  private _refToDeleteAfterSave = 0;
-
   private constructor(
     context: PDFContext,
     objectsPerTick: number,
@@ -73,8 +70,18 @@ class PDFStreamWriter extends PDFWriter {
     this.objectsPerStream = objectsPerStream;
   }
 
+  /**
+   * The object streams and the xref stream get numbers above the context's
+   * largestObjectNumber, allocated here and never registered: a save leaves
+   * the document's objects, numbering and snapshot as they were, so later
+   * edits see the document they would have seen without it. Only commit()
+   * reserves the numbers (via highestObjectNumber), because only there do
+   * the written bytes become the base of the next revision.
+   */
   protected override async computeBufferSize(incremental: boolean) {
-    this._refToDeleteAfterSave = 0;
+    this._largestSkippedObjectNum = 0;
+    let nextObjectNumber = this.context.largestObjectNumber;
+    const allocateRef = () => PDFRef.of(++nextObjectNumber);
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
     assertPDFAWrite(this.context, {
       encrypted: this.encryption.Encrypt !== undefined,
@@ -104,7 +111,9 @@ class PDFStreamWriter extends PDFWriter {
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
       const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
-      if (!this.snapshot.shouldSave(ref.objectNumber)) {
+      // The body is chosen here and only here; serializeToBuffer writes
+      // exactly this list at the offsets recorded below.
+      if (!this.shouldSave(incremental, ref.objectNumber, object)) {
         continue;
       }
       if (!incremental && this.shouldSkipCopiedObjectStream(object)) {
@@ -121,11 +130,7 @@ class PDFStreamWriter extends PDFWriter {
         ref.generationNumber !== 0 ||
         // Signature and document timestamp dicts must stay top-level objects
         // so their /Contents byte ranges can be located and filled in.
-        (object instanceof PDFDict &&
-          ((object as PDFDict).lookup(PDFName.of('Type')) ===
-            PDFName.of('Sig') ||
-            (object as PDFDict).lookup(PDFName.of('Type')) ===
-              PDFName.of('DocTimeStamp')));
+        (object instanceof PDFDict && isSignatureDict(object));
 
       if (shouldNotCompress) {
         if (this.shouldCompress) this.compress(object);
@@ -143,8 +148,7 @@ class PDFStreamWriter extends PDFWriter {
         if (!chunk || chunk.length % this.objectsPerStream === 0) {
           chunk = [];
           compressedObjects.push(chunk);
-          objectStreamRef = this.context.nextRef();
-          this._refToDeleteAfterSave += 1;
+          objectStreamRef = allocateRef();
           objectStreamRefs.push(objectStreamRef);
         }
         xrefStream.addCompressedEntry(ref, objectStreamRef!, chunk.length);
@@ -161,7 +165,6 @@ class PDFStreamWriter extends PDFWriter {
         chunk,
         this.encodeStreams,
       );
-      this.context.assign(ref, objectStream);
 
       // Members are written in clear inside the container; encrypting the
       // container covers them.
@@ -180,11 +183,11 @@ class PDFStreamWriter extends PDFWriter {
       if (this.shouldWaitForTick(chunk.length)) await waitForTick();
     }
 
-    const xrefStreamRef = this.context.nextRef();
-    this._refToDeleteAfterSave += 1;
+    const xrefStreamRef = allocateRef();
+    this.highestObjectNumber = xrefStreamRef.objectNumber;
     xrefStream.dict.set(
       PDFName.of('Size'),
-      PDFNumber.of(this.context.largestObjectNumber + 1),
+      PDFNumber.of(xrefStreamRef.objectNumber + 1),
     );
     if (this.snapshot.prevStartXRef) {
       xrefStream.dict.set(
@@ -203,15 +206,6 @@ class PDFStreamWriter extends PDFWriter {
     size -= this.snapshot.pdfSize;
 
     return { size, header, indirectObjects: uncompressedObjects, trailer };
-  }
-
-  override async serializeToBuffer(): Promise<Uint8Array<ArrayBuffer>> {
-    const buffer = await super.serializeToBuffer();
-    // Delete xref stream created for saving
-    this.context.delete(PDFRef.of(this.context.largestObjectNumber - 1));
-    // Fix largestObjectNumbering
-    this.context.largestObjectNumber -= this._refToDeleteAfterSave;
-    return buffer;
   }
 }
 
