@@ -5,6 +5,14 @@ import GlyphIterator from './GlyphIterator.js';
 
 const DEFAULT_SCRIPTS: string[] = ['DFLT', 'dflt', 'latn'];
 
+/**
+ * Chaining-context backtrack sequences are stored closest glyph first, while
+ * match() walks forward from the furthest backtrack glyph, so they are
+ * matched reversed. Copies; the decoded table is shared.
+ */
+const backtrackOrder = <T>(sequence: ArrayLike<T>): T[] =>
+  Array.from(sequence).reverse();
+
 export default class OTProcessor {
   font: any;
   table: any;
@@ -375,7 +383,8 @@ export default class OTProcessor {
   }
 
   getClassID(glyph: number, classDef: any): number {
-    switch (classDef.version) {
+    // A NULL (offset 0) ClassDef decodes as null; every glyph is then class 0.
+    switch (classDef?.version) {
       case 1: {
         // Class array
         const i = glyph - classDef.startGlyph;
@@ -421,6 +430,10 @@ export default class OTProcessor {
         }
 
         set = table.ruleSets[index];
+        if (!set) {
+          return false;
+        }
+
         for (const rule of set) {
           if (this.sequenceMatches(1, rule.input)) {
             return this.applyLookupList(rule.lookupRecords);
@@ -435,11 +448,11 @@ export default class OTProcessor {
         }
 
         index = this.getClassID(this.glyphIterator.cur!.id, table.classDef);
-        if (index === -1) {
+        set = table.classSet[index];
+        if (!set) {
           return false;
         }
 
-        set = table.classSet[index];
         for (const rule of set) {
           if (this.classSequenceMatches(1, rule.classes, table.classDef)) {
             return this.applyLookupList(rule.lookupRecords);
@@ -469,9 +482,16 @@ export default class OTProcessor {
         }
 
         const set = table.chainRuleSets[index];
+        if (!set) {
+          return false;
+        }
+
         for (const rule of set) {
           if (
-            this.sequenceMatches(-rule.backtrack.length, rule.backtrack) &&
+            this.sequenceMatches(
+              -rule.backtrack.length,
+              backtrackOrder(rule.backtrack),
+            ) &&
             this.sequenceMatches(1, rule.input) &&
             this.sequenceMatches(1 + rule.input.length, rule.lookahead)
           ) {
@@ -500,7 +520,7 @@ export default class OTProcessor {
           if (
             this.classSequenceMatches(
               -rule.backtrack.length,
-              rule.backtrack,
+              backtrackOrder(rule.backtrack),
               table.backtrackClassDef,
             ) &&
             this.classSequenceMatches(1, rule.input, table.inputClassDef) &&
@@ -521,7 +541,7 @@ export default class OTProcessor {
         if (
           this.coverageSequenceMatches(
             -table.backtrackGlyphCount,
-            table.backtrackCoverage,
+            backtrackOrder(table.backtrackCoverage),
           ) &&
           this.coverageSequenceMatches(0, table.inputCoverage) &&
           this.coverageSequenceMatches(

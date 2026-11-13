@@ -1,6 +1,11 @@
 import { getEncoding, getEncodingMapping } from './encodings.js';
 import { binarySearch, range } from './utils.js';
 
+/** cmap subtable formats lookup, getCharacterSet and codePointsForGlyph read. */
+const LOOKUP_FORMATS: ReadonlySet<number> = new Set([0, 4, 6, 10, 12, 13]);
+/** Unicode variation sequences live only in format 14. */
+const UVS_FORMATS: ReadonlySet<number> = new Set([14]);
+
 export default class CmapProcessor {
   encoding: Map<number, number> | null;
   cmap: any;
@@ -11,7 +16,7 @@ export default class CmapProcessor {
   constructor(cmapTable: any) {
     // Attempt to find a Unicode cmap first
     this.encoding = null;
-    this.cmap = this.findSubtable(cmapTable, [
+    this.cmap = this.findSubtable(cmapTable, LOOKUP_FORMATS, [
       // 32-bit subtables
       [3, 10],
       [0, 6],
@@ -33,7 +38,7 @@ export default class CmapProcessor {
           cmap.encodingID,
           cmap.table.language - 1,
         );
-        if (encoding) {
+        if (encoding && LOOKUP_FORMATS.has(cmap.table.version)) {
           const mapping = getEncodingMapping(encoding);
           if (mapping) {
             this.cmap = cmap.table;
@@ -47,16 +52,26 @@ export default class CmapProcessor {
       throw new Error('Could not find a supported cmap table');
     }
 
-    this.uvs = this.findSubtable(cmapTable, [[0, 5]]);
-    if (this.uvs && this.uvs.version !== 14) {
-      this.uvs = null;
-    }
+    this.uvs = this.findSubtable(cmapTable, UVS_FORMATS, [[0, 5]]);
   }
 
-  findSubtable(cmapTable: any, pairs: [number, number][]): any {
+  /**
+   * First subtable matching a (platform, encoding) pair, in pair priority
+   * order, whose format is in `formats`. A subtable in a format we cannot
+   * read (2, 8) is passed over so a later candidate can win.
+   */
+  findSubtable(
+    cmapTable: any,
+    formats: ReadonlySet<number>,
+    pairs: [number, number][],
+  ): any {
     for (const [platformID, encodingID] of pairs) {
       for (const cmap of cmapTable.tables) {
-        if (cmap.platformID === platformID && cmap.encodingID === encodingID) {
+        if (
+          cmap.platformID === platformID &&
+          cmap.encodingID === encodingID &&
+          formats.has(cmap.table.version)
+        ) {
           return cmap.table;
         }
       }
@@ -293,6 +308,19 @@ export default class CmapProcessor {
             if (g === gid) {
               res.push(c);
             }
+          }
+        }
+        result = res;
+        break;
+      }
+
+      case 6:
+      case 10: {
+        const res: number[] = [];
+        const glyphIndices = cmap.glyphIndices.toArray();
+        for (let i = 0; i < glyphIndices.length; i++) {
+          if (glyphIndices[i] === gid) {
+            res.push(cmap.firstCode + i);
           }
         }
         result = res;

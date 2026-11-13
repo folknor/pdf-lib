@@ -39,7 +39,8 @@ class PredefinedOp {
   encode(stream: any, value: any, ctx: any): number | any[] {
     const index = this.predefinedOps.indexOf(value);
     if (index !== -1) {
-      return index;
+      // CFFDict.encodeOperands callers iterate the result as operands.
+      return [index];
     }
 
     return this.type.encode(stream, value, ctx);
@@ -158,11 +159,6 @@ class CFFPrivateOp {
   decode(stream: any, parent: any, operands: number[]): any {
     parent.length = operands[0] ?? 0;
     return ptr.decode(stream, parent, [operands[1] ?? 0]);
-  }
-
-  size(dict: any, ctx: any): [number, any] {
-    const ptrSizeResult = ptr.size(dict, ctx);
-    return [CFFPrivateDict.size(dict, ctx, false), ptrSizeResult];
   }
 
   encode(stream: any, dict: any, ctx: any): [number, any] {

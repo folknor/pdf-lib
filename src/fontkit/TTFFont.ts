@@ -128,6 +128,8 @@ export default class TTFFont {
   _decodeTable(table: any): any {
     const pos = this.stream.pos;
 
+    // Only reached for directory entries with a codec (_installTableGetters),
+    // so the stream is never null here; no guard needed.
     const stream = this._getTableStream(table.tag);
     const result = tables[table.tag].decode(stream, this, table.length);
 
@@ -264,7 +266,8 @@ export default class TTFFont {
    */
   get capHeight() {
     const os2 = this['OS/2'];
-    return os2 ? os2.capHeight : this.ascent;
+    // OS/2 v0 and v1 have no capHeight field.
+    return os2?.capHeight ?? this.ascent;
   }
 
   /**
@@ -274,7 +277,8 @@ export default class TTFFont {
    */
   get xHeight() {
     const os2 = this['OS/2'];
-    return os2 ? os2.xHeight : 0;
+    // OS/2 v0 and v1 have no xHeight field.
+    return os2?.xHeight ?? 0;
   }
 
   /**
@@ -498,6 +502,9 @@ export default class TTFFont {
    * @param {number[]} characters
    * @return {Glyph}
    */
+  // Null only for a font with no glyph source at all (no glyf, CFF, CFF2,
+  // sbix, COLR+CPAL or bitmap tables). Layout and shaper code deliberately
+  // does not null-check every getGlyph/glyphForCodePoint result for that case.
   getGlyph(glyph: number, characters: number[] = []): Glyph | null {
     if (!this._glyphs[glyph]) {
       if (this.directory.tables.sbix) {
@@ -549,7 +556,8 @@ export default class TTFFont {
 
     for (const axis of this['fvar'].axis) {
       res[axis.axisTag.trim()] = {
-        name: axis.name.en,
+        // fvar name IDs can point at strings the name table lacks.
+        name: axis.name?.en,
         min: axis.minValue,
         default: axis.defaultValue,
         max: axis.maxValue,
@@ -573,13 +581,19 @@ export default class TTFFont {
     }
 
     for (const instance of this['fvar'].instance) {
+      // An instance with no English name string cannot be keyed or selected.
+      const name = instance.name?.en;
+      if (name == null) {
+        continue;
+      }
+
       const settings: Record<string, any> = {};
       for (let i = 0; i < this['fvar'].axis.length; i++) {
         const axis = this['fvar'].axis[i];
         settings[axis.axisTag.trim()] = instance.coord[i];
       }
 
-      res[instance.name.en] = settings;
+      res[name] = settings;
     }
 
     return cacheValue(this, 'namedVariations', res);

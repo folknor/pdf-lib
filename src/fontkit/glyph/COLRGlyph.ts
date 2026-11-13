@@ -9,11 +9,15 @@ interface COLRColor {
   alpha: number;
 }
 
+/** COLR palette index meaning "the text foreground colour". */
+const FOREGROUND_PALETTE_INDEX = 0xffff;
+
 class COLRLayer {
   glyph: Glyph | null;
-  color: COLRColor;
+  /** null: draw in the caller's current (foreground) colour. */
+  color: COLRColor | null;
 
-  constructor(glyph: Glyph | null, color: COLRColor) {
+  constructor(glyph: Glyph | null, color: COLRColor | null) {
     this.glyph = glyph;
     this.color = color;
   }
@@ -95,7 +99,19 @@ export default class COLRGlyph extends Glyph {
       i++
     ) {
       const rec = colr.layerRecords[i];
-      const color = cpal.colorRecords[rec.paletteIndex];
+      if (!rec) continue;
+      let color: COLRColor | null = null;
+      if (rec.paletteIndex !== FOREGROUND_PALETTE_INDEX) {
+        // Palette indices are relative to the palette's first colour record;
+        // layers use the default palette (0).
+        color =
+          cpal?.colorRecords?.[
+            (cpal.colorRecordIndices?.[0] ?? 0) + rec.paletteIndex
+          ] ?? null;
+        // A record outside the colour array is malformed; skip the layer
+        // rather than paint it in the foreground colour.
+        if (!color) continue;
+      }
       const g = this._font._getBaseGlyph(rec.gid);
       layers.push(new COLRLayer(g, color));
     }
@@ -114,11 +130,20 @@ export default class COLRGlyph extends Glyph {
 
     for (const { glyph, color } of layers) {
       if (!glyph) continue;
-      ctx.fillColor(
-        [color.red, color.green, color.blue],
-        (color.alpha / 255) * 100,
-      );
-      glyph.render(ctx, size);
+      // Each layer restores the caller's state, so a foreground layer after a
+      // palette layer draws in the caller's colour, not the previous layer's.
+      ctx.save();
+      try {
+        if (color) {
+          ctx.fillColor(
+            [color.red, color.green, color.blue],
+            (color.alpha / 255) * 100,
+          );
+        }
+        glyph.render(ctx, size);
+      } finally {
+        ctx.restore();
+      }
     }
 
     return;

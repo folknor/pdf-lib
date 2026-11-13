@@ -235,7 +235,8 @@ export default class GlyphVariationProcessor {
     while (i < count) {
       const run = stream.readUInt8();
       const runCount = (run & POINT_RUN_COUNT_MASK) + 1;
-      const fn = run & POINTS_ARE_WORDS ? stream.readUInt16 : stream.readUInt8;
+      const fn =
+        run & POINTS_ARE_WORDS ? stream.readUInt16BE : stream.readUInt8;
 
       for (let j = 0; j < runCount && i < count; j++) {
         point += fn.call(stream);

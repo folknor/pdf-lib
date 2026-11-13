@@ -31,6 +31,8 @@ const NameRecord = new r.Struct({
   length: r.uint16,
   string: new r.Pointer(
     r.uint16,
+    // An unknown platform/encoding yields null; r.String then reads ascii,
+    // which cannot throw. Guessing utf16be instead is not more correct.
     new r.String('length', ((t: any) =>
       getEncoding(t.platformID, t.encodingID, t.languageID)) as any),
     {

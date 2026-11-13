@@ -98,6 +98,7 @@ export default class DFont {
         psName === name ||
         (psName instanceof Uint8Array &&
           name instanceof Uint8Array &&
+          psName.length === name.length &&
           psName.every((v, i) => name[i] === v))
       ) {
         return font;
@@ -108,7 +109,11 @@ export default class DFont {
   }
 
   get fonts() {
-    const fonts = [];
+    const fonts: TTFFont[] = [];
+    if (!this.sfnt) {
+      return fonts;
+    }
+
     for (const ref of this.sfnt.refList) {
       const pos = this.header.dataOffset + ref.dataOffset + 4;
       const stream = new r.DecodeStream(this.stream.buffer.slice(pos));

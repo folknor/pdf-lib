@@ -44,6 +44,7 @@ export default class TrueTypeCollection {
         psName === name ||
         (psName instanceof Uint8Array &&
           name instanceof Uint8Array &&
+          psName.length === name.length &&
           psName.every((v, i) => name[i] === v))
       ) {
         return font;

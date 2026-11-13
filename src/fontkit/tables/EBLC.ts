@@ -1,6 +1,13 @@
 import * as r from '../../vendors/restructure/index.js';
 import { BigMetrics } from './EBDT.js';
 
+// Known-wrong against the OpenType spec, and left so because nothing decodes
+// EBLC/CBLC (only directory presence is tested) and no fixture exercises it:
+// offsetArray (formats 1, 3) holds lastGlyphIndex - firstGlyphIndex + 2
+// entries, not + 1; the IndexSubTableArray has numberOfIndexSubTables entries,
+// not 1; and each subtable offset is relative to the start of that array, not
+// to its own record. Fix all three before anything reads this table.
+
 const SBitLineMetrics = new r.Struct({
   ascender: r.int8,
   descender: r.int8,
