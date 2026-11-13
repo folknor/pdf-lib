@@ -25,29 +25,6 @@ changed is written in clear under that /Encrypt, so readers decrypt it into
 garbage. Increments onto such a file are refused (`writeEncryption` in
 `src/core/writers/PDFWriter.ts`); full saves are not.
 
-## Encrypted object-stream output does not reload its Info dictionary
-
-A new document with a title, encrypted under any cipher and saved with the
-default object streams, reloads with the correct password but `getTitle()`
-returns `undefined`, also with `ignoreEncryption`. The same document saved
-without object streams reads the title back. The trailer still names the
-Info reference after the reload, so the lookup of that object is what fails.
-This is an observed reproduction; the mechanism is not traced; the existing
-indirect-crypt-filter
-test in `tests/api/PDFDocument.spec.ts` only passes because it re-saves
-without object streams before reloading.
-
-## The decrypting re-parse decrypts objects the standard exempts
-
-`PDFParser.parseIndirectObject` calls `parseObject(ref)` for every object, so
-with a crypto factory the encryption dictionary's /O, /U, /OE, /UE and /Perms
-strings, the strings of a cross-reference stream's dictionary (its /ID) and
-the cross-reference stream's contents are all run through decryption, though
-ISO 32000-2 7.6.2 leaves them in clear. The key is already derived from the
-first, undecrypted pass, and a decrypted load drops /Encrypt, so the damage
-seen so far is to objects nobody reads back. It may be what the object-stream
-entry above meets; not traced.
-
 ## Decrypted literal strings are stored without escaping
 
 `PDFObjectParser.parseString` puts the decrypted bytes straight into

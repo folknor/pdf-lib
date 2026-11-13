@@ -37,6 +37,7 @@ class PDFParser extends PDFObjectParser {
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate?: boolean,
     maxDecodedStreamSize?: number,
+    encryptRef?: PDFRef,
   ) =>
     new PDFParser(
       pdfBytes,
@@ -47,11 +48,13 @@ class PDFParser extends PDFObjectParser {
       cryptoFactory,
       forIncrementalUpdate,
       maxDecodedStreamSize,
+      encryptRef,
     );
 
   private readonly objectsPerTick: number;
   private readonly throwOnInvalidObject: boolean;
   private readonly warnOnInvalidObjects: boolean;
+  private readonly encryptRef: PDFRef | undefined;
   private alreadyParsed = false;
   private parsedObjects = 0;
 
@@ -64,6 +67,7 @@ class PDFParser extends PDFObjectParser {
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate = false,
     maxDecodedStreamSize?: number,
+    encryptRef?: PDFRef,
   ) {
     super(
       ByteStream.of(pdfBytes),
@@ -74,6 +78,7 @@ class PDFParser extends PDFObjectParser {
     this.objectsPerTick = objectsPerTick;
     this.throwOnInvalidObject = throwOnInvalidObject;
     this.warnOnInvalidObjects = warnOnInvalidObjects;
+    this.encryptRef = encryptRef;
     this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
     this.context.pdfFileDetails.pdfSize = pdfBytes.length;
     // Set before parsing so object/xref streams decoded during the parse
@@ -186,7 +191,23 @@ class PDFParser extends PDFObjectParser {
     const ref = this.parseIndirectObjectHeader();
 
     this.skipWhitespaceAndComments();
-    const object = this.parseObject(ref);
+    // ISO 32000-2 7.6.2: the encryption dictionary and cross-reference
+    // streams (dictionary and body) are not encrypted, so they are parsed
+    // without the object's key. The decision is made here, for the indirect
+    // object as a whole: a nested dict that happens to say /Type /XRef is
+    // decrypted like any other value. PDFSecurity.encryptObject exempts the
+    // same objects on write.
+    const start = this.bytes.position();
+    const exempt = ref === this.encryptRef;
+    let object = this.parseObject(exempt ? undefined : ref);
+    if (
+      !exempt &&
+      object instanceof PDFRawStream &&
+      object.dict.lookup(PDFName.of('Type')) === PDFName.of('XRef')
+    ) {
+      this.bytes.restorePosition(start);
+      object = this.parseObject();
+    }
 
     this.skipWhitespaceAndComments();
     // if (!this.matchKeyword(Keywords.endobj)) {

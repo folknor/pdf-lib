@@ -199,19 +199,39 @@ describe('PDFDocument', () => {
         });
       }
 
-      it('encrypts strings in top-level objects with object streams', async () => {
-        const pdfDoc = await encryptedDoc('AES-256');
-        const bytes = await pdfDoc.save();
-        expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
-          'page leaf string',
-        );
-        const reopened = await PDFDocument.load(bytes, {
-          password: 'user',
-          updateMetadata: false,
+      for (const algorithm of algorithms) {
+        it(`round trips with object streams under ${algorithm}`, async () => {
+          const pdfDoc = await encryptedDoc(algorithm);
+          const bytes = await pdfDoc.save();
+          expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
+            'page leaf string',
+          );
+          const raw = await PDFDocument.load(bytes, {
+            ignoreEncryption: true,
+            updateMetadata: false,
+          });
+          const reopened = await PDFDocument.load(bytes, {
+            password: 'user',
+            updateMetadata: false,
+          });
+          // The cross-reference stream is read in clear, so its trailer
+          // entries survive the decrypting parse.
+          const { trailerInfo } = reopened.context;
+          expect(trailerInfo.Info).toBe(raw.context.trailerInfo.Info);
+          expect(String(trailerInfo.ID)).toBe(
+            String(raw.context.trailerInfo.ID),
+          );
+          expect(reopened.getTitle()).toBe(secret);
+          const note = reopened.getPage(0).node.get(PDFName.of('Note'));
+          expect((note as PDFHexString).decodeText()).toBe('page leaf string');
+          // So is the encryption dictionary.
+          const encryptRef = raw.context.trailerInfo.Encrypt;
+          const O = PDFName.of('O');
+          expect(
+            String(reopened.context.lookup(encryptRef, PDFDict).get(O)),
+          ).toBe(String(raw.context.lookup(encryptRef, PDFDict).get(O)));
         });
-        const note = reopened.getPage(0).node.get(PDFName.of('Note'));
-        expect((note as PDFHexString).decodeText()).toBe('page leaf string');
-      });
+      }
 
       it('leaves the document unchanged, so a second save reads back', async () => {
         const pdfDoc = await encryptedDoc('AES-128');

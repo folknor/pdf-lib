@@ -229,6 +229,9 @@ export default class PDFDocument {
         cryptoFactory,
         forIncrementalUpdate,
         maxDecodedStreamSize,
+        context.trailerInfo.Encrypt instanceof PDFRef
+          ? context.trailerInfo.Encrypt
+          : undefined,
       ).parseDocument();
       // Increments onto this file stay under its own handler, taken from the
       // undecrypted parse (see BaselineEncryption).

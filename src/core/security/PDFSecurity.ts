@@ -548,9 +548,9 @@ export interface ObjectEncryptor {
  * before it, and its trailer must name that dictionary and keep the first
  * /ID element, which the key derivation of /R 2-4 depends on.
  *
- * Built from the undecrypted first parse: the decrypting parse also runs the
- * /Encrypt strings and a cross-reference stream's /ID through decryption, so
- * neither may be taken from it. The policy follows the dictionary, not this
+ * Built from the undecrypted first parse, which holds the encryption
+ * dictionary and /ID exactly as the file stores them; the decrypted
+ * document drops /Encrypt from its trailer. The policy follows the dictionary, not this
  * library's own writer: /StrF for strings, /EFF for embedded files, /StmF for
  * other streams, and metadata streams left clear under /EncryptMetadata
  * false. A stream naming a /Crypt filter of its own is refused rather than
