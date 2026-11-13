@@ -43,6 +43,11 @@ import {
   UnexpectedObjectTypeError,
 } from '../core/index.js';
 import {
+  FACTUR_X_FILE_NAME,
+  readFacturXInvoice,
+  writeFacturXMetadata,
+} from '../core/metadata/facturx.js';
+import {
   assertMayEncrypt,
   assertPDFAWrite,
   type DeclarePDFAOptions,
@@ -52,6 +57,7 @@ import {
   type InfoKey,
   type PDFADeclaration,
   planInfoEdit,
+  planPDFA3Edit,
 } from '../core/metadata/pdfa.js';
 import type PDFObject from '../core/objects/PDFObject.js';
 import PDFRef from '../core/objects/PDFRef.js';
@@ -84,6 +90,11 @@ import {
   InvalidFontkitError,
   RemovePageFromEmptyDocumentError,
 } from './errors.js';
+import {
+  type EmbedFacturXOptions,
+  facturXRelationship,
+  planFacturXAttachment,
+} from './facturx.js';
 import PDFForm from './form/PDFForm.js';
 import {
   type AttachmentOptions,
@@ -1880,7 +1891,8 @@ export default class PDFDocument {
    *
    * Throws, changing nothing, when the document already declares a
    * different PDF/A part or level (a declaration is never changed), when its
-   * catalog XMP cannot be read, after [[encrypt]], or for a PDF 2.0 file.
+   * catalog XMP cannot be read, after [[encrypt]], or for a file whose
+   * version is not PDF 1.0 to 1.7.
    *
    * Once a document declares PDF/A - whether by this call or as loaded - it
    * is held to the rules a write can break: [[encrypt]] and every encrypted
@@ -1895,27 +1907,134 @@ export default class PDFDocument {
    */
   declarePDFA(options: DeclarePDFAOptions): void {
     savableBaseline(this.context);
-    declarePDFA(this.context, options, (key) => {
-      switch (key) {
-        case 'Title':
-          return this.getTitle();
-        case 'Author':
-          return this.getAuthor();
-        case 'Subject':
-          return this.getSubject();
-        case 'Keywords':
-          return this.getKeywords();
-        case 'Creator':
-          return this.getCreator();
-        case 'Producer':
-          return this.getProducer();
-        case 'CreationDate':
-          return this.getCreationDate();
-        case 'ModDate':
-          return this.getModificationDate();
-      }
-    });
+    declarePDFA(this.context, options, this.readInfo);
   }
+
+  /**
+   * Make this document a Factur-X (ZUGFeRD 2) hybrid e-invoice: attach the
+   * invoice XML and write the identification Factur-X requires. For example:
+   * ```js
+   * pdfDoc.embedFacturX(invoiceXml, { afRelationship: AFRelationship.Alternative })
+   * ```
+   *
+   * `xml` is the CII invoice as UTF-8 bytes, or as text (stored as UTF-8).
+   * It must be well-formed XML 1.0 in UTF-8 and state one of the Factur-X
+   * profiles MINIMUM, BASIC WL, BASIC, EN 16931 or EXTENDED as its guideline
+   * identifier; the profile is read from there, never assumed. XRECHNUNG
+   * is not supported. The invoice is neither validated against its schema
+   * nor checked against its business rules.
+   *
+   * The XML is attached as `factur-x.xml` (`text/xml`, listed in the
+   * catalog /AF), replacing an earlier `factur-x.xml` in the document's
+   * attachments; the earlier one's objects are kept, and annotations or
+   * pages that refer to it are not changed. The catalog XMP gets the `fx`
+   * properties and the PDF/A extension schema that declares them. A
+   * document that declares no PDF/A is declared PDF/A-3B, as by
+   * [[declarePDFA]] (a declaration, not a conversion: content is not
+   * checked); one that declares PDF/A-3A, -3B or -3U keeps it.
+   *
+   * Throws, changing nothing, for any other PDF/A declaration, unreadable
+   * catalog XMP, XMP using an earlier ZUGFeRD namespace or naming another
+   * invoice file, an attachment named `xrechnung.xml`, an attachments name
+   * tree with /Kids, after [[encrypt]], or for a file that is not PDF 1.0
+   * to 1.7.
+   *
+   * Unlike [[attach]], the attachment is added at once, not at save.
+   *
+   * @param xml The invoice XML.
+   * @param options The relationship (required for BASIC, EN 16931 and
+   *                EXTENDED), an expected profile, a description and a
+   *                modification date.
+   */
+  embedFacturX(
+    xml: string | Uint8Array | ArrayBuffer,
+    options: EmbedFacturXOptions = {},
+  ): void {
+    assertIs(xml, 'xml', ['string', Uint8Array, ArrayBuffer]);
+    assertOrUndefined(options.conformanceLevel, 'conformanceLevel', ['string']);
+    assertIsOneOfOrUndefined(
+      options.afRelationship,
+      'options.afRelationship',
+      AFRelationship,
+    );
+    assertOrUndefined(options.description, 'options.description', ['string']);
+    assertOrUndefined(options.modificationDate, 'options.modificationDate', [
+      Date,
+    ]);
+    savableBaseline(this.context);
+
+    const { bytes, profile } = readFacturXInvoice(
+      xml instanceof ArrayBuffer ? new Uint8Array(xml) : xml,
+    );
+    const expected =
+      options.conformanceLevel === 'BASIC_WL'
+        ? 'BASIC WL'
+        : options.conformanceLevel;
+    if (expected !== undefined && expected !== profile) {
+      throw new Error(
+        `The invoice XML is a Factur-X ${profile} invoice, not ${expected}.`,
+      );
+    }
+    const relationship = facturXRelationship(profile, options.afRelationship);
+    const modificationDate = new Date(
+      options.modificationDate?.getTime() ?? Date.now(),
+    );
+    const year = modificationDate.getUTCFullYear();
+    if (Number.isNaN(year) || year < 0 || year > 9999) {
+      throw new Error(
+        'options.modificationDate is not a date a PDF can state (years 0 to 9999).',
+      );
+    }
+    const { description } = options;
+
+    const pending = this.embeddedFiles.filter((f) => !f.getAlreadyEmbedded());
+    if (pending.some((f) => f.getEmbedder().fileName === 'xrechnung.xml')) {
+      throw new Error(
+        'Cannot embed a Factur-X invoice: the document has an xrechnung.xml attachment, and XRECHNUNG is not supported.',
+      );
+    }
+    const applyMetadata = planPDFA3Edit(
+      this.context,
+      this.readInfo,
+      'embed a Factur-X invoice',
+      (packet) => writeFacturXMetadata(packet, profile),
+    );
+    const applyAttachment = planFacturXAttachment(this.context, this.catalog, {
+      bytes,
+      relationship,
+      description,
+      modificationDate,
+    });
+
+    applyMetadata();
+    applyAttachment();
+    for (const f of pending) {
+      if (f.getEmbedder().fileName === FACTUR_X_FILE_NAME) {
+        this.embeddedFiles.splice(this.embeddedFiles.indexOf(f), 1);
+      }
+    }
+  }
+
+  private readonly readInfo = (key: InfoKey): string | Date | undefined => {
+    switch (key) {
+      case 'Title':
+        return this.getTitle();
+      case 'Author':
+        return this.getAuthor();
+      case 'Subject':
+        return this.getSubject();
+      case 'Keywords':
+        return this.getKeywords();
+      case 'Creator':
+        return this.getCreator();
+      case 'Producer':
+        return this.getProducer();
+      case 'CreationDate':
+        return this.getCreationDate();
+      case 'ModDate':
+        return this.getModificationDate();
+    }
+  };
 
   /**
    * The PDF/A identification the document's catalog XMP states, read afresh

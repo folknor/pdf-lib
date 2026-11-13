@@ -24,6 +24,7 @@ export {
   PrintScaling,
   ReadingDirection,
 } from './interactive/ViewerPreferences.js';
+export type { FacturXProfile } from './metadata/facturx.js';
 export { getSRGBProfile } from './metadata/icc.js';
 export type {
   DeclarePDFAOptions,

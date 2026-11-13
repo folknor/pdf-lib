@@ -2,6 +2,7 @@ export type { CopyOptions } from '../core/PDFObjectCopier.js';
 export * from './colors.js';
 export type { default as Embeddable } from './Embeddable.js';
 export * from './errors.js';
+export type { EmbedFacturXOptions } from './facturx.js';
 export * from './form/index.js';
 export * from './image/index.js';
 export * from './objects.js';

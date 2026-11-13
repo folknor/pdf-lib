@@ -461,6 +461,37 @@ const isIdString = (o: unknown) =>
   o instanceof PDFString || o instanceof PDFHexString;
 
 /**
+ * What a document must be for this library to write or keep a PDF/A-1 to -3
+ * declaration on it: not encrypted by `encrypt()`, with a catalog and a
+ * well-formed catalog /Version, and an effective version PDF 1.0 to 1.7
+ * (ISO 19005-2/-3 5.1 admit those headers; PDF/A-1 is PDF 1.4-based but
+ * reads any of them the same way here).
+ */
+const assertDeclarable = (context: PDFContext, part: number): PDFDict => {
+  if (context.security) {
+    throw new Error(
+      'Cannot declare PDF/A after encrypt(): PDF/A forbids encryption.',
+    );
+  }
+  const catalog = getCatalog(context);
+  if (!catalog)
+    throw new Error('Cannot declare PDF/A: the document has no catalog.');
+  if (getCatalogVersion(context) === 'malformed') {
+    throw new Error('Cannot declare PDF/A: the catalog /Version is malformed.');
+  }
+  const version = getEffectiveVersion(context);
+  if (
+    compareVersions(version, [1, 0]) < 0 ||
+    compareVersions(version, [1, 7]) > 0
+  ) {
+    throw new Error(
+      `Cannot declare PDF/A-${part} for a PDF ${version.join('.')} document; parts 1 to 3 are PDF 1.0 to 1.7.`,
+    );
+  }
+  return catalog;
+};
+
+/**
  * Declare the document PDF/A: see `PDFDocument.declarePDFA`. Every check
  * runs and every new object is built before anything is changed.
  */
@@ -468,7 +499,19 @@ export const declarePDFA = (
   context: PDFContext,
   options: DeclarePDFAOptions,
   readInfo: InfoReader,
-): void => {
+): void => planDeclarePDFA(context, options, readInfo)();
+
+/**
+ * Check and build a PDF/A declaration, returning the function that applies
+ * it. `edit` makes further changes to the same XMP packet, written in the
+ * same metadata write; an `XmpError` from it refuses the declaration.
+ */
+export const planDeclarePDFA = (
+  context: PDFContext,
+  options: DeclarePDFAOptions,
+  readInfo: InfoReader,
+  edit?: (packet: XmpPacket) => void,
+): (() => void) => {
   const { part, conformance, outputIntent } = options;
   if (part !== 1 && part !== 2 && part !== 3) {
     throw new Error(`PDF/A part must be 1, 2 or 3, not ${String(part)}.`);
@@ -481,22 +524,7 @@ export const declarePDFA = (
   if (part === 1 && conformance === 'U') {
     throw new Error('PDF/A-1 has no conformance level U.');
   }
-  if (context.security) {
-    throw new Error(
-      'Cannot declare PDF/A after encrypt(): PDF/A forbids encryption.',
-    );
-  }
-  const catalog = getCatalog(context);
-  if (!catalog)
-    throw new Error('Cannot declare PDF/A: the document has no catalog.');
-  if (getCatalogVersion(context) === 'malformed') {
-    throw new Error('Cannot declare PDF/A: the catalog /Version is malformed.');
-  }
-  if (compareVersions(getEffectiveVersion(context), [2, 0]) >= 0) {
-    throw new Error(
-      `Cannot declare PDF/A-${part} for a PDF 2.0 document; parts 1 to 3 are PDF 1.x.`,
-    );
-  }
+  const catalog = assertDeclarable(context, part);
 
   const metadata = readMetadata(context);
   if (metadata.kind === 'unreadable') {
@@ -616,6 +644,7 @@ export const declarePDFA = (
       packet.setText(PDFAID_NS, 'part', String(part));
       packet.setText(PDFAID_NS, 'conformance', conformance);
     }
+    edit?.(packet);
   } catch (e) {
     if (e instanceof XmpError)
       throw new Error(`Cannot declare PDF/A-${part}: ${e.message}.`);
@@ -627,11 +656,61 @@ export const declarePDFA = (
     ID === undefined ? PDFHexString.fromBytes(getRandomBytes(16)) : undefined;
 
   // Everything is checked; apply.
-  writeMetadata(
-    context,
-    metadata.kind === 'packet' ? metadata.stream : undefined,
-    bytes,
-  );
-  newIntent?.();
-  if (newId) context.trailerInfo.ID = context.obj([newId, newId]);
+  return () => {
+    writeMetadata(
+      context,
+      metadata.kind === 'packet' ? metadata.stream : undefined,
+      bytes,
+    );
+    newIntent?.();
+    if (newId) context.trailerInfo.ID = context.obj([newId, newId]);
+  };
+};
+
+/**
+ * Plan an XMP edit for a document that is to be PDF/A-3: one that declares
+ * PDF/A-3A, -3B or -3U keeps its declaration and has `edit` applied to its
+ * packet; one that declares nothing is declared PDF/A-3B (as by
+ * `declarePDFA`) with `edit` in the same write. Any other declaration, or
+ * XMP that cannot be read, is refused. Returns the function that applies
+ * the change; nothing is changed before it runs.
+ */
+export const planPDFA3Edit = (
+  context: PDFContext,
+  readInfo: InfoReader,
+  what: string,
+  edit: (packet: XmpPacket) => void,
+): (() => void) => {
+  assertDeclarable(context, 3);
+  const metadata = readMetadata(context);
+  if (metadata.kind === 'unreadable') {
+    throw new Error(
+      `Cannot ${what}: the catalog XMP cannot be read (${metadata.reason}).`,
+    );
+  }
+  const declare = () =>
+    planDeclarePDFA(context, { part: 3, conformance: 'B' }, readInfo, edit);
+  if (metadata.kind === 'absent') return declare();
+  const state = identify(metadata.packet);
+  if (state.kind === 'none') return declare();
+  if (
+    state.kind !== 'declared' ||
+    state.declaration.part !== '3' ||
+    !['A', 'B', 'U'].includes(
+      state.declaration.conformance?.toUpperCase() ?? '',
+    )
+  ) {
+    throw new Error(
+      `Cannot ${what}: it needs PDF/A-3, and the document ${describe(state)}.`,
+    );
+  }
+  try {
+    edit(metadata.packet);
+  } catch (e) {
+    if (e instanceof XmpError) throw new Error(`Cannot ${what}: ${e.message}.`);
+    throw e;
+  }
+  const bytes = metadata.packet.serialize();
+  const { stream } = metadata;
+  return () => writeMetadata(context, stream, bytes);
 };

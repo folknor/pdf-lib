@@ -47,6 +47,20 @@ This writes the `pdfaid` identification into the catalog XMP (editing an existin
 
 Whether a document declares PDF/A is read from its XMP on every check, so a loaded PDF/A file is treated the same way, and XMP that cannot be read counts as a possible declaration. Such a document refuses `encrypt()` and every encrypted write (including increments of a file loaded with its password); for PDF/A-1 it writes no object or cross-reference streams and refuses increments onto a file that has them; Info setters also update the matching XMP property, and loading leaves its Info and XMP untouched.
 
+A declaration is refused for a file whose version is not PDF 1.0 to 1.7.
+
+### Factur-X / ZUGFeRD e-invoices
+
+Make a document a Factur-X (ZUGFeRD 2) hybrid invoice:
+
+```ts
+pdfDoc.embedFacturX(invoiceXml, { afRelationship: AFRelationship.Alternative });
+```
+
+The CII invoice XML (UTF-8 bytes, or text) is attached as `factur-x.xml` and listed in the catalog `/AF`, replacing an earlier `factur-x.xml`; the catalog XMP gets the `fx` properties and their PDF/A extension schema; a document that declares no PDF/A is declared PDF/A-3B as by `declarePDFA()`, and one that declares PDF/A-3A, -3B or -3U keeps it. The profile (MINIMUM, BASIC WL, BASIC, EN 16931 or EXTENDED) is read from the XML's guideline identifier; `conformanceLevel` only asserts it. MINIMUM and BASIC WL invoices are attached as `Data`; for the other profiles `afRelationship` is required (`Data`, `Source` or `Alternative`, depending on how the PDF was produced). XRECHNUNG is not supported. The invoice is not validated, and the PDF content is not made PDF/A: validate both (veraPDF, a Factur-X checker).
+
+Upstream's `embedFacturX()` is not ported: it rests on `convertToPDFA()`, defaults the profile to EN 16931 whatever the XML states, defaults every profile to `Alternative`, and takes a string as base64 rather than as XML.
+
 ### Widget page index
 
 Get the page a form field widget is on:

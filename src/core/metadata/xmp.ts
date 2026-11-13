@@ -21,14 +21,48 @@ export const DC_NS = 'http://purl.org/dc/elements/1.1/';
 export const XMP_NS = 'http://ns.adobe.com/xap/1.0/';
 export const PDF_NS = 'http://ns.adobe.com/pdf/1.3/';
 export const PDFAID_NS = 'http://www.aiim.org/pdfa/ns/id/';
+export const PDFA_EXTENSION_NS = 'http://www.aiim.org/pdfa/ns/extension/';
+export const PDFA_SCHEMA_NS = 'http://www.aiim.org/pdfa/ns/schema#';
+export const PDFA_PROPERTY_NS = 'http://www.aiim.org/pdfa/ns/property#';
 
-/** The prefixes this library writes; PDF/A prescribes `pdfaid`. */
+/**
+ * The prefixes this library writes; PDF/A prescribes `pdfaid` and the
+ * extension schema prefixes (ISO 19005-1 6.7.8, -2/-3 6.6.2.3).
+ */
 const preferredPrefix: Record<string, string> = {
   [DC_NS]: 'dc',
   [XMP_NS]: 'xmp',
   [PDF_NS]: 'pdf',
   [PDFAID_NS]: 'pdfaid',
+  [PDFA_EXTENSION_NS]: 'pdfaExtension',
+  [PDFA_SCHEMA_NS]: 'pdfaSchema',
+  [PDFA_PROPERTY_NS]: 'pdfaProperty',
 };
+
+/** One property of a PDF/A extension schema (`pdfaProperty` fields). */
+export interface ExtensionProperty {
+  name: string;
+  valueType: string;
+  category: 'internal' | 'external';
+  description: string;
+}
+
+/** A PDF/A extension schema description (`pdfaSchema` fields). */
+export interface ExtensionSchema {
+  schema: string;
+  namespaceURI: string;
+  prefix: string;
+  properties: ExtensionProperty[];
+}
+
+/** The fields of an XMP structure, by namespace and local name. */
+interface XmpStruct {
+  /** The element new fields are added to. */
+  container: XmlElement;
+  fields: Map<string, (XmlElement | XmlAttribute)[]>;
+}
+
+const fieldKey = (ns: string | undefined, local: string) => `${ns} ${local}`;
 
 /** A packet that cannot be read or edited as this module understands XMP. */
 export class XmpError extends Error {}
@@ -307,15 +341,19 @@ export class XmpPacket {
     return kids;
   }
 
-  /** Set a simple text property, creating it if absent. */
-  setText(ns: string, local: string, value: string): void {
+  /**
+   * Set a simple text property, creating it if absent. `prefix` names the
+   * prefix a new property is written with, for a namespace this module has
+   * no preferred prefix for; an existing property keeps its own.
+   */
+  setText(ns: string, local: string, value: string, prefix?: string): void {
     assertXmlValue(value);
     const found = this.properties(ns, local);
     if (found.length > 1)
       throw new XmpError(`XMP ${local} occurs more than once`);
     const [p] = found;
     if (!p) {
-      this.addProperty(ns, local).children = [{ kind: 'text', value }];
+      this.addProperty(ns, local, prefix).children = [{ kind: 'text', value }];
       return;
     }
     if (p.form === 'attribute') {
@@ -441,9 +479,16 @@ export class XmpPacket {
    * description that declares the prefix itself, so no existing binding is
    * disturbed.
    */
-  private addProperty(ns: string, local: string): XmlElement {
-    const prefix = preferredPrefix[ns];
+  private addProperty(
+    ns: string,
+    local: string,
+    prefixOverride?: string,
+  ): XmlElement {
+    const prefix = prefixOverride ?? preferredPrefix[ns];
     if (!prefix) throw new XmpError(`XMP: no prefix known for ${ns}`);
+    if (!/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(prefix) || /^xml/i.test(prefix)) {
+      throw new XmpError(`XMP: ${prefix} is not a usable prefix`);
+    }
     let description = this.descriptions().find(
       (d) => lookupNamespace(d, prefix) === ns,
     );
@@ -467,6 +512,303 @@ export class XmpPacket {
     const property = createElement(`${prefix}:${local}`, ns, description);
     description.children.push(property);
     return property;
+  }
+
+  /**
+   * A qualified element name for `ns` usable at `context`: a prefix already
+   * bound to it in scope, else its preferred prefix declared on `context`.
+   */
+  private qualifiedName(context: XmlElement, ns: string, local: string) {
+    for (let e: XmlElement | undefined = context; e; e = e.parent) {
+      for (const a of e.attributes) {
+        if (
+          a.ns === XMLNS_NAMESPACE &&
+          a.value === ns &&
+          a.local &&
+          lookupNamespace(context, a.local) === ns
+        ) {
+          return `${a.local}:${local}`;
+        }
+      }
+    }
+    const prefix = preferredPrefix[ns];
+    if (!prefix) throw new XmpError(`XMP: no prefix known for ${ns}`);
+    if (lookupNamespace(context, prefix) !== undefined) {
+      throw new XmpError(
+        `XMP: the ${prefix} prefix is bound to another namespace`,
+      );
+    }
+    context.attributes.push({
+      name: `xmlns:${prefix}`,
+      ns: XMLNS_NAMESPACE,
+      local: prefix,
+      value: ns,
+    });
+    return `${prefix}:${local}`;
+  }
+
+  private addField(
+    container: XmlElement,
+    ns: string,
+    local: string,
+  ): XmlElement {
+    const field = createElement(
+      this.qualifiedName(container, ns, local),
+      ns,
+      container,
+    );
+    container.children.push(field);
+    return field;
+  }
+
+  private addTextField(
+    container: XmlElement,
+    ns: string,
+    local: string,
+    value: string,
+  ) {
+    this.addField(container, ns, local).children = [{ kind: 'text', value }];
+  }
+
+  /**
+   * Read an array item as a structure: `rdf:parseType="Resource"` or a
+   * single nested rdf:Description. Undefined for any other form.
+   */
+  private readStruct(item: XmlElement): XmpStruct | undefined {
+    if (!isRdf(item, 'li') || textContent(item).trim() !== '') return undefined;
+    // Only namespace declarations, plus the parseType that makes the item
+    // itself the structure; any other RDF or xml: attribute (rdf:resource,
+    // rdf:nodeID, xml:lang ...) is a form this module does not read.
+    const onlyDeclarations = (e: XmlElement, allowParseType: boolean) =>
+      e.attributes.every(
+        (a) =>
+          a.ns === XMLNS_NAMESPACE ||
+          (allowParseType && a.ns === RDF_NS && a.local === 'parseType'),
+      );
+    let container: XmlElement;
+    if (rdfAttribute(item, 'parseType')?.value === 'Resource') {
+      if (!onlyDeclarations(item, true)) return undefined;
+      container = item;
+    } else {
+      const kids = childElements(item);
+      if (
+        kids.length !== 1 ||
+        !isRdf(kids[0]!, 'Description') ||
+        !onlyDeclarations(item, false) ||
+        textContent(kids[0]!).trim() !== '' ||
+        kids[0]!.attributes.some(
+          (a) => a.ns === RDF_NS || a.ns === XML_NAMESPACE,
+        )
+      ) {
+        return undefined;
+      }
+      container = kids[0]!;
+    }
+    const fields = new Map<string, (XmlElement | XmlAttribute)[]>();
+    const add = (key: string, f: XmlElement | XmlAttribute) =>
+      fields.set(key, [...(fields.get(key) ?? []), f]);
+    for (const a of container.attributes) {
+      if (!isSyntaxAttribute(a)) add(fieldKey(a.ns, a.local), a);
+    }
+    for (const e of childElements(container)) add(fieldKey(e.ns, e.local), e);
+    return { container, fields };
+  }
+
+  /** A structure field read as simple text, stated once. */
+  private structText(struct: XmpStruct, ns: string, local: string): XmpRead {
+    const found = struct.fields.get(fieldKey(ns, local)) ?? [];
+    if (found.length === 0) return { kind: 'absent' };
+    if (found.length > 1) {
+      return { kind: 'unsupported', reason: `${local} occurs more than once` };
+    }
+    const f = found[0]!;
+    if ('children' in f) {
+      if (!simpleTextElement(f)) {
+        return {
+          kind: 'unsupported',
+          reason: `${local} is not a simple value`,
+        };
+      }
+      return { kind: 'text', value: textContent(f).trim() };
+    }
+    return { kind: 'text', value: f.value.trim() };
+  }
+
+  /** The text of a structure field that must be stated once, as text. */
+  private requiredText(struct: XmpStruct, ns: string, local: string): string {
+    const read = this.structText(struct, ns, local);
+    if (read.kind === 'text' && read.value !== '') return read.value;
+    throw new XmpError(
+      read.kind === 'unsupported'
+        ? `XMP extension schema field ${local}: ${read.reason}`
+        : `XMP extension schema lacks ${local}`,
+    );
+  }
+
+  /** The items of the pdfaExtension:schemas bag, or undefined if absent. */
+  private schemaBag(): XmlElement | undefined {
+    const found = this.properties(PDFA_EXTENSION_NS, 'schemas');
+    if (found.length === 0) return undefined;
+    if (found.length > 1 || found[0]!.form !== 'element') {
+      throw new XmpError('XMP pdfaExtension:schemas is not a single bag');
+    }
+    const bag = arrayOf(found[0]!.element);
+    if (!bag || !isRdf(bag, 'Bag')) {
+      throw new XmpError('XMP pdfaExtension:schemas is not a bag');
+    }
+    return bag;
+  }
+
+  /**
+   * The schemas the packet's PDF/A extension schema container declares,
+   * keyed by structure. Throws for any item this module cannot read.
+   */
+  private extensionSchemas(): { struct: XmpStruct; namespaceURI: string }[] {
+    const bag = this.schemaBag();
+    if (!bag) return [];
+    return childElements(bag).map((item) => {
+      const struct = this.readStruct(item);
+      if (!struct) {
+        throw new XmpError(
+          'XMP pdfaExtension:schemas has an item that is not a structure',
+        );
+      }
+      return {
+        struct,
+        namespaceURI: this.requiredText(struct, PDFA_SCHEMA_NS, 'namespaceURI'),
+      };
+    });
+  }
+
+  /** The namespace URIs the PDF/A extension schemas declare. */
+  extensionSchemaNamespaces(): string[] {
+    return this.extensionSchemas().map((s) => s.namespaceURI);
+  }
+
+  /**
+   * Make the packet declare `schema` as a PDF/A extension schema. An
+   * existing declaration of the same namespace is kept and completed: each
+   * property it lacks is added, and one it describes differently (another
+   * value type or category, a missing description) is refused, as are a
+   * declaration under another prefix and more than one declaration.
+   * Other schemas are left as they are. A throw can leave the packet partly
+   * edited, so callers edit a packet they discard on failure.
+   */
+  ensureExtensionSchema(schema: ExtensionSchema): void {
+    const matching = this.extensionSchemas().filter(
+      (s) => s.namespaceURI === schema.namespaceURI,
+    );
+    if (matching.length > 1) {
+      throw new XmpError(
+        `XMP declares the extension schema for ${schema.namespaceURI} more than once`,
+      );
+    }
+    const [existing] = matching;
+    if (!existing) {
+      let bag = this.schemaBag();
+      if (!bag) {
+        bag = this.addRdfChild(
+          this.addProperty(PDFA_EXTENSION_NS, 'schemas'),
+          'Bag',
+        );
+      }
+      const item = this.addResourceItem(bag);
+      this.addTextField(item, PDFA_SCHEMA_NS, 'schema', schema.schema);
+      this.addTextField(
+        item,
+        PDFA_SCHEMA_NS,
+        'namespaceURI',
+        schema.namespaceURI,
+      );
+      this.addTextField(item, PDFA_SCHEMA_NS, 'prefix', schema.prefix);
+      const seq = this.addRdfChild(
+        this.addField(item, PDFA_SCHEMA_NS, 'property'),
+        'Seq',
+      );
+      for (const p of schema.properties) this.addExtensionProperty(seq, p);
+      return;
+    }
+
+    const { struct } = existing;
+    this.requiredText(struct, PDFA_SCHEMA_NS, 'schema');
+    const prefix = this.requiredText(struct, PDFA_SCHEMA_NS, 'prefix');
+    if (prefix !== schema.prefix) {
+      throw new XmpError(
+        `XMP declares ${schema.namespaceURI} with prefix ${prefix}, not ${schema.prefix}`,
+      );
+    }
+    const propertyFields =
+      struct.fields.get(fieldKey(PDFA_SCHEMA_NS, 'property')) ?? [];
+    if (propertyFields.length > 1) {
+      throw new XmpError('XMP extension schema states property more than once');
+    }
+    let seq: XmlElement | undefined;
+    const declared = new Map<string, XmpStruct>();
+    const [field] = propertyFields;
+    if (field) {
+      seq = 'children' in field ? arrayOf(field) : undefined;
+      if (!seq || !isRdf(seq, 'Seq')) {
+        throw new XmpError('XMP extension schema property is not a Seq');
+      }
+      for (const item of childElements(seq)) {
+        const p = this.readStruct(item);
+        if (!p) {
+          throw new XmpError(
+            'XMP extension schema has a property that is not a structure',
+          );
+        }
+        const name = this.requiredText(p, PDFA_PROPERTY_NS, 'name');
+        if (declared.has(name)) {
+          throw new XmpError(
+            `XMP extension schema describes ${name} more than once`,
+          );
+        }
+        declared.set(name, p);
+      }
+    }
+    const missing: ExtensionProperty[] = [];
+    for (const wanted of schema.properties) {
+      const p = declared.get(wanted.name);
+      if (!p) {
+        missing.push(wanted);
+        continue;
+      }
+      const valueType = this.requiredText(p, PDFA_PROPERTY_NS, 'valueType');
+      const category = this.requiredText(p, PDFA_PROPERTY_NS, 'category');
+      this.requiredText(p, PDFA_PROPERTY_NS, 'description');
+      if (valueType !== wanted.valueType || category !== wanted.category) {
+        throw new XmpError(
+          `XMP extension schema describes ${wanted.name} as ${valueType}/${category}, not ${wanted.valueType}/${wanted.category}`,
+        );
+      }
+    }
+    if (missing.length === 0) return;
+    if (!seq) {
+      seq = this.addRdfChild(
+        this.addField(struct.container, PDFA_SCHEMA_NS, 'property'),
+        'Seq',
+      );
+    }
+    for (const p of missing) this.addExtensionProperty(seq, p);
+  }
+
+  private addResourceItem(array: XmlElement): XmlElement {
+    const item = this.addRdfChild(array, 'li');
+    item.attributes.push({
+      name: this.rdfName(item, 'parseType', true),
+      ns: RDF_NS,
+      local: 'parseType',
+      value: 'Resource',
+    });
+    return item;
+  }
+
+  private addExtensionProperty(seq: XmlElement, p: ExtensionProperty) {
+    const item = this.addResourceItem(seq);
+    this.addTextField(item, PDFA_PROPERTY_NS, 'name', p.name);
+    this.addTextField(item, PDFA_PROPERTY_NS, 'valueType', p.valueType);
+    this.addTextField(item, PDFA_PROPERTY_NS, 'category', p.category);
+    this.addTextField(item, PDFA_PROPERTY_NS, 'description', p.description);
   }
 
   serialize(): Uint8Array {
