@@ -215,11 +215,15 @@ export default class PDFDocument {
     ).parseDocument();
     const encrypted = Boolean(context.lookup(context.trailerInfo.Encrypt));
     const keyFor = (pw: string | undefined) => {
-      const fileIds = context.lookup(context.trailerInfo.ID, PDFArray);
+      const fileIds = context.trailerInfo.ID
+        ? context.lookup(context.trailerInfo.ID, PDFArray)
+        : undefined;
       const encryptDict = context.lookup(context.trailerInfo.Encrypt, PDFDict);
       return new CipherTransformFactory(
         encryptDict,
-        (fileIds.get(0) as PDFHexString).asBytes(),
+        // Match pdf.js for missing IDs. R2-R4 hash this empty byte string;
+        // R5/R6 do not use the file ID in key derivation.
+        fileIds ? (fileIds.get(0) as PDFHexString).asBytes() : new Uint8Array(),
         pw,
       );
     };
