@@ -3,7 +3,7 @@ import * as r from '../vendors/restructure/index.js';
 import type Glyph from './glyph/Glyph.js';
 import TTFGlyph, { Point } from './glyph/TTFGlyph.js';
 import WOFF2Glyph from './glyph/WOFF2Glyph.js';
-import TTFFont from './TTFFont.js';
+import TTFFont, { isOutlineGlyph } from './TTFFont.js';
 import WOFF2Directory from './tables/WOFF2Directory.js';
 import { asciiDecoder } from './utils.js';
 
@@ -19,9 +19,12 @@ interface TransformedGlyph {
  */
 export default class WOFF2Font extends TTFFont {
   override type: string = 'WOFF2';
-  _dataPos!: number;
-  _decompressed?: boolean;
-  _transformedGlyphs?: TransformedGlyph[];
+  // `declare`: these are set during super() (via _decodeDirectory) or lazily.
+  // A plain field declaration would be re-initialised to undefined after
+  // super() returns under define semantics for class fields.
+  declare _dataPos: number;
+  declare _decompressed?: boolean;
+  declare _transformedGlyphs?: TransformedGlyph[];
 
   static override probe(buffer: Uint8Array): boolean {
     return asciiDecoder.decode(buffer.slice(0, 4)) === 'wOF2';
@@ -67,17 +70,25 @@ export default class WOFF2Font extends TTFFont {
     glyph: number,
     characters: number[] = [],
   ): Glyph | null {
-    if (!this._glyphs[glyph]) {
-      if (this.directory.tables.glyf?.transformed) {
-        if (!this._transformedGlyphs) {
-          this._transformGlyfTable();
-        }
-        return (this._glyphs[glyph] = new WOFF2Glyph(glyph, characters, this));
-      } else {
-        return super._getBaseGlyph(glyph, characters);
-      }
+    // As in TTFFont, a cached COLR/CBDT glyph stays cached, but callers asking
+    // for the base glyph get the outline glyph.
+    const cached = this._glyphs[glyph];
+    if (isOutlineGlyph(cached)) {
+      return cached;
     }
-    return this._glyphs[glyph] || null;
+
+    if (this.directory.tables.glyf?.transformed) {
+      if (!this._transformedGlyphs) {
+        this._transformGlyfTable();
+      }
+      const outline = new WOFF2Glyph(glyph, characters, this);
+      if (!cached) {
+        this._glyphs[glyph] = outline;
+      }
+      return outline;
+    }
+
+    return super._getBaseGlyph(glyph, characters);
   }
 
   _transformGlyfTable(): void {

@@ -217,9 +217,8 @@ export default class GPOSProcessor extends OTProcessor {
         }
 
         const markRecord = table.markArray[markIndex];
-        const baseAnchor = table.baseArray[baseIndex][markRecord.class];
-        this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
-        return true;
+        const baseAnchor = table.baseArray[baseIndex]?.[markRecord.class];
+        return this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
       }
 
       case 5: {
@@ -259,9 +258,8 @@ export default class GPOSProcessor extends OTProcessor {
             : ligGlyph.codePoints.length - 1;
 
         const markRecord = table.markArray[markIndex];
-        const baseAnchor = ligAttach[compIndex][markRecord.class];
-        this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
-        return true;
+        const baseAnchor = ligAttach[compIndex]?.[markRecord.class];
+        return this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
       }
 
       case 6: {
@@ -311,9 +309,8 @@ export default class GPOSProcessor extends OTProcessor {
         }
 
         const markRecord = table.mark1Array[mark1Index];
-        const baseAnchor = table.mark2Array[mark2Index][markRecord.class];
-        this.applyAnchor(markRecord, baseAnchor, prevIndex);
-        return true;
+        const baseAnchor = table.mark2Array[mark2Index]?.[markRecord.class];
+        return this.applyAnchor(markRecord, baseAnchor, prevIndex);
       }
 
       case 7: // Contextual positioning
@@ -330,7 +327,15 @@ export default class GPOSProcessor extends OTProcessor {
     }
   }
 
-  applyAnchor(markRecord: any, baseAnchor: any, baseGlyphIndex: number): void {
+  applyAnchor(
+    markRecord: any,
+    baseAnchor: any,
+    baseGlyphIndex: number,
+  ): boolean {
+    // A NULL anchor offset means no anchor for this mark class. Report the
+    // lookup as not applied so later subtables can try (as HarfBuzz does).
+    if (!baseAnchor || !markRecord?.markAnchor) return false;
+
     const baseCoords = this.getAnchor(baseAnchor);
     const markCoords = this.getAnchor(markRecord.markAnchor);
 
@@ -340,6 +345,7 @@ export default class GPOSProcessor extends OTProcessor {
     markPos.xOffset = baseCoords.x - markCoords.x;
     markPos.yOffset = baseCoords.y - markCoords.y;
     this.glyphIterator.cur!.markAttachment = baseGlyphIndex;
+    return true;
   }
 
   getAnchor(anchor: any): { x: number; y: number } {

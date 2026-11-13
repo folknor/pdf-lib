@@ -5,13 +5,12 @@ import type {
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
-import {
-  Cache,
-  mergeUint8Arrays,
-  toHexStringOfMinLength,
-} from '../../utils/index.js';
+import { Cache, toHexStringOfMinLength } from '../../utils/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
-import CustomFontEmbedder from './CustomFontEmbedder.js';
+import CustomFontEmbedder, {
+  asFont,
+  encodeSubset,
+} from './CustomFontEmbedder.js';
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -24,8 +23,9 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     fontData: Uint8Array,
     customFontName?: string,
     fontFeatures?: TypeFeatures,
+    postscriptName?: string,
   ) {
-    const font = await fontkit.create(fontData);
+    const font = asFont(await fontkit.create(fontData, postscriptName));
     return new CustomFontSubsetEmbedder(
       font,
       fontData,
@@ -71,7 +71,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
   }
 
   protected override isCFF(): boolean {
-    return (this.subset as any).cff;
+    return !!(this.subset as any).cff;
   }
 
   protected override glyphId(glyph?: Glyph): number {
@@ -84,14 +84,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
   }
 
   protected override serializeFont(): Promise<Uint8Array> {
-    return new Promise((resolve, reject) => {
-      const parts: Uint8Array[] = [];
-      this.subset
-        .encodeStream()
-        .on('data', (bytes) => parts.push(bytes))
-        .on('end', () => resolve(mergeUint8Arrays(parts)))
-        .on('error' as any, (err) => reject(err));
-    });
+    return encodeSubset(this.subset);
   }
 }
 

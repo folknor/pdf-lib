@@ -382,7 +382,11 @@ export default class TTFGlyph extends Glyph {
     if (glyph.numberOfContours < 0) {
       // resolve composite glyphs
       for (const component of glyph.components ?? []) {
-        const contours = this._font.getGlyph(component.glyphID)._getContours();
+        // getGlyph() may return a COLR glyph (no _getContours) in color fonts,
+        // so ask for the outline glyph explicitly.
+        const componentGlyph = this._font._getBaseGlyph(component.glyphID);
+        if (!componentGlyph) continue;
+        const contours: Point[][] = componentGlyph._getContours();
         for (let i = 0; i < contours.length; i++) {
           const contour = contours[i];
           if (!contour) continue;

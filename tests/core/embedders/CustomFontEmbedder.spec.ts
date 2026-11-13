@@ -1,8 +1,12 @@
 import fontkit from 'src/fontkit.js';
 import fs from 'fs';
 
+import { deriveFontFlags } from '../../../src/core/embedders/FontFlags';
+import CFFFont from '../../../src/fontkit/cff/CFFFont';
+import { DecodeStream } from '../../../src/vendors/restructure/index';
 import {
   CustomFontEmbedder,
+  CustomFontSubsetEmbedder,
   decodePDFRawStream,
   PDFArray,
   PDFContext,
@@ -163,6 +167,224 @@ describe('CustomFontEmbedder', () => {
     // 'A' (glyph 0x24 in Ubuntu) must survive /W touching every glyph first.
     expect(cmap).toContain('<0024> <0041>');
   });
+
+  it('skips code points whose glyph lookup returns null', async () => {
+    const context = PDFContext.create();
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const font = embedder.font as any;
+    const original = font.glyphForCodePoint.bind(font);
+    font.glyphForCodePoint = (codePoint: number) =>
+      codePoint === 0x41 ? null : original(codePoint);
+
+    const ref = await embedder.embedIntoContext(context);
+    const cmap = toUnicodeOf(context, ref);
+    expect(cmap).not.toContain('<0024> <0041>');
+    expect(cmap).toContain('<0025> <0042>');
+  });
+
+  it('passes the PostScript name through to fontkit.create', async () => {
+    const calls: unknown[][] = [];
+    const recordingFontkit = {
+      create: (...args: [Uint8Array, string?]) => {
+        calls.push(args);
+        return fontkit.create(args[0]);
+      },
+    };
+    await CustomFontEmbedder.for(
+      recordingFontkit,
+      ubuntuFont,
+      undefined,
+      undefined,
+      'Ubuntu',
+    );
+    expect(calls[0]![1]).toBe('Ubuntu');
+  });
+
+  it('rejects font collections and missing faces with a clear error', async () => {
+    const returning = (value: unknown) => ({ create: () => value as any });
+    await expect(
+      CustomFontEmbedder.for(returning({ type: 'TTC', fonts: [] }), ubuntuFont),
+    ).rejects.toThrow(/font collection/);
+    await expect(
+      CustomFontSubsetEmbedder.for(returning(null), ubuntuFont),
+    ).rejects.toThrow(/returned no font/);
+  });
+
+  // The Fantasque WOFF wraps CFF outlines; the WOFF2 wraps TrueType outlines
+  // with a transformed glyf/loca, so both embedding routes are covered.
+  describe('with a WOFF (CFF) source font', () => {
+    const webFont = fs.readFileSync(
+      './assets/fonts/fantasque/Webfonts/FantasqueSansMono-Regular.woff',
+    );
+
+    it('embeds a decoded CFF instead of the compressed web font', async () => {
+      const context = PDFContext.create();
+      const embedder = await CustomFontEmbedder.for(fontkit, webFont);
+      const ref = await embedder.embedIntoContext(context);
+
+      const { key, bytes } = fontFileOf(context, ref);
+      expect(key).toBe('FontFile3');
+      // CFF header: major version 1 (not the 'wOFF' signature).
+      expect(bytes[0]).toBe(1);
+
+      const source = embedder.font as any;
+      const embedded = CFFFont.decode(new DecodeStream(bytes));
+      expect(embedded.topDict['CharStrings'].length).toBe(source.numGlyphs);
+
+      // Glyph ids are kept, so text encoded against the source font still
+      // addresses the same outlines.
+      for (const char of 'Ag&') {
+        const id = source.glyphForCodePoint(char.codePointAt(0)!).id;
+        expect(embedded.getCharString(id)).toEqual(
+          source['CFF '].getCharString(id),
+        );
+      }
+    });
+  });
+
+  it.each([
+    ['name-keyed', './assets/fonts/fantasque/OTF/FantasqueSansMono-Regular.otf'],
+    ['CID-keyed', './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'],
+  ])(
+    'embeds a whole %s OpenType font as an identity-mapped bare CFF',
+    async (_kind, path) => {
+      const otf = fs.readFileSync(path);
+      const context = PDFContext.create();
+      const embedder = await CustomFontEmbedder.for(fontkit, otf);
+      const ref = await embedder.embedIntoContext(context);
+
+      const cidFont = context
+        .lookup(ref, PDFDict)
+        .lookup(PDFName.of('DescendantFonts'), PDFArray)
+        .lookup(0, PDFDict);
+      expect(cidFont.get(PDFName.of('Subtype'))).toBe(
+        PDFName.of('CIDFontType0'),
+      );
+      const descriptor = cidFont.lookup(PDFName.of('FontDescriptor'), PDFDict);
+      const stream = descriptor.lookup(PDFName.of('FontFile3'), PDFRawStream);
+      expect(stream.dict.get(PDFName.of('Subtype'))).toBe(
+        PDFName.of('CIDFontType0C'),
+      );
+
+      const source = embedder.font as any;
+      const embedded = CFFFont.decode(
+        new DecodeStream(decodePDFRawStream(stream).decode()),
+      );
+      const numGlyphs = source.numGlyphs;
+      expect(embedded.isCIDFont).toBe(true);
+      expect(embedded.topDict['CharStrings'].length).toBe(numGlyphs);
+      // Identity charset: GID n is CID n for every glyph.
+      expect(embedded.topDict['charset'].ranges).toEqual([
+        expect.objectContaining({ first: 1, nLeft: numGlyphs - 2 }),
+      ]);
+
+      const gid = source.glyphForCodePoint(0x41).id;
+      expect(Array.from(embedded.getCharString(gid))).toEqual(
+        Array.from(source['CFF '].getCharString(gid)),
+      );
+    },
+    60_000,
+  );
+
+  it('maps Source Han GID 365 to CID 365 (its source CID is 621)', async () => {
+    const otf = fs.readFileSync(
+      './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
+    );
+    const embedder = await CustomFontEmbedder.for(fontkit, otf);
+    const source = embedder.font as any;
+    const context = PDFContext.create();
+    const ref = await embedder.embedIntoContext(context);
+    const { bytes } = fontFileOf(context, ref);
+    const embedded = CFFFont.decode(new DecodeStream(bytes));
+    expect(embedded.topDict['charset'].ranges).toEqual([
+      expect.objectContaining({ first: 1 }),
+    ]);
+    expect(Array.from(embedded.getCharString(365))).toEqual(
+      Array.from(source['CFF '].getCharString(365)),
+    );
+  }, 60_000);
+
+  describe('with a WOFF2 (TrueType) source font', () => {
+    const webFont = fs.readFileSync(
+      './assets/fonts/fantasque/Webfonts/FantasqueSansMono-Regular.woff2',
+    );
+
+    it('embeds a decoded sfnt instead of the compressed web font', async () => {
+      const context = PDFContext.create();
+      const embedder = await CustomFontEmbedder.for(fontkit, webFont);
+      const ref = await embedder.embedIntoContext(context);
+
+      const { key, bytes } = fontFileOf(context, ref);
+      expect(key).toBe('FontFile2');
+      expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('true');
+
+      const source = embedder.font as any;
+      const embedded = fontkit.create(bytes);
+      expect(embedded.numGlyphs).toBe(source.numGlyphs);
+
+      // Glyph ids are kept, so text encoded against the source font still
+      // addresses the same outlines and widths.
+      for (const char of 'Ag&') {
+        const id = source.glyphForCodePoint(char.codePointAt(0)!).id;
+        const expected = source.getGlyph(id);
+        const actual = embedded.getGlyph(id);
+        expect(actual.advanceWidth).toBe(expected.advanceWidth);
+        expectBBoxClose(actual.path.bbox, expected.path.bbox);
+      }
+
+      // Flattened glyphs can exceed the source maxp limits; they must be
+      // recomputed to match the encoded glyphs exactly.
+      let maxPoints = 0;
+      let maxContours = 0;
+      for (let id = 0; id < embedded.numGlyphs; id++) {
+        const decoded = embedded.getGlyph(id)._decode();
+        if (!decoded) continue;
+        expect(decoded.numberOfContours).toBeGreaterThanOrEqual(0);
+        maxPoints = Math.max(maxPoints, decoded.points.length);
+        maxContours = Math.max(maxContours, decoded.numberOfContours);
+        // Every re-encoded outline decodes back to the source outline, up to
+        // rounding scaled composite components to the integer grid.
+        const actual = embedded.getGlyph(id).path.bbox;
+        const expected = source.getGlyph(id).path.bbox;
+        for (const key of ['minX', 'minY', 'maxX', 'maxY'] as const) {
+          expect(Math.abs(actual[key] - expected[key])).toBeLessThanOrEqual(1);
+        }
+      }
+      expect(embedded.maxp.maxPoints).toBe(maxPoints);
+      expect(embedded.maxp.maxContours).toBe(maxContours);
+      expect(embedded.maxp.maxComponentElements).toBe(0);
+      expect(embedded.maxp.maxComponentDepth).toBe(0);
+    });
+
+    it('embeds a valid sfnt when subsetting', async () => {
+      const context = PDFContext.create();
+      const embedder = await CustomFontSubsetEmbedder.for(fontkit, webFont);
+      embedder.encodeText('A');
+      const ref = await embedder.embedIntoContext(context);
+
+      const embedded = fontkit.create(fontFileOf(context, ref).bytes);
+      const source = embedder.font as any;
+      const expected = source.glyphForCodePoint(0x41);
+      const actual = embedded.getGlyph(1);
+      expect(actual.advanceWidth).toBe(expected.advanceWidth);
+      expectBBoxClose(actual.path.bbox, expected.path.bbox);
+    });
+  });
+});
+
+describe('deriveFontFlags', () => {
+  it('tolerates fonts without post, head or OS/2 tables', () => {
+    expect(deriveFontFlags({} as any)).toBe(1 << 2);
+    expect(deriveFontFlags({ head: {} } as any)).toBe(1 << 2);
+  });
+
+  it('reads fixed pitch and italic flags when present', () => {
+    const flags = deriveFontFlags({
+      post: { isFixedPitch: 1 },
+      head: { macStyle: { italic: true } },
+    } as any);
+    expect(flags).toBe((1 << 0) | (1 << 2) | (1 << 6));
+  });
 });
 
 describe('compressWidths', () => {
@@ -233,7 +455,30 @@ const widthsOf = (context: PDFContext, fontRef: PDFRef) => {
   return widths;
 };
 
-const toUnicodeOf = (context: PDFContext, fontRef: PDFRef) => {
+const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
+  const descriptor = context
+    .lookup(fontRef, PDFDict)
+    .lookup(PDFName.of('DescendantFonts'), PDFArray)
+    .lookup(0, PDFDict)
+    .lookup(PDFName.of('FontDescriptor'), PDFDict);
+  const key = descriptor.has(PDFName.of('FontFile2'))
+    ? 'FontFile2'
+    : 'FontFile3';
+  const stream = descriptor.lookup(PDFName.of(key), PDFRawStream);
+  return { key, bytes: decodePDFRawStream(stream).decode() };
+};
+
+const expectBBoxClose = (
+  actual: { minX: number; minY: number; maxX: number; maxY: number },
+  expected: { minX: number; minY: number; maxX: number; maxY: number },
+) => {
+  expect(actual.minX).toBeCloseTo(expected.minX);
+  expect(actual.minY).toBeCloseTo(expected.minY);
+  expect(actual.maxX).toBeCloseTo(expected.maxX);
+  expect(actual.maxY).toBeCloseTo(expected.maxY);
+};
+
+const toUnicodeOf =(context: PDFContext, fontRef: PDFRef) => {
   const stream = context
     .lookup(fontRef, PDFDict)
     .lookup(PDFName.of('ToUnicode'), PDFRawStream);

@@ -31,12 +31,14 @@ export default class Path {
   _bbox: BBox | null;
   _cbox: BBox | null;
 
-  // These are added dynamically at the bottom of this file
-  moveTo!: (...args: number[]) => this;
-  lineTo!: (...args: number[]) => this;
-  quadraticCurveTo!: (...args: number[]) => this;
-  bezierCurveTo!: (...args: number[]) => this;
-  closePath!: (...args: number[]) => this;
+  // These are added to the prototype at the bottom of this file. `declare`
+  // keeps them type-only: a plain field would become an own property set to
+  // undefined, shadowing the prototype methods.
+  declare moveTo: (...args: number[]) => this;
+  declare lineTo: (...args: number[]) => this;
+  declare quadraticCurveTo: (...args: number[]) => this;
+  declare bezierCurveTo: (...args: number[]) => this;
+  declare closePath: (...args: number[]) => this;
 
   constructor() {
     this.commands = [];

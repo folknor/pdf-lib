@@ -35,13 +35,16 @@ const makeFontFlags = (options: FontFlagOptions) => {
 
 // From: https://github.com/foliojs/pdfkit/blob/83f5f7243172a017adcf6a7faa5547c55982c57b/lib/font/embedded.js#L123-L129
 export const deriveFontFlags = (font: Font): number => {
-  const familyClass = font['OS/2'] ? font['OS/2'].sFamilyClass : 0;
+  // fontkit returns undefined for tables that are absent or fail to decode,
+  // whatever the declared types say.
+  const { post, head } = font as Partial<Pick<Font, 'post' | 'head'>>;
+  const familyClass = font['OS/2']?.sFamilyClass ?? 0;
   const flags = makeFontFlags({
-    fixedPitch: font.post.isFixedPitch,
+    fixedPitch: !!post?.isFixedPitch,
     serif: 1 <= familyClass && familyClass <= 7,
     symbolic: true, // Assume the font uses non-latin characters
     script: familyClass === 10,
-    italic: font.head.macStyle.italic,
+    italic: !!head?.macStyle?.italic,
   });
   return flags;
 };

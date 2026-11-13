@@ -2,11 +2,13 @@ import type {
   Font,
   Fontkit,
   Glyph,
+  Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
 import {
   byAscendingId,
   Cache,
+  mergeUint8Arrays,
   sortedUniq,
   toHexStringOfMinLength,
 } from '../../utils/index.js';
@@ -28,8 +30,9 @@ class CustomFontEmbedder {
     fontData: Uint8Array,
     customName?: string,
     fontFeatures?: TypeFeatures,
+    postscriptName?: string,
   ) {
-    const font = await fontkit.create(fontData);
+    const font = asFont(await fontkit.create(fontData, postscriptName));
     return new CustomFontEmbedder(font, fontData, customName, fontFeatures);
   }
 
@@ -85,10 +88,11 @@ class CustomFontEmbedder {
   // not apply ligatures, but the width difference is negligible and
   // the performance gain is significant (~50x faster).
   widthOfTextAtSize(text: string, size: number): number {
-    const glyphs = this.font.glyphsForString(text);
+    // Entries are null where the font has no glyph object for a code point.
+    const glyphs = this.font.glyphsForString(text) as (Glyph | null)[];
     let totalWidth = 0;
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      totalWidth += glyphs[idx]!.advanceWidth;
+      totalWidth += glyphs[idx]?.advanceWidth ?? 0;
     }
     return (totalWidth * size) / this.font.unitsPerEm;
   }
@@ -146,8 +150,22 @@ class CustomFontEmbedder {
     }
   }
 
+  // Our fontkit has no `font.cff` (other fontkit builds may); it exposes the
+  // table as 'CFF ', so look in the table directory, which avoids decoding it.
   protected isCFF(): boolean {
-    return this.font.cff;
+    const font = this.font as {
+      cff?: unknown;
+      directory?: { tables?: Record<string, unknown> };
+    };
+    return !!(font.cff || font.directory?.tables?.['CFF ']);
+  }
+
+  /**
+   * /Subtype of the font file stream. CFF fonts are always written as a bare
+   * CID-keyed CFF (see serializeFont), TrueType needs none.
+   */
+  protected fontFileSubtype(): string | undefined {
+    return this.isCFF() ? 'CIDFontType0C' : undefined;
   }
 
   protected async embedCIDFontDict(context: PDFContext): Promise<PDFRef> {
@@ -210,13 +228,26 @@ class CustomFontEmbedder {
     return this.fontDescriptorRef;
   }
 
+  /**
+   * TrueType files are embedded as is. Everything else is re-encoded with
+   * every glyph kept in order (glyph ids unchanged):
+   * - WOFF/WOFF2 bytes are compressed web containers a PDF cannot hold;
+   * - CFF-flavoured OpenType: a CIDFontType0 selects glyphs by CID through the
+   *   CFF charset, but text, /W and ToUnicode use glyph ids. The original
+   *   charset of a CID-keyed font maps them differently (Source Han: GID 365
+   *   is CID 621), so the re-encoded CFF gets an identity charset (CID ==
+   *   GID). This also avoids FontFile3 /OpenType, which needs PDF 1.6.
+   */
   protected async serializeFont(): Promise<Uint8Array> {
+    if (isWebFont(this.font) || this.isCFF()) {
+      return encodeWholeFont(this.font);
+    }
     return this.fontData;
   }
 
   protected async embedFontStream(context: PDFContext): Promise<PDFRef> {
     const fontStream = context.flateStream(await this.serializeFont(), {
-      Subtype: this.isCFF() ? 'CIDFontType0C' : undefined,
+      Subtype: this.fontFileSubtype(),
     });
 
     // Reuse existing ref to avoid orphans on re-embedding
@@ -278,14 +309,78 @@ class CustomFontEmbedder {
   }
 
   private allGlyphsInFontSortedById = (): Glyph[] => {
-    const glyphs: Glyph[] = new Array(this.font.characterSet.length);
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const codePoint = this.font.characterSet[idx]!;
-      glyphs[idx] = this.font.glyphForCodePoint(codePoint);
+    const { characterSet } = this.font;
+    const glyphs: Glyph[] = [];
+    for (let idx = 0, len = characterSet.length; idx < len; idx++) {
+      // fontkit returns null when it cannot build a glyph object for the
+      // code point; the declared return type omits that.
+      const glyph = this.font.glyphForCodePoint(characterSet[idx]!) as
+        | Glyph
+        | null;
+      if (glyph) glyphs.push(glyph);
     }
     return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);
   };
 }
+
+/**
+ * Narrow a `fontkit.create()` result to a single face. Font collections
+ * (.ttc/.dfont) and unresolved faces (`null`) get a clear error instead of
+ * failing later on a missing method.
+ */
+export const asFont = (font: unknown): Font => {
+  if (!font || typeof font !== 'object') {
+    throw new Error(
+      'fontkit.create() returned no font. Check the font bytes, or the PostScript name used to select a face from a collection.',
+    );
+  }
+  const candidate = font as Partial<Font> & { fonts?: unknown };
+  if (
+    typeof candidate.layout !== 'function' ||
+    typeof candidate.glyphForCodePoint !== 'function'
+  ) {
+    if (Array.isArray(candidate.fonts)) {
+      throw new Error(
+        'fontkit.create() returned a font collection (e.g. .ttc/.dfont). Select a face by its PostScript name, or embed a single-font file.',
+      );
+    }
+    throw new Error('fontkit.create() did not return a usable font.');
+  }
+  return font as Font;
+};
+
+const isWebFont = (font: Font): boolean => {
+  const { type } = font as { type?: unknown };
+  return type === 'WOFF' || type === 'WOFF2';
+};
+
+/**
+ * WOFF/WOFF2 bytes are a compressed web container, not something a PDF
+ * FontFile2/FontFile3 stream may hold. Re-encode the decoded font through a
+ * subset that keeps every glyph, in order, so glyph ids (and therefore the
+ * Identity CID mapping, /W and ToUnicode) are unchanged. Like the subset path,
+ * the result carries only the tables PDF needs (TrueType: glyf, loca, hmtx,
+ * head, hhea, maxp, cvt, prep, fpgm; CFF: a bare CFF table).
+ */
+const encodeWholeFont = (font: Font): Promise<Uint8Array> => {
+  const subset = font.createSubset();
+  for (let id = 1, len = font.numGlyphs; id < len; id++) {
+    if (subset.includeGlyph(id) !== id) {
+      throw new Error(`Glyph ${id} was renumbered while re-encoding the font`);
+    }
+  }
+  return encodeSubset(subset);
+};
+
+export const encodeSubset = (subset: Subset): Promise<Uint8Array> =>
+  new Promise((resolve, reject) => {
+    const parts: Uint8Array[] = [];
+    subset
+      .encodeStream()
+      .on('data', (bytes) => parts.push(bytes))
+      .on('end', () => resolve(mergeUint8Arrays(parts)))
+      .on('error' as any, (err) => reject(err));
+  });
 
 /** Runs of at least this many equal widths are written as `first last w`. */
 const MIN_WIDTH_RANGE = 4;
