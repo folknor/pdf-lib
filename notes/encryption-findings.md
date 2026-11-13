@@ -79,10 +79,3 @@ no longer writes R5.
 `createEncryptionKey20` in `src/core/crypto.ts` takes `_perms` and ignores it.
 ISO 32000-2 Algorithm 13 decrypts /Perms with the file key and checks the
 'adb' marker and that the permissions match /P; a mismatch is tampering.
-
-## The owner-password fallback runs the R2-R4 algorithm for V5 dictionaries
-
-When neither candidate opens a /V 5 file, `CipherTransformFactory` falls
-through to `decodeUserPassword` and `prepareKeyData`, the RC4/MD5 routines of
-revisions 2-4, with the revision 5/6 /O and /U. It cannot succeed; it should
-fail straight to 'Password incorrect'.

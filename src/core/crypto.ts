@@ -1742,7 +1742,7 @@ class CipherTransformFactory {
     }
     if (!(encryptionKey || password)) {
       throw new Error('NEEDS PASSWORD');
-    } else if (!encryptionKey && password) {
+    } else if (!encryptionKey && password && algorithm !== 5) {
       // Attempting use the password as an owner password
       const decodedPassword = this.decodeUserPassword(
         passwordBytes!,

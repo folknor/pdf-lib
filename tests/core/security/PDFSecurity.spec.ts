@@ -297,6 +297,35 @@ const decryptWith = (
 };
 
 describe('PDFSecurity', () => {
+  it.each([5, 6])(
+    'rejects incorrect V5/R%i passwords without trying the legacy algorithms',
+    (revision) => {
+      resetRandom();
+      const context = contextFor(1, 7);
+      const security: any = PDFSecurity.create(context, {
+        userPassword: USER_PASSWORD,
+        ownerPassword: OWNER_PASSWORD,
+      }).encrypt();
+      const dict = context.lookup(context.trailerInfo.Encrypt) as PDFDict;
+      // Neither candidate matches these entries under either revision.
+      dict.set(PDFName.of('R'), PDFNumber.of(revision));
+      const decode = vi.spyOn(CipherTransformFactory.prototype, 'decodeUserPassword');
+      const prepare = vi.spyOn(CipherTransformFactory.prototype, 'prepareKeyData');
+      const modern = vi.spyOn(CipherTransformFactory.prototype, 'createEncryptionKey20');
+      try {
+        expect(() => new CipherTransformFactory(dict, security.id, 'wrong-\u00a0é'))
+          .toThrow('Password incorrect');
+        expect(modern).toHaveBeenCalledTimes(2);
+        expect(decode).not.toHaveBeenCalled();
+        expect(prepare).not.toHaveBeenCalled();
+      } finally {
+        decode.mockRestore();
+        prepare.mockRestore();
+        modern.mockRestore();
+      }
+    },
+  );
+
   it('requires a password', () => {
     expect(() => PDFSecurity.create(contextFor(1, 7), {})).toThrow(
       'Either an owner password or a user password must be specified.',
