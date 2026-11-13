@@ -3,8 +3,7 @@
  * Originally from https://github.com/Hopding/standard-fonts
  * Absorbed and converted for pdf-lib
  */
-import AllEncodingsCompressed from './data/all-encodings.compressed.json' with {
-    type: 'json'
+import AllEncodingsCompressed from './data/all-encodings.compressed.json' with { type: 'json'
 };
 import { decompressJson, padStart } from './utils.js';
 const decompressedEncodings = decompressJson(AllEncodingsCompressed);

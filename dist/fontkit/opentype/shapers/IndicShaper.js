@@ -1,8 +1,8 @@
 // @ts-nocheck
-import StateMachine from 'dfa';
 import { unzlibSync } from 'fflate';
-import UnicodeTrie from 'unicode-trie';
+import StateMachine from '../../../vendors/dfa/index.js';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
+import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
 import * as Script from '../../layout/Script.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';

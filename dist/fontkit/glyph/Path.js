@@ -16,12 +16,6 @@ export default class Path {
     commands;
     _bbox;
     _cbox;
-    // These are added dynamically at the bottom of this file
-    moveTo;
-    lineTo;
-    quadraticCurveTo;
-    bezierCurveTo;
-    closePath;
     constructor() {
         this.commands = [];
         this._bbox = null;

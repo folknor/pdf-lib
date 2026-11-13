@@ -59,8 +59,14 @@ class LZWStream extends DecodeStream {
         let buffer = this.ensureBuffer(this.bufferLength + estimatedDecodedSize);
         for (i = 0; i < blockSize; i++) {
             const code = this.readBits(codeLength);
+            // End of input: readBits returned null. Without this, null would be
+            // decoded as code 0 and pad the output with zero bytes.
+            if (code === null) {
+                delete this.lzwState;
+                break;
+            }
             const hasPrev = currentSequenceLength > 0;
-            if (!code || code < 256) {
+            if (code < 256) {
                 currentSequence[0] = code;
                 currentSequenceLength = 1;
             }

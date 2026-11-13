@@ -1,11 +1,18 @@
 import * as r from '../vendors/restructure/index.js';
 import CmapProcessor from './CmapProcessor.js';
 import BBox from './glyph/BBox.js';
+import CFFGlyph from './glyph/CFFGlyph.js';
 import type Glyph from './glyph/Glyph.js';
 import GlyphVariationProcessor from './glyph/GlyphVariationProcessor.js';
+import TTFGlyph from './glyph/TTFGlyph.js';
 import type GlyphRun from './layout/GlyphRun.js';
 import LayoutEngine from './layout/LayoutEngine.js';
 import type Subset from './subset/Subset.js';
+/**
+ * Whether a cached glyph carries outlines (glyf/CFF, including SBIX and WOFF2
+ * glyphs, which extend TTFGlyph), as opposed to a COLR or CBDT wrapper.
+ */
+export declare const isOutlineGlyph: (glyph: Glyph | undefined) => glyph is TTFGlyph | CFFGlyph;
 /**
  * This is the base class for all SFNT-based font formats in fontkit.
  * It supports TrueType, and PostScript glyphs, and several color glyph formats.
@@ -178,6 +185,11 @@ export default class TTFFont {
      */
     get availableFeatures(): string[];
     getAvailableFeatures(script?: string, language?: string): string[];
+    /**
+     * Returns the outline (glyf/CFF) glyph for the given id. The glyph cache may
+     * already hold a color or bitmap glyph (COLR, CBDT) for this id; that one is
+     * kept in the cache, and a fresh outline glyph is returned instead.
+     */
     _getBaseGlyph(glyph: number, characters?: number[]): Glyph | null;
     /**
      * Returns a glyph object for the given glyph id.

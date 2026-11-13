@@ -1,14 +1,14 @@
-import { Cache, mergeUint8Arrays, toHexStringOfMinLength, } from '../../utils/index.js';
+import { Cache, toHexStringOfMinLength } from '../../utils/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
-import CustomFontEmbedder from './CustomFontEmbedder.js';
+import CustomFontEmbedder, { asFont, encodeSubset, } from './CustomFontEmbedder.js';
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
  * this class borrows from:
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/jpeg.coffee
  */
 class CustomFontSubsetEmbedder extends CustomFontEmbedder {
-    static async for(fontkit, fontData, customFontName, fontFeatures) {
-        const font = await fontkit.create(fontData);
+    static async for(fontkit, fontData, customFontName, fontFeatures, postscriptName) {
+        const font = asFont(await fontkit.create(fontData, postscriptName));
         return new CustomFontSubsetEmbedder(font, fontData, customFontName, fontFeatures);
     }
     subset;
@@ -35,20 +35,17 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
         return PDFHexString.of(hexCodes.join(''));
     }
     isCFF() {
-        return this.subset.cff;
+        return !!this.subset.cff;
     }
     glyphId(glyph) {
         return glyph ? this.glyphIdMap.get(glyph.id) : -1;
     }
+    // A subset only carries the glyphs actually used, all of which are cached.
+    glyphsForWidths() {
+        return this.glyphCache.access();
+    }
     serializeFont() {
-        return new Promise((resolve, reject) => {
-            const parts = [];
-            this.subset
-                .encodeStream()
-                .on('data', (bytes) => parts.push(bytes))
-                .on('end', () => resolve(mergeUint8Arrays(parts)))
-                .on('error', (err) => reject(err));
-        });
+        return encodeSubset(this.subset);
     }
 }
 export default CustomFontSubsetEmbedder;

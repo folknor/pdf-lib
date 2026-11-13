@@ -57,8 +57,13 @@ class PDFStreamWriter extends PDFWriter {
                 object instanceof PDFPageTree ||
                 object instanceof PDFPageLeaf ||
                 ref.generationNumber !== 0 ||
+                // Signature and document timestamp dicts must stay top-level objects
+                // so their /Contents byte ranges can be located and filled in.
                 (object instanceof PDFDict &&
-                    object.lookup(PDFName.of('Type')) === PDFName.of('Sig'));
+                    (object.lookup(PDFName.of('Type')) ===
+                        PDFName.of('Sig') ||
+                        object.lookup(PDFName.of('Type')) ===
+                            PDFName.of('DocTimeStamp')));
             if (shouldNotCompress) {
                 uncompressedObjects.push(indirectObject);
                 if (this.shouldCompress)

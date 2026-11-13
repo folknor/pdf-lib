@@ -2,13 +2,13 @@ import type { CipherTransformFactory } from '../crypto.js';
 import PDFContext from '../PDFContext.js';
 import PDFObjectParser from './PDFObjectParser.js';
 declare class PDFParser extends PDFObjectParser {
-    static forBytesWithOptions: (pdfBytes: Uint8Array, objectsPerTick?: number, throwOnInvalidObject?: boolean, warnOnInvalidObjects?: boolean, capNumbers?: boolean, cryptoFactory?: CipherTransformFactory, forIncrementalUpdate?: boolean) => PDFParser;
+    static forBytesWithOptions: (pdfBytes: Uint8Array, objectsPerTick?: number, throwOnInvalidObject?: boolean, warnOnInvalidObjects?: boolean, capNumbers?: boolean, cryptoFactory?: CipherTransformFactory, forIncrementalUpdate?: boolean, maxDecodedStreamSize?: number) => PDFParser;
     private readonly objectsPerTick;
     private readonly throwOnInvalidObject;
     private readonly warnOnInvalidObjects;
     private alreadyParsed;
     private parsedObjects;
-    constructor(pdfBytes: Uint8Array, objectsPerTick?: number, throwOnInvalidObject?: boolean, warnOnInvalidObjects?: boolean, capNumbers?: boolean, cryptoFactory?: CipherTransformFactory, forIncrementalUpdate?: boolean);
+    constructor(pdfBytes: Uint8Array, objectsPerTick?: number, throwOnInvalidObject?: boolean, warnOnInvalidObjects?: boolean, capNumbers?: boolean, cryptoFactory?: CipherTransformFactory, forIncrementalUpdate?: boolean, maxDecodedStreamSize?: number);
     parseDocument(): Promise<PDFContext>;
     private maybeRecoverRoot;
     private parseHeader;

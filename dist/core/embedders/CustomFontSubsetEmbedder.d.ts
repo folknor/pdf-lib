@@ -7,7 +7,7 @@ import CustomFontEmbedder from './CustomFontEmbedder.js';
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/jpeg.coffee
  */
 declare class CustomFontSubsetEmbedder extends CustomFontEmbedder {
-    static for(fontkit: Fontkit, fontData: Uint8Array, customFontName?: string, fontFeatures?: TypeFeatures): Promise<CustomFontSubsetEmbedder>;
+    static for(fontkit: Fontkit, fontData: Uint8Array, customFontName?: string, fontFeatures?: TypeFeatures, postscriptName?: string): Promise<CustomFontSubsetEmbedder>;
     private readonly subset;
     private readonly glyphs;
     private readonly glyphIdMap;
@@ -15,6 +15,7 @@ declare class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     encodeText(text: string): PDFHexString;
     protected isCFF(): boolean;
     protected glyphId(glyph?: Glyph): number;
+    protected glyphsForWidths(): Glyph[];
     protected serializeFont(): Promise<Uint8Array>;
 }
 export default CustomFontSubsetEmbedder;

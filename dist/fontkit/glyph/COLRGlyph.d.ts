@@ -7,9 +7,9 @@ interface COLRColor {
     alpha: number;
 }
 declare class COLRLayer {
-    glyph: Glyph;
+    glyph: Glyph | null;
     color: COLRColor;
-    constructor(glyph: Glyph, color: COLRColor);
+    constructor(glyph: Glyph | null, color: COLRColor);
 }
 /**
  * Represents a color (e.g. emoji) glyph in Microsoft's COLR format.
@@ -21,9 +21,10 @@ export default class COLRGlyph extends Glyph {
     _getBBox(): BBox;
     /**
      * Returns an array of objects containing the glyph and color for
-     * each layer in the composite color glyph.
+     * each layer in the composite color glyph, or null for COLR v1 fonts,
+     * whose paint graphs have no v0 base glyph records.
      */
-    get layers(): COLRLayer[];
+    get layers(): COLRLayer[] | null;
     render(ctx: any, size: number): void;
 }
 export {};

@@ -68,7 +68,7 @@ declare class PDFSecurity {
     private initialize;
     private initializeV1V2V4;
     private initializeV5;
-    getEncryptFn(obj: number, gen: number): (buffer: Uint8Array) => Uint8Array<ArrayBufferLike>;
+    getEncryptFn(obj: number, gen: number): EncryptFn;
     encrypt(): this;
 }
 export default PDFSecurity;

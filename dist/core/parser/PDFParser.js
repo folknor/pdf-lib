@@ -2,7 +2,7 @@ import { waitForTick } from '../../utils/index.js';
 import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
 import PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
-import { MissingKeywordError, MissingPDFHeaderError, PDFInvalidObjectParsingError, ReparseError, StalledParserError, } from '../errors.js';
+import { DecodedStreamTooLargeError, MissingKeywordError, MissingPDFHeaderError, PDFInvalidObjectParsingError, ReparseError, StalledParserError, } from '../errors.js';
 import PDFDict from '../objects/PDFDict.js';
 import PDFInvalidObject from '../objects/PDFInvalidObject.js';
 import PDFName from '../objects/PDFName.js';
@@ -18,19 +18,22 @@ import PDFObjectParser from './PDFObjectParser.js';
 import PDFObjectStreamParser from './PDFObjectStreamParser.js';
 import PDFXRefStreamParser from './PDFXRefStreamParser.js';
 class PDFParser extends PDFObjectParser {
-    static forBytesWithOptions = (pdfBytes, objectsPerTick, throwOnInvalidObject, warnOnInvalidObjects, capNumbers, cryptoFactory, forIncrementalUpdate) => new PDFParser(pdfBytes, objectsPerTick, throwOnInvalidObject, warnOnInvalidObjects, capNumbers, cryptoFactory, forIncrementalUpdate);
+    static forBytesWithOptions = (pdfBytes, objectsPerTick, throwOnInvalidObject, warnOnInvalidObjects, capNumbers, cryptoFactory, forIncrementalUpdate, maxDecodedStreamSize) => new PDFParser(pdfBytes, objectsPerTick, throwOnInvalidObject, warnOnInvalidObjects, capNumbers, cryptoFactory, forIncrementalUpdate, maxDecodedStreamSize);
     objectsPerTick;
     throwOnInvalidObject;
     warnOnInvalidObjects;
     alreadyParsed = false;
     parsedObjects = 0;
-    constructor(pdfBytes, objectsPerTick = Infinity, throwOnInvalidObject = false, warnOnInvalidObjects = false, capNumbers = false, cryptoFactory, forIncrementalUpdate = false) {
+    constructor(pdfBytes, objectsPerTick = Infinity, throwOnInvalidObject = false, warnOnInvalidObjects = false, capNumbers = false, cryptoFactory, forIncrementalUpdate = false, maxDecodedStreamSize) {
         super(ByteStream.of(pdfBytes), PDFContext.create(), capNumbers, cryptoFactory);
         this.objectsPerTick = objectsPerTick;
         this.throwOnInvalidObject = throwOnInvalidObject;
         this.warnOnInvalidObjects = warnOnInvalidObjects;
         this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
         this.context.pdfFileDetails.pdfSize = pdfBytes.length;
+        // Set before parsing so object/xref streams decoded during the parse
+        // are capped too.
+        this.context.maxDecodedStreamSize = maxDecodedStreamSize;
         if (forIncrementalUpdate) {
             this.context.pdfFileDetails.originalBytes = pdfBytes;
         }
@@ -50,6 +53,10 @@ class PDFParser extends PDFObjectParser {
             }
             prevOffset = offset;
         }
+        // Now that every object is known, fix up streams whose indirect /Length
+        // pointed forward (#180). Object and xref streams were already consumed
+        // during parsing and are not revisited.
+        this.resolvePendingStreamLengths();
         this.maybeRecoverRoot();
         if (this.context.lookup(PDFRef.of(0))) {
             console.warn('Removing parsed object: 0 0 R');
@@ -170,7 +177,11 @@ class PDFParser extends PDFObjectParser {
             try {
                 await this.parseIndirectObject();
             }
-            catch {
+            catch (e) {
+                // A decompression-bomb guard must abort loading, not be swallowed
+                // into an invalid object.
+                if (e instanceof DecodedStreamTooLargeError)
+                    throw e;
                 // TODO: Add tracing/logging mechanism to track when this happens!
                 this.bytes.moveTo(initialOffset);
                 this.tryToParseInvalidIndirectObject();

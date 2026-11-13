@@ -208,7 +208,7 @@ export declare const drawTextField: (options: {
     padding: number | PDFNumber;
     borderDashArray?: (number | PDFNumber)[];
     borderDashPhase?: number | PDFNumber;
-    borderStyle?: "S" | "D" | "B" | "I" | "U";
+    borderStyle?: 'S' | 'D' | 'B' | 'I' | 'U';
 }) => PDFOperator[];
 export declare const drawOptionList: (options: {
     x: number | PDFNumber;

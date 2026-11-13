@@ -44,7 +44,8 @@ class PDFAcroChoice extends PDFAcroTerminal {
                 const val = values[idx].decodeText();
                 indices[idx] = options.findIndex((o) => val === (o.display || o.value).decodeText());
             }
-            this.dict.set(PDFName.of('I'), this.dict.context.obj(indices.sort()));
+            // /I must be in ascending numeric order (the default sort is lexical)
+            this.dict.set(PDFName.of('I'), this.dict.context.obj(indices.sort((a, b) => a - b)));
         }
         else {
             this.dict.delete(PDFName.of('I'));

@@ -3,48 +3,34 @@
  * Originally from https://github.com/Hopding/standard-fonts
  * Absorbed and converted for pdf-lib
  */
-import CourierCompressed from './data/Courier.compressed.json' with {
-    type: 'json'
+import CourierCompressed from './data/Courier.compressed.json' with { type: 'json'
 };
 // Import compressed font data
-import CourierBoldCompressed from './data/Courier-Bold.compressed.json' with {
-    type: 'json'
+import CourierBoldCompressed from './data/Courier-Bold.compressed.json' with { type: 'json'
 };
-import CourierBoldObliqueCompressed from './data/Courier-BoldOblique.compressed.json' with {
-    type: 'json'
+import CourierBoldObliqueCompressed from './data/Courier-BoldOblique.compressed.json' with { type: 'json'
 };
-import CourierObliqueCompressed from './data/Courier-Oblique.compressed.json' with {
-    type: 'json'
+import CourierObliqueCompressed from './data/Courier-Oblique.compressed.json' with { type: 'json'
 };
-import HelveticaCompressed from './data/Helvetica.compressed.json' with {
-    type: 'json'
+import HelveticaCompressed from './data/Helvetica.compressed.json' with { type: 'json'
 };
-import HelveticaBoldCompressed from './data/Helvetica-Bold.compressed.json' with {
-    type: 'json'
+import HelveticaBoldCompressed from './data/Helvetica-Bold.compressed.json' with { type: 'json'
 };
-import HelveticaBoldObliqueCompressed from './data/Helvetica-BoldOblique.compressed.json' with {
-    type: 'json'
+import HelveticaBoldObliqueCompressed from './data/Helvetica-BoldOblique.compressed.json' with { type: 'json'
 };
-import HelveticaObliqueCompressed from './data/Helvetica-Oblique.compressed.json' with {
-    type: 'json'
+import HelveticaObliqueCompressed from './data/Helvetica-Oblique.compressed.json' with { type: 'json'
 };
-import SymbolCompressed from './data/Symbol.compressed.json' with {
-    type: 'json'
+import SymbolCompressed from './data/Symbol.compressed.json' with { type: 'json'
 };
-import TimesBoldCompressed from './data/Times-Bold.compressed.json' with {
-    type: 'json'
+import TimesBoldCompressed from './data/Times-Bold.compressed.json' with { type: 'json'
 };
-import TimesBoldItalicCompressed from './data/Times-BoldItalic.compressed.json' with {
-    type: 'json'
+import TimesBoldItalicCompressed from './data/Times-BoldItalic.compressed.json' with { type: 'json'
 };
-import TimesItalicCompressed from './data/Times-Italic.compressed.json' with {
-    type: 'json'
+import TimesItalicCompressed from './data/Times-Italic.compressed.json' with { type: 'json'
 };
-import TimesRomanCompressed from './data/Times-Roman.compressed.json' with {
-    type: 'json'
+import TimesRomanCompressed from './data/Times-Roman.compressed.json' with { type: 'json'
 };
-import ZapfDingbatsCompressed from './data/ZapfDingbats.compressed.json' with {
-    type: 'json'
+import ZapfDingbatsCompressed from './data/ZapfDingbats.compressed.json' with { type: 'json'
 };
 import { decompressJson } from './utils.js';
 const compressedJsonForFontName = {

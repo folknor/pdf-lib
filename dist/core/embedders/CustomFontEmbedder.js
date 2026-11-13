@@ -1,4 +1,4 @@
-import { byAscendingId, Cache, sortedUniq, toHexStringOfMinLength, } from '../../utils/index.js';
+import { byAscendingId, Cache, mergeUint8Arrays, sortedUniq, toHexStringOfMinLength, } from '../../utils/index.js';
 import PDFHexString from '../objects/PDFHexString.js';
 import PDFString from '../objects/PDFString.js';
 import { createCmap } from './CMap.js';
@@ -9,8 +9,8 @@ import { deriveFontFlags } from './FontFlags.js';
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/jpeg.coffee
  */
 class CustomFontEmbedder {
-    static async for(fontkit, fontData, customName, fontFeatures) {
-        const font = await fontkit.create(fontData);
+    static async for(fontkit, fontData, customName, fontFeatures, postscriptName) {
+        const font = asFont(await fontkit.create(fontData, postscriptName));
         return new CustomFontEmbedder(font, fontData, customName, fontFeatures);
     }
     font;
@@ -54,10 +54,11 @@ class CustomFontEmbedder {
     // not apply ligatures, but the width difference is negligible and
     // the performance gain is significant (~50x faster).
     widthOfTextAtSize(text, size) {
+        // Entries are null where the font has no glyph object for a code point.
         const glyphs = this.font.glyphsForString(text);
         let totalWidth = 0;
         for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-            totalWidth += glyphs[idx].advanceWidth;
+            totalWidth += glyphs[idx]?.advanceWidth ?? 0;
         }
         return (totalWidth * size) / this.font.unitsPerEm;
     }
@@ -101,8 +102,18 @@ class CustomFontEmbedder {
             return context.register(fontDict);
         }
     }
+    // Our fontkit has no `font.cff` (other fontkit builds may); it exposes the
+    // table as 'CFF ', so look in the table directory, which avoids decoding it.
     isCFF() {
-        return this.font.cff;
+        const font = this.font;
+        return !!(font.cff || font.directory?.tables?.['CFF ']);
+    }
+    /**
+     * /Subtype of the font file stream. CFF fonts are always written as a bare
+     * CID-keyed CFF (see serializeFont), TrueType needs none.
+     */
+    fontFileSubtype() {
+        return this.isCFF() ? 'CIDFontType0C' : undefined;
     }
     async embedCIDFontDict(context) {
         const fontDescriptorRef = await this.embedFontDescriptor(context);
@@ -157,12 +168,25 @@ class CustomFontEmbedder {
         }
         return this.fontDescriptorRef;
     }
+    /**
+     * TrueType files are embedded as is. Everything else is re-encoded with
+     * every glyph kept in order (glyph ids unchanged):
+     * - WOFF/WOFF2 bytes are compressed web containers a PDF cannot hold;
+     * - CFF-flavoured OpenType: a CIDFontType0 selects glyphs by CID through the
+     *   CFF charset, but text, /W and ToUnicode use glyph ids. The original
+     *   charset of a CID-keyed font maps them differently (Source Han: GID 365
+     *   is CID 621), so the re-encoded CFF gets an identity charset (CID ==
+     *   GID). This also avoids FontFile3 /OpenType, which needs PDF 1.6.
+     */
     async serializeFont() {
+        if (isWebFont(this.font) || this.isCFF()) {
+            return encodeWholeFont(this.font);
+        }
         return this.fontData;
     }
     async embedFontStream(context) {
         const fontStream = context.flateStream(await this.serializeFont(), {
-            Subtype: this.isCFF() ? 'CIDFontType0C' : undefined,
+            Subtype: this.fontFileSubtype(),
         });
         // Reuse existing ref to avoid orphans on re-embedding
         if (this.fontStreamRef) {
@@ -174,7 +198,11 @@ class CustomFontEmbedder {
         return this.fontStreamRef;
     }
     embedUnicodeCmap(context) {
-        const cmap = createCmap(this.glyphCache.access(), this.glyphId.bind(this));
+        // A bfchar entry with an empty destination (`<0003> <>`) is malformed.
+        const glyphs = this.glyphCache
+            .access()
+            .filter((glyph) => glyph.codePoints.length > 0);
+        const cmap = createCmap(glyphs, this.glyphId.bind(this));
         const cmapStream = context.flateStream(cmap);
         // Reuse existing ref to avoid orphans on re-embedding
         if (this.unicodeCmapRef) {
@@ -188,36 +216,129 @@ class CustomFontEmbedder {
     glyphId(glyph) {
         return glyph ? glyph.id : -1;
     }
-    computeWidths() {
-        const glyphs = this.glyphCache.access();
-        const widths = [];
-        let currSection = [];
-        for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-            const currGlyph = glyphs[idx];
-            const prevGlyph = glyphs[idx - 1];
-            const currGlyphId = this.glyphId(currGlyph);
-            const prevGlyphId = this.glyphId(prevGlyph);
-            if (idx === 0) {
-                widths.push(currGlyphId);
-            }
-            else if (currGlyphId - prevGlyphId !== 1) {
-                widths.push(currSection);
-                widths.push(currGlyphId);
-                currSection = [];
-            }
-            currSection.push(currGlyph.advanceWidth * this.scale);
+    /**
+     * The glyphs whose widths go into /W. For a full (non-subset) embed this is
+     * every glyph in the font, so glyphs reachable only through shaping
+     * (ligatures, alternates) still get their real width instead of /DW.
+     */
+    glyphsForWidths() {
+        // fontkit caches glyph objects by id, and the first creation fixes their
+        // codePoints. getGlyph(id) without code points would leave mapped glyphs
+        // with empty codePoints and drop them from ToUnicode, so create the
+        // characterSet glyphs (with their code points) first.
+        this.glyphCache.access();
+        const glyphs = [];
+        for (let id = 0, len = this.font.numGlyphs; id < len; id++) {
+            const glyph = this.font.getGlyph(id);
+            if (glyph)
+                glyphs.push(glyph);
         }
-        widths.push(currSection);
-        return widths;
+        return glyphs;
+    }
+    computeWidths() {
+        return compressWidths(this.glyphsForWidths().map((glyph) => [
+            this.glyphId(glyph),
+            glyph.advanceWidth * this.scale,
+        ]));
     }
     allGlyphsInFontSortedById = () => {
-        const glyphs = new Array(this.font.characterSet.length);
-        for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-            const codePoint = this.font.characterSet[idx];
-            glyphs[idx] = this.font.glyphForCodePoint(codePoint);
+        const { characterSet } = this.font;
+        const glyphs = [];
+        for (let idx = 0, len = characterSet.length; idx < len; idx++) {
+            // fontkit returns null when it cannot build a glyph object for the
+            // code point; the declared return type omits that.
+            const glyph = this.font.glyphForCodePoint(characterSet[idx]);
+            if (glyph)
+                glyphs.push(glyph);
         }
         return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);
     };
 }
+/**
+ * Narrow a `fontkit.create()` result to a single face. Font collections
+ * (.ttc/.dfont) and unresolved faces (`null`) get a clear error instead of
+ * failing later on a missing method.
+ */
+export const asFont = (font) => {
+    if (!font || typeof font !== 'object') {
+        throw new Error('fontkit.create() returned no font. Check the font bytes, or the PostScript name used to select a face from a collection.');
+    }
+    const candidate = font;
+    if (typeof candidate.layout !== 'function' ||
+        typeof candidate.glyphForCodePoint !== 'function') {
+        if (Array.isArray(candidate.fonts)) {
+            throw new Error('fontkit.create() returned a font collection (e.g. .ttc/.dfont). Select a face by its PostScript name, or embed a single-font file.');
+        }
+        throw new Error('fontkit.create() did not return a usable font.');
+    }
+    return font;
+};
+const isWebFont = (font) => {
+    const { type } = font;
+    return type === 'WOFF' || type === 'WOFF2';
+};
+/**
+ * WOFF/WOFF2 bytes are a compressed web container, not something a PDF
+ * FontFile2/FontFile3 stream may hold. Re-encode the decoded font through a
+ * subset that keeps every glyph, in order, so glyph ids (and therefore the
+ * Identity CID mapping, /W and ToUnicode) are unchanged. Like the subset path,
+ * the result carries only the tables PDF needs (TrueType: glyf, loca, hmtx,
+ * head, hhea, maxp, cvt, prep, fpgm; CFF: a bare CFF table).
+ */
+const encodeWholeFont = (font) => {
+    const subset = font.createSubset();
+    for (let id = 1, len = font.numGlyphs; id < len; id++) {
+        if (subset.includeGlyph(id) !== id) {
+            throw new Error(`Glyph ${id} was renumbered while re-encoding the font`);
+        }
+    }
+    return encodeSubset(subset);
+};
+export const encodeSubset = (subset) => new Promise((resolve, reject) => {
+    const parts = [];
+    subset
+        .encodeStream()
+        .on('data', (bytes) => parts.push(bytes))
+        .on('end', () => resolve(mergeUint8Arrays(parts)))
+        .on('error', (err) => reject(err));
+});
+/** Runs of at least this many equal widths are written as `first last w`. */
+const MIN_WIDTH_RANGE = 4;
+/**
+ * Build a CIDFont /W array from `[cid, width]` pairs (sorted by ascending,
+ * unique cid). Consecutive cids go into `c [w1 w2 ...]` sections, and runs of
+ * identical widths use the `cFirst cLast w` form (PDF 32000-1:2008 9.7.4.3),
+ * which keeps /W small for large fonts with many same-width glyphs (CJK).
+ */
+export const compressWidths = (entries) => {
+    const widths = [];
+    let section;
+    let prevId = Number.NaN;
+    let idx = 0;
+    while (idx < entries.length) {
+        const [id, width] = entries[idx];
+        let end = idx;
+        while (end + 1 < entries.length &&
+            entries[end + 1][0] === entries[end][0] + 1 &&
+            entries[end + 1][1] === width) {
+            end++;
+        }
+        if (end - idx + 1 >= MIN_WIDTH_RANGE) {
+            widths.push(id, entries[end][0], width);
+            section = undefined;
+            prevId = entries[end][0];
+            idx = end + 1;
+            continue;
+        }
+        if (section === undefined || id !== prevId + 1) {
+            section = [];
+            widths.push(id, section);
+        }
+        section.push(width);
+        prevId = id;
+        idx++;
+    }
+    return widths;
+};
 export default CustomFontEmbedder;
 //# sourceMappingURL=CustomFontEmbedder.js.map

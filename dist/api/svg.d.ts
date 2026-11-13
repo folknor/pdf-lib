@@ -19,9 +19,17 @@ type Box = Position & Size;
 type InheritedAttributes = {
     width: number;
     height: number;
+    /** CSS `color` property (undefined = transparent), used to resolve `currentColor` */
+    color: {
+        rgb: Color;
+        alpha: string | undefined;
+    } | undefined;
     fill: Color | undefined;
+    /** fill is `currentColor`, re-resolved against each descendant's `color` */
+    fillCurrentColor: boolean;
     fillOpacity: number | undefined;
     stroke: Color | undefined;
+    strokeCurrentColor: boolean;
     strokeWidth: number | undefined;
     strokeOpacity: number | undefined;
     strokeLineCap: LineCapStyle | undefined;

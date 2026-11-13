@@ -3,6 +3,7 @@ import * as fontkit from './base.js';
 import CmapProcessor from './CmapProcessor.js';
 import { cacheValue } from './decorators.js';
 import BBox from './glyph/BBox.js';
+import CBDTGlyph from './glyph/CBDTGlyph.js';
 import CFFGlyph from './glyph/CFFGlyph.js';
 import COLRGlyph from './glyph/COLRGlyph.js';
 import GlyphVariationProcessor from './glyph/GlyphVariationProcessor.js';
@@ -14,6 +15,11 @@ import TTFSubset from './subset/TTFSubset.js';
 import Directory from './tables/directory.js';
 import tables from './tables/index.js';
 import { asciiDecoder } from './utils.js';
+/**
+ * Whether a cached glyph carries outlines (glyf/CFF, including SBIX and WOFF2
+ * glyphs, which extend TTFGlyph), as opposed to a COLR or CBDT wrapper.
+ */
+export const isOutlineGlyph = (glyph) => glyph instanceof TTFGlyph || glyph instanceof CFFGlyph;
 /**
  * This is the base class for all SFNT-based font formats in fontkit.
  * It supports TrueType, and PostScript glyphs, and several color glyph formats.
@@ -347,16 +353,27 @@ export default class TTFFont {
     getAvailableFeatures(script = 'DFLT', language = 'dflt') {
         return this._layoutEngine.getAvailableFeatures(script, language);
     }
+    /**
+     * Returns the outline (glyf/CFF) glyph for the given id. The glyph cache may
+     * already hold a color or bitmap glyph (COLR, CBDT) for this id; that one is
+     * kept in the cache, and a fresh outline glyph is returned instead.
+     */
     _getBaseGlyph(glyph, characters = []) {
-        if (!this._glyphs[glyph]) {
-            if (this.directory.tables.glyf) {
-                this._glyphs[glyph] = new TTFGlyph(glyph, characters, this);
-            }
-            else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
-                this._glyphs[glyph] = new CFFGlyph(glyph, characters, this);
-            }
+        const cached = this._glyphs[glyph];
+        if (isOutlineGlyph(cached)) {
+            return cached;
         }
-        return this._glyphs[glyph] || null;
+        let outline = null;
+        if (this.directory.tables.glyf) {
+            outline = new TTFGlyph(glyph, characters, this);
+        }
+        else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
+            outline = new CFFGlyph(glyph, characters, this);
+        }
+        if (outline && !cached) {
+            this._glyphs[glyph] = outline;
+        }
+        return outline;
     }
     /**
      * Returns a glyph object for the given glyph id.
@@ -374,6 +391,15 @@ export default class TTFFont {
             }
             else if (this.directory.tables.COLR && this.directory.tables.CPAL) {
                 this._glyphs[glyph] = new COLRGlyph(glyph, characters, this);
+            }
+            else if ((this.directory.tables.CBLC || this.directory.tables.EBLC) &&
+                !this.directory.tables.glyf &&
+                !this.directory.tables['CFF '] &&
+                !this.directory.tables.CFF2) {
+                // Bitmap-only fonts have no outlines, so _getBaseGlyph would yield
+                // null; a stub glyph still carries the hmtx metrics. Fonts that ship
+                // embedded bitmaps next to outlines keep their outline glyphs.
+                this._glyphs[glyph] = new CBDTGlyph(glyph, characters, this);
             }
             else {
                 this._getBaseGlyph(glyph, characters);

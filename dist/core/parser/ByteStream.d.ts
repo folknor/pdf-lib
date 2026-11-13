@@ -22,6 +22,12 @@ declare class ByteStream {
         column: number;
         offset: number;
     };
+    /** Restore offset and line/column tracking saved via `position()`. */
+    restorePosition(pos: {
+        line: number;
+        column: number;
+        offset: number;
+    }): void;
 }
 export default ByteStream;
 //# sourceMappingURL=ByteStream.d.ts.map

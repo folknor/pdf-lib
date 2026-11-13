@@ -11,4 +11,15 @@ export declare class SimpleRNG {
     private constructor();
     nextInt(): number;
 }
+/**
+ * Generates cryptographically secure random bytes using the platform's Web
+ * Crypto API (`crypto.getRandomValues`), which is available as a global in
+ * modern browsers, Node (>= 19, or 18 with --experimental-global-webcrypto),
+ * Deno, and Bun.
+ *
+ * Throws when `globalThis.crypto.getRandomValues` is missing, e.g. older Node
+ * or React Native without a polyfill such as `react-native-get-random-values`.
+ * Only document encryption needs this; the rest of `pdf-lib` is unaffected.
+ */
+export declare const getRandomBytes: (byteCount: number) => Uint8Array;
 //# sourceMappingURL=rng.d.ts.map

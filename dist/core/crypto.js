@@ -1454,18 +1454,21 @@ class CipherTransformFactory {
             dict.get(PDFName.of('EncryptMetadata'))?.asBoolean() !==
                 false;
         this.encryptMetadata = encryptMetadata;
+        // R5/R6 passwords are UTF-8 (ISO 32000-2 7.6.4.3.3, Adobe ext. level 3).
+        // For R5, also accept the raw char codes: older writers (including this
+        // library before it UTF-8 encoded R5 passwords) produced those.
         let passwordBytes;
+        let legacyR5PasswordBytes;
         if (password) {
-            if (revision === 6) {
-                try {
-                    password = unescape(encodeURIComponent(password));
-                }
-                catch {
-                    console.warn('CipherTransformFactory: ' +
-                        'Unable to convert UTF8 encoded password.');
+            if (revision >= 5) {
+                passwordBytes = new TextEncoder().encode(password);
+                if (revision === 5) {
+                    legacyR5PasswordBytes = stringAsByteArray(password);
                 }
             }
-            passwordBytes = stringAsByteArray(password);
+            else {
+                passwordBytes = stringAsByteArray(password);
+            }
         }
         let encryptionKey;
         if (algorithm !== 5) {
@@ -1480,7 +1483,11 @@ class CipherTransformFactory {
             const ownerEncryption = dict.get(PDFName.of('OE')).asBytes();
             const userEncryption = dict.get(PDFName.of('UE')).asBytes();
             const perms = dict.get(PDFName.of('Perms')).asBytes();
-            encryptionKey = this.createEncryptionKey20(revision, passwordBytes, ownerPassword, ownerValidationSalt, ownerKeySalt, uBytes, userPassword, userValidationSalt, userKeySalt, ownerEncryption, userEncryption, perms);
+            const keyFor = (bytes) => this.createEncryptionKey20(revision, bytes, ownerPassword, ownerValidationSalt, ownerKeySalt, uBytes, userPassword, userValidationSalt, userKeySalt, ownerEncryption, userEncryption, perms);
+            encryptionKey = keyFor(passwordBytes);
+            if (!encryptionKey && legacyR5PasswordBytes) {
+                encryptionKey = keyFor(legacyR5PasswordBytes);
+            }
         }
         if (!(encryptionKey || password)) {
             throw new Error('NEEDS PASSWORD');

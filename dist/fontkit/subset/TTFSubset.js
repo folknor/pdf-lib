@@ -11,15 +11,33 @@ export default class TTFSubset extends Subset {
         super(font);
         this.glyphEncoder = new TTFGlyphEncoder();
     }
+    // WOFF2 usually stores glyf/loca in a transformed layout, so there are no
+    // raw glyf bytes or loca offsets to copy; glyphs are re-encoded instead.
+    get _glyfTransformed() {
+        return !!this.font.directory.tables.glyf?.transformed;
+    }
     _addGlyph(gid) {
-        const glyph = this.font.getGlyph(gid);
+        // getGlyph() returns a COLR wrapper in color fonts; the outline glyph is
+        // what goes into glyf.
+        const glyph = this.font._getBaseGlyph(gid) ?? this.font.getGlyph(gid);
         const glyf = glyph._decode();
+        let buffer;
+        if (this._glyfTransformed) {
+            // Composite glyphs are flattened into simple ones, so their components
+            // need not be included. Hinting instructions are not preserved.
+            buffer =
+                glyf && glyf.numberOfContours !== 0
+                    ? this.glyphEncoder.encodeSimple(glyph.path)
+                    : new Uint8Array(0);
+            this._pushGlyph(glyph, buffer);
+            return this.glyf.length - 1;
+        }
         // get the offset to the glyph from the loca table
         const curOffset = this.font.loca.offsets[gid];
         const nextOffset = this.font.loca.offsets[gid + 1];
         const stream = this.font._getTableStream('glyf');
         stream.pos += curOffset;
-        let buffer = stream.readBuffer(nextOffset - curOffset);
+        buffer = stream.readBuffer(nextOffset - curOffset);
         // if it is a compound glyph, include its components
         if (glyf && glyf.numberOfContours < 0) {
             buffer = new Uint8Array(buffer);
@@ -33,6 +51,38 @@ export default class TTFSubset extends Subset {
             // If this is a TrueType variation glyph, re-encode the path
             buffer = this.glyphEncoder.encodeSimple(glyph.path, glyf.instructions);
         }
+        this._pushGlyph(glyph, buffer);
+        return this.glyf.length - 1;
+    }
+    /**
+     * Re-encoded (flattened) glyphs can have more points and contours than the
+     * source's simple glyphs, and contain no composites, so recompute those
+     * limits from the encoded glyf data. The instruction-related limits stay:
+     * they remain valid upper bounds for the kept fpgm/prep programs, and the
+     * glyphs themselves carry no instructions.
+     */
+    _updateMaxpForFlattenedGlyphs(maxp) {
+        let maxPoints = 0;
+        let maxContours = 0;
+        for (const buffer of this.glyf) {
+            if (buffer.length < 10)
+                continue;
+            const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+            const contours = view.getInt16(0);
+            if (contours <= 0)
+                continue;
+            const points = view.getUint16(10 + 2 * (contours - 1)) + 1;
+            maxContours = Math.max(maxContours, contours);
+            maxPoints = Math.max(maxPoints, points);
+        }
+        maxp.maxPoints = maxPoints;
+        maxp.maxContours = maxContours;
+        maxp.maxComponentPoints = 0;
+        maxp.maxComponentContours = 0;
+        maxp.maxComponentElements = 0;
+        maxp.maxComponentDepth = 0;
+    }
+    _pushGlyph(glyph, buffer) {
         this.glyf.push(buffer);
         this.loca.offsets.push(this.offset);
         this.hmtx.metrics.push({
@@ -40,7 +90,6 @@ export default class TTFSubset extends Subset {
             bearing: glyph._getMetrics().leftBearing,
         });
         this.offset += buffer.length;
-        return this.glyf.length - 1;
     }
     encode() {
         // tables required by PDF spec:
@@ -52,7 +101,8 @@ export default class TTFSubset extends Subset {
         this.offset = 0;
         this.loca = {
             offsets: [],
-            version: this.font.loca.version,
+            // A transformed WOFF2 loca is empty; long offsets are always valid.
+            version: this._glyfTransformed ? 1 : this.font.loca.version,
         };
         this.hmtx = {
             metrics: [],
@@ -67,6 +117,8 @@ export default class TTFSubset extends Subset {
         }
         const maxp = structuredClone(this.font.maxp);
         maxp.numGlyphs = this.glyf.length;
+        if (this._glyfTransformed)
+            this._updateMaxpForFlattenedGlyphs(maxp);
         this.loca.offsets.push(this.offset);
         const head = structuredClone(this.font.head);
         head.indexToLocFormat = this.loca.version;

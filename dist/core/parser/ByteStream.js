@@ -55,6 +55,12 @@ class ByteStream {
     position() {
         return { line: this.line, column: this.column, offset: this.idx };
     }
+    /** Restore offset and line/column tracking saved via `position()`. */
+    restorePosition(pos) {
+        this.idx = pos.offset;
+        this.line = pos.line;
+        this.column = pos.column;
+    }
 }
 export default ByteStream;
 //# sourceMappingURL=ByteStream.js.map

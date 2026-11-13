@@ -1,8 +1,8 @@
-import brotli from 'brotli/decompress.js';
+import { decompress as brotliDecompress } from 'brotli/decompress.js';
 import * as r from '../vendors/restructure/index.js';
 import TTFGlyph, { Point } from './glyph/TTFGlyph.js';
 import WOFF2Glyph from './glyph/WOFF2Glyph.js';
-import TTFFont from './TTFFont.js';
+import TTFFont, { isOutlineGlyph } from './TTFFont.js';
 import WOFF2Directory from './tables/WOFF2Directory.js';
 import { asciiDecoder } from './utils.js';
 /**
@@ -11,9 +11,6 @@ import { asciiDecoder } from './utils.js';
  */
 export default class WOFF2Font extends TTFFont {
     type = 'WOFF2';
-    _dataPos;
-    _decompressed;
-    _transformedGlyphs;
     static probe(buffer) {
         return asciiDecoder.decode(buffer.slice(0, 4)) === 'wOF2';
     }
@@ -33,7 +30,7 @@ export default class WOFF2Font extends TTFFont {
                 decompressedSize +=
                     entry.transformLength != null ? entry.transformLength : entry.length;
             }
-            const decompressed = brotli(buffer, decompressedSize);
+            const decompressed = brotliDecompress(buffer, decompressedSize);
             if (!decompressed) {
                 throw new Error('Error decoding compressed data in WOFF2');
             }
@@ -48,18 +45,23 @@ export default class WOFF2Font extends TTFFont {
     // Override this method to get a glyph and return our
     // custom subclass if there is a glyf table.
     _getBaseGlyph(glyph, characters = []) {
-        if (!this._glyphs[glyph]) {
-            if (this.directory.tables.glyf?.transformed) {
-                if (!this._transformedGlyphs) {
-                    this._transformGlyfTable();
-                }
-                return (this._glyphs[glyph] = new WOFF2Glyph(glyph, characters, this));
-            }
-            else {
-                return super._getBaseGlyph(glyph, characters);
-            }
+        // As in TTFFont, a cached COLR/CBDT glyph stays cached, but callers asking
+        // for the base glyph get the outline glyph.
+        const cached = this._glyphs[glyph];
+        if (isOutlineGlyph(cached)) {
+            return cached;
         }
-        return this._glyphs[glyph] || null;
+        if (this.directory.tables.glyf?.transformed) {
+            if (!this._transformedGlyphs) {
+                this._transformGlyfTable();
+            }
+            const outline = new WOFF2Glyph(glyph, characters, this);
+            if (!cached) {
+                this._glyphs[glyph] = outline;
+            }
+            return outline;
+        }
+        return super._getBaseGlyph(glyph, characters);
     }
     _transformGlyfTable() {
         this._decompress();

@@ -4,7 +4,7 @@ import OTProcessor from './OTProcessor.js';
 export default class GPOSProcessor extends OTProcessor {
     applyPositionValue(sequenceIndex: number, value: any): void;
     applyLookup(lookupType: number, table: any): boolean;
-    applyAnchor(markRecord: any, baseAnchor: any, baseGlyphIndex: number): void;
+    applyAnchor(markRecord: any, baseAnchor: any, baseGlyphIndex: number): boolean;
     getAnchor(anchor: any): {
         x: number;
         y: number;

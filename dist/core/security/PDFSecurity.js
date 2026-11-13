@@ -1,4 +1,6 @@
-import CryptoJS from 'crypto-js';
+import { mergeUint8Arrays } from '../../utils/arrays.js';
+import { getRandomBytes } from '../../utils/rng.js';
+import { AES128Cipher, AES256Cipher, ARCFourCipher, calculateMD5, calculateSHA256, } from '../crypto.js';
 class PDFSecurity {
     context;
     // These are required values which are set by the `initalize` function.
@@ -100,8 +102,8 @@ class PDFSecurity {
             encryption.StrF = 'StdCF';
         }
         encryption.R = r;
-        encryption.O = wordArrayToBuffer(ownerPasswordEntry);
-        encryption.U = wordArrayToBuffer(userPasswordEntry);
+        encryption.O = ownerPasswordEntry;
+        encryption.U = userPasswordEntry;
         encryption.P = permissions;
         return encryption;
     }
@@ -110,19 +112,19 @@ class PDFSecurity {
             Filter: 'Standard',
         };
         this.keyBits = 256;
-        this.encryptionKey = getEncryptionKeyR5(generateRandomWordArray);
+        this.encryptionKey = getEncryptionKeyR5(getRandomBytes);
         const processedUserPassword = processPasswordR5(options.userPassword);
-        const userPasswordEntry = getUserPasswordR5(processedUserPassword, generateRandomWordArray);
-        const userKeySalt = CryptoJS.lib.WordArray.create(userPasswordEntry.words.slice(10, 12), 8);
+        const userPasswordEntry = getUserPasswordR5(processedUserPassword, getRandomBytes);
+        const userKeySalt = userPasswordEntry.subarray(40, 48);
         const userEncryptionKeyEntry = getUserEncryptionKeyR5(processedUserPassword, userKeySalt, this.encryptionKey);
         const processedOwnerPassword = options.ownerPassword
             ? processPasswordR5(options.ownerPassword)
             : processedUserPassword;
-        const ownerPasswordEntry = getOwnerPasswordR5(processedOwnerPassword, userPasswordEntry, generateRandomWordArray);
-        const ownerKeySalt = CryptoJS.lib.WordArray.create(ownerPasswordEntry.words.slice(10, 12), 8);
+        const ownerPasswordEntry = getOwnerPasswordR5(processedOwnerPassword, userPasswordEntry, getRandomBytes);
+        const ownerKeySalt = ownerPasswordEntry.subarray(40, 48);
         const ownerEncryptionKeyEntry = getOwnerEncryptionKeyR5(processedOwnerPassword, ownerKeySalt, userPasswordEntry, this.encryptionKey);
         const permissions = getPermissionsR3(options.permissions);
-        const permissionsEntry = getEncryptedPermissionsR5(permissions, this.encryptionKey, generateRandomWordArray);
+        const permissionsEntry = getEncryptedPermissionsR5(permissions, this.encryptionKey, getRandomBytes);
         encryption.V = 5;
         encryption.Length = this.keyBits;
         encryption.CF = {
@@ -135,52 +137,41 @@ class PDFSecurity {
         encryption.StmF = 'StdCF';
         encryption.StrF = 'StdCF';
         encryption.R = 5;
-        encryption.O = wordArrayToBuffer(ownerPasswordEntry);
-        encryption.OE = wordArrayToBuffer(ownerEncryptionKeyEntry);
-        encryption.U = wordArrayToBuffer(userPasswordEntry);
-        encryption.UE = wordArrayToBuffer(userEncryptionKeyEntry);
+        encryption.O = ownerPasswordEntry;
+        encryption.OE = ownerEncryptionKeyEntry;
+        encryption.U = userPasswordEntry;
+        encryption.UE = userEncryptionKeyEntry;
         encryption.P = permissions;
-        encryption.Perms = wordArrayToBuffer(permissionsEntry);
+        encryption.Perms = permissionsEntry;
         return encryption;
     }
     getEncryptFn(obj, gen) {
         const v = this.encryption.V;
-        let digest;
-        let key;
-        if (v < 5) {
-            digest = this.encryptionKey
-                .clone()
-                .concat(CryptoJS.lib.WordArray.create([
-                ((obj & 0xff) << 24) |
-                    ((obj & 0xff00) << 8) |
-                    ((obj >> 8) & 0xff00) |
-                    (gen & 0xff),
-                (gen & 0xff00) << 16,
-            ], 5));
-            if (v === 1 || v === 2) {
-                key = CryptoJS.MD5(digest);
-                key.sigBytes = Math.min(16, this.keyBits / 8 + 5);
-                return (buffer) => wordArrayToBuffer(CryptoJS.RC4.encrypt(CryptoJS.lib.WordArray.create(buffer), key).ciphertext);
-            }
-            if (v === 4) {
-                key = CryptoJS.MD5(digest.concat(CryptoJS.lib.WordArray.create([0x73416c54], 4)));
-            }
-        }
-        else if (v === 5) {
-            key = this.encryptionKey;
-        }
-        else {
+        if (v === 5)
+            return aesEncryptFn(this.encryptionKey);
+        if (v !== 1 && v !== 2 && v !== 4) {
             throw new Error(`Unsupported algorithm '${v}'.`);
         }
-        const iv = generateRandomWordArray(16);
-        const options = {
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7,
-            iv,
-        };
-        return (buffer) => wordArrayToBuffer(iv
-            .clone()
-            .concat(CryptoJS.AES.encrypt(CryptoJS.lib.WordArray.create(buffer), key, options).ciphertext));
+        /*
+          7.6.2 Algorithm 1
+          The object key is derived from the file encryption key plus the low order
+          3 bytes of the object number and 2 bytes of the generation number.
+        */
+        const digest = mergeUint8Arrays([
+            this.encryptionKey,
+            new Uint8Array([
+                obj & 0xff,
+                (obj >> 8) & 0xff,
+                (obj >> 16) & 0xff,
+                gen & 0xff,
+                (gen >> 8) & 0xff,
+            ]),
+        ]);
+        if (v === 4) {
+            return aesEncryptFn(md5(mergeUint8Arrays([digest, AESV2_SALT])));
+        }
+        const key = md5(digest).subarray(0, Math.min(16, this.keyBits / 8 + 5));
+        return (buffer) => rc4(key, buffer);
     }
     encrypt() {
         const ID = this.context.obj([this.id, this.id]);
@@ -191,14 +182,20 @@ class PDFSecurity {
     }
 }
 /**
- * A file ID is required if Encrypt entry is present in Trailer
- * Doesn't really matter what it is as long as it is consistently
- * used.
+ * A file ID is required if Encrypt entry is present in Trailer.
+ * It is drawn from the secure RNG so it is unique per document.
  *
  * @returns Uint8Array
  */
-const generateFileID = () => wordArrayToBuffer(CryptoJS.MD5(Date.now().toString()));
-const generateRandomWordArray = (bytes) => CryptoJS.lib.WordArray.random(bytes);
+const generateFileID = () => getRandomBytes(16);
+/**
+ * A fresh initialization vector is drawn per call and prepended to the
+ * ciphertext, so reusing the returned fn never reuses an IV.
+ */
+const aesEncryptFn = (key) => (buffer) => {
+    const iv = getRandomBytes(16);
+    return mergeUint8Arrays([iv, aesCbcEncrypt(key, iv, pkcs7Pad(buffer))]);
+};
 /**
  * Get Permission Flag for use Encryption Dictionary (Key: P)
  * For Security Handler revision 2
@@ -261,99 +258,83 @@ const getPermissionsR3 = (permissions = {}) => {
     }
     return flags;
 };
-const getUserPasswordR2 = (encryptionKey) => CryptoJS.RC4.encrypt(processPasswordR2R3R4(), encryptionKey).ciphertext;
+const getUserPasswordR2 = (encryptionKey) => rc4(encryptionKey, processPasswordR2R3R4());
 const getUserPasswordR3R4 = (documentId, encryptionKey) => {
-    const key = encryptionKey.clone();
-    let cipher = CryptoJS.MD5(processPasswordR2R3R4().concat(CryptoJS.lib.WordArray.create(documentId)));
+    let cipher = md5(mergeUint8Arrays([processPasswordR2R3R4(), documentId]));
+    const key = new Uint8Array(encryptionKey.length);
     for (let i = 0; i < 20; i++) {
-        const xorRound = Math.ceil(key.sigBytes / 4);
-        for (let j = 0; j < xorRound; j++) {
-            key.words[j] =
-                encryptionKey.words[j] ^ (i | (i << 8) | (i << 16) | (i << 24));
-        }
-        cipher = CryptoJS.RC4.encrypt(cipher, key).ciphertext;
+        for (let j = 0; j < key.length; j++)
+            key[j] = encryptionKey[j] ^ i;
+        cipher = rc4(key, cipher);
     }
-    return cipher.concat(CryptoJS.lib.WordArray.create(null, 16));
+    // Padded to 32 bytes with arbitrary data
+    return mergeUint8Arrays([cipher, new Uint8Array(16)]);
 };
 const getOwnerPasswordR2R3R4 = (r, keyBits, paddedUserPassword, paddedOwnerPassword) => {
     let digest = paddedOwnerPassword;
     let round = r >= 3 ? 51 : 1;
     for (let i = 0; i < round; i++) {
-        digest = CryptoJS.MD5(digest);
+        digest = md5(digest);
     }
-    const key = digest.clone();
-    key.sigBytes = keyBits / 8;
+    const key = new Uint8Array(keyBits / 8);
     let cipher = paddedUserPassword;
     round = r >= 3 ? 20 : 1;
     for (let i = 0; i < round; i++) {
-        const xorRound = Math.ceil(key.sigBytes / 4);
-        for (let j = 0; j < xorRound; j++) {
-            key.words[j] = digest.words[j] ^ (i | (i << 8) | (i << 16) | (i << 24));
-        }
-        cipher = CryptoJS.RC4.encrypt(cipher, key).ciphertext;
+        for (let j = 0; j < key.length; j++)
+            key[j] = digest[j] ^ i;
+        cipher = rc4(key, cipher);
     }
     return cipher;
 };
 const getEncryptionKeyR2R3R4 = (r, keyBits, documentId, paddedUserPassword, ownerPasswordEntry, permissions) => {
-    let key = paddedUserPassword
-        .clone()
-        .concat(ownerPasswordEntry)
-        .concat(CryptoJS.lib.WordArray.create([lsbFirstWord(permissions)], 4))
-        .concat(CryptoJS.lib.WordArray.create(documentId));
+    let key = mergeUint8Arrays([
+        paddedUserPassword,
+        ownerPasswordEntry,
+        lsbFirstBytes(permissions),
+        documentId,
+    ]);
     const round = r >= 3 ? 51 : 1;
     for (let i = 0; i < round; i++) {
-        key = CryptoJS.MD5(key);
-        key.sigBytes = keyBits / 8;
+        key = md5(key).subarray(0, keyBits / 8);
     }
     return key;
 };
-const getUserPasswordR5 = (processedUserPassword, randomWordArrayGenerator) => {
-    const validationSalt = randomWordArrayGenerator(8);
-    const keySalt = randomWordArrayGenerator(8);
-    return CryptoJS.SHA256(processedUserPassword.clone().concat(validationSalt))
-        .concat(validationSalt)
-        .concat(keySalt);
+const getUserPasswordR5 = (processedUserPassword, randomBytesGenerator) => {
+    const validationSalt = randomBytesGenerator(8);
+    const keySalt = randomBytesGenerator(8);
+    return mergeUint8Arrays([
+        sha256(mergeUint8Arrays([processedUserPassword, validationSalt])),
+        validationSalt,
+        keySalt,
+    ]);
 };
-const getUserEncryptionKeyR5 = (processedUserPassword, userKeySalt, encryptionKey) => {
-    const key = CryptoJS.SHA256(processedUserPassword.clone().concat(userKeySalt));
-    const options = {
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.NoPadding,
-        iv: CryptoJS.lib.WordArray.create(null, 16),
-    };
-    return CryptoJS.AES.encrypt(encryptionKey, key, options).ciphertext;
+const getUserEncryptionKeyR5 = (processedUserPassword, userKeySalt, encryptionKey) => aesCbcEncrypt(sha256(mergeUint8Arrays([processedUserPassword, userKeySalt])), ZERO_IV, encryptionKey);
+const getOwnerPasswordR5 = (processedOwnerPassword, userPasswordEntry, randomBytesGenerator) => {
+    const validationSalt = randomBytesGenerator(8);
+    const keySalt = randomBytesGenerator(8);
+    return mergeUint8Arrays([
+        sha256(mergeUint8Arrays([
+            processedOwnerPassword,
+            validationSalt,
+            userPasswordEntry,
+        ])),
+        validationSalt,
+        keySalt,
+    ]);
 };
-const getOwnerPasswordR5 = (processedOwnerPassword, userPasswordEntry, randomWordArrayGenerator) => {
-    const validationSalt = randomWordArrayGenerator(8);
-    const keySalt = randomWordArrayGenerator(8);
-    return CryptoJS.SHA256(processedOwnerPassword
-        .clone()
-        .concat(validationSalt)
-        .concat(userPasswordEntry))
-        .concat(validationSalt)
-        .concat(keySalt);
-};
-const getOwnerEncryptionKeyR5 = (processedOwnerPassword, ownerKeySalt, userPasswordEntry, encryptionKey) => {
-    const key = CryptoJS.SHA256(processedOwnerPassword
-        .clone()
-        .concat(ownerKeySalt)
-        .concat(userPasswordEntry));
-    const options = {
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.NoPadding,
-        iv: CryptoJS.lib.WordArray.create(null, 16),
-    };
-    return CryptoJS.AES.encrypt(encryptionKey, key, options).ciphertext;
-};
-const getEncryptionKeyR5 = (randomWordArrayGenerator) => randomWordArrayGenerator(32);
-const getEncryptedPermissionsR5 = (permissions, encryptionKey, randomWordArrayGenerator) => {
-    const cipher = CryptoJS.lib.WordArray.create([lsbFirstWord(permissions), 0xffffffff, 0x54616462], 12).concat(randomWordArrayGenerator(4));
-    const options = {
-        mode: CryptoJS.mode.ECB,
-        padding: CryptoJS.pad.NoPadding,
-    };
-    return CryptoJS.AES.encrypt(cipher, encryptionKey, options).ciphertext;
-};
+const getOwnerEncryptionKeyR5 = (processedOwnerPassword, ownerKeySalt, userPasswordEntry, encryptionKey) => aesCbcEncrypt(sha256(mergeUint8Arrays([
+    processedOwnerPassword,
+    ownerKeySalt,
+    userPasswordEntry,
+])), ZERO_IV, encryptionKey);
+const getEncryptionKeyR5 = (randomBytesGenerator) => randomBytesGenerator(32);
+const getEncryptedPermissionsR5 = (permissions, encryptionKey, randomBytesGenerator) => 
+// A single block of CBC with a zero IV is equivalent to the ECB the spec asks for
+aesCbcEncrypt(encryptionKey, ZERO_IV, mergeUint8Arrays([
+    lsbFirstBytes(permissions),
+    PERMS_SUFFIX,
+    randomBytesGenerator(4),
+]));
 const processPasswordR2R3R4 = (password = '') => {
     const out = new Uint8Array(32);
     const length = password.length;
@@ -370,30 +351,41 @@ const processPasswordR2R3R4 = (password = '') => {
         out[index] = PASSWORD_PADDING[index - length];
         index++;
     }
-    return CryptoJS.lib.WordArray.create(out);
+    return out;
 };
-const processPasswordR5 = (password = '') => {
-    // NOTE: Removed this line to eliminate need for the saslprep dependency.
-    // Probably worth investigating the cases that would be impacted by this.
-    // password = unescape(encodeURIComponent(saslprep(password)));
-    const length = Math.min(127, password.length);
-    const out = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-        out[i] = password.charCodeAt(i);
-    }
-    return CryptoJS.lib.WordArray.create(out);
+// R5/R6 passwords are UTF-8 encoded and truncated to 127 bytes. The spec also
+// calls for SASLprep normalisation first; we skip it to avoid the dependency,
+// matching the decrypt side in crypto.ts.
+const processPasswordR5 = (password = '') => new TextEncoder().encode(password).subarray(0, 127);
+const md5 = (data) => calculateMD5(data, 0, data.length);
+const sha256 = (data) => calculateSHA256(data, 0, data.length);
+const rc4 = (key, data) => new ARCFourCipher(key).encrypt(data);
+/** AES-CBC. Discards any trailing partial block, so `data` must be padded. */
+const aesCbcEncrypt = (key, iv, data) => {
+    const cipher = key.length === 32 ? new AES256Cipher(key) : new AES128Cipher(key);
+    return cipher.encrypt(data, iv);
 };
-const lsbFirstWord = (data) => ((data & 0xff) << 24) |
-    ((data & 0xff00) << 8) |
-    ((data >> 8) & 0xff00) |
-    ((data >> 24) & 0xff);
-const wordArrayToBuffer = (wordArray) => {
-    const byteArray = [];
-    for (let i = 0; i < wordArray.sigBytes; i++) {
-        byteArray.push((wordArray.words[Math.floor(i / 4)] >> (8 * (3 - (i % 4)))) & 0xff);
-    }
-    return Uint8Array.from(byteArray);
+const pkcs7Pad = (data) => {
+    const padding = 16 - (data.length % 16);
+    const padded = new Uint8Array(data.length + padding);
+    padded.set(data);
+    padded.fill(padding, data.length);
+    return padded;
 };
+/** Serializes a 32-bit integer low order byte first. */
+const lsbFirstBytes = (data) => new Uint8Array([
+    data & 0xff,
+    (data >> 8) & 0xff,
+    (data >> 16) & 0xff,
+    (data >> 24) & 0xff,
+]);
+const ZERO_IV = new Uint8Array(16);
+/** 'sAlT', appended to the object key digest by the AESV2 crypt filter. */
+const AESV2_SALT = new Uint8Array([0x73, 0x41, 0x6c, 0x54]);
+/* 0xffffffff followed by 'Tadb', as required by ISO 32000-2 Algorithm 10 */
+const PERMS_SUFFIX = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x54, 0x61, 0x64, 0x62,
+]);
 /*
   7.6.3.3 Encryption Key Algorithm
   Algorithm 2

@@ -1,5 +1,11 @@
 // tslint:disable: max-classes-per-file
 import { arrayAsString } from '../utils/index.js';
+export class DecodedStreamTooLargeError extends Error {
+    constructor(requested, max) {
+        const msg = `Decoded stream size (${requested} bytes) exceeds the maximum of ${max} bytes; the stream may be a decompression bomb. Raise DecodeStream.maxDecodedSize if this data is legitimate.`;
+        super(msg);
+    }
+}
 export class MethodNotImplementedError extends Error {
     constructor(className, methodName) {
         const msg = `Method ${className}.${methodName}() not implemented`;

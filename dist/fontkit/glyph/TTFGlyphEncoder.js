@@ -42,14 +42,20 @@ export default class TTFGlyphEncoder {
         const flags = [];
         let same = 0;
         let lastX = 0, lastY = 0, lastFlag = 0;
+        let rawLastX = 0, rawLastY = 0;
         let pointCount = 0;
+        // The glyf header bbox spans every encoded point, off-curve included.
+        let xMin = Infinity;
+        let yMin = Infinity;
+        let xMax = -Infinity;
+        let yMax = -Infinity;
         for (let i = 0; i < path.commands.length; i++) {
             const c = path.commands[i];
             if (!c)
                 continue;
             for (let j = 0; j < c.args.length; j += 2) {
-                const x = c.args[j] ?? 0;
-                const y = c.args[j + 1] ?? 0;
+                const rawX = c.args[j] ?? 0;
+                const rawY = c.args[j + 1] ?? 0;
                 let flag = 0;
                 // If the ending point of a quadratic curve is the midpoint
                 // between the control point and the control point of the next
@@ -57,13 +63,20 @@ export default class TTFGlyphEncoder {
                 if (c.command === 'quadraticCurveTo' && j === 2) {
                     const next = path.commands[i + 1];
                     if (next && next.command === 'quadraticCurveTo') {
-                        const midX = (lastX + (next.args[0] ?? 0)) / 2;
-                        const midY = (lastY + (next.args[1] ?? 0)) / 2;
-                        if (x === midX && y === midY) {
+                        const midX = (rawLastX + (next.args[0] ?? 0)) / 2;
+                        const midY = (rawLastY + (next.args[1] ?? 0)) / 2;
+                        if (rawX === midX && rawY === midY) {
                             continue;
                         }
                     }
                 }
+                // glyf stores integer coordinates. Paths can hold fractions (scaled
+                // composite components, variation deltas); writing fractional deltas
+                // would truncate each one and let the error accumulate.
+                rawLastX = rawX;
+                rawLastY = rawY;
+                const x = Math.round(rawX);
+                const y = Math.round(rawY);
                 // All points except control points are on curve.
                 if (!(c.command === 'quadraticCurveTo' && j === 0)) {
                     flag |= ON_CURVE;
@@ -87,11 +100,25 @@ export default class TTFGlyphEncoder {
                 }
                 lastX = x;
                 lastY = y;
+                if (x < xMin)
+                    xMin = x;
+                if (y < yMin)
+                    yMin = y;
+                if (x > xMax)
+                    xMax = x;
+                if (y > yMax)
+                    yMax = y;
                 pointCount++;
             }
             if (c.command === 'closePath') {
                 endPtsOfContours.push(pointCount - 1);
             }
+        }
+        // Flush the repeat count of a run that lasts until the final point.
+        // Without it the REPEAT bit on the last flag makes decoders consume the
+        // first coordinate byte as the count.
+        if (same > 0) {
+            flags.push(same);
         }
         // Close the path if the last command didn't already
         const lastCmd = path.commands[path.commands.length - 1];
@@ -100,13 +127,14 @@ export default class TTFGlyphEncoder {
             lastCmd.command !== 'closePath') {
             endPtsOfContours.push(pointCount - 1);
         }
-        const bbox = path.bbox;
+        if (pointCount === 0)
+            xMin = yMin = xMax = yMax = 0;
         const glyf = {
             numberOfContours: endPtsOfContours.length,
-            xMin: bbox.minX,
-            yMin: bbox.minY,
-            xMax: bbox.maxX,
-            yMax: bbox.maxY,
+            xMin,
+            yMin,
+            xMax,
+            yMax,
             endPtsOfContours: endPtsOfContours,
             instructions: instructions,
             flags: flags,

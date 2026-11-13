@@ -32,6 +32,11 @@ interface LiteralConfig {
 }
 declare class PDFContext {
     isDecrypted: boolean;
+    /**
+     * Per-document cap on the decoded size of a single stream. When undefined,
+     * the global `DecodeStream.maxDecodedSize` applies.
+     */
+    maxDecodedStreamSize: number | undefined;
     static create: () => PDFContext;
     largestObjectNumber: number;
     header: PDFHeader;

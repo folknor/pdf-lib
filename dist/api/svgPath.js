@@ -78,6 +78,15 @@ const parse = (path) => {
             // fix for negative numbers or repeated decimals with no delimeter between commands
             curArg = ['-', '.'].includes(c) ? c : '';
         }
+        else if ((cmd === 'A' || cmd === 'a') &&
+            curArg.length === 0 &&
+            (c === '0' || c === '1') &&
+            [3, 4].includes(args.length === params ? 0 : args.length)) {
+            // arc flags (large-arc, sweep) are single characters and may be
+            // written without separators, e.g. `a10 10 0 0110-10`
+            args[args.length] = Number(c);
+            foundDecimal = false;
+        }
         else {
             curArg += c;
             if (c === '.') {

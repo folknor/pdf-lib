@@ -493,9 +493,32 @@ export default class PDFForm {
     private findWidgetPage;
     private flattenWidgetOntoPage;
     /**
-     * Flatten Widget annotations that carry field properties (/FT) directly on
-     * the annot dict but are not reachable via AcroForm.Fields. Widgets without
-     * a usable normal appearance are left untouched.
+     * Appearance streams are implicitly form XObjects inside /AP, so some
+     * producers (e.g. Acrobat) omit /Type and /Subtype. Once drawn onto a page
+     * with `Do`, viewers such as PDF.js and Preview require /Subtype /Form and
+     * skip the XObject without it.
+     */
+    private ensureFormXObject;
+    /**
+     * `dict` followed by its /Parent ancestors, stopping at the first
+     * non-dict or at a /Parent cycle.
+     */
+    private selfAndAncestors;
+    /**
+     * Resolve an inheritable field attribute (e.g. /FT, /V) on `dict` or the
+     * nearest /Parent ancestor that has it.
+     */
+    private lookupInherited;
+    /**
+     * Every field/widget dict reachable from AcroForm /Fields via /Kids.
+     * Guards against /Kids cycles.
+     */
+    private collectReachableFieldDicts;
+    /**
+     * Flatten Widget annotations that carry field properties (/FT), either on
+     * the annot dict or inherited via /Parent, but are not reachable via
+     * AcroForm.Fields (neither the widget nor any ancestor is in `reachable`).
+     * Widgets without a usable normal appearance are left untouched.
      */
     private flattenOrphanWidgets;
     /**

@@ -1,6 +1,6 @@
 import { NodeType, parse as parseHtml, } from 'node-html-better-parser';
 import { identityMatrix } from '../types/matrix.js';
-import { colorString } from './colors.js';
+import { colorString, rgb } from './colors.js';
 import { FillRule, LineCapStyle, LineJoinStyle } from './operators.js';
 import { BlendMode, } from './PDFPageOptions.js';
 import PDFSvg from './PDFSvg.js';
@@ -106,6 +106,9 @@ const StrokeLineJoinMap = {
 /** methods to draw SVGElements onto a PDFPage */
 const runnersToPage = (page, options) => ({
     text(element) {
+        // fill="none": drawText would otherwise fall back to black
+        if (!element.svgAttributes.fill)
+            return;
         const anchor = element.svgAttributes.textAnchor;
         const dominantBaseline = element.svgAttributes.dominantBaseline;
         const text = element.text.trim().replace(/\s/g, ' ');
@@ -181,6 +184,10 @@ const runnersToPage = (page, options) => ({
         });
     },
     line(element) {
+        // lines are stroke-only and the SVG default stroke is none; drawLine
+        // would otherwise fall back to black
+        if (!element.svgAttributes.stroke)
+            return;
         const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
         page.drawLine({
             start: {
@@ -210,6 +217,10 @@ const runnersToPage = (page, options) => ({
     },
     path(element) {
         if (!element.svgAttributes.d)
+            return;
+        // nothing to paint (fill="none" and no stroke); drawSvgPath would
+        // otherwise fall back to a black border
+        if (!element.svgAttributes.fill && !element.svgAttributes.stroke)
             return;
         const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
         // See https://jsbin.com/kawifomupa/edit?html,output and
@@ -307,6 +318,8 @@ const runnersToPage = (page, options) => ({
         });
     },
     ellipse(element) {
+        if (!element.svgAttributes.fill && !element.svgAttributes.stroke)
+            return;
         const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
         page.drawEllipse({
             x: element.svgAttributes.cx ?? 0,
@@ -360,10 +373,39 @@ const parseStyles = (style) => {
     }
     return css;
 };
+const isNoPaint = (value) => value !== undefined && ['none', 'transparent'].includes(value.trim());
+const isCurrentColor = (value) => value !== undefined && value.trim() === 'currentColor';
+/**
+ * Resolve a fill/stroke value. `none`/`transparent` disable painting; an
+ * unset value inherits from the parent. `currentColor` (explicit or
+ * inherited) stays a keyword through inheritance and is resolved against
+ * the element's own `color`.
+ */
+const resolvePaint = (value, inheritedColor, inheritedIsCurrentColor, currentColor) => {
+    if (isNoPaint(value)) {
+        return { color: undefined, alpha: undefined, currentColor: false };
+    }
+    const parsed = isCurrentColor(value) ? undefined : parseColor(value ?? '');
+    if (parsed) {
+        return { color: parsed.rgb, alpha: parsed.alpha, currentColor: false };
+    }
+    if (isCurrentColor(value) || inheritedIsCurrentColor) {
+        return {
+            color: currentColor?.rgb,
+            alpha: currentColor?.alpha,
+            currentColor: true,
+        };
+    }
+    return { color: inheritedColor, alpha: undefined, currentColor: false };
+};
 const parseColor = (color, inherited) => {
     if (!color || color.length === 0)
         return;
     if (['none', 'transparent'].includes(color))
+        return;
+    // `unset`/`inherit` on inherited properties mean "take the parent's value";
+    // callers fall back to the inherited value when this returns undefined
+    if (['unset', 'inherit'].includes(color.trim()))
         return;
     if (color === 'currentColor')
         return inherited || parseColor('#000000');
@@ -378,10 +420,19 @@ const parseAttributes = (element, inherited, matrix) => {
     const style = parseStyles(attributes['style'] ?? '');
     const widthRaw = styleOrAttribute(attributes, style, 'width', '');
     const heightRaw = styleOrAttribute(attributes, style, 'height', '');
-    const fillRaw = parseColor(styleOrAttribute(attributes, style, 'fill'));
+    // CSS `color` (with alpha); undefined means transparent
+    const colorStr = styleOrAttribute(attributes, style, 'color');
+    const currentColor = isNoPaint(colorStr)
+        ? undefined
+        : isCurrentColor(colorStr)
+            ? inherited.color
+            : (parseColor(colorStr) ?? inherited.color);
+    const fillStr = styleOrAttribute(attributes, style, 'fill');
+    const fill = resolvePaint(fillStr, inherited.fill, inherited.fillCurrentColor, currentColor);
     const fillOpacityRaw = styleOrAttribute(attributes, style, 'fill-opacity');
     const opacityRaw = styleOrAttribute(attributes, style, 'opacity');
-    const strokeRaw = parseColor(styleOrAttribute(attributes, style, 'stroke'));
+    const strokeStr = styleOrAttribute(attributes, style, 'stroke');
+    const stroke = resolvePaint(strokeStr, inherited.stroke, inherited.strokeCurrentColor, currentColor);
     const strokeOpacityRaw = styleOrAttribute(attributes, style, 'stroke-opacity');
     const strokeLineCapRaw = styleOrAttribute(attributes, style, 'stroke-linecap');
     const strokeLineJoinRaw = styleOrAttribute(attributes, style, 'stroke-linejoin');
@@ -409,13 +460,16 @@ const parseAttributes = (element, inherited, matrix) => {
         fontStyle: fontStyleRaw || inherited.fontStyle,
         fontWeight: fontWeightRaw || inherited.fontWeight,
         fontSize: parseFloatValue(fontSizeRaw) ?? inherited.fontSize,
-        fill: fillRaw?.rgb || inherited.fill,
-        fillOpacity: parseFloatValue(fillOpacityRaw || opacityRaw || fillRaw?.alpha) ??
+        color: currentColor,
+        fill: fill.color,
+        fillCurrentColor: fill.currentColor,
+        fillOpacity: parseFloatValue(fillOpacityRaw || opacityRaw || fill.alpha) ??
             inherited.fillOpacity,
         fillRule: FillRuleMap[fillRuleRaw] || inherited.fillRule,
-        stroke: strokeRaw?.rgb || inherited.stroke,
+        stroke: stroke.color,
+        strokeCurrentColor: stroke.currentColor,
         strokeWidth: parseFloatValue(strokeWidthRaw) ?? inherited.strokeWidth,
-        strokeOpacity: parseFloatValue(strokeOpacityRaw || opacityRaw || strokeRaw?.alpha) ??
+        strokeOpacity: parseFloatValue(strokeOpacityRaw || opacityRaw || stroke.alpha) ??
             inherited.strokeOpacity,
         strokeLineCap: StrokeLineCapMap[strokeLineCapRaw] || inherited.strokeLineCap,
         strokeLineJoin: StrokeLineJoinMap[strokeLineJoinRaw] || inherited.strokeLineJoin,
@@ -618,9 +672,10 @@ const parseHTMLNode = (node, inherited, matrix, clipSpaces) => {
         return parseSvgNode(node, inherited, matrix, clipSpaces);
     }
     else {
-        if (node.tagName === 'polygon') {
+        if (node.tagName === 'polygon' || node.tagName === 'polyline') {
+            const close = node.tagName === 'polygon' ? 'Z' : '';
             node.tagName = 'path';
-            node.attributes['d'] = `M${node.attributes['points']}Z`;
+            node.attributes['d'] = `M${node.attributes['points'] ?? ''}${close}`;
             delete node.attributes['points'];
         }
         const attributes = parseAttributes(node, inherited, matrix);
@@ -761,10 +816,14 @@ const parse = (svg, { width, height, fontSize }, size, matrix) => {
     return parseHTMLNode(htmlElement, {
         ...size,
         viewBox: parseViewBox(htmlElement.attributes['viewBox'] || '0 0 1 1'),
-        fill: undefined,
+        // SVG spec initial values: fill black, stroke none, stroke-width 1
+        color: { rgb: rgb(0, 0, 0), alpha: undefined },
+        fill: rgb(0, 0, 0),
+        fillCurrentColor: false,
+        strokeCurrentColor: false,
         fillOpacity: undefined,
         stroke: undefined,
-        strokeWidth: undefined,
+        strokeWidth: 1,
         strokeOpacity: undefined,
         strokeLineCap: undefined,
         fillRule: undefined,

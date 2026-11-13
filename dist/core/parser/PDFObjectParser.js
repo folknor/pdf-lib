@@ -26,6 +26,7 @@ class PDFObjectParser extends BaseParser {
     static forByteStream = (byteStream, context, capNumbers = false) => new PDFObjectParser(byteStream, context, capNumbers);
     context;
     cryptoFactory;
+    pendingStreamLengths = [];
     constructor(byteStream, context, capNumbers = false, cryptoFactory) {
         super(byteStream, capNumbers);
         this.context = context;
@@ -152,10 +153,13 @@ class PDFObjectParser extends BaseParser {
         this.bytes.assertNext(CharCodes.LessThan);
         this.skipWhitespaceAndComments();
         const dict = new Map();
+        let contentsPos;
         while (!this.bytes.done() &&
             this.bytes.peek() !== CharCodes.GreaterThan &&
             this.bytes.peekAhead(1) !== CharCodes.GreaterThan) {
             const key = this.parseName();
+            if (key === PDFName.of('Contents'))
+                contentsPos = this.bytes.position();
             const value = this.parseObject(ref);
             dict.set(key, value);
             this.skipWhitespaceAndComments();
@@ -164,6 +168,25 @@ class PDFObjectParser extends BaseParser {
         this.bytes.assertNext(CharCodes.GreaterThan);
         this.bytes.assertNext(CharCodes.GreaterThan);
         const Type = dict.get(PDFName.of('Type'));
+        // PDF 32000 7.6.2: strings in the /Contents of signature dictionaries are
+        // never encrypted. /Type is optional on signature dictionaries, so an
+        // untyped dict carrying /ByteRange counts too. /Type may follow
+        // /Contents, so re-read the value without decryption once known.
+        const isSignatureDict = Type === PDFName.of('Sig') ||
+            Type === PDFName.of('DocTimeStamp') ||
+            (Type === undefined && dict.get(PDFName.of('ByteRange')) !== undefined);
+        if (this.cryptoFactory &&
+            ref &&
+            contentsPos !== undefined &&
+            isSignatureDict) {
+            const contents = dict.get(PDFName.of('Contents'));
+            if (contents instanceof PDFString || contents instanceof PDFHexString) {
+                const resumeAt = this.bytes.position();
+                this.bytes.restorePosition(contentsPos);
+                dict.set(PDFName.of('Contents'), this.parseObject());
+                this.bytes.restorePosition(resumeAt);
+            }
+        }
         if (Type === PDFName.of('Catalog')) {
             return PDFCatalog.fromMapWithContext(dict, this.context);
         }
@@ -188,27 +211,90 @@ class PDFObjectParser extends BaseParser {
             this.matchKeyword(Keywords.stream))) {
             return dict;
         }
-        const start = this.bytes.offset();
+        const start = this.bytes.position();
         let end;
+        // Honour /Length when it is a direct number, or an indirect reference to
+        // a number that has already been parsed into the context. Either way the
+        // value is only trusted if `endstream` follows it.
         const Length = dict.get(PDFName.of('Length'));
-        if (Length instanceof PDFNumber) {
-            end = start + Length.asNumber();
+        const length = this.resolveStreamLength(Length);
+        if (length !== undefined) {
+            end = start.offset + length;
             this.bytes.moveTo(end);
             this.skipWhitespaceAndComments();
             if (!this.matchKeyword(Keywords.endstream)) {
-                this.bytes.moveTo(start);
+                this.bytes.restorePosition(start);
                 end = this.findEndOfStreamFallback(startPos);
             }
         }
         else {
             end = this.findEndOfStreamFallback(startPos);
         }
-        let contents = this.bytes.slice(start, end);
-        if (this.cryptoFactory && ref) {
-            const transform = this.cryptoFactory.createCipherTransform(ref.objectNumber, ref.generationNumber);
-            contents = transform.decryptBytes(contents);
+        const stream = PDFRawStream.of(dict, this.decryptStreamBytes(this.bytes.slice(start.offset, end), ref));
+        // An indirect /Length usually points to an object that follows the
+        // stream, so the scan above may have dropped a trailing EOL byte that is
+        // really data. Even when it resolved, an incremental update may redefine
+        // the length object later in the file. Revisit every indirect length
+        // once the whole document has been parsed.
+        if (Length instanceof PDFRef) {
+            this.pendingStreamLengths.push({
+                stream,
+                ref,
+                lengthRef: Length,
+                start: start.offset,
+                end,
+            });
         }
-        return PDFRawStream.of(dict, contents);
+        return stream;
+    }
+    decryptStreamBytes(bytes, ref) {
+        if (!this.cryptoFactory || !ref)
+            return bytes;
+        return this.cryptoFactory
+            .createCipherTransform(ref.objectNumber, ref.generationNumber)
+            .decryptBytes(bytes);
+    }
+    /**
+     * Re-slices streams with an indirect /Length whose final value (after all
+     * revisions are parsed) differs from the extent used at parse time. Call
+     * after every object is in the context. A length is applied only if
+     * `endstream` (after optional whitespace) follows it.
+     */
+    resolvePendingStreamLengths() {
+        const pending = this.pendingStreamLengths;
+        if (pending.length === 0)
+            return;
+        const saved = this.bytes.position();
+        for (const { stream, ref, lengthRef, start, end } of pending) {
+            const length = this.resolveStreamLength(lengthRef);
+            if (length === undefined || start + length === end)
+                continue;
+            if (!this.endstreamFollows(start + length))
+                continue;
+            stream.contents = this.decryptStreamBytes(this.bytes.slice(start, start + length), ref);
+        }
+        pending.length = 0;
+        this.bytes.restorePosition(saved);
+    }
+    endstreamFollows(offset) {
+        this.bytes.moveTo(offset);
+        this.skipWhitespaceAndComments();
+        return this.matchKeyword(Keywords.endstream);
+    }
+    /**
+     * Returns the stream length declared by `/Length` if it is usable: a
+     * non-negative integer given directly or via an indirect reference whose
+     * target is already in the context. Indirect lengths whose object hasn't
+     * been parsed yet (commonly it follows the stream) yield `undefined`.
+     */
+    resolveStreamLength(Length) {
+        let value = Length;
+        if (value instanceof PDFRef)
+            value = this.context.lookup(value);
+        if (!(value instanceof PDFNumber))
+            return;
+        const n = value.asNumber();
+        return Number.isInteger(n) && n >= 0 ? n : undefined;
     }
     findEndOfStreamFallback(startPos) {
         // Move to end of stream, while handling nested streams

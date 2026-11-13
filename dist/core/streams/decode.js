@@ -5,6 +5,7 @@ import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import Ascii85Stream from './Ascii85Stream.js';
 import AsciiHexStream from './AsciiHexStream.js';
+import DecodeStream from './DecodeStream.js';
 import FlateStream from './FlateStream.js';
 import LZWStream from './LZWStream.js';
 import RunLengthStream from './RunLengthStream.js';
@@ -36,17 +37,26 @@ const decodeStream = (stream, encoding, params) => {
 };
 export const decodePDFRawStream = ({ dict, contents, transform, }) => {
     let stream = new Stream(contents);
+    // Per-document limit (LoadOptions.maxDecodedStreamSize) wins over the
+    // global default. Applied to every decoding stage of the chain.
+    const maxDecodedSize = dict.context.maxDecodedStreamSize;
+    const applyLimit = (s) => {
+        if (maxDecodedSize !== undefined && s instanceof DecodeStream) {
+            s.maxDecodedSize = maxDecodedSize;
+        }
+        return s;
+    };
     if (transform) {
-        stream = transform.createStream(stream, contents.length);
+        stream = applyLimit(transform.createStream(stream, contents.length));
     }
     const Filter = dict.lookup(PDFName.of('Filter'));
     const DecodeParms = dict.lookup(PDFName.of('DecodeParms'));
     if (Filter instanceof PDFName) {
-        stream = decodeStream(stream, Filter, DecodeParms);
+        stream = applyLimit(decodeStream(stream, Filter, DecodeParms));
     }
     else if (Filter instanceof PDFArray) {
         for (let idx = 0, len = Filter.size(); idx < len; idx++) {
-            stream = decodeStream(stream, Filter.lookup(idx, PDFName), DecodeParms && DecodeParms.lookupMaybe(idx, PDFDict));
+            stream = applyLimit(decodeStream(stream, Filter.lookup(idx, PDFName), DecodeParms && DecodeParms.lookupMaybe(idx, PDFDict)));
         }
     }
     else if (Filter) {

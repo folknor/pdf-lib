@@ -17,6 +17,7 @@ declare class PDFObjectParser extends BaseParser {
     static forByteStream: (byteStream: ByteStream, context: PDFContext, capNumbers?: boolean) => PDFObjectParser;
     protected readonly context: PDFContext;
     private readonly cryptoFactory;
+    private readonly pendingStreamLengths;
     constructor(byteStream: ByteStream, context: PDFContext, capNumbers?: boolean, cryptoFactory?: CipherTransformFactory);
     parseObject(ref?: PDFRef): PDFObject;
     protected parseNumberOrRef(): PDFNumber | PDFRef;
@@ -26,6 +27,22 @@ declare class PDFObjectParser extends BaseParser {
     protected parseArray(ref?: PDFRef): PDFArray;
     protected parseDict(ref?: PDFRef): PDFDict;
     protected parseDictOrStream(ref?: PDFRef): PDFDict | PDFStream;
+    private decryptStreamBytes;
+    /**
+     * Re-slices streams with an indirect /Length whose final value (after all
+     * revisions are parsed) differs from the extent used at parse time. Call
+     * after every object is in the context. A length is applied only if
+     * `endstream` (after optional whitespace) follows it.
+     */
+    resolvePendingStreamLengths(): void;
+    private endstreamFollows;
+    /**
+     * Returns the stream length declared by `/Length` if it is usable: a
+     * non-negative integer given directly or via an indirect reference whose
+     * target is already in the context. Indirect lengths whose object hasn't
+     * been parsed yet (commonly it follows the stream) yield `undefined`.
+     */
+    private resolveStreamLength;
     protected findEndOfStreamFallback(startPos: Position): number;
     /**
      * Match a keyword only if it's preceded by a valid delimiter character.

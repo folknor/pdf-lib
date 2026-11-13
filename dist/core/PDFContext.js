@@ -21,6 +21,11 @@ import PDFContentStream from './structures/PDFContentStream.js';
 const byAscendingObjectNumber = ([a], [b]) => a.objectNumber - b.objectNumber;
 class PDFContext {
     isDecrypted = true;
+    /**
+     * Per-document cap on the decoded size of a single stream. When undefined,
+     * the global `DecodeStream.maxDecodedSize` applies.
+     */
+    maxDecodedStreamSize;
     static create = () => new PDFContext();
     largestObjectNumber;
     header;

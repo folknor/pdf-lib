@@ -1,6 +1,6 @@
 import { unzlibSync } from 'fflate';
-import UnicodeTrie from 'unicode-trie';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
+import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
 import { decodeBase64 } from '../../utils.js';
 import DefaultShaper from './DefaultShaper.js';
 import base64DeflatedTrie from './trie.js';

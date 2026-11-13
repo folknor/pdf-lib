@@ -1,4 +1,7 @@
 import type PDFObject from './objects/PDFObject.js';
+export declare class DecodedStreamTooLargeError extends Error {
+    constructor(requested: number, max: number);
+}
 export declare class MethodNotImplementedError extends Error {
     constructor(className: string, methodName: string);
 }
