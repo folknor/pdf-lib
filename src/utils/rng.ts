@@ -19,3 +19,42 @@ export class SimpleRNG {
     return x - Math.floor(x);
   }
 }
+
+// getRandomValues rejects requests larger than this
+const MAX_RANDOM_BYTES_PER_CALL = 65536;
+
+const getWebCrypto = (): Crypto => {
+  const webCrypto = (globalThis as { crypto?: Crypto }).crypto;
+  if (!webCrypto || typeof webCrypto.getRandomValues !== 'function') {
+    throw new Error(
+      'Web Crypto API is unavailable, so cryptographically secure random bytes ' +
+        'cannot be generated. A `crypto.getRandomValues` polyfill is required ' +
+        'to encrypt documents in this environment.',
+    );
+  }
+  return webCrypto;
+};
+
+/**
+ * Generates cryptographically secure random bytes using the platform's Web
+ * Crypto API (`crypto.getRandomValues`), which is available as a global in
+ * modern browsers, Node (>= 19, or 18 with --experimental-global-webcrypto),
+ * Deno, and Bun.
+ *
+ * Throws when `globalThis.crypto.getRandomValues` is missing, e.g. older Node
+ * or React Native without a polyfill such as `react-native-get-random-values`.
+ * Only document encryption needs this; the rest of `pdf-lib` is unaffected.
+ */
+export const getRandomBytes = (byteCount: number): Uint8Array => {
+  const webCrypto = getWebCrypto();
+  const bytes = new Uint8Array(byteCount);
+  for (
+    let offset = 0;
+    offset < byteCount;
+    offset += MAX_RANDOM_BYTES_PER_CALL
+  ) {
+    const end = Math.min(offset + MAX_RANDOM_BYTES_PER_CALL, byteCount);
+    webCrypto.getRandomValues(bytes.subarray(offset, end));
+  }
+  return bytes;
+};

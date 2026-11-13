@@ -14,9 +14,6 @@ importers:
       color:
         specifier: ^5.0.3
         version: 5.0.3
-      crypto-js:
-        specifier: ^4.2.0
-        version: 4.2.0
       dfa:
         specifier: ^1.2.0
         version: 1.2.0
@@ -48,9 +45,6 @@ importers:
       '@types/color':
         specifier: ^4.2.1
         version: 4.2.1
-      '@types/crypto-js':
-        specifier: ^4.2.2
-        version: 4.2.2
       '@types/node':
         specifier: ^25.9.3
         version: 25.9.3
@@ -394,9 +388,6 @@ packages:
   '@types/color@4.2.1':
     resolution: {integrity: sha512-ResWeDLy1vozIMbD6JLRKuNBbIcIlBkjTIxVHHd5Cqtm77T+ahH3BWE/PWv1OhFd1HAwcn8no4ig2uTaRXpYQQ==}
 
-  '@types/crypto-js@4.2.2':
-    resolution: {integrity: sha512-sDOLlVbHhXpAUAL0YHDUUwDZf3iN4Bwi4W6a0W0b+QcAezUbRtH4FVb+9J4h+XFPW7l/gQ9F8qC7P+Ec4k8QVQ==}
-
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
@@ -500,10 +491,6 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
-
-  crypto-js@4.2.0:
-    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
-    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1234,8 +1221,6 @@ snapshots:
     dependencies:
       '@types/color-convert': 2.0.4
 
-  '@types/crypto-js@4.2.2': {}
-
   '@types/deep-eql@4.0.2': {}
 
   '@types/estree@1.0.9': {}
@@ -1349,8 +1334,6 @@ snapshots:
       color-string: 2.1.4
 
   convert-source-map@2.0.0: {}
-
-  crypto-js@4.2.0: {}
 
   debug@4.4.3:
     dependencies:
