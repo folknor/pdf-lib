@@ -85,7 +85,15 @@ export default class Path {
         }
       }
 
-      this._cbox = Object.freeze(cbox);
+      // A path with no points (an empty CFF charstring, an empty glyph in a
+      // variation instance, a close-only path) gets a zero box, matching
+      // TTFGlyph's empty-glyph cbox, so metrics and mark positioning see
+      // finite numbers. bbox deliberately keeps the infinite empty sentinel:
+      // GlyphRun.bbox relies on addPoint skipping it to leave empty glyphs
+      // out of a run's ink bounds.
+      this._cbox = Object.freeze(
+        cbox.minX === Infinity ? new BBox(0, 0, 0, 0) : cbox,
+      );
     }
 
     return this._cbox;

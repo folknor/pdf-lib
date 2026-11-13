@@ -4,6 +4,7 @@ import fontkit from 'src/fontkit.js';
 import BBox from '../../src/fontkit/glyph/BBox';
 import CBDTGlyph from '../../src/fontkit/glyph/CBDTGlyph';
 import COLRGlyph from '../../src/fontkit/glyph/COLRGlyph';
+import Path from '../../src/fontkit/glyph/Path';
 import TTFGlyph from '../../src/fontkit/glyph/TTFGlyph';
 import GPOSProcessor from '../../src/fontkit/opentype/GPOSProcessor';
 
@@ -171,6 +172,29 @@ describe('color and bitmap glyphs', () => {
     expect(otf.maxp.version).toBe(0x00005000);
     expect(Object.keys(otf.maxp)).not.toContain('maxPoints');
     expect(otf.numGlyphs).toBeGreaterThan(0);
+  });
+
+  it('gives empty CFF glyphs a zero cbox and finite metrics', () => {
+    const otf = fontkit.create(
+      new Uint8Array(
+        fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
+      ),
+    ) as any;
+    const space = otf.glyphForCodePoint(0x20);
+    expect(space.path.commands).toHaveLength(0);
+    expect(space.cbox).toEqual(new BBox(0, 0, 0, 0));
+    expect(Number.isFinite(space._getMetrics().topBearing)).toBe(true);
+    // bbox keeps the empty sentinel so runs leave spaces out of their bounds.
+    expect(space.bbox.minX).toBe(Infinity);
+  });
+
+  it('keeps cbox points of move-only paths and zeroes point-free ones', () => {
+    const empty = new Path();
+    empty.closePath();
+    expect(empty.cbox).toEqual(new BBox(0, 0, 0, 0));
+    const moved = new Path();
+    moved.moveTo(12, 34);
+    expect(moved.cbox).toEqual(new BBox(12, 34, 12, 34));
   });
 
   it('refuses to subset an sbix font without outlines', () => {
