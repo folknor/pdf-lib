@@ -2246,7 +2246,11 @@ export default class PDFDocument {
   private async writeIncrement(
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions,
-  ): Promise<{ bytes: Uint8Array<ArrayBuffer>; highestObjectNumber: number }> {
+  ): Promise<{
+    bytes: Uint8Array<ArrayBuffer>;
+    highestObjectNumber: number;
+    xrefOffset: number;
+  }> {
     if (!this.context.pdfFileDetails.originalBytes) {
       throw new Error(
         'saveIncremental() requires the document to be loaded with forIncrementalUpdate: true',
@@ -2307,7 +2311,11 @@ export default class PDFDocument {
         );
     if (!saveOptions.useObjectStreams) writer.fillXrefGaps = fillXrefGaps;
     const bytes = await writer.serializeToBuffer();
-    return { bytes, highestObjectNumber: writer.highestObjectNumber };
+    return {
+      bytes,
+      highestObjectNumber: writer.highestObjectNumber,
+      xrefOffset: writer.xrefOffset,
+    };
   }
 
   /**
@@ -2367,8 +2375,11 @@ export default class PDFDocument {
       );
     }
     const { snapshot } = this.context;
-    const { bytes: incrementalBytes, highestObjectNumber } =
-      await this.writeIncrement(snapshot, options);
+    const {
+      bytes: incrementalBytes,
+      highestObjectNumber,
+      xrefOffset,
+    } = await this.writeIncrement(snapshot, options);
     // The increment's object streams and xref stream are not in the context,
     // but their numbers are now taken in the file: a later revision reusing
     // one would redirect the type-2 entries that name it.
@@ -2394,16 +2405,9 @@ export default class PDFDocument {
       this.context.pdfFileDetails.useObjectStreams = true;
     }
 
-    const incrementalStr = new TextDecoder('latin1').decode(incrementalBytes);
-    const startxrefMatch = incrementalStr.match(/startxref\s+(\d+)/);
-    if (startxrefMatch) {
-      this.context.pdfFileDetails.prevStartXRef = parseInt(
-        startxrefMatch[1]!,
-        10,
-      );
-    } else {
-      this.context.pdfFileDetails.prevStartXRef = originalBytes.byteLength;
-    }
+    // The writer's own xref offset, never a scan of the bytes: a stream in
+    // the increment may contain the text "startxref".
+    this.context.pdfFileDetails.prevStartXRef = xrefOffset;
 
     delete this.context.snapshot;
     this.takeSnapshot();

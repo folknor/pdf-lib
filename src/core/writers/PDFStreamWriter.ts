@@ -206,6 +206,7 @@ class PDFStreamWriter extends PDFWriter {
     }
     xrefStream.addUncompressedEntry(xrefStreamRef, size);
     const xrefOffset = size;
+    this.xrefOffset = xrefOffset;
     size += this.computeIndirectObjectSize([xrefStreamRef, xrefStream]);
 
     uncompressedObjects.push([xrefStreamRef, xrefStream]);

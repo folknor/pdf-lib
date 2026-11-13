@@ -57,49 +57,50 @@ class PDFCrossRefSection {
   }
 
   /**
-   * Fills gaps between subsections with deleted ('f') entries, creating a
-   * single contiguous xref section. This prevents xref fragmentation which
-   * can cause Adobe Reader to invalidate digital signatures.
-   *
-   * For example, if there are entries for objects 0-5 and 10-15, this method
-   * adds deleted entries for objects 6-9, resulting in a single section 0-15.
+   * A free entry of generation 0 (65535 for object 0, the chain head): what
+   * a gap in a full save stands for.
    */
-  fillGaps(): void {
-    if (this.subsections.length <= 1) return;
+  static freeGap = (objectNumber: number): Entry => ({
+    ref: PDFRef.of(objectNumber, objectNumber === 0 ? 65535 : 0),
+    offset: 0,
+    deleted: true,
+  });
 
-    // Merge all subsections into one, filling gaps with deleted entries
+  /**
+   * Makes the section one contiguous subsection from 0 through the highest
+   * of its own entries and `through`: every number the section does not
+   * list gets the entry `gapEntry` gives for it, and the free chain is
+   * rebuilt in ascending order over every free entry, from object 0 and
+   * ending at 0. This avoids a fragmented xref, which can make Adobe Reader
+   * invalidate digital signatures (Hopding/pdf-lib#1388).
+   *
+   * What a gap means is the caller's: in a full save a number the section
+   * does not list is absent ([[PDFCrossRefSection.freeGap]]); in an
+   * increment it is inherited from earlier revisions and must be listed as
+   * the file already resolves it (see PDFWriter.computeBufferSize).
+   */
+  fillGaps(
+    gapEntry: (objectNumber: number) => Entry = PDFCrossRefSection.freeGap,
+    through = 0,
+  ): void {
     const merged: Entry[] = [];
     let nextExpectedObjNum = 0;
+    const fillUpTo = (end: number) => {
+      while (nextExpectedObjNum < end) {
+        merged.push(gapEntry(nextExpectedObjNum));
+        nextExpectedObjNum++;
+      }
+    };
 
     for (const subsection of this.subsections) {
       for (const entry of subsection) {
-        // Fill any gap before this entry with deleted entries
-        while (nextExpectedObjNum < entry.ref.objectNumber) {
-          merged.push({
-            ref: PDFRef.of(nextExpectedObjNum, 0),
-            offset: 0,
-            deleted: true,
-          });
-          nextExpectedObjNum++;
-        }
+        fillUpTo(entry.ref.objectNumber);
         merged.push(entry);
         nextExpectedObjNum = entry.ref.objectNumber + 1;
       }
     }
-
-    // Update first deleted entry (object 0) to point to next free object
-    // as per PDF spec: first entry in free list points to next free object
-    if (merged.length > 0 && merged[0]!.deleted) {
-      // Find next free object number in the chain
-      let nextFree = 0;
-      for (let i = 1; i < merged.length; i++) {
-        if (merged[i]!.deleted) {
-          nextFree = merged[i]!.ref.objectNumber;
-          break;
-        }
-      }
-      merged[0]!.offset = nextFree;
-    }
+    fillUpTo(through + 1);
+    if (merged.length === 0) return;
 
     // Build the free object linked list
     // Each free entry's offset should point to the next free object

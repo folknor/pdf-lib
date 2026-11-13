@@ -26,9 +26,15 @@ export interface SaveOptions {
   /** Compress uncompressed streams using FlateDecode to reduce file size */
   compress?: boolean;
   /**
-   * Fill gaps in xref table with deleted entries instead of creating multiple
-   * subsections. This prevents xref fragmentation which can cause Adobe Reader
-   * to invalidate digital signatures on incremental updates.
+   * Write the xref table as one contiguous subsection from object 0. A
+   * fragmented table can make Adobe Reader invalidate digital signatures on
+   * incremental updates. In a full save a number no object uses is listed
+   * free. In an incremental save a number the increment does not write is
+   * listed as the file already resolves it (in use at its earlier offset,
+   * or free), so nothing inherited is deleted; this throws when the file's
+   * xref chain cannot be read strictly, or when such a number is an object
+   * in an object stream, which a table cannot list. Applies to xref tables
+   * only: ignored when `useObjectStreams` writes a cross-reference stream.
    */
   fillXrefGaps?: boolean;
 }
@@ -45,9 +51,15 @@ export interface IncrementalSaveOptions {
   /** Compress uncompressed streams using FlateDecode to reduce file size */
   compress?: boolean;
   /**
-   * Fill gaps in xref table with deleted entries instead of creating multiple
-   * subsections. This prevents xref fragmentation which can cause Adobe Reader
-   * to invalidate digital signatures on incremental updates.
+   * Write the xref table as one contiguous subsection from object 0. A
+   * fragmented table can make Adobe Reader invalidate digital signatures on
+   * incremental updates. In a full save a number no object uses is listed
+   * free. In an incremental save a number the increment does not write is
+   * listed as the file already resolves it (in use at its earlier offset,
+   * or free), so nothing inherited is deleted; this throws when the file's
+   * xref chain cannot be read strictly, or when such a number is an object
+   * in an object stream, which a table cannot list. Applies to xref tables
+   * only: ignored when `useObjectStreams` writes a cross-reference stream.
    */
   fillXrefGaps?: boolean;
 }

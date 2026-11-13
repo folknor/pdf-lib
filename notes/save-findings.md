@@ -14,9 +14,31 @@ number freed by an earlier revision (including one this library committed)
 drops out of the newest chain while keeping a generation below 65535, which
 ISO 32000-1 7.5.4 allows only for 65535 entries. The freed generation is
 the one of the removed object as the context holds it, not the file's
-effective one. Both need the parser to keep the effective xref of the file
-(`PDFParser.parseDocumentSection` discards every parsed table), the same
-baseline state the `fillXrefGaps` entry below needs.
+effective one. Both need the file's effective xref, which
+`PDFXRefChainReader` (`src/core/parser`) reads from the bytes along the
+`/Prev` chain; today only a `fillXrefGaps` table increment uses it, and that
+path does link earlier free entries in.
+
+## An increment can reuse a number an earlier revision froze
+
+A free entry of generation 65535 is never to be reused (ISO 32000-1 7.5.4),
+but neither writer checks a number it emits in use against the file's
+effective xref: a context object under such a number (the parser loads
+every scanned body, freed or not) is written in use. A fix reads the
+effective xref (`PDFXRefChainReader`) on every increment and refuses that
+write; an ordinary reuse of an earlier free number should likewise carry
+the generation the free entry names.
+
+## Stream decoding ignores /DecodeParms predictors
+
+`decodePDFRawStream` (`src/core/streams/decode.ts`) applies filters but no
+PNG or TIFF predictor, so the loader's `PDFXRefStreamParser` and
+`PDFObjectStreamParser` misread any stream that declares one (Acrobat
+commonly writes xref streams with `/Predictor 12`). The loader only takes
+trailer keys from xref streams today, so the damage is confined to
+predicted object streams and to whatever later reads xref entries through
+it. `PDFXRefChainReader` reverses PNG predictors itself; a fix in the
+decoder would let it, and the loader, share one implementation.
 
 ## The context can hold several generations of one number
 
@@ -26,18 +48,6 @@ never selects the generation its xref names. Any write that emits that
 number then has two in-use candidates; `freeEntries()` refuses such a write
 rather than emit a duplicate xref entry. A fix picks the effective
 generation from the xref at load.
-
-## `fillXrefGaps` frees inherited objects in an increment
-
-`PDFCrossRefSection.fillGaps()` marks every number missing between the
-entries of a section as free. In an increment the missing numbers are the
-unchanged objects of earlier revisions, and, after a commit with object
-streams, the object streams their type-2 entries name; filling them
-deletes them for any reader that honours the newest section. Filling an
-incremental section needs the inherited entries, or the option must be
-refused for increments. The encryption guard (`assertUntouchedBy`) checks
-only recorded deletions, so a filled gap can also free an object the guard
-protects.
 
 ## The trailer /ID never changes between revisions
 

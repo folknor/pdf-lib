@@ -17,6 +17,7 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
+import PDFXRefChainReader from '../parser/PDFXRefChainReader.js';
 import type {
   BaselineEncryption,
   ObjectEncryptor,
@@ -39,8 +40,9 @@ export interface FreeEntry {
  * 65535 (ISO 32000-1 7.5.4: such an entry is never reused). The chain runs
  * in ascending order and ends at 0.
  *
- * The chain covers this revision's deletions only: the parser keeps no
- * earlier xref, so free entries of earlier revisions are not linked in.
+ * The chain covers this revision's deletions only: free entries of earlier
+ * revisions are not linked in, except where `fillXrefGaps` rebuilds an
+ * increment's table over the file's effective xref (fillInheritedGaps).
  */
 export const freeEntries = (
   context: PDFContext,
@@ -174,8 +176,18 @@ class PDFWriter {
   protected readonly snapshot: DocumentSnapshot;
   protected readonly shouldCompress: boolean;
 
-  /** Set to true to fill xref gaps with deleted entries (prevents fragmentation) */
+  /**
+   * Write the xref table as one contiguous subsection (see
+   * fillInheritedGaps for increments). Cross-reference streams ignore it.
+   */
   public fillXrefGaps: boolean = false;
+
+  /**
+   * The absolute file offset of the xref section the last serialization
+   * emitted: the startxref of the revision it wrote (see
+   * PDFDocument.commit()).
+   */
+  xrefOffset = 0;
 
   private parsedObjects = 0;
 
@@ -317,14 +329,20 @@ class PDFWriter {
     return refSize + objectSize;
   }
 
-  protected createTrailerDict(prevStartXRef?: number): PDFDict {
+  protected createTrailerDict(
+    prevStartXRef?: number,
+    incremental = false,
+  ): PDFDict {
     /**
-     * If last object (XRef Stream) is not in the output, then size is one less.
-     * An XRef Stream object should always be the largest object number in PDF
+     * In a full save, if the last object (an XRef Stream) is not in the
+     * output, the size is one less. In an increment a skipped object is
+     * unchanged, still in use through earlier sections, and /Size must keep
+     * covering it.
      */
     const size =
       this.context.largestObjectNumber +
-      (this._largestSkippedObjectNum === this.context.largestObjectNumber
+      (!incremental &&
+      this._largestSkippedObjectNum === this.context.largestObjectNumber
         ? 0
         : 1);
     return this.context.obj({
@@ -385,18 +403,19 @@ class PDFWriter {
       xref.addDeletedEntry(ref, nextFreeObjectNumber);
     }
 
-    // Fill gaps in xref to prevent fragmentation (important for digital signatures)
     if (this.fillXrefGaps) {
-      xref.fillGaps();
+      if (incremental) this.fillInheritedGaps(xref);
+      else xref.fillGaps();
     }
 
     this.highestObjectNumber = this.context.largestObjectNumber;
 
     const xrefOffset = size;
+    this.xrefOffset = xrefOffset;
     size += xref.sizeInBytes() + 1; // '\n'
 
     const trailerDict = PDFTrailerDict.of(
-      this.createTrailerDict(this.snapshot.prevStartXRef),
+      this.createTrailerDict(this.snapshot.prevStartXRef, incremental),
     );
     size += trailerDict.sizeInBytes() + 2; // '\n\n'
 
@@ -405,6 +424,55 @@ class PDFWriter {
     size -= this.snapshot.pdfSize;
 
     return { size, header, indirectObjects, xref, trailerDict, trailer };
+  }
+
+  /**
+   * Fills an increment's table without changing how any number it does not
+   * write resolves. A number missing from the table is an unchanged object
+   * of an earlier revision, not a free one: it is listed with the entry the
+   * file's effective xref already gives it (in use at its old offset and
+   * generation, or free with its generation, 65535 included), so filling
+   * neither deletes inherited objects nor touches what the encryption guard
+   * protects. The range extends to the highest effective free number so the
+   * rebuilt chain links every free entry. A number listed nowhere is free.
+   *
+   * Throws when the file's xref chain cannot be read strictly
+   * (PDFXRefChainReader) or when a gap is an object in an object stream: a
+   * table cannot express a type-2 entry.
+   */
+  private fillInheritedGaps(xref: PDFCrossRefSection): void {
+    const { originalBytes } = this.context.pdfFileDetails;
+    const { prevStartXRef } = this.snapshot;
+    if (!originalBytes || prevStartXRef === undefined) {
+      throw new Error(
+        'fillXrefGaps in an incremental save needs the bytes and startxref of the file it extends',
+      );
+    }
+    const inherited = PDFXRefChainReader.read(
+      originalBytes,
+      prevStartXRef,
+      this.context.maxDecodedStreamSize,
+    );
+    if (inherited.size - 1 > this.context.largestObjectNumber) {
+      throw new Error(
+        `fillXrefGaps: the file's /Size ${inherited.size} exceeds the numbers this document reserves`,
+      );
+    }
+    xref.fillGaps((objectNumber) => {
+      if (objectNumber === 0) return PDFCrossRefSection.freeGap(0);
+      const entry = inherited.entries.get(objectNumber);
+      if (!entry) return PDFCrossRefSection.freeGap(objectNumber);
+      if (entry.kind === 'compressed') {
+        throw new Error(
+          `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} is inherited from an object stream, which a table cannot list. Save without fillXrefGaps, or with useObjectStreams.`,
+        );
+      }
+      return {
+        ref: PDFRef.of(objectNumber, entry.generation),
+        offset: entry.kind === 'inUse' ? entry.offset : 0,
+        deleted: entry.kind === 'free',
+      };
+    }, inherited.highestFree);
   }
 
   protected compress(object: PDFObject): void {
