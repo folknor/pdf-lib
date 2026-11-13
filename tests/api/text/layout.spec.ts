@@ -6,6 +6,9 @@ import {
 import { CombedTextLayoutError } from '../../../src/api/errors';
 import { PDFDocument, StandardFonts, TextAlignment } from '../../../src/index';
 import type PDFFont from '../../../src/api/PDFFont';
+import { cleanText, lineSplit } from '../../../src/utils';
+import fontkit from 'src/fontkit.js';
+import fs from 'fs';
 
 const MIN_FONT_SIZE = 4;
 const MAX_FONT_SIZE = 500;
@@ -1410,4 +1413,159 @@ describe('Layout with different standard fonts', () => {
     const iWidth = courierFont.widthOfTextAtSize('i', 12);
     expect(wWidth).toBeCloseTo(iWidth, 10);
   });
+});
+
+// ---------------------------------------------------------------------------
+// splitOutLines binary search vs. a linear reference
+// ---------------------------------------------------------------------------
+
+/**
+ * The straightforward algorithm: try every whitespace-run start from the
+ * longest prefix down, measuring each prefix exactly, and keep the first that
+ * fits. splitOutLines must produce exactly the same lines.
+ */
+const linearLayout = (
+  text: string,
+  maxWidth: number,
+  layoutFont: PDFFont,
+  fontSize: number,
+): string[] => {
+  const out: string[] = [];
+  for (const paragraph of lineSplit(cleanText(text))) {
+    let rest: string | undefined = paragraph;
+    while (rest !== undefined) {
+      const input: string = rest;
+      if (layoutFont.widthOfTextAtSize(input, fontSize) < maxWidth) {
+        out.push(input);
+        break;
+      }
+      const breaks: number[] = [];
+      for (let i = 0; i < input.length; i++) {
+        if (/\s/.test(input[i]!) && (i === 0 || !/\s/.test(input[i - 1]!))) {
+          breaks.push(i);
+        }
+      }
+      let cut: number | undefined;
+      for (let k = breaks.length - 1; k >= 0; k--) {
+        const prefix = input.substring(0, breaks[k]);
+        if (layoutFont.widthOfTextAtSize(prefix, fontSize) < maxWidth) {
+          cut = breaks[k];
+          break;
+        }
+      }
+      if (cut === undefined) {
+        out.push(input);
+        break;
+      }
+      out.push(input.substring(0, cut));
+      let start = cut;
+      while (start < input.length && /\s/.test(input[start]!)) start++;
+      rest = input.substring(start).trim() || undefined;
+    }
+  }
+  return out;
+};
+
+/** Deterministic pseudo-random text built from the given alphabet. */
+const randomText = (seed: number, words: number, alphabet: string) => {
+  let state = seed;
+  const next = () => {
+    state = (state * 1103515245 + 12345) % 2147483648;
+    return state;
+  };
+  const separators = [' ', ' ', ' ', '  ', '\t', ' \t '];
+  let text = '';
+  for (let w = 0; w < words; w++) {
+    const length = 1 + (next() % 12);
+    for (let c = 0; c < length; c++) {
+      text += alphabet[next() % alphabet.length];
+    }
+    text += separators[next() % separators.length];
+  }
+  return text.trim();
+};
+
+describe('splitOutLines matches the linear reference', () => {
+  const kerned = 'AVAWATAYTaToTyVaVoWaYoLTLVLYP.F,r.y.';
+  const latin = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;-' + kerned;
+  const inputs = [
+    'The quick brown fox jumps over the lazy dog, then naps in the warm afternoon sun.',
+    'AVAVAV To Ty Tw Yo Wa LT LY P. F, AWAY TOYS VAT WAVY',
+    '   leading whitespace then words that wrap around',
+    'Supercalifragilisticexpialidocious is far too long to fit at all here',
+    'a  b   c    d     e      f       g',
+    'tabs\tbetween\twords\tand  double  spaces',
+    'first paragraph wraps here\nsecond paragraph also wraps nicely',
+    ...[1, 2, 3, 4, 5, 6, 7, 8].map((seed) => randomText(seed, 60, latin)),
+  ];
+  const widths = [20, 45, 73.5, 100, 150, 222.2, 400];
+  const fontSizes = [8, 12, 17.5];
+
+  const check = (layoutFont: PDFFont, texts: string[]) => {
+    for (const text of texts) {
+      for (const width of widths) {
+        for (const fontSize of fontSizes) {
+          const { lines } = layoutMultilineText(text, {
+            alignment: TextAlignment.Left,
+            fontSize,
+            font: layoutFont,
+            bounds: { x: 0, y: 0, width, height: 10000 },
+          });
+          expect(lines.map((l) => l.text)).toEqual(
+            linearLayout(text, width, layoutFont, fontSize),
+          );
+        }
+      }
+    }
+  };
+
+  it.each([
+    StandardFonts.Helvetica,
+    StandardFonts.TimesRoman,
+    StandardFonts.Courier,
+    StandardFonts.HelveticaBold,
+  ])('with %s (pair-kerned standard font)', async (name) => {
+    check(await pdfDoc.embedFont(name), inputs);
+  });
+
+  it('with a custom font, including non-BMP characters', async () => {
+    const doc = await PDFDocument.create();
+    doc.registerFontkit(fontkit);
+    const ubuntu = await doc.embedFont(
+      fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
+    );
+    check(ubuntu, [
+      ...inputs,
+      'émoji 😀😀 and 𝔘𝔫𝔦𝔠𝔬𝔡𝔢 text that wraps across 😀 several lines',
+      'ﬁne ligatures ﬀ ﬂ in a line that needs to wrap somewhere',
+    ]);
+  });
+
+  it.each([
+    ['many one-word lines', 'a '.repeat(4000).trim(), 12, 25],
+    ['long lines', randomText(42, 3000, 'abcdefghij'), 8, 220],
+  ])(
+    'measures work proportional to each line, not the rest of the paragraph (%s)',
+    async (_name, paragraph, fontSize, width) => {
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const measure = vi.spyOn(helvetica, 'widthOfTextAtSize');
+      const { lines } = layoutMultilineText(paragraph, {
+        alignment: TextAlignment.Left,
+        fontSize,
+        font: helvetica,
+        bounds: { x: 0, y: 0, width, height: 100000 },
+      });
+      expect(lines.length).toBeGreaterThan(100);
+
+      const measuredChars = measure.mock.calls.reduce(
+        (sum, [text]) => sum + text.length,
+        0,
+      );
+      measure.mockRestore();
+      // Galloping + binary search measures O(log words) prefixes of at most
+      // ~2x the line per line. Scanning or measuring the remaining paragraph
+      // once per line would be on the order of lines * length / 2.
+      expect(measuredChars).toBeLessThan(paragraph.length * 30);
+    },
+  );
 });

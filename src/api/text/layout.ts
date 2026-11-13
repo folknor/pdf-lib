@@ -129,56 +129,101 @@ const splitOutLines = (
   font: PDFFont,
   fontSize: number,
 ) => {
-  const fullWidth = font.widthOfTextAtSize(input, fontSize);
-
-  if (fullWidth < maxWidth) {
-    return {
-      line: input,
-      encoded: font.encodeText(input),
-      width: fullWidth,
-      remainder: undefined,
-    };
-  }
-
-  // Forward scan: accumulate character widths and track word boundaries.
-  // This is O(n) compared to the previous backward-scanning approach which
-  // was O(n²) due to repeated substring measurements.
-  let width = 0;
-  let lastBreakPoint = -1;
-
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i]!;
-    const charWidth = font.widthOfTextAtSize(char, fontSize);
-
-    if (width + charWidth >= maxWidth) {
-      if (lastBreakPoint >= 0) {
-        const line = input.substring(0, lastBreakPoint);
-        // Skip past whitespace to find the start of the next word
-        let remainderStart = lastBreakPoint;
-        while (
-          remainderStart < input.length &&
-          /\s/.test(input[remainderStart]!)
-        ) {
-          remainderStart++;
-        }
-        const remainder = input.substring(remainderStart) || undefined;
-        return {
-          line,
-          encoded: font.encodeText(line),
-          width: font.widthOfTextAtSize(line, fontSize),
-          remainder,
-        };
+  // Semantics: the candidate cut points are the start of every whitespace run
+  // (including index 0) and the end of the input. The line is the longest
+  // candidate prefix whose exact width (kerning, surrogate pairs, ...) is
+  // below maxWidth; the remainder starts after the whitespace run at the cut.
+  // If no candidate fits, the whole input is returned as one overflowing line.
+  //
+  // Candidates are discovered lazily and searched by galloping forward from
+  // the line start (1, 2, 4, ... candidates) and then binary searching inside
+  // the bracket, so the work is proportional to the line, not the remaining
+  // paragraph.
+  const breaks: number[] = [];
+  let scanned = 0;
+  let exhausted = false;
+  // Ensure breaks[idx] exists if possible; returns false when there is none.
+  const hasBreak = (idx: number): boolean => {
+    while (breaks.length <= idx && !exhausted) {
+      let i = scanned;
+      while (
+        i < input.length &&
+        !(/\s/.test(input[i]!) && (i === 0 || !/\s/.test(input[i - 1]!)))
+      ) {
+        i++;
       }
-      // No word boundary found — can't split this word
-      break;
+      if (i < input.length) {
+        breaks.push(i);
+        scanned = i + 1;
+      } else {
+        breaks.push(input.length);
+        exhausted = true;
+      }
     }
+    return idx < breaks.length;
+  };
 
-    // Track the start of each whitespace sequence as a potential break point
-    if (/\s/.test(char) && (i === 0 || !/\s/.test(input[i - 1]!))) {
-      lastBreakPoint = i;
+  const widths = new Map<number, number>();
+  const widthUpTo = (end: number) => {
+    let width = widths.get(end);
+    if (width === undefined) {
+      width = font.widthOfTextAtSize(input.substring(0, end), fontSize);
+      widths.set(end, width);
     }
+    return width;
+  };
 
-    width += charWidth;
+  // This relies on prefix width growing with the candidate index:
+  // - Custom fonts sum non-negative advance widths of glyphsForString(), and
+  //   cutting before whitespace never changes the glyphs before the cut, so
+  //   a longer candidate's glyphs extend a shorter one's.
+  // - Standard fonts add pair kerning, which can be negative, but each step
+  //   between candidates adds a whitespace glyph plus a word, whose widths
+  //   are expected to dwarf any negative kerning between them (true for all
+  //   bundled Standard 14 AFM kerning pairs).
+  // The forward check after the search extends past the boundary if a longer
+  // candidate still fits, so a local non-monotonic step can't shorten a line.
+  const fits = (idx: number) =>
+    hasBreak(idx) && widthUpTo(breaks[idx]!) < maxWidth;
+
+  // Gallop: find found < high with fits(found) (or found = -1) and !fits(high)
+  let found = -1;
+  let step = 1;
+  while (fits(found + step)) {
+    found += step;
+    step *= 2;
+  }
+  let low = found + 1;
+  let high = found + step - 1;
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    if (fits(middle)) {
+      found = middle;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  while (fits(found + 1)) found++;
+
+  if (found >= 0) {
+    const lastBreakPoint = breaks[found]!;
+    const line = input.substring(0, lastBreakPoint);
+    // Skip past whitespace to find the start of the next word
+    let remainderStart = lastBreakPoint;
+    while (
+      remainderStart < input.length &&
+      /\s/.test(input[remainderStart]!)
+    ) {
+      remainderStart++;
+    }
+    const remainder = input.substring(remainderStart) || undefined;
+    return {
+      line,
+      encoded: font.encodeText(line),
+      width: widthUpTo(lastBreakPoint),
+      remainder,
+    };
   }
 
   // We were unable to split the input enough to get a chunk that would fit
@@ -186,7 +231,7 @@ const splitOutLines = (
   return {
     line: input,
     encoded: font.encodeText(input),
-    width: fullWidth,
+    width: widthUpTo(input.length),
     remainder: undefined,
   };
 };
