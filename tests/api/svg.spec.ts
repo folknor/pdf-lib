@@ -373,8 +373,6 @@ describe('transformationToMatrix', () => {
 // ===========================================================================
 describe('parseColor (via drawSvg)', () => {
   it('fill="none" produces no fill color operator', async () => {
-    // stroke-width must be explicitly set; without it, borderWidth defaults to 0
-    // and drawSvgPath returns a no-op (getDrawingOperator returns undefined).
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="none" stroke="red" stroke-width="1"/></svg>',
     );
@@ -387,8 +385,6 @@ describe('parseColor (via drawSvg)', () => {
   });
 
   it('fill="transparent" produces no fill color operator', async () => {
-    // stroke-width must be explicitly set; without it, borderWidth defaults to 0
-    // and drawSvgPath returns a no-op.
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="transparent" stroke="blue" stroke-width="1"/></svg>',
     );
@@ -544,11 +540,19 @@ describe('drawSvg end-to-end — element types', () => {
       expect(text).toMatch(/\nB\n/); // fill-and-stroke
     });
 
-    it('a rect without fill and stroke is not drawn', async () => {
+    it('a rect without fill and stroke is filled black (SVG default)', async () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50"/></svg>',
       );
-      // The rect runner checks for fill or stroke and returns early if neither
+      expect(text).toContain('0 0 0 rg');
+      expect(text).toMatch(/\nf\n/);
+      expect(text).not.toContain('RG');
+    });
+
+    it('a rect with fill="none" and no stroke is not drawn', async () => {
+      const text = await drawAndGetText(
+        '<svg width="200" height="200"><rect width="100" height="50" fill="none"/></svg>',
+      );
       expect(text).not.toContain('rg');
       expect(text).not.toContain('RG');
     });
@@ -704,6 +708,174 @@ describe('drawSvg end-to-end — element types', () => {
       expect(text).toContain('m'); // moveTo from M
     });
   });
+
+  describe('<polyline> (cantoo-scribe/pdf-lib#167)', () => {
+    it('draws a polyline as an open path', async () => {
+      const text = await drawAndGetText(
+        '<svg width="200" height="200"><polyline points="10,10 50,50 90,10" fill="none" stroke="red"/></svg>',
+      );
+      expect(text).toContain('1 0 0 RG');
+      expect(text).toMatch(/\nS\n/);
+      // open path: no closepath operator between the polyline's moveTo and
+      // its stroke (the viewport clip rect earlier is closed with h)
+      const path = text.slice(text.indexOf('10 10 m'), text.lastIndexOf('S'));
+      expect(path).toContain('90 10 l');
+      expect(path).not.toMatch(/\nh\n/);
+    });
+
+    it('polygon, unlike polyline, is closed', async () => {
+      const text = await drawAndGetText(
+        '<svg width="200" height="200"><polygon points="10,10 50,50 90,10" fill="none" stroke="red"/></svg>',
+      );
+      // scope to the polygon's own path (the viewport clip rect also emits h)
+      const path = text.slice(text.indexOf('10 10 m'), text.lastIndexOf('S'));
+      expect(path).toContain('90 10 l');
+      expect(path).toMatch(/\nh\n/);
+    });
+  });
+});
+
+describe('no-paint guards for line and text', () => {
+  it('stroke="none" on a line overrides an inherited stroke', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g stroke="red"><line x2="20" y2="20" stroke="none"/></g></svg>',
+    );
+    expect(text).not.toContain('RG');
+    expect(text).not.toMatch(/\nS\n/);
+  });
+
+  it('a line with no stroke anywhere is not drawn (default stroke is none)', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><line x2="20" y2="20"/></svg>',
+    );
+    expect(text).not.toContain('RG');
+    expect(text).not.toMatch(/\nS\n/);
+  });
+
+  it('fill="none" on text overrides an inherited fill', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g fill="red"><text x="5" y="20" fill="none">X</text></g></svg>',
+    );
+    expect(text).not.toContain('BT');
+    expect(text).not.toContain('rg');
+  });
+
+  it('fill="transparent" on text draws nothing', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><text x="5" y="20" fill="transparent">X</text></svg>',
+    );
+    expect(text).not.toContain('BT');
+  });
+});
+
+describe('fill="unset" and currentColor', () => {
+  it('fill="unset" inherits like an absent fill instead of throwing', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g fill="red"><rect width="50" height="50" fill="unset"/></g></svg>',
+    );
+    expect(text).toContain('1 0 0 rg');
+  });
+
+  it('currentColor resolves to the color attribute on the element', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><rect width="50" height="50" color="red" fill="currentColor"/></svg>',
+    );
+    expect(text).toContain('1 0 0 rg');
+  });
+
+  it('inherited fill="currentColor" resolves against the child color', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g color="red" fill="currentColor"><rect color="blue" width="20" height="20"/></g></svg>',
+    );
+    expect(text).toContain('0 0 1 rg');
+    expect(text).not.toContain('1 0 0 rg');
+  });
+
+  it('currentColor keeps the alpha of an rgba color', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><rect width="20" height="20" color="rgba(255,0,0,0.5)" fill="currentColor"/></svg>',
+    );
+    expect(text).toContain('1 0 0 rg');
+    expect(text).toMatch(/\/GS\S* gs/);
+  });
+
+  it('color="transparent" does not fall back to the inherited color', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g color="red"><rect color="transparent" fill="currentColor" width="20" height="20"/></g></svg>',
+    );
+    expect(text).not.toContain('rg');
+  });
+
+  it('currentColor resolves to an inherited color', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g color="blue"><line x2="20" y2="20" stroke="currentColor"/></g></svg>',
+    );
+    expect(text).toContain('0 0 1 RG');
+  });
+});
+
+// ===========================================================================
+// Upstream SVG regressions
+// ===========================================================================
+describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
+  it('fill="none" on a child overrides an inherited fill', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g fill="red"><path d="M0 0 L50 0 L50 50 Z" fill="none" stroke="blue"/></g></svg>',
+    );
+    expect(text).not.toContain('1 0 0 rg');
+    expect(text).toContain('0 0 1 RG');
+    expect(text).toMatch(/\nS\n/);
+  });
+
+  it('a path with no fill attribute is filled black by default', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><path d="M0 0 L50 0 L50 50 Z"/></svg>',
+    );
+    expect(text).toContain('0 0 0 rg');
+    expect(text).not.toContain('RG');
+  });
+
+  it('a path with fill="none" and no stroke draws nothing', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><path d="M0 0 L50 0 L50 50 Z" fill="none"/></svg>',
+    );
+    expect(text).not.toContain('rg');
+    expect(text).not.toContain('RG');
+  });
+
+  it('a circle with fill="none" and no stroke draws nothing', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><circle cx="50" cy="50" r="20" fill="none"/></svg>',
+    );
+    expect(text).not.toContain('rg');
+    expect(text).not.toContain('RG');
+  });
+
+  it('stroke="none" on a child overrides an inherited stroke', async () => {
+    const text = await drawAndGetText(
+      '<svg width="100" height="100"><g stroke="blue"><rect width="50" height="50" fill="red" stroke="none"/></g></svg>',
+    );
+    expect(text).toContain('1 0 0 rg');
+    expect(text).not.toContain('RG');
+  });
+});
+
+describe('default stroke-width (cantoo-scribe/pdf-lib#164)', () => {
+  for (const shape of [
+    '<rect width="50" height="50"',
+    '<circle cx="50" cy="50" r="20"',
+    '<ellipse cx="50" cy="50" rx="30" ry="20"',
+    '<path d="M0 0 L50 0 L50 50 Z"',
+  ]) {
+    it(`strokes ${shape.split(' ')[0]}> with stroke but no stroke-width`, async () => {
+      const text = await drawAndGetText(
+        `<svg width="100" height="100">${shape} fill="none" stroke="red"/></svg>`,
+      );
+      expect(text).toContain('1 0 0 RG');
+      expect(text).toContain('1 w');
+      expect(text).toMatch(/\nS\n/);
+    });
+  }
 });
 
 // ===========================================================================
@@ -719,7 +891,6 @@ describe('SVG attribute handling', () => {
     });
 
     it('stroke-opacity applies a graphics state', async () => {
-      // stroke-width must be explicitly set for the stroke to be drawn
       const text = await drawAndGetText(
         '<svg width="100" height="100"><rect width="50" height="50" fill="none" stroke="red" stroke-opacity="0.5" stroke-width="1"/></svg>',
       );

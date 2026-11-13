@@ -84,6 +84,62 @@ describe('svgPathToOperators', () => {
     );
   });
 
+  it('parses arc flags written without separators (cantoo-scribe/pdf-lib#166)', () => {
+    const compact = svgPathToOperators('M300,200 h-150 a150,150 0 10150,-150 z');
+    const spaced = svgPathToOperators(
+      'M300,200 h-150 a150,150 0 1,0 150,-150 z',
+    );
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses compact arc flags followed by a coordinate', () => {
+    const compact = svgPathToOperators('M0,0 a10 10 0 0110-10');
+    const spaced = svgPathToOperators('M0,0 a10 10 0 0 1 10 -10');
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses compact arc flags followed by a negative coordinate', () => {
+    const compact = svgPathToOperators('M0,0 a10 10 0 01-10-10');
+    const spaced = svgPathToOperators('M0,0 a10 10 0 0 1 -10 -10');
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses compact arc flags followed by a decimal coordinate', () => {
+    const compact = svgPathToOperators('M0,0 a10 10 0 01.5 2');
+    const spaced = svgPathToOperators('M0,0 a10 10 0 0 1 0.5 2');
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses compact arc flags that are both 1', () => {
+    const compact = svgPathToOperators('M0,0 a1 1 0 1110 10');
+    const spaced = svgPathToOperators('M0,0 a1 1 0 1 1 10 10');
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses compact flags in absolute (uppercase) arcs', () => {
+    const compact = svgPathToOperators('M0,0 A10 10 0 0120 0');
+    const spaced = svgPathToOperators('M0,0 A10 10 0 0 1 20 0');
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses three implicit compact arc segments', () => {
+    const compact = svgPathToOperators(
+      'M0,0 a5 5 0 0110 0 5 5 0 0010 0 5 5 0 1110 0',
+    );
+    const spaced = svgPathToOperators(
+      'M0,0 a5 5 0 0 1 10 0 5 5 0 0 0 10 0 5 5 0 1 1 10 0',
+    );
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
+  it('parses repeated compact arc segments', () => {
+    const compact = svgPathToOperators('M0,0 a10 10 0 0110-10 10 10 0 1010 10');
+    const spaced = svgPathToOperators(
+      'M0,0 a10 10 0 0 1 10 -10 10 10 0 1 0 10 10',
+    );
+    expect(compact.toString()).toBe(spaced.toString());
+  });
+
   it('can map cubic bezier paths to PDF operators', () => {
     const operators = svgPathToOperators(
       'm 100 100 S 200,100 200,200 200,200 100,200 T 0,250',
