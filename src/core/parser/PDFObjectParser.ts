@@ -373,7 +373,7 @@ class PDFObjectParser extends BaseParser {
   private resolveStreamLength(Length: PDFObject | undefined) {
     let value: PDFObject | undefined = Length;
     if (value instanceof PDFRef) value = this.context.lookup(value);
-    if (!(value instanceof PDFNumber)) return undefined;
+    if (!(value instanceof PDFNumber)) return;
     const n = value.asNumber();
     return Number.isInteger(n) && n >= 0 ? n : undefined;
   }

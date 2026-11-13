@@ -211,10 +211,7 @@ const splitOutLines = (
     const line = input.substring(0, lastBreakPoint);
     // Skip past whitespace to find the start of the next word
     let remainderStart = lastBreakPoint;
-    while (
-      remainderStart < input.length &&
-      /\s/.test(input[remainderStart]!)
-    ) {
+    while (remainderStart < input.length && /\s/.test(input[remainderStart]!)) {
       remainderStart++;
     }
     const remainder = input.substring(remainderStart) || undefined;

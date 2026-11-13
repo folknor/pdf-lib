@@ -957,7 +957,7 @@ export default class PDFForm {
     for (let i = 0, len = chain.length; i < len; i++) {
       if (chain[i]!.has(name)) return chain[i]!.lookup(name);
     }
-    return undefined;
+    return;
   }
 
   /**

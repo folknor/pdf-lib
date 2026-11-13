@@ -24,10 +24,7 @@ export function create(buffer: Uint8Array, postscriptName?: string): any {
         // Variable fonts: select a named instance if one matches.
         if (
           font.directory?.tables?.fvar &&
-          Object.prototype.hasOwnProperty.call(
-            font.namedVariations ?? {},
-            postscriptName,
-          )
+          Object.hasOwn(font.namedVariations ?? {}, postscriptName)
         ) {
           return font.getFont(postscriptName);
         }

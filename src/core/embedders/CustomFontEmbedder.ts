@@ -314,9 +314,9 @@ class CustomFontEmbedder {
     for (let idx = 0, len = characterSet.length; idx < len; idx++) {
       // fontkit returns null when it cannot build a glyph object for the
       // code point; the declared return type omits that.
-      const glyph = this.font.glyphForCodePoint(characterSet[idx]!) as
-        | Glyph
-        | null;
+      const glyph = this.font.glyphForCodePoint(
+        characterSet[idx]!,
+      ) as Glyph | null;
       if (glyph) glyphs.push(glyph);
     }
     return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);

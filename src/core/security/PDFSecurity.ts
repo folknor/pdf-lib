@@ -1,6 +1,5 @@
 import { mergeUint8Arrays } from '../../utils/arrays.js';
 import { getRandomBytes } from '../../utils/rng.js';
-import type PDFContext from '../PDFContext.js';
 import {
   AES128Cipher,
   AES256Cipher,
@@ -8,6 +7,7 @@ import {
   calculateMD5,
   calculateSHA256,
 } from '../crypto.js';
+import type PDFContext from '../PDFContext.js';
 
 type RandomBytesGenerator = (bytes: number) => Uint8Array;
 
