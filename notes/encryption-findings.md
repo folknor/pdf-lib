@@ -68,12 +68,6 @@ accept right-to-left passwords, the RFC 3454 D.1/D.2 bidi tables). The writer
 side is unaffected: it only accepts passwords whose prepared form is the same
 under every Unicode version.
 
-## R5 passwords are not SASLprep-prepared on read
-
-Adobe's extension level 3 specifies SASLprep before UTF-8 for R5 too.
-`CipherTransformFactory` tries plain UTF-8, then raw char codes. This library
-no longer writes R5.
-
 ## Decryption never checks /Perms
 
 `createEncryptionKey20` in `src/core/crypto.ts` takes `_perms` and ignores it.

@@ -297,6 +297,48 @@ const decryptWith = (
 };
 
 describe('PDFSecurity', () => {
+  it.each(['prepared', 'utf8', 'charCodes'] as const)(
+    'reads R5 user and owner passwords encoded as %s',
+    (encoding) => {
+      // Exercise mapping to nothing, non-ASCII spaces and NFKC. Build the
+      // R5 entries with node:crypto, independently of the reader and R6 prep.
+      const passwords = ['u\u00ad\u00a0\uff21é', 'o\u00ad\u00a0\uff22é'];
+      const prepared = ['u Aé', 'o Bé'];
+      const [user, owner] = passwords.map((password, i) =>
+        encoding === 'prepared'
+          ? utf8(prepared[i]!)
+          : encoding === 'utf8'
+            ? utf8(password)
+            : Uint8Array.from(password, (char) => char.charCodeAt(0)),
+      ) as [Uint8Array, Uint8Array];
+      const key = new Uint8Array(32).fill(42);
+      const zero = new Uint8Array(16);
+      const uvs = new Uint8Array(8).fill(1);
+      const uks = new Uint8Array(8).fill(2);
+      const ovs = new Uint8Array(8).fill(3);
+      const oks = new Uint8Array(8).fill(4);
+      const U = concat(digest('sha256', concat(user, uvs)), uvs, uks);
+      const context = contextFor(1, 7);
+      const dict = context.obj({
+        Filter: 'Standard', V: 5, R: 5, Length: 256, P: -3904,
+        CF: { StdCF: { AuthEvent: 'DocOpen', CFM: 'AESV3', Length: 32 } },
+        StmF: 'StdCF', StrF: 'StdCF', U,
+        O: concat(digest('sha256', concat(owner, ovs, U)), ovs, oks),
+        UE: aes('aes-256-cbc', digest('sha256', concat(user, uks)), zero, key),
+        OE: aes('aes-256-cbc', digest('sha256', concat(owner, oks, U)), zero, key),
+        Perms: new Uint8Array(16),
+      } as any) as PDFDict;
+      const pad = 16 - (PLAINTEXT.length % 16);
+      const ciphertext = concat(zero, aes('aes-256-cbc', key, zero,
+        concat(PLAINTEXT, new Uint8Array(pad).fill(pad))));
+      for (const password of passwords) {
+        const factory = new CipherTransformFactory(dict, new Uint8Array(16), password);
+        expect(Array.from(factory.createCipherTransform(7, 0).decryptBytes(ciphertext)))
+          .toEqual(Array.from(PLAINTEXT));
+      }
+    },
+  );
+
   it.each([5, 6])(
     'rejects incorrect V5/R%i passwords without trying the legacy algorithms',
     (revision) => {
@@ -315,7 +357,7 @@ describe('PDFSecurity', () => {
       try {
         expect(() => new CipherTransformFactory(dict, security.id, 'wrong-\u00a0é'))
           .toThrow('Password incorrect');
-        expect(modern).toHaveBeenCalledTimes(2);
+        expect(modern).toHaveBeenCalledTimes(revision === 5 ? 3 : 2);
         expect(decode).not.toHaveBeenCalled();
         expect(prepare).not.toHaveBeenCalled();
       } finally {

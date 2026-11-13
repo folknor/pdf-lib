@@ -1673,21 +1673,18 @@ class CipherTransformFactory {
         false;
     this.encryptMetadata = encryptMetadata;
 
-    // R5/R6 passwords are UTF-8 (ISO 32000-2 7.6.4.3.3, Adobe ext. level 3).
-    // R6: SASLprep-mapped and NFKC-normalised first, then raw UTF-8 (see
-    // passwordPrep.ts for what this does not cover). R5: UTF-8 without
-    // preparation, then the raw char codes older writers (including this
-    // library before it UTF-8 encoded R5 passwords) produced. Adobe's
-    // extension level 3 also calls for SASLprep on R5; not applied here.
+    // R5/R6 try SASLprep mapping and NFKC before raw UTF-8 (see
+    // passwordPrep.ts for limitations). R5 also accepts raw char codes
+    // produced by older writers, including earlier versions of this library.
     let passwordBytes: Uint8Array | undefined;
     let fallbackPasswordBytes: Uint8Array[] = [];
     if (password) {
-      if (revision === 6) {
+      if (revision === 5 || revision === 6) {
         [passwordBytes, ...fallbackPasswordBytes] =
           r6PasswordCandidates(password);
-      } else if (revision === 5) {
-        passwordBytes = new TextEncoder().encode(password);
-        fallbackPasswordBytes = [stringAsByteArray(password)];
+        if (revision === 5) {
+          fallbackPasswordBytes.push(stringAsByteArray(password));
+        }
       } else {
         passwordBytes = stringAsByteArray(password);
       }
