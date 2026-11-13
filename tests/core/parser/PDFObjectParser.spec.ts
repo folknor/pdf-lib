@@ -770,7 +770,7 @@ describe('PDFObjectParser', () => {
       expect(dict.get(PDFName.of('Contents'))).toBeInstanceOf(PDFHexString);
       expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
       // Other strings are still decrypted: 'a'^1='`', 'b'^1='c'
-      expect(String(dict.get(PDFName.of('Name')))).toBe('(`c)');
+      expect(String(dict.get(PDFName.of('Name')))).toBe('<6063>');
     });
 
     it('does not decrypt /Contents of an untyped dict with /ByteRange', () => {
@@ -787,7 +787,7 @@ describe('PDFObjectParser', () => {
 
     it('still decrypts /Contents of non-signature dicts', () => {
       const dict = parseEncrypted('<< /Type /Annot /Contents (ab) >>');
-      expect(String(dict.get(PDFName.of('Contents')))).toBe('(`c)');
+      expect(String(dict.get(PDFName.of('Contents')))).toBe('<6063>');
     });
   });
 

@@ -127,11 +127,23 @@ describe('PDFString', () => {
           toCharCode('a'),
           toCharCode('\n'),
           toCharCode('b'),
-          toCharCode('\r'),
+          toCharCode('\n'),
           toCharCode('c'),
           toCharCode('d'),
           toCharCode('e'),
         ),
+      );
+    });
+
+    it('normalises unescaped CR and CRLF to LF', () => {
+      expect(PDFString.of('a\rb\r\nc\nd\r\r\ne').asBytes()).toEqual(
+        typedArrayFor('a\nb\nc\nd\n\ne'),
+      );
+    });
+
+    it('preserves CR encoded with named and octal escapes', () => {
+      expect(PDFString.of('a\\rb\\015c').asBytes()).toEqual(
+        typedArrayFor('a\rb\rc'),
       );
     });
 
@@ -153,7 +165,7 @@ describe('PDFString', () => {
           toCharCode('a'),
           toCharCode('\n'),
           toCharCode('b'),
-          toCharCode('\r'),
+          toCharCode('\n'),
           toCharCode('c'),
           toCharCode('x'),
           toCharCode('d'),
@@ -224,12 +236,12 @@ describe('PDFString', () => {
 
     it('can interpret PDFDocEncoded strings with EOLs and line breaks', () => {
       const literal = 'a\nb\rc\\\nd\\\re';
-      expect(PDFString.of(literal).decodeText()).toBe('a\nb\rcde');
+      expect(PDFString.of(literal).decodeText()).toBe('a\nb\ncde');
     });
 
     it('can interpret PDFDocEncoded strings with ignored escapes', () => {
       const literal = 'a\nb\rc\\xd\\;';
-      expect(PDFString.of(literal).decodeText()).toBe('a\nb\rcxd;');
+      expect(PDFString.of(literal).decodeText()).toBe('a\nb\ncxd;');
     });
 
     it('can interpret UTF-8 strings with BOM', () => {

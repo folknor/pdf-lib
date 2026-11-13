@@ -53,7 +53,11 @@ class PDFString extends PDFObject {
       const nextChar = this.value[idx + 1];
       if (!escaped) {
         if (byte === CharCodes.BackSlash) escaped = true;
-        else pushByte(byte);
+        else if (byte === CharCodes.CarriageReturn) {
+          // ISO 32000 7.3.4.2: unescaped CR and CRLF each represent one LF.
+          if (nextChar === '\n') idx++;
+          pushByte(CharCodes.Newline);
+        } else pushByte(byte);
       } else {
         if (byte === CharCodes.Newline) pushByte();
         else if (byte === CharCodes.CarriageReturn) {

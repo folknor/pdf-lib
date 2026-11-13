@@ -25,18 +25,6 @@ changed is written in clear under that /Encrypt, so readers decrypt it into
 garbage. Increments onto such a file are refused (`writeEncryption` in
 `src/core/writers/PDFWriter.ts`); full saves are not.
 
-## Decrypted literal strings are stored without escaping
-
-`PDFObjectParser.parseString` puts the decrypted bytes straight into
-`PDFString.of`, whose value is literal-string syntax that `asBytes()` and the
-writer interpret. Plaintext containing a backslash, an unbalanced parenthesis
-or a CR changes meaning: `asBytes()` reads `a\nb` back as a newline, and
-re-saving writes the raw bytes as unbalanced syntax. Decrypted strings should
-come back as escaped literals or as `PDFHexString`. Separately,
-`PDFString.asBytes()` does not turn an unescaped CR or CRLF into LF as 7.3.4.2
-requires. The writers emit every encrypted string as hex, so their own
-output never takes this path.
-
 ## R6 password preparation is incomplete on the read side
 
 `r6PasswordCandidates` (`src/core/security/passwordPrep.ts`) tries the SASLprep

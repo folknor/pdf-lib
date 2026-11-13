@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { describe, expect, it } from 'vitest';
 import {
+  PDFDict,
   PDFDocument,
   PDFHexString,
   PDFName,
@@ -22,6 +23,60 @@ const encryptedBytes = async (algorithm: (typeof algorithms)[number]) => {
 const noteOf = (doc: PDFDocument, key: string) =>
   (doc.getPage(0).node.get(PDFName.of(key)) as PDFHexString | PDFString)
     .decodeText();
+
+describe('decrypted literal strings', () => {
+  for (const algorithm of algorithms) {
+    it(`preserves plaintext bytes through load and re-save (${algorithm})`, async () => {
+      const plaintext = 'a\\nb(unbalanced\rCR\r\nCRLF)extra)';
+      const expectedBytes = Uint8Array.from(plaintext, (char) => char.charCodeAt(0));
+      const source = await PDFDocument.create({ updateMetadata: false });
+      source.addPage();
+      source.setTitle(plaintext);
+      source.context
+        .lookup(source.context.trailerInfo.Info, PDFDict)
+        .set(PDFName.of('Title'), PDFHexString.fromBytes(expectedBytes));
+      source.encrypt({ userPassword: 'user', ownerPassword: 'owner', algorithm });
+      const encrypted = await source.save({ useObjectStreams: false });
+
+      // Writers emit encrypted strings as hex. Rewrite only the ciphertext's
+      // representation to exercise encrypted literal input with valid xrefs.
+      const ciphertextDoc = await PDFDocument.load(encrypted, {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      });
+      const info = ciphertextDoc.context.lookup(
+        ciphertextDoc.context.trailerInfo.Info,
+        PDFDict,
+      );
+      const ciphertext = info.lookup(PDFName.of('Title'), PDFHexString).asBytes();
+      const literal = Array.from(
+        ciphertext,
+        (byte) => `\\${byte.toString(8).padStart(3, '0')}`,
+      ).join('');
+      info.set(PDFName.of('Title'), PDFString.of(literal));
+      const literalInput = await ciphertextDoc.save({ useObjectStreams: false });
+
+      const loaded = await PDFDocument.load(literalInput, {
+        password: 'user',
+        updateMetadata: false,
+      });
+      const assertPlaintext = (doc: PDFDocument) => {
+        const title = doc.context
+          .lookup(doc.context.trailerInfo.Info, PDFDict)
+          .lookup(PDFName.of('Title'), PDFString, PDFHexString);
+        expect(title.asBytes()).toEqual(expectedBytes);
+        expect(title.decodeText()).toBe(plaintext);
+        expect(doc.getTitle()).toBe(plaintext);
+      };
+      assertPlaintext(loaded);
+      for (const useObjectStreams of [false, true]) {
+        const saved = await loaded.save({ useObjectStreams });
+        const reopened = await PDFDocument.load(saved, { updateMetadata: false });
+        assertPlaintext(reopened);
+      }
+    });
+  }
+});
 
 describe('incremental saves of encrypted files', () => {
   for (const algorithm of algorithms) {

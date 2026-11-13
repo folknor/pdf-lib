@@ -1,4 +1,4 @@
-import { arrayAsString, charFromCode } from '../../utils/index.js';
+import { charFromCode } from '../../utils/index.js';
 import type { CipherTransformFactory } from '../crypto.js';
 import {
   PDFObjectParsingError,
@@ -132,7 +132,7 @@ class PDFObjectParser extends BaseParser {
     return PDFHexString.of(value);
   }
 
-  protected parseString(ref?: PDFRef): PDFString {
+  protected parseString(ref?: PDFRef): PDFString | PDFHexString {
     let nestingLvl = 0;
     let isEscaped = false;
     let value = '';
@@ -156,7 +156,7 @@ class PDFObjectParser extends BaseParser {
 
       // Once (if) the unescaped parenthesis balance out, return their contents
       if (nestingLvl === 0) {
-        let actualValue = value.substring(1, value.length - 1);
+        const actualValue = value.substring(1, value.length - 1);
 
         if (this.cryptoFactory && ref) {
           const transformer = this.cryptoFactory.createCipherTransform(
@@ -166,7 +166,8 @@ class PDFObjectParser extends BaseParser {
           const decrypted = transformer.decryptBytes(
             PDFString.of(actualValue).asBytes(),
           );
-          actualValue = arrayAsString(decrypted);
+          // Decrypted bytes are data, not literal-string escape syntax.
+          return PDFHexString.fromBytes(decrypted);
         }
         // Remove the outer parens so they aren't part of the contents
         return PDFString.of(actualValue);
