@@ -49,13 +49,6 @@ come back as escaped literals or as `PDFHexString`. Separately,
 requires. The writers emit every encrypted string as hex, so their own
 output never takes this path.
 
-## Stream decryption uses the string crypt filter
-
-`decryptStreamBytes` goes through `CipherTransform.decryptBytes`, which uses
-the string cipher, not the one /StmF names. Every file this library writes
-sets /StrF and /StmF to the same filter, but a file with differing filters
-(e.g. /Identity for strings) decrypts its streams wrongly.
-
 ## R6 password preparation is incomplete on the read side
 
 `r6PasswordCandidates` (`src/core/security/passwordPrep.ts`) tries the SASLprep

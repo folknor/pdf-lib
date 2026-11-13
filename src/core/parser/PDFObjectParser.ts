@@ -332,7 +332,7 @@ class PDFObjectParser extends BaseParser {
     if (!this.cryptoFactory || !ref) return bytes;
     return this.cryptoFactory
       .createCipherTransform(ref.objectNumber, ref.generationNumber)
-      .decryptBytes(bytes);
+      .decryptStreamBytes(bytes);
   }
 
   /**

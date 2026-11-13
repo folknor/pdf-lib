@@ -1549,6 +1549,11 @@ class CipherTransform {
     return cipher.decryptBlock(d, true);
   }
 
+  decryptStreamBytes(d: Uint8Array) {
+    const cipher = this.StreamCipherConstructor();
+    return cipher.decryptBlock(d, true);
+  }
+
   encryptString(s: string) {
     const cipher = this.StringCipherConstructor();
     if (cipher instanceof AESBaseCipher) {

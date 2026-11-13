@@ -18,7 +18,7 @@ import {
   PDFName,
   PDFNumber,
   PDFPage,
-  type PDFRawStream,
+  PDFRawStream,
   PDFString,
   PrintScaling,
   ReadingDirection,
@@ -258,6 +258,50 @@ describe('PDFDocument', () => {
         ).toBe('signer');
       });
     });
+
+    it.each(['StrF', 'StmF'] as const)(
+      'decrypts separate string and stream filters with /%s /Identity',
+      async (identityFilter) => {
+        const title = 'Separate crypt filter title';
+        const contents = 'Stream content with a different crypt filter';
+        const pdfDoc = await PDFDocument.create({ updateMetadata: false });
+        pdfDoc.addPage();
+        pdfDoc.setTitle(title);
+        const streamRef = pdfDoc.context.register(
+          pdfDoc.context.stream(contents),
+        );
+        pdfDoc.catalog.set(PDFName.of('TestStream'), streamRef);
+        pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'owner' });
+
+        // Preserve the ciphertext while constructing a file with mixed filters.
+        // Replace only the bytes that the Identity filter leaves in clear.
+        const raw = await PDFDocument.load(
+          await pdfDoc.save({ useObjectStreams: false }),
+          { ignoreEncryption: true, updateMetadata: false },
+        );
+        const encryptDict = raw.context.lookup(
+          raw.context.trailerInfo.Encrypt,
+          PDFDict,
+        );
+        encryptDict.set(PDFName.of(identityFilter), PDFName.of('Identity'));
+        if (identityFilter === 'StrF') {
+          raw.setTitle(title);
+        } else {
+          raw.context.assign(streamRef, raw.context.stream(contents));
+        }
+        const bytes = await raw.save({ useObjectStreams: false });
+        const reopened = await PDFDocument.load(bytes, {
+          password: 'user',
+          updateMetadata: false,
+        });
+        expect(reopened.getTitle()).toBe(title);
+        const stream = reopened.catalog.lookup(
+          PDFName.of('TestStream'),
+          PDFRawStream,
+        );
+        expect(stream.getContentsString()).toBe(contents);
+      },
+    );
 
     it('decrypts when the crypt filters are indirect objects', async () => {
       const secret = 'Indirect crypt filter secret';

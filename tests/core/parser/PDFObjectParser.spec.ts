@@ -703,7 +703,7 @@ describe('PDFObjectParser', () => {
     it('decrypts the re-sliced bytes of a forward-referenced length', () => {
       const xorFactory = {
         createCipherTransform: () => ({
-          decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
+          decryptStreamBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
         }),
       } as unknown as ConstructorParameters<typeof PDFObjectParser>[3];
       const context = PDFContext.create();
