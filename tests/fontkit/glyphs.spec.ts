@@ -59,6 +59,43 @@ describe('color and bitmap glyphs', () => {
     expect(() => glyph.render({ fillColor: () => {} }, 12)).not.toThrow();
   });
 
+  it('gives COLR glyphs the geometry of their base outline', () => {
+    const font = openUbuntu();
+    const base = font._getBaseGlyph(36);
+    const colr = new COLRGlyph(36, [], font);
+    expect(colr.path.toSVG()).toBe(base.path.toSVG());
+    expect(colr.path.commands.length).toBeGreaterThan(0);
+    expect(colr.cbox).toEqual(base.cbox);
+    expect(colr.bbox).toEqual(base.bbox);
+
+    const empty = new COLRGlyph(1, [], { _getBaseGlyph: () => null });
+    expect(empty.path.commands).toEqual([]);
+    expect(empty.cbox).toEqual(new BBox(0, 0, 0, 0));
+  });
+
+  it('keeps CFF subroutines when subsetting a COLR font', () => {
+    const bytes = fs.readFileSync(
+      './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
+    );
+    const encodeSubset = (colour: boolean) => {
+      const font = fontkit.create(new Uint8Array(bytes)) as any;
+      if (colour) {
+        font.directory.tables = {
+          ...font.directory.tables,
+          COLR: {},
+          CPAL: {},
+        };
+        Object.defineProperty(font, 'COLR', { value: { version: 1 } });
+        Object.defineProperty(font, 'CPAL', { value: {} });
+        expect(font.getGlyph(1000)).toBeInstanceOf(COLRGlyph);
+      }
+      const subset = font.createSubset();
+      for (const gid of [1000, 2000, 3000]) subset.includeGlyph(gid);
+      return subset.encode();
+    };
+    expect(encodeSubset(true)).toEqual(encodeSubset(false));
+  });
+
   it('renders the outline of COLR v1 glyphs', () => {
     const font = openUbuntu();
     font.directory.tables = { ...font.directory.tables, COLR: {}, CPAL: {} };

@@ -42,7 +42,8 @@ correctly spaced and extractable. Drawing it would take a different embedding:
 a Type3 font whose glyph procedures paint the CBDT PNG (or EBDT bitmap) for
 each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 (`tables/EBDT.ts` and `EBLC.ts` parse only the index). sbix and COLR fonts
-draw their outlines, not their colour images or layers, for the same reason.
+draw their outlines, not their colour images or layers, for the same reason;
+`COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
 ## sbix fonts without glyf have no usable glyphs
 

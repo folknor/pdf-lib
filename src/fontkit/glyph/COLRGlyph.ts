@@ -1,5 +1,6 @@
 import BBox from './BBox.js';
 import Glyph from './Glyph.js';
+import Path from './Path.js';
 
 interface COLRColor {
   red: number;
@@ -26,22 +27,20 @@ class COLRLayer {
 export default class COLRGlyph extends Glyph {
   type = 'COLR';
 
+  // path, cbox and bbox are the base (glyf/CFF) outline's geometry: that
+  // outline is what a PDF embeds and draws for a colour font (TTFSubset and
+  // CFFSubset both take it from _getBaseGlyph). The layer artwork drawn by
+  // render() can extend beyond these bounds; no geometry API describes it.
+  override _getPath(): Path {
+    return this._font._getBaseGlyph(this.id)?.path ?? new Path();
+  }
+
+  override _getCBox(): BBox {
+    return this._font._getBaseGlyph(this.id)?.cbox ?? new BBox(0, 0, 0, 0);
+  }
+
   override _getBBox(): BBox {
-    const layers = this.layers;
-    if (!layers) {
-      const g = this._font._getBaseGlyph(this.id);
-      return g ? g.bbox : new BBox(0, 0, 0, 0);
-    }
-
-    const bbox = new BBox();
-    for (const layer of layers) {
-      if (!layer.glyph) continue;
-      const b = layer.glyph.bbox;
-      bbox.addPoint(b.minX, b.minY);
-      bbox.addPoint(b.maxX, b.maxY);
-    }
-
-    return bbox;
+    return this._font._getBaseGlyph(this.id)?.bbox ?? new BBox(0, 0, 0, 0);
   }
 
   /**

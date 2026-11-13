@@ -17,6 +17,13 @@ export default class CFFSubset extends Subset {
     }
   }
 
+  // The CFF glyph whose parse records subroutine usage. getGlyph() returns a
+  // COLR wrapper in colour fonts, which never parses the charstring, so its
+  // _usedSubrs/_usedGsubrs stay empty and every subr would be stubbed out.
+  outlineGlyph(gid: number): any {
+    return this.font._getBaseGlyph(gid) ?? this.font.getGlyph(gid);
+  }
+
   subsetCharstrings(): void {
     this.charstrings = [];
     const gsubrs: Record<number, boolean> = {};
@@ -24,7 +31,7 @@ export default class CFFSubset extends Subset {
     for (const gid of this.glyphs) {
       this.charstrings.push(this.cff.getCharString(gid));
 
-      const glyph = this.font.getGlyph(gid);
+      const glyph = this.outlineGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
 
       for (const subr in glyph._usedGsubrs) {
@@ -75,7 +82,7 @@ export default class CFFSubset extends Subset {
       used_fds[fd] = true;
       topDict.FDSelect.fds.push(fd_select[fd]);
 
-      const glyph = this.font.getGlyph(gid);
+      const glyph = this.outlineGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
       for (const subr in glyph._usedSubrs) {
         used_subrs[fd_select[fd]!]![subr as unknown as number] = true;
@@ -100,7 +107,7 @@ export default class CFFSubset extends Subset {
   createCIDFontdict(topDict: any): any {
     const used_subrs: Record<number, boolean> = {};
     for (const gid of this.glyphs) {
-      const glyph = this.font.getGlyph(gid);
+      const glyph = this.outlineGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
 
       for (const subr in glyph._usedSubrs) {
