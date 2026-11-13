@@ -5,17 +5,30 @@ and the encryption paths of the writers). Each entry stands alone; remove it
 when it is fixed or ruled against (leaving a comment at the code site in the
 second case).
 
-## The reader ignores per-stream crypt selection
+## Increments refuse crypt filter role changes instead of rewriting
 
-`PDFObjectParser.decryptStreamBytes` runs every stream body through the
-/StmF filter. It ignores /EFF for embedded files, leaves no metadata stream
-clear under /EncryptMetadata false, and has no /Crypt stream filter (nor
-does `decode.ts`), so such streams load as garbage. The increment writer
-(`BaselineEncryption` in `src/core/security/PDFSecurity.ts`) applies those
-rules correctly, so any such stream an increment emits is re-encrypted from
-already-corrupted plaintext; it refuses a stream naming /Crypt outright. A
-full rewrite of a decrypted load also keeps old /Crypt filter declarations
-on what is now clear data.
+`BaselineEncryption.assertUntouchedBy` refuses an increment that would make
+a stream it does not rewrite read with another crypt filter (a file
+specification's /EF pointed at an existing stream under an /EFF unlike
+/StmF, or the catalog /Metadata repointed under /EncryptMetadata false), and
+one that changes an object a /Crypt declaration on disk resolves through,
+even when the same increment rewrites every stream depending on it. Both are
+safe; scheduling the affected streams for rewriting would let them through.
+
+## Object streams with forward-referenced /Crypt parameters are refused
+
+An object stream is decrypted mid-parse (`PDFParser.parseIndirectObject`),
+before later objects are known, so a /Crypt declaration on it that resolves
+through an object not parsed yet throws `CryptFilterError` and the load
+fails. Deferring member extraction until the parse completes would read
+them.
+
+## User-authored /Crypt filters survive a full rewrite without /Encrypt
+
+The reader removes loaded /Crypt declarations once it has applied them, and
+increments refuse a stream naming /Crypt, but a stream the caller gives a
+/Crypt filter is written as is by a full save, which writes no /Encrypt for
+a decrypted load, so it names a crypt filter the output does not define.
 
 ## Saving a document loaded with ignoreEncryption writes new objects in clear
 

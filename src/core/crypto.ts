@@ -1517,6 +1517,9 @@ class PDF20 {
 }
 
 type Cipher = ARCFourCipher | NullCipher | AES128Cipher | AES256Cipher;
+
+/** A crypt filter method (ISO 32000-2 Table 25 /CFM) this library implements. */
+export type CryptMethod = 'None' | 'V2' | 'AESV2' | 'AESV3';
 class CipherTransform {
   private StringCipherConstructor: () => Cipher;
   private StreamCipherConstructor: () => Cipher;
@@ -1872,6 +1875,49 @@ class CipherTransformFactory {
     return new CipherTransform(cipherConstructor, cipherConstructor);
   }
 
+  /**
+   * The method the crypt filter `name` selects (ISO 32000-2 Table 25 /CFM);
+   * /V 1 and 2 have no crypt filters and always use RC4. A name with no /CF
+   * entry or no /CFM is the identity, as when decrypting.
+   */
+  methodOf(name: PDFName): CryptMethod {
+    if (this.algorithm < 4) return 'V2';
+    if (name === this.identityName) return 'None';
+    const cryptFilter = this.cf?.lookup(name);
+    const cfm =
+      cryptFilter instanceof PDFDict
+        ? cryptFilter.lookup(PDFName.of('CFM'))
+        : undefined;
+    if (!(cfm instanceof PDFName) || cfm === PDFName.of('None')) return 'None';
+    const method = cfm.decodeText();
+    if (method === 'V2' || method === 'AESV2' || method === 'AESV3') {
+      return method;
+    }
+    throw new Error(`Unknown crypt filter method /${method}.`);
+  }
+
+  /**
+   * The body of stream `num gen` decrypted with the crypt filter `name`
+   * (see `selectStreamCrypt` for which one applies); /V 1 and 2 ignore it.
+   */
+  decryptStream(
+    bytes: Uint8Array,
+    num: number,
+    gen: number,
+    name: PDFName,
+  ): Uint8Array {
+    if (this.algorithm < 4) {
+      return this.createCipherTransform(num, gen).decryptStreamBytes(bytes);
+    }
+    return this.buildCipherConstructor(
+      this.cf,
+      name,
+      num,
+      gen,
+      this.encryptionKey,
+    )().decryptBlock(bytes, true);
+  }
+
   createEncryptionKey20(
     revision: number,
     password: Uint8Array | undefined,
@@ -2088,7 +2134,11 @@ class CipherTransformFactory {
     if (!(name instanceof PDFName)) {
       throw new Error('Invalid crypt filter name.');
     }
-    const cryptFilter = cf.lookup(name) as PDFDict;
+    // /Identity is predefined and needs no /CF entry (ISO 32000-2 7.6.6).
+    if (name === this.identityName) {
+      return () => new NullCipher();
+    }
+    const cryptFilter = cf?.lookup(name) as PDFDict | undefined;
     let cfm;
     if (cryptFilter !== null && cryptFilter !== undefined) {
       cfm = cryptFilter.lookup(PDFName.of('CFM')) as PDFName;

@@ -220,7 +220,7 @@ export default class PDFDocument {
         (fileIds.get(0) as PDFHexString).asBytes(),
         password,
       );
-      const decryptedContext = await PDFParser.forBytesWithOptions(
+      const decryptingParser = PDFParser.forBytesWithOptions(
         bytes,
         parseSpeed,
         throwOnInvalidObject,
@@ -232,12 +232,14 @@ export default class PDFDocument {
         context.trailerInfo.Encrypt instanceof PDFRef
           ? context.trailerInfo.Encrypt
           : undefined,
-      ).parseDocument();
+      );
+      const decryptedContext = await decryptingParser.parseDocument();
       // Increments onto this file stay under its own handler, taken from the
       // undecrypted parse (see BaselineEncryption).
       decryptedContext.baselineEncryption = new BaselineEncryption(
         context,
         cryptoFactory,
+        decryptingParser.streamCryptPlans,
       );
       const pdfDoc = new PDFDocument(decryptedContext, true, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
@@ -2089,10 +2091,12 @@ export default class PDFDocument {
         'commit() requires the document to be loaded with forIncrementalUpdate: true',
       );
     }
-    const incrementalBytes = await this.saveIncremental(
-      this.context.snapshot,
-      options,
-    );
+    const { snapshot } = this.context;
+    const incrementalBytes = await this.saveIncremental(snapshot, options);
+    // The increment is now part of the file the next one extends.
+    if (this.context.baselineEncryption instanceof BaselineEncryption) {
+      this.context.baselineEncryption.commitEmitted(snapshot);
+    }
     const originalBytes = this.context.pdfFileDetails.originalBytes;
 
     const newPdfBytes = new Uint8Array(

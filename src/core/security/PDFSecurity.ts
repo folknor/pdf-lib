@@ -5,6 +5,7 @@ import {
   AES256Cipher,
   ARCFourCipher,
   type CipherTransformFactory,
+  type CryptMethod,
   calculateMD5,
   PDF20,
 } from '../crypto.js';
@@ -29,6 +30,12 @@ import PDFStream from '../objects/PDFStream.js';
 import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import { prepareR6PasswordForWriting } from './passwordPrep.js';
+import {
+  computeStreamRoles,
+  type StreamCryptPlan,
+  type StreamRoles,
+  selectStreamCrypt,
+} from './streamCrypt.js';
 
 /**
  * Interface representing user permissions.
@@ -504,9 +511,6 @@ const encryptObject = (
   return encryptStrings(object, stringFn);
 };
 
-/** A crypt filter method (ISO 32000-2 Table 25 /CFM) the writer implements. */
-type CryptMethod = 'None' | 'V2' | 'AESV2' | 'AESV3';
-
 /**
  * The cipher for one object under `key` (ISO 32000-2 7.6.2 Algorithm 1 for
  * the per-object keys of RC4 and AESV2; AESV3 uses the file key itself).
@@ -551,10 +555,15 @@ export interface ObjectEncryptor {
  * Built from the undecrypted first parse, which holds the encryption
  * dictionary and /ID exactly as the file stores them; the decrypted
  * document drops /Encrypt from its trailer. The policy follows the dictionary, not this
- * library's own writer: /StrF for strings, /EFF for embedded files, /StmF for
- * other streams, and metadata streams left clear under /EncryptMetadata
- * false. A stream naming a /Crypt filter of its own is refused rather than
- * guessed at.
+ * library's own writer: /StrF for strings, and for streams what
+ * `selectStreamCrypt` picks, the rule the reader decrypted them by. A stream
+ * naming a /Crypt filter of its own is refused: the reader removes loaded
+ * ones, and this library never writes one.
+ *
+ * Streams an increment does not rewrite keep the encryption they have on
+ * disk, so the increment must not change how a reader of the new revision
+ * picks their crypt filter. `plans` records how each is encrypted, and
+ * `assertUntouchedBy` refuses an increment that would change it.
  */
 export class BaselineEncryption implements ObjectEncryptor {
   /**
@@ -566,36 +575,68 @@ export class BaselineEncryption implements ObjectEncryptor {
   /** The trailer /ID of the loaded file. */
   readonly id: PDFObject | undefined;
   /** /Encrypt and every indirect object it depends on. */
-  readonly guardedRefs: readonly PDFRef[];
+  private readonly encryptionRefs: readonly PDFRef[];
 
   private readonly factory: CipherTransformFactory;
+  /** How each stream of the file on disk is encrypted, by object number. */
+  private readonly plans: Map<number, StreamCryptPlan>;
+  /** Roles of the write in progress, computed by `assertUntouchedBy`. */
+  private roles: StreamRoles | undefined;
+  /** What the write in progress emitted, by object number; null: no stream. */
+  private emitted = new Map<number, StreamCryptPlan | null>();
 
-  constructor(firstPass: PDFContext, factory: CipherTransformFactory) {
+  constructor(
+    firstPass: PDFContext,
+    factory: CipherTransformFactory,
+    plans: ReadonlyMap<number, StreamCryptPlan> = new Map(),
+  ) {
     const encryptRef = firstPass.trailerInfo.Encrypt;
     this.encryptRef = encryptRef instanceof PDFRef ? encryptRef : undefined;
     this.id = firstPass.trailerInfo.ID;
-    this.guardedRefs = this.encryptRef
+    this.encryptionRefs = this.encryptRef
       ? reachableRefs(firstPass, this.encryptRef)
       : [];
     this.factory = factory;
+    this.plans = new Map(plans);
   }
 
   /**
-   * Throws unless an increment can be written: /Encrypt is indirect and
-   * `snapshot` neither rewrites nor deletes the encryption setup.
+   * /Encrypt and what it depends on, plus every object through which a
+   * stream on disk declares its own /Crypt filter: the loaded document no
+   * longer shows those declarations, but readers of the file still follow
+   * them. Guarded conservatively: also when the same increment rewrites
+   * every stream depending on the object.
    */
-  assertUntouchedBy(snapshot: {
-    shouldSave: (objectNumber: number) => boolean;
-    deletedCount: number;
-    deletedRef: (index: number) => PDFRef | undefined;
-  }): void {
+  get guardedRefs(): readonly PDFRef[] {
+    const refs = [...this.encryptionRefs];
+    for (const plan of this.plans.values()) {
+      if (plan.dependencies) refs.push(...plan.dependencies);
+    }
+    return refs;
+  }
+
+  /**
+   * Throws unless an increment can be written: /Encrypt is indirect,
+   * `snapshot` neither rewrites nor deletes the encryption setup or a
+   * /Crypt declaration on disk, and every stream it leaves as it is keeps
+   * the crypt filter it was encrypted with. Prepares the write.
+   */
+  assertUntouchedBy(
+    context: PDFContext,
+    snapshot: {
+      shouldSave: (objectNumber: number) => boolean;
+      deletedCount: number;
+      deletedRef: (index: number) => PDFRef | undefined;
+    },
+  ): void {
     if (!this.encryptRef) {
       throw new Error(
         'An encrypted file with a direct /Encrypt dictionary cannot be updated incrementally.',
       );
     }
-    const guarded = new Set(this.guardedRefs.map((ref) => ref.objectNumber));
-    let touched = this.guardedRefs.some((ref) =>
+    const guardedRefs = this.guardedRefs;
+    const guarded = new Set(guardedRefs.map((ref) => ref.objectNumber));
+    let touched = guardedRefs.some((ref) =>
       snapshot.shouldSave(ref.objectNumber),
     );
     for (let idx = 0; !touched && idx < snapshot.deletedCount; idx++) {
@@ -604,61 +645,100 @@ export class BaselineEncryption implements ObjectEncryptor {
     }
     if (touched) {
       throw new Error(
-        'An incremental update cannot change or delete the encryption dictionary of the file it extends.',
+        'An incremental update cannot change or delete the encryption dictionary of the file it extends, or an object a stream on disk declares its crypt filter through.',
       );
     }
+
+    const roles = computeStreamRoles(context);
+    for (const [ref, object] of context.enumerateIndirectObjects()) {
+      if (!(object instanceof PDFStream)) continue;
+      if (snapshot.shouldSave(ref.objectNumber)) continue;
+      const plan = this.plans.get(ref.objectNumber);
+      if (!plan || plan.dependencies) continue;
+      const type = object.dict.get(PDFName.Type);
+      if (type === PDFName.of('XRef') || type === PDFName.of('ObjStm')) {
+        continue;
+      }
+      const name = selectStreamCrypt(
+        this.factory,
+        roles,
+        ref,
+        object.dict,
+        undefined,
+      );
+      if (this.factory.methodOf(name) !== plan.method) {
+        throw new Error(
+          `An incremental update cannot change which crypt filter applies to object ${ref}, which it does not rewrite (document metadata or embedded file references changed).`,
+        );
+      }
+    }
+    this.roles = roles;
+    this.emitted = new Map();
+  }
+
+  /**
+   * Records the increment just written by the last write as part of the
+   * file: its streams' encryption, and the objects `snapshot` deleted or
+   * rewrote as something other than a stream (object stream members never
+   * pass through `encryptIndirectObject`).
+   */
+  commitEmitted(snapshot: {
+    shouldSave: (objectNumber: number) => boolean;
+    deletedCount: number;
+    deletedRef: (index: number) => PDFRef | undefined;
+  }): void {
+    for (const objectNumber of [...this.plans.keys()]) {
+      if (
+        snapshot.shouldSave(objectNumber) &&
+        !this.emitted.get(objectNumber)
+      ) {
+        this.plans.delete(objectNumber);
+      }
+    }
+    for (const [objectNumber, plan] of this.emitted) {
+      if (plan) this.plans.set(objectNumber, plan);
+    }
+    for (let idx = 0; idx < snapshot.deletedCount; idx++) {
+      const ref = snapshot.deletedRef(idx);
+      if (ref) this.plans.delete(ref.objectNumber);
+    }
+    this.emitted = new Map();
   }
 
   encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject {
     if (ref === this.encryptRef) return object;
     const { objectNumber: obj, generationNumber: gen } = ref;
     const { factory } = this;
-    const fnFor = (filter: PDFName | undefined) =>
-      objectEncryptFn(this.methodOf(filter), factory.encryptionKey, obj, gen);
-    const stringFn = fnFor(factory.strf);
+    const fnFor = (method: CryptMethod) =>
+      objectEncryptFn(method, factory.encryptionKey, obj, gen);
+    const stringFn = fnFor(factory.methodOf(factory.strf ?? Identity));
+    this.emitted.set(obj, null);
     return encryptObject(object, stringFn, (dict) => {
-      if (namesCryptFilter(dict.get(PDFName.of('Filter')))) {
+      if (namesCryptFilter(dict)) {
         throw new Error(
           `Object ${obj} ${gen} R names its own /Crypt filter, which incremental updates of encrypted files do not support.`,
         );
       }
-      const type = dict.get(PDFName.Type);
-      if (
-        type === PDFName.of('Metadata') &&
-        factory.algorithm >= 4 &&
-        !factory.encryptMetadata
-      ) {
-        return;
-      }
-      if (type === PDFName.of('EmbeddedFile')) return fnFor(factory.eff);
-      return fnFor(factory.stmf);
+      this.roles ??= computeStreamRoles(dict.context);
+      const name = selectStreamCrypt(factory, this.roles, ref, dict, undefined);
+      const method = factory.methodOf(name);
+      this.emitted.set(obj, { method });
+      return method === 'None' ? undefined : fnFor(method);
     });
-  }
-
-  /** The method a crypt filter name selects; /V 1 and 2 are always RC4. */
-  private methodOf(filter: PDFName | undefined): CryptMethod {
-    const { factory } = this;
-    if (factory.algorithm < 4) return 'V2';
-    if (!filter || filter === PDFName.of('Identity')) return 'None';
-    const cryptFilter = factory.cf?.lookup(filter);
-    const cfm =
-      cryptFilter instanceof PDFDict
-        ? cryptFilter.lookup(PDFName.of('CFM'))
-        : undefined;
-    if (!(cfm instanceof PDFName) || cfm === PDFName.of('None')) return 'None';
-    const method = cfm.decodeText();
-    if (method === 'V2' || method === 'AESV2' || method === 'AESV3') {
-      return method;
-    }
-    throw new Error(`Unknown crypt filter method /${method}.`);
   }
 }
 
-const namesCryptFilter = (filter: PDFObject | undefined): boolean => {
+const Identity = PDFName.of('Identity');
+
+/** Whether `dict`'s filter chain names /Crypt, directly or indirectly. */
+const namesCryptFilter = (dict: PDFDict): boolean => {
+  const filter = dict.lookup(PDFName.of('Filter'));
   if (filter === PDFName.of('Crypt')) return true;
   return (
     filter instanceof PDFArray &&
-    filter.asArray().some((name) => name === PDFName.of('Crypt'))
+    filter
+      .asArray()
+      .some((name) => dict.context.lookup(name) === PDFName.of('Crypt'))
   );
 };
 

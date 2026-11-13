@@ -45,10 +45,14 @@ class PDFObjectParser extends BaseParser {
   ) => new PDFObjectParser(byteStream, context, capNumbers);
 
   protected readonly context: PDFContext;
-  private readonly cryptoFactory: CipherTransformFactory | undefined;
+  protected readonly cryptoFactory: CipherTransformFactory | undefined;
+  /** Decryption already applied to a stream body during the parse. */
+  protected readonly streamDecryption = new WeakMap<
+    PDFRawStream,
+    (raw: Uint8Array) => Uint8Array
+  >();
   private readonly pendingStreamLengths: {
     stream: PDFRawStream;
-    ref: PDFRef | undefined;
     lengthRef: PDFRef;
     start: number;
     end: number;
@@ -306,10 +310,9 @@ class PDFObjectParser extends BaseParser {
       end = this.findEndOfStreamFallback(startPos);
     }
 
-    const stream = PDFRawStream.of(
-      dict,
-      this.decryptStreamBytes(this.bytes.slice(start.offset, end), ref),
-    );
+    // The body stays as the file stores it: which crypt filter decrypts it
+    // depends on the whole document (see PDFParser.decryptStreams).
+    const stream = PDFRawStream.of(dict, this.bytes.slice(start.offset, end));
 
     // An indirect /Length usually points to an object that follows the
     // stream, so the scan above may have dropped a trailing EOL byte that is
@@ -319,7 +322,6 @@ class PDFObjectParser extends BaseParser {
     if (Length instanceof PDFRef) {
       this.pendingStreamLengths.push({
         stream,
-        ref,
         lengthRef: Length,
         start: start.offset,
         end,
@@ -329,31 +331,25 @@ class PDFObjectParser extends BaseParser {
     return stream;
   }
 
-  private decryptStreamBytes(bytes: Uint8Array, ref?: PDFRef): Uint8Array {
-    if (!this.cryptoFactory || !ref) return bytes;
-    return this.cryptoFactory
-      .createCipherTransform(ref.objectNumber, ref.generationNumber)
-      .decryptStreamBytes(bytes);
-  }
-
   /**
    * Re-slices streams with an indirect /Length whose final value (after all
    * revisions are parsed) differs from the extent used at parse time. Call
    * after every object is in the context. A length is applied only if
-   * `endstream` (after optional whitespace) follows it.
+   * `endstream` (after optional whitespace) follows it. Bodies are raw unless
+   * already decrypted during the parse (object streams), whose decryption
+   * `streamDecryption` holds and is applied again.
    */
   resolvePendingStreamLengths(): void {
     const pending = this.pendingStreamLengths;
     if (pending.length === 0) return;
     const saved = this.bytes.position();
-    for (const { stream, ref, lengthRef, start, end } of pending) {
+    for (const { stream, lengthRef, start, end } of pending) {
       const length = this.resolveStreamLength(lengthRef);
       if (length === undefined || start + length === end) continue;
       if (!this.endstreamFollows(start + length)) continue;
-      stream.contents = this.decryptStreamBytes(
-        this.bytes.slice(start, start + length),
-        ref,
-      );
+      const raw = this.bytes.slice(start, start + length);
+      const decrypt = this.streamDecryption.get(stream);
+      stream.contents = decrypt ? decrypt(raw) : raw;
     }
     pending.length = 0;
     this.bytes.restorePosition(saved);

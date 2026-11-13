@@ -700,10 +700,10 @@ describe('PDFObjectParser', () => {
       expect(stream.getContentsString()).toBe('abc\r');
     });
 
-    it('decrypts the re-sliced bytes of a forward-referenced length', () => {
+    it('leaves stream bodies raw for the document parser to decrypt', () => {
       const xorFactory = {
         createCipherTransform: () => ({
-          decryptStreamBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
+          decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
         }),
       } as unknown as ConstructorParameters<typeof PDFObjectParser>[3];
       const context = PDFContext.create();
@@ -716,8 +716,9 @@ describe('PDFObjectParser', () => {
       const stream = parser.parseObject(PDFRef.of(1)) as PDFRawStream;
       context.assign(PDFRef.of(5), PDFNumber.of(4));
       parser.resolvePendingStreamLengths();
-      // 'a'^1='`', 'b'^1='c', 'c'^1='b', '\r'^1='\f'
-      expect(stream.getContentsString()).toBe('`cb\f');
+      // Which crypt filter applies depends on the whole document
+      // (PDFParser.decryptStreams), so the re-slice stays raw.
+      expect(stream.getContentsString()).toBe('abc\r');
     });
 
     it('keeps the fallback when a forward-referenced length never resolves', () => {

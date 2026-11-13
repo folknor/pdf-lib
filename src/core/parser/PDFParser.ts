@@ -19,6 +19,15 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import PDFContext from '../PDFContext.js';
+import {
+  CryptFilterError,
+  computeStreamRoles,
+  readCryptDeclaration,
+  removeCryptFilter,
+  type StreamCryptPlan,
+  type StreamRoles,
+  selectStreamCrypt,
+} from '../security/streamCrypt.js';
 import CharCodes from '../syntax/CharCodes.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit } from '../syntax/Numeric.js';
@@ -26,6 +35,11 @@ import ByteStream from './ByteStream.js';
 import PDFObjectParser from './PDFObjectParser.js';
 import PDFObjectStreamParser from './PDFObjectStreamParser.js';
 import PDFXRefStreamParser from './PDFXRefStreamParser.js';
+
+const noStreamRoles: StreamRoles = {
+  documentMetadata: undefined,
+  embeddedFiles: new Set(),
+};
 
 class PDFParser extends PDFObjectParser {
   static forBytesWithOptions = (
@@ -57,6 +71,14 @@ class PDFParser extends PDFObjectParser {
   private readonly encryptRef: PDFRef | undefined;
   private alreadyParsed = false;
   private parsedObjects = 0;
+  /** Stream bodies still as the file stores them, decrypted after the parse. */
+  private readonly pendingDecryption: { ref: PDFRef; stream: PDFRawStream }[] =
+    [];
+  /**
+   * How each decrypted stream was encrypted, by object number; filled by a
+   * decrypting parse, for `BaselineEncryption`.
+   */
+  readonly streamCryptPlans = new Map<number, StreamCryptPlan>();
 
   constructor(
     pdfBytes: Uint8Array,
@@ -119,7 +141,59 @@ class PDFParser extends PDFObjectParser {
       this.context.delete(PDFRef.of(0));
     }
 
+    await this.decryptStreams();
+
     return this.context;
+  }
+
+  /**
+   * Decrypts every stream body left raw by the parse, once the document is
+   * complete: the crypt filter a stream uses depends on the catalog and on
+   * which file specifications reference it (see `selectStreamCrypt`).
+   * Streams no longer in the context (superseded revisions, cross-reference
+   * streams re-parsed in clear) are skipped.
+   */
+  private async decryptStreams(): Promise<void> {
+    const pending = this.pendingDecryption;
+    if (pending.length === 0) return;
+    const roles = computeStreamRoles(this.context);
+    for (const { ref, stream } of pending) {
+      if (this.context.lookup(ref) !== stream) continue;
+      this.decryptStream(ref, stream, roles, false);
+      if (this.shouldWaitForTick()) await waitForTick();
+    }
+    pending.length = 0;
+  }
+
+  /**
+   * Decrypts `stream`'s body in place, removes a /Crypt filter it declared
+   * (its body is now clear), and records how it was encrypted.
+   */
+  private decryptStream(
+    ref: PDFRef,
+    stream: PDFRawStream,
+    roles: StreamRoles,
+    strict: boolean,
+  ): void {
+    const factory = this.cryptoFactory!;
+    const declaration = readCryptDeclaration(stream.dict, this.context, strict);
+    const name = selectStreamCrypt(
+      factory,
+      roles,
+      ref,
+      stream.dict,
+      declaration,
+    );
+    const { objectNumber: num, generationNumber: gen } = ref;
+    const decrypt = (raw: Uint8Array) =>
+      factory.decryptStream(raw, num, gen, name);
+    stream.contents = decrypt(stream.contents);
+    this.streamDecryption.set(stream, decrypt);
+    if (declaration) removeCryptFilter(stream.dict, declaration);
+    this.streamCryptPlans.set(num, {
+      method: factory.methodOf(name),
+      dependencies: declaration?.dependencies,
+    });
   }
 
   private maybeRecoverRoot(): void {
@@ -207,6 +281,19 @@ class PDFParser extends PDFObjectParser {
     ) {
       this.bytes.restorePosition(start);
       object = this.parseObject();
+    } else if (
+      !exempt &&
+      this.cryptoFactory &&
+      object instanceof PDFRawStream
+    ) {
+      // An object stream's members are parsed right below, so its body is
+      // decrypted now; it is never document metadata nor an embedded file.
+      // Every other body waits for decryptStreams.
+      if (object.dict.lookup(PDFName.of('Type')) === PDFName.of('ObjStm')) {
+        this.decryptStream(ref, object, noStreamRoles, true);
+      } else {
+        this.pendingDecryption.push({ ref, stream: object });
+      }
     }
 
     this.skipWhitespaceAndComments();
@@ -288,6 +375,8 @@ class PDFParser extends PDFObjectParser {
         // A decompression-bomb guard must abort loading, not be swallowed
         // into an invalid object.
         if (e instanceof DecodedStreamTooLargeError) throw e;
+        // Nor may an undecidable crypt filter leave a body undecrypted.
+        if (e instanceof CryptFilterError) throw e;
         // TODO: Add tracing/logging mechanism to track when this happens!
         this.bytes.moveTo(initialOffset);
         this.tryToParseInvalidIndirectObject();

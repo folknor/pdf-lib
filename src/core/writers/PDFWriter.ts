@@ -41,7 +41,8 @@ export interface WriteEncryption {
  * `PDFDocument.encrypt` installed, if any. An increment keeps the encryption
  * of the file it extends, since the revisions before it stay as they are:
  * it refuses a newly installed handler, a file loaded encrypted without a
- * password, and any change to the file's encryption dictionary.
+ * password, any change to the file's encryption dictionary, and changes
+ * that would make an inherited stream read with another crypt filter.
  */
 export const writeEncryption = (
   context: PDFContext,
@@ -74,7 +75,7 @@ export const writeEncryption = (
       ID: trailerInfo.ID,
     };
   }
-  baseline.assertUntouchedBy(snapshot);
+  baseline.assertUntouchedBy(context, snapshot);
   return { encryptor: baseline, Encrypt: baseline.encryptRef, ID: baseline.id };
 };
 
