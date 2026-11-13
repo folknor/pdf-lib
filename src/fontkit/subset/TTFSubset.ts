@@ -103,7 +103,8 @@ export default class TTFSubset extends Subset {
           ? this.glyphEncoder.encodeSimple(glyph.path)
           : new Uint8Array(0);
       // A variation instance's outline is new geometry, written as the path
-      // (relative to the unvaried origin); its bearing is the written xMin.
+      // (relative to its varied left origin); its bearing is the written
+      // xMin, the rounded varied left bearing.
       // A static transformed WOFF2 glyph keeps the source's integer points,
       // so its source hmtx bearing still describes them, even where it
       // differs from xMin.

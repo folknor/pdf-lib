@@ -267,6 +267,40 @@ describe('composite variation metrics', () => {
       expect(glyph.advanceHeight).toBe(unvaried.advanceHeight);
     }
   });
+
+  // The outline is translated once, at the composite, by the left phantom
+  // point it takes its metrics from.
+  const moveLeftOriginOf = (font: any, gid: number) => {
+    Object.defineProperty(font, '_variationProcessor', {
+      value: {
+        transformPoints: (id: number, points: any[]) => {
+          if (id === gid) points[points.length - 4].x += 20;
+        },
+      },
+    });
+  };
+
+  // An unvaried glyph's left origin, in its glyf coordinates.
+  const leftOrigin = (glyph: any) =>
+    glyph._getCBox(true).minX - glyph._getMetrics().leftBearing;
+
+  it('shifts a composite outline by the USE_MY_METRICS left origin only', () => {
+    const { id, flagged, other } = flaggedComposite(openUbuntu());
+    const unvaried = openUbuntu().getGlyph(id);
+    const flaggedOrigin = leftOrigin(openUbuntu().getGlyph(flagged));
+
+    for (const [gid, shift] of [
+      [flagged, flaggedOrigin + 20],
+      [id, flaggedOrigin],
+      [other, flaggedOrigin],
+    ]) {
+      const font: any = openUbuntu();
+      moveLeftOriginOf(font, gid!);
+      const glyph = font.getGlyph(id);
+      expect(glyph.path.cbox.minX).toBe(unvaried.path.cbox.minX - shift!);
+      expect(glyph.path.cbox.minX).toBe(glyph._getMetrics().leftBearing);
+    }
+  });
 });
 
 describe('GPOSProcessor.applyAnchor', () => {

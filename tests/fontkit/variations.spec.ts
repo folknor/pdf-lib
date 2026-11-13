@@ -93,15 +93,19 @@ describe('TrueType variations', () => {
       const { glyph } = variationGlyph(file, settings, char);
       const unvaried = open(file).getGlyph(glyph.id);
       if (glyph.cbox.minX !== unvaried.cbox.minX) moved.push(file);
-      // The fixtures leave the left origin alone but may move the top one.
-      expect(origins(glyph).left).toBe(origins(unvaried).left);
+      // The varied outline is placed relative to its left origin; the
+      // fixtures may move the top one.
+      expect(origins(glyph).left).toBe(0);
       expect(origins(glyph).top).toBe(glyph._decode().phantomPoints[2].y);
     }
     // Only an outline whose extents moved tells the two measures apart.
     expect(moved).toContain('TestGVARFour.ttf');
   });
 
-  it('measures varied bearings from a moved left phantom point', () => {
+  // A moved left phantom point moves the outline with it: the outline is
+  // placed relative to the varied origin, so the bearing is its xMin.
+  it('shifts the varied outline by a moved left phantom point', () => {
+    const plain = variationGlyph('TestGVAROne.ttf', { wght: 300 }, '彌').glyph;
     const font = open('TestGVAROne.ttf').getVariation({ wght: 300 });
     const processor = font._variationProcessor;
     const transform = processor.transformPoints.bind(processor);
@@ -110,9 +114,13 @@ describe('TrueType variations', () => {
       points[points.length - 4].x += 20;
     };
     const glyph = font.glyphsForString('彌')[0];
-    const unvaried = open('TestGVAROne.ttf').getGlyph(glyph.id);
-    expect(glyph.cbox.minX - glyph._getMetrics().leftBearing).toBe(
-      origins(unvaried).left + 20,
+    expect(origins(glyph).left).toBe(0);
+    expect(glyph.cbox.minX).toBe(plain.cbox.minX - 20);
+    expect(glyph._getMetrics().leftBearing).toBe(
+      plain._getMetrics().leftBearing - 20,
+    );
+    expect(glyph._getMetrics().advanceWidth).toBe(
+      plain._getMetrics().advanceWidth - 20,
     );
   });
 
@@ -165,8 +173,10 @@ describe('subsetting a variation instance', () => {
     const reopened: any = fontkit.create(subset.encode());
     const written = reopened.getGlyph(id);
     expect(written._getMetrics().leftBearing).toBe(written._decode().xMin);
+    const source = font.glyphsForString('彌')[0];
+    expect(written._decode().xMin).toBe(Math.round(source.cbox.minX));
     expect(written._decode().xMin).toBe(
-      Math.round(font.glyphsForString('彌')[0].cbox.minX),
+      Math.round(source._getMetrics().leftBearing),
     );
   });
 });

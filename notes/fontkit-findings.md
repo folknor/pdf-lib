@@ -4,14 +4,18 @@ Open findings about the vendored fontkit (`src/fontkit`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Varied outlines are not shifted by a moved left phantom point
+## Static TrueType outlines are not placed at their left origin
 
-When gvar moves a glyph's left phantom point (the horizontal origin), the
-advance and bearing follow it, but `TTFGlyph._getPath` emits the resolved
-outline unshifted, so the outline is not placed relative to the varied origin.
-HarfBuzz subtracts the resolved left phantom x once, at the top-level glyph
-(not per component). This is independent of which glyph supplies the
-phantom points.
+A variation instance's outline is translated by its resolved left phantom
+point (`TTFGlyph._getContours`), but a static font's path and cbox stay in
+glyf coordinates. Where a glyph's hmtx lsb differs from its glyf xMin, FreeType
+and HarfBuzz draw it at xMin - lsb to the left of where `glyph.path` puts it
+(and an instance at the default coordinates differs from the static font).
+Static subsets copy glyf and hmtx as they are, so the embedded font is
+unaffected; the fix needs its own rule for the header cbox (static
+`_getCBox` reads the glyf header) and for flattened static WOFF2 glyphs
+(`TTFSubset` writes the source lsb), which pdf.js draws untranslated while a
+TTF copy of the same font keeps its original bytes.
 
 ## COLR glyphs report unvaried metrics
 

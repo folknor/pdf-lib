@@ -398,9 +398,32 @@ export default class TTFGlyph extends Glyph {
 
   _defaultMetrics?: GlyphMetrics;
 
-  // Decodes font data, resolves composite glyphs, and returns an array of contours
+  // Decodes font data, resolves composite glyphs, and returns an array of
+  // contours. In a variation instance the outline is placed relative to its
+  // resolved left phantom point (the varied horizontal origin, which is
+  // xMin - hmtx lsb plus its deltas, so it can be nonzero even when gvar
+  // leaves it alone), as FreeType and HarfBuzz place it: translated once,
+  // here at the top-level glyph, never per component, so composites resolve
+  // their components in the components' own glyf coordinates. The points
+  // are copied, since _resolve returns decoded (possibly shared) points, and
+  // the metrics it publishes are measured before the shift, from unshifted
+  // points and phantoms. Static fonts keep glyf coordinates: their cbox is
+  // the glyf header box and their subsets copy glyf and hmtx as they are.
   _getContours(): Point[][] {
-    return this._resolve().contours;
+    const { contours, phantoms } = this._resolve();
+    const originX = phantoms?.[0]?.x ?? 0;
+    if (originX === 0) return contours;
+    return contours.map((contour) =>
+      contour.map(
+        (point) =>
+          new Point(
+            point.onCurve,
+            point.endContour,
+            point.x - originX,
+            point.y,
+          ),
+      ),
+    );
   }
 
   // Resolves the glyph's outline and the phantom points its metrics come
@@ -408,7 +431,8 @@ export default class TTFGlyph extends Glyph {
   // resolved phantom points in place of its own (the last flagged component
   // wins, and a flagged composite component passes on its own choice), as the
   // gvar spec and HarfBuzz do. They are the component's metrics, so they are
-  // taken before its offset and scale are applied.
+  // taken before its offset and scale are applied. Contours and phantoms are
+  // both in glyf coordinates; _getContours shifts the top-level outline.
   _resolve(): { contours: Point[][]; phantoms: Point[] | undefined } {
     const glyph = this._decode();
 
