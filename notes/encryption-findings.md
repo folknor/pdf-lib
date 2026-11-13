@@ -23,13 +23,6 @@ through an object not parsed yet throws `CryptFilterError` and the load
 fails. Deferring member extraction until the parse completes would read
 them.
 
-## User-authored /Crypt filters survive a full rewrite without /Encrypt
-
-The reader removes loaded /Crypt declarations once it has applied them, and
-increments refuse a stream naming /Crypt, but a stream the caller gives a
-/Crypt filter is written as is by a full save, which writes no /Encrypt for
-a decrypted load, so it names a crypt filter the output does not define.
-
 ## R6 password preparation is incomplete on the read side
 
 `r6PasswordCandidates` (`src/core/security/passwordPrep.ts`) tries the SASLprep

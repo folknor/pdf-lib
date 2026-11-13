@@ -4,6 +4,7 @@ import PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNull from '../objects/PDFNull.js';
 import type PDFObject from '../objects/PDFObject.js';
+import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import PDFStream from '../objects/PDFStream.js';
 import type PDFContext from '../PDFContext.js';
@@ -243,3 +244,17 @@ export interface StreamCryptPlan {
   readonly method: CryptMethod;
   readonly dependencies?: readonly PDFRef[] | undefined;
 }
+
+/** Drops a caller-authored /Crypt declaration only in the emitted copy. */
+export const withoutCryptFilter = (object: PDFObject): PDFObject => {
+  if (!(object instanceof PDFStream)) return object;
+  const declaration = readCryptDeclaration(
+    object.dict,
+    object.dict.context,
+    false,
+  );
+  if (!declaration) return object;
+  const dict = object.dict.clone();
+  removeCryptFilter(dict, declaration);
+  return PDFRawStream.of(dict, object.getContents());
+};

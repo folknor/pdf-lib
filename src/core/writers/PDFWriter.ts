@@ -20,6 +20,7 @@ import type {
   BaselineEncryption,
   ObjectEncryptor,
 } from '../security/PDFSecurity.js';
+import { withoutCryptFilter } from '../security/streamCrypt.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 
@@ -78,7 +79,14 @@ export const writeEncryption = (
   const baseline = savableBaseline(context);
   if (!incremental) {
     return {
-      encryptor: context.security,
+      encryptor:
+        context.security ??
+        (trailerInfo.Encrypt
+          ? undefined
+          : {
+              encryptIndirectObject: (_ref, object) =>
+                withoutCryptFilter(object),
+            }),
       Encrypt: trailerInfo.Encrypt,
       ID: trailerInfo.ID,
     };
