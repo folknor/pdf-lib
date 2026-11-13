@@ -1956,6 +1956,11 @@ export default class PDFDocument {
    * const pdfBytes = await pdfDoc.saveIncremental(snapshot);
    * ```
    *
+   * Requires a document loaded with `forIncrementalUpdate: true` and the
+   * snapshot currently installed by [[takeSnapshot]] for this document
+   * serialized bytes. Throws before writing if there are no original bytes
+   * or the snapshot is not this document's installed snapshot.
+   *
    * Similar to [[save]] function.
    * The changes are saved in an incremental way, the result buffer
    * will contain only the differences
@@ -1974,6 +1979,16 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
+    if (!this.context.pdfFileDetails.originalBytes) {
+      throw new Error(
+        'saveIncremental() requires the document to be loaded with forIncrementalUpdate: true',
+      );
+    }
+    if (snapshot !== this.context.snapshot) {
+      throw new Error(
+        'saveIncremental() requires the installed snapshot for this document serialized bytes; the snapshot may belong to another document or an earlier commit',
+      );
+    }
     const pdfVersionSupportsObjectStreams = supportsObjectStreams(
       getEffectiveVersion(this.context),
     );
@@ -2020,9 +2035,17 @@ export default class PDFDocument {
 
   /**
    * Take a snapshot of the document for incremental updates.
-   * @returns A snapshot that can be used with saveIncremental()
+   * Returns the installed snapshot when one already tracks this document.
+   * Only documents loaded with `forIncrementalUpdate: true` have original
+   * serialized bytes and install a snapshot. Snapshots from created documents
+   * or documents loaded without that option cannot be used with [[saveIncremental]].
+   * After [[commit]], take a new snapshot for the updated serialized bytes.
+   * @returns A snapshot usable with [[saveIncremental]] only while installed
+   * for this document's original serialized bytes.
    */
   takeSnapshot(): DocumentSnapshot {
+    if (this.context.snapshot) return this.context.snapshot;
+
     const indirectObjects: number[] = [];
 
     const snapshot = new IncrementalDocumentSnapshot(
@@ -2092,7 +2115,8 @@ export default class PDFDocument {
       this.context.pdfFileDetails.prevStartXRef = originalBytes.byteLength;
     }
 
-    this.context.snapshot = this.takeSnapshot();
+    delete this.context.snapshot;
+    this.takeSnapshot();
 
     return newPdfBytes;
   }

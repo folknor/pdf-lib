@@ -3,6 +3,42 @@ import { describe, it, expect } from 'vitest';
 import { PDFDocument } from '../../src/index';
 
 describe('Incremental Save', () => {
+  it('rejects a snapshot from a created document before preparing or writing', async () => {
+    const doc = await PDFDocument.create();
+    const snapshot = doc.takeSnapshot();
+    const objects = doc.context.enumerateIndirectObjects();
+    await expect(doc.saveIncremental(snapshot)).rejects.toThrow(
+      /requires the document to be loaded with forIncrementalUpdate: true/,
+    );
+    expect(doc.context.enumerateIndirectObjects()).toEqual(objects);
+    expect(doc.context.snapshot).toBeUndefined();
+  });
+
+  it('rejects a snapshot when loaded without forIncrementalUpdate', async () => {
+    const doc = await PDFDocument.load(fs.readFileSync('./assets/pdfs/normal.pdf'));
+    const snapshot = doc.takeSnapshot();
+    const objects = doc.context.enumerateIndirectObjects();
+    await expect(doc.saveIncremental(snapshot)).rejects.toThrow(
+      /requires the document to be loaded with forIncrementalUpdate: true/,
+    );
+    expect(doc.context.enumerateIndirectObjects()).toEqual(objects);
+    expect(doc.context.snapshot).toBeUndefined();
+  });
+
+  it('rejects a snapshot from another document before preparing or writing', async () => {
+    const bytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+    const doc = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
+    const other = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
+    const snapshot = doc.takeSnapshot();
+    const objects = doc.context.enumerateIndirectObjects();
+    await expect(doc.saveIncremental(other.takeSnapshot())).rejects.toThrow(
+      /requires the installed snapshot for this document/,
+    );
+    expect(doc.context.enumerateIndirectObjects()).toEqual(objects);
+    expect(doc.context.snapshot).toBe(snapshot);
+    expect(doc.takeSnapshot()).toBe(snapshot);
+  });
+
   it('can take a snapshot and save incrementally', async () => {
     const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
     
