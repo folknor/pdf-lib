@@ -1,5 +1,6 @@
 import { zlibSync } from 'fflate';
 import {
+  decodePDFRawStream,
   mergeIntoTypedArray,
   PDFContext,
   PDFDocument,
@@ -185,6 +186,24 @@ describe('PDFWriter', () => {
 
       // Compressed should be smaller
       expect(compressedBuffer.length).toBeLessThan(uncompressedBuffer.length);
+    });
+
+    it('drops /DecodeParms that would apply to the new filter', async () => {
+      const context = PDFContext.create();
+      const content = 'Hello World! '.repeat(100);
+      const stream = context.stream(content, {
+        DecodeParms: { Predictor: 12, Columns: 4 },
+      });
+      context.trailerInfo.Root = context.register(
+        context.obj({ Type: 'Catalog', Test: context.register(stream) }),
+      );
+
+      await PDFWriter.forContext(context, Infinity, true).serializeToBuffer();
+
+      expect(stream.dict.get(PDFName.of('DecodeParms'))).toBeUndefined();
+      expect(decodePDFRawStream(stream).decode()).toEqual(
+        typedArrayFor(content),
+      );
     });
 
     it('skips streams that already have a Filter', async () => {

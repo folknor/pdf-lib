@@ -29,17 +29,6 @@ effective xref (`PDFXRefChainReader`) on every increment and refuses that
 write; an ordinary reuse of an earlier free number should likewise carry
 the generation the free entry names.
 
-## Stream decoding ignores /DecodeParms predictors
-
-`decodePDFRawStream` (`src/core/streams/decode.ts`) applies filters but no
-PNG or TIFF predictor, so the loader's `PDFXRefStreamParser` and
-`PDFObjectStreamParser` misread any stream that declares one (Acrobat
-commonly writes xref streams with `/Predictor 12`). The loader only takes
-trailer keys from xref streams today, so the damage is confined to
-predicted object streams and to whatever later reads xref entries through
-it. `PDFXRefChainReader` reverses PNG predictors itself; a fix in the
-decoder would let it, and the loader, share one implementation.
-
 ## The context can hold several generations of one number
 
 The parser assigns every object body it scans, so a file whose history

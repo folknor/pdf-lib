@@ -1,5 +1,5 @@
 import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
+import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
@@ -220,21 +220,9 @@ class PDFXRefChainReader extends PDFObjectParser {
     const width = typeWidth + offsetWidth + genWidth;
     let rows = 0;
     for (let i = 1; i < ranges.length; i += 2) rows += ranges[i]!;
-    // /DecodeParms belongs to the filter: without one it means nothing, and
-    // only Flate and LZW take a predictor.
-    const filter = dict.lookup(PDFName.of('Filter'));
-    const parms = dict.lookup(PDFName.of('DecodeParms'));
-    const decoded = decodePDFRawStream(stream).decode();
-    let data = decoded;
-    if (filter !== undefined && parms !== undefined) {
-      if (
-        filter !== PDFName.of('FlateDecode') &&
-        filter !== PDFName.of('LZWDecode')
-      ) {
-        throw bad('unsupported /Filter with /DecodeParms');
-      }
-      data = unpredict(decoded, parms, width, bad);
-    }
+    // The decoder reverses any predictor; strict refuses data that ends
+    // mid-row rather than reconstructing a partial one.
+    const data = decodePDFRawStream(stream, { strict: true }).decode();
     if (data.length < rows * width) throw bad('truncated data');
 
     let at = 0;
@@ -270,63 +258,6 @@ class PDFXRefChainReader extends PDFObjectParser {
     return { entries, trailer: dict };
   }
 }
-
-/**
- * Reverses a PNG predictor (ISO 32000-1 7.4.4.4), which xref streams commonly
- * use; `decodePDFRawStream` does not apply /DecodeParms. Rows must be one
- * 8-bit component per byte as wide as an entry. TIFF and unknown predictors,
- * or more than one /DecodeParms, are refused.
- */
-const unpredict = (
-  data: Uint8Array,
-  parms: PDFObject,
-  width: number,
-  bad: (what: string) => Error,
-): Uint8Array => {
-  if (!(parms instanceof PDFDict)) throw bad('unsupported /DecodeParms');
-  const num = (key: string, fallback: number) => {
-    const value = parms.lookup(PDFName.of(key));
-    return value === undefined ? fallback : intOf(value, bad(`bad /${key}`));
-  };
-  const predictor = num('Predictor', 1);
-  if (predictor === 1) return data;
-  if (
-    predictor < 10 ||
-    predictor > 15 ||
-    num('Colors', 1) !== 1 ||
-    num('BitsPerComponent', 8) !== 8 ||
-    num('Columns', 1) !== width
-  ) {
-    throw bad('unsupported predictor');
-  }
-  const rows = Math.floor(data.length / (width + 1));
-  const out = new Uint8Array(rows * width);
-  for (let r = 0; r < rows; r++) {
-    const filter = data[r * (width + 1)]!;
-    const src = r * (width + 1) + 1;
-    const dst = r * width;
-    for (let i = 0; i < width; i++) {
-      const raw = data[src + i]!;
-      const left = i > 0 ? out[dst + i - 1]! : 0;
-      const up = r > 0 ? out[dst - width + i]! : 0;
-      const upLeft = r > 0 && i > 0 ? out[dst - width + i - 1]! : 0;
-      let value: number;
-      if (filter === 0) value = raw;
-      else if (filter === 1) value = raw + left;
-      else if (filter === 2) value = raw + up;
-      else if (filter === 3) value = raw + ((left + up) >> 1);
-      else if (filter === 4) {
-        const p = left + up - upLeft;
-        const pa = Math.abs(p - left);
-        const pb = Math.abs(p - up);
-        const pc = Math.abs(p - upLeft);
-        value = raw + (pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft);
-      } else throw bad(`PNG filter ${filter}`);
-      out[dst + i] = value & 0xff;
-    }
-  }
-  return out;
-};
 
 const intOf = (object: PDFObject | undefined, error: Error): number => {
   if (!(object instanceof PDFNumber)) throw error;

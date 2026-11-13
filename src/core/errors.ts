@@ -47,6 +47,12 @@ export class UnsupportedEncodingError extends Error {
   }
 }
 
+export class InvalidDecodeParmsError extends Error {
+  constructor(what: string) {
+    super(`Invalid stream /DecodeParms: ${what}`);
+  }
+}
+
 export class ReparseError extends Error {
   constructor(className: string, methodName: string) {
     const msg = `Cannot call ${className}.${methodName}() more than once`;

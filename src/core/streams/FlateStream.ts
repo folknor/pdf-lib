@@ -354,9 +354,6 @@ class FlateStream extends DecodeStream {
       codeSize += 8;
     }
     const code = codes[codeBuf & ((1 << maxLen) - 1)]!;
-    if (typeof codes === 'number') {
-      console.log('FLATE:', code);
-    }
     const codeLen = code >> 16;
     const codeVal = code & 0xffff;
     if (codeLen < 1 || codeSize < codeLen) {

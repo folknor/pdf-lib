@@ -163,6 +163,24 @@ describe('PDFXRefChainReader', () => {
     });
   });
 
+  it('refuses predicted rows that end early, even with entries to spare', () => {
+    // Predictor rows wider than the entries: the second row is cut short
+    // after the bytes the entries need, which a lenient decode would accept.
+    const body = zlibSync(new Uint8Array([0, 0, 0, 0, 255, 0, 0, 1, 0, 9, 0]));
+    const { bytes } = build([
+      '%PDF-1.5\n',
+      Buffer.concat([
+        Buffer.from(
+          `3 0 obj\n<< /Type /XRef /Size 2 /W [1 2 1] /Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 5 >> /Length ${body.length} >>\nstream\n`,
+          'latin1',
+        ),
+        body,
+        Buffer.from('\nendstream\nendobj\n', 'latin1'),
+      ]),
+    ]);
+    expect(() => PDFXRefChainReader.read(bytes, 9)).toThrow(/mid-row/);
+  });
+
   it('ignores /DecodeParms on an unfiltered stream', () => {
     const body = Buffer.from([0, 0, 0, 255, 1, 0, 9, 0]);
     const { bytes } = build([

@@ -9,6 +9,7 @@ import {
   PDFArray,
   PDFNumber,
   DecodedStreamTooLargeError,
+  InvalidDecodeParmsError,
 } from '../../../src/core';
 
 // Helper: encode text content as ASCII hex (e.g. "AB" -> "4142>")
@@ -448,19 +449,123 @@ describe('decodePDFRawStream', () => {
     });
   });
 
+  describe('with predictors', () => {
+    const predicted = (
+      rows: number[],
+      parms: Record<string, unknown> | unknown[],
+      filter: string | string[] = 'FlateDecode',
+      ctx = context,
+    ) =>
+      PDFRawStream.of(
+        ctx.obj({ Filter: filter, DecodeParms: parms } as never) as PDFDict,
+        zlibSync(Uint8Array.from(rows)),
+      );
+    const decode = (stream: PDFRawStream, strict = false) =>
+      Array.from(decodePDFRawStream(stream, { strict }).decode());
+
+    it('reverses PNG Paeth and Average rows against the row above', () => {
+      const parms = { Predictor: 12, Columns: 2 };
+      expect(decode(predicted([0, 10, 20, 4, 1, 1], parms))).toEqual([
+        10, 20, 11, 21,
+      ]);
+      expect(decode(predicted([0, 10, 20, 3, 5, 5], parms))).toEqual([
+        10, 20, 10, 20,
+      ]);
+    });
+
+    it('takes the PNG left neighbour a whole pixel back', () => {
+      const parms = { Predictor: 15, Colors: 2, Columns: 2 };
+      expect(decode(predicted([1, 1, 2, 3, 4], parms))).toEqual([1, 2, 4, 6]);
+    });
+
+    it('reverses TIFF 8-bit samples per component, row by row', () => {
+      const parms = { Predictor: 2, Colors: 2, Columns: 3 };
+      const row = [1, 2, 1, 1, 1, 1];
+      expect(decode(predicted([...row, ...row], parms))).toEqual([
+        1, 2, 2, 3, 3, 4, 1, 2, 2, 3, 3, 4,
+      ]);
+    });
+
+    it('reverses packed TIFF samples and passes padding bits through', () => {
+      const parms = { Predictor: 2, BitsPerComponent: 4, Columns: 3 };
+      expect(decode(predicted([0x11, 0x1f], parms))).toEqual([0x12, 0x3f]);
+    });
+
+    it('reverses 16-bit TIFF samples, dropping a partial one unless strict', () => {
+      const parms = { Predictor: 2, BitsPerComponent: 16, Columns: 2 };
+      const data = [0x00, 0xff, 0x00, 0x01, 0x00, 0x01, 0x00];
+      expect(decode(predicted(data, parms))).toEqual([
+        0x00, 0xff, 0x01, 0x00, 0x00, 0x01,
+      ]);
+      expect(() => decode(predicted(data, parms), true)).toThrow(
+        InvalidDecodeParmsError,
+      );
+    });
+
+    it('keeps a partial PNG row unless strict', () => {
+      const parms = { Predictor: 10, Columns: 3 };
+      const data = [0, 1, 2, 3, 0, 4];
+      expect(decode(predicted(data, parms))).toEqual([1, 2, 3, 4]);
+      expect(() => decode(predicted(data, parms), true)).toThrow(
+        InvalidDecodeParmsError,
+      );
+      expect(decode(predicted([], parms), true)).toEqual([]);
+    });
+
+    it('applies each predictor at its own stage of a filter chain', () => {
+      const hex = [...'4142>'].map((c) => c.charCodeAt(0));
+      const stream = predicted(
+        [0, ...hex],
+        [{ Predictor: 12, Columns: 5 }, null],
+        ['FlateDecode', 'ASCIIHexDecode'],
+      );
+      expect(decode(stream)).toEqual([0x41, 0x42]);
+    });
+
+    it('accepts a dictionary or a one-element array for a single filter', () => {
+      const rows = [2, 1, 2];
+      const parms = { Predictor: 12, Columns: 2 };
+      expect(decode(predicted(rows, [parms]))).toEqual([1, 2]);
+      expect(decode(predicted(rows, parms, ['FlateDecode']))).toEqual([1, 2]);
+    });
+
+    it('refuses /DecodeParms it would have to guess at', () => {
+      const parms = { Predictor: 12, Columns: 2 };
+      const two = ['FlateDecode', 'ASCIIHexDecode'];
+      for (const stream of [
+        predicted([0, 1, 2], parms, two),
+        predicted([0, 1, 2], [parms], two),
+        predicted([0, 1, 2], { Predictor: 5 }),
+        predicted([0, 1, 2], { Predictor: 2, BitsPerComponent: 3 }),
+        predicted([0, 1, 2], { Predictor: 12, Columns: 0 }),
+        predicted([7, 1, 2], parms),
+      ]) {
+        expect(() => decode(stream)).toThrow(InvalidDecodeParmsError);
+      }
+    });
+
+    it('holds the predictor and its row size to the document limit', () => {
+      const ctx = PDFContext.create();
+      ctx.maxDecodedStreamSize = 64 * 1024;
+      const wide = predicted([0], { Predictor: 12, Columns: 1 << 20 }, 'FlateDecode', ctx);
+      expect(() => decode(wide)).toThrow(InvalidDecodeParmsError);
+      const bomb = predicted(
+        Array.from(new Uint8Array(1 << 20)),
+        { Predictor: 12, Columns: 1 },
+        'FlateDecode',
+        ctx,
+      );
+      expect(() => decode(bomb)).toThrow(DecodedStreamTooLargeError);
+    });
+  });
+
   describe('with DecodeParms', () => {
-    it('passes DecodeParms to the decoder (LZWDecode with EarlyChange)', () => {
-      // This test verifies that DecodeParms is wired through.
-      // We create a dict with LZWDecode filter and EarlyChange=0 param.
-      // We cannot easily produce LZW-encoded data here, but we verify
-      // the structural wiring by confirming no runtime error with valid params
-      // when the Filter is something we can encode (FlateDecode ignores params).
+    it('treats /Predictor 1 as no predictor', () => {
       const original = new TextEncoder().encode('params test');
       const compressed = zlibSync(original);
 
       const dict = PDFDict.withContext(context);
       dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
-      // FlateDecode doesn't use DecodeParms, but setting it should not cause an error
       const paramsDict = PDFDict.withContext(context);
       paramsDict.set(PDFName.of('Predictor'), PDFNumber.of(1));
       dict.set(PDFName.of('DecodeParms'), paramsDict);

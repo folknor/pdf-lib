@@ -29,10 +29,17 @@ describe('PDFXRefStreamParser', () => {
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
+    // Predictor 12 rows reversed: offsets ascend, object-stream members
+    // point at object streams 309-317, and the free list starts at 222.
     expect(entries.length).toBe(319);
-    expect(normal.length).toBe(51);
-    expect(deleted.length).toBe(201);
-    expect(inObjectStream.length).toBe(67);
+    expect(normal.length).toBe(40);
+    expect(deleted.length).toBe(189);
+    expect(inObjectStream.length).toBe(90);
+    const at = (n: number) => entries.find((e) => e.ref.objectNumber === n)!;
+    expect([at(0).deleted, at(0).offset]).toEqual([true, 222]);
+    expect([at(1).inObjectStream, at(1).offset]).toEqual([true, 316]);
+    expect([at(2).deleted, at(2).offset]).toEqual([false, 6310]);
+    expect([at(318).deleted, at(318).offset]).toEqual([false, 41685]);
   });
 
   it('can parse XRef streams (2)', () => {
@@ -60,10 +67,16 @@ describe('PDFXRefStreamParser', () => {
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
+    // Each freed number (generation 1) links to the previous one.
     expect(entries.length).toBe(160);
-    expect(normal.length).toBe(32);
-    expect(deleted.length).toBe(95);
-    expect(inObjectStream.length).toBe(33);
+    expect(normal.length).toBe(6);
+    expect(deleted.length).toBe(152);
+    expect(inObjectStream.length).toBe(2);
+    const at = (n: number) => entries.find((e) => e.ref.objectNumber === n)!;
+    expect([at(18).ref.generationNumber, at(18).offset]).toEqual([1, 16]);
+    expect([at(288).deleted, at(288).offset]).toEqual([true, 287]);
+    expect([at(32).deleted, at(32).offset]).toEqual([false, 42320]);
+    expect([at(322).deleted, at(322).offset]).toEqual([false, 47233]);
   });
 
   it('can parse XRef streams (3)', () => {
@@ -87,9 +100,16 @@ describe('PDFXRefStreamParser', () => {
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
     expect(entries.length).toBe(5);
-    expect(normal.length).toBe(3);
+    expect(normal.length).toBe(4);
     expect(deleted.length).toBe(0);
-    expect(inObjectStream.length).toBe(2);
+    expect(inObjectStream.length).toBe(1);
+    expect(entries.map((e) => [e.ref.objectNumber, e.offset])).toEqual([
+      [32, 47760],
+      [291, 323],
+      [308, 51731],
+      [323, 51945],
+      [324, 52248],
+    ]);
   });
 
   it('can parse XRef streams (4)', () => {

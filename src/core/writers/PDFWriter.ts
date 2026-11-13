@@ -497,6 +497,9 @@ class PDFWriter {
 
     object.updateContents(compressed as Uint8Array<ArrayBuffer>);
     object.dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
+    // /DecodeParms on an unfiltered stream meant nothing; under the new
+    // filter it would apply a predictor these bytes never had.
+    object.dict.delete(PDFName.of('DecodeParms'));
   }
 
   /**
