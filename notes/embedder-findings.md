@@ -3,11 +3,3 @@
 Open findings about the font embedders (`src/core/embedders`). Each entry
 stands alone; remove it when it is fixed or ruled against (leaving a comment
 at the code site in the second case).
-
-## FontDescriptor FontBBox comes from the source font
-
-`CustomFontEmbedder.embedFontDescriptor` takes `FontBBox` from
-`this.font.bbox`, the source font's head box. A variation instance, a
-converted CFF2 font, or a subset embeds outlines whose extents differ; the
-encoded subset's head (recomputed by `TTFSubset._updateExtents` when glyphs
-are re-encoded) holds the real box.

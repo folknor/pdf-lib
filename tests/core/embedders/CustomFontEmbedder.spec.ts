@@ -440,6 +440,18 @@ describe('CustomFontEmbedder', () => {
         for (const k of ['minX', 'minY', 'maxX', 'maxY'] as const) {
           expect(Math.abs(a[k] - e[k])).toBeLessThanOrEqual(1);
         }
+
+        // FontBBox is the converted program's own head box, not the source's.
+        const scale = 1000 / embedded.unitsPerEm;
+        const { minX, minY, maxX, maxY } = embedded.bbox;
+        expect(fontBBoxOf(context, ref)).toEqual([
+          minX * scale,
+          minY * scale,
+          maxX * scale,
+          maxY * scale,
+        ]);
+        expect(maxY).toBeGreaterThanOrEqual(a.maxY);
+        expect(minY).toBeLessThanOrEqual(a.minY);
       });
     }
   });
@@ -527,6 +539,16 @@ const widthsOf = (context: PDFContext, fontRef: PDFRef) => {
   }
   return widths;
 };
+
+const fontBBoxOf = (context: PDFContext, fontRef: PDFRef) =>
+  context
+    .lookup(fontRef, PDFDict)
+    .lookup(PDFName.of('DescendantFonts'), PDFArray)
+    .lookup(0, PDFDict)
+    .lookup(PDFName.of('FontDescriptor'), PDFDict)
+    .lookup(PDFName.of('FontBBox'), PDFArray)
+    .asArray()
+    .map((n) => (n as PDFNumber).asNumber());
 
 const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
   const descriptor = context

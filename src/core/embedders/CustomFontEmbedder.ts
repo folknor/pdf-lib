@@ -200,17 +200,16 @@ class CustomFontEmbedder {
   }
 
   protected async embedFontDescriptor(context: PDFContext): Promise<PDFRef> {
-    const fontStreamRef = await this.embedFontStream(context);
+    const { ref: fontStreamRef, bbox } = await this.embedFontStream(context);
 
     const { scale } = this;
     const { italicAngle, ascent, descent, capHeight, xHeight } = this.font;
-    const { minX, minY, maxX, maxY } = this.font.bbox;
 
     const fontDescriptor = context.obj({
       Type: 'FontDescriptor',
       FontName: this.baseFontName,
       Flags: deriveFontFlags(this.font),
-      FontBBox: [minX * scale, minY * scale, maxX * scale, maxY * scale],
+      FontBBox: bbox,
       ItalicAngle: italicAngle,
       Ascent: ascent * scale,
       Descent: descent * scale,
@@ -253,8 +252,34 @@ class CustomFontEmbedder {
     return this.fontData;
   }
 
-  protected async embedFontStream(context: PDFContext): Promise<PDFRef> {
+  /**
+   * Embeds the font program and returns its ref with the FontBBox (glyph
+   * space) that belongs to exactly these bytes.
+   *
+   * A TrueType program's box is its own head box: a variation instance, a
+   * converted CFF2 font or a WOFF2-transformed font is re-encoded and its head
+   * recomputed from the glyphs written (TTFSubset._updateExtents), so the
+   * source font's head can be smaller than the outlines embedded. A raw-copied
+   * static subset keeps the source head, which contains its glyphs given valid
+   * source metadata and glyf coordinates placed at hmtx lsb == xMin (a glyph
+   * whose lsb differs is shifted by renderers that place it by its bearing).
+   * ISO 32000-1 Table 122 only recommends the smallest box, so that superset
+   * stands. A CFF program keeps the source head box, as before; nothing here
+   * checks it against the CFF top DICT FontBBox.
+   */
+  protected async embedFontStream(
+    context: PDFContext,
+  ): Promise<{ ref: PDFRef; bbox: number[] }> {
     const fontProgram = await this.serializeFont();
+    let bbox: number[];
+    if (this.isCFF()) {
+      const { scale } = this;
+      const { minX, minY, maxX, maxY } = this.font.bbox;
+      bbox = [minX * scale, minY * scale, maxX * scale, maxY * scale];
+    } else {
+      bbox = sfntFontBBox(fontProgram);
+    }
+
     const fontStream = context.flateStream(fontProgram, {
       // Table 127 requires the decoded program length for FontFile2 only.
       Length1: this.isCFF() ? undefined : fontProgram.length,
@@ -267,7 +292,7 @@ class CustomFontEmbedder {
     } else {
       this.fontStreamRef = context.register(fontStream);
     }
-    return this.fontStreamRef;
+    return { ref: this.fontStreamRef, bbox };
   }
 
   protected embedUnicodeCmap(context: PDFContext): PDFRef {
@@ -401,6 +426,33 @@ export const encodeSubset = (subset: Subset): Promise<Uint8Array> =>
       .on('end', () => resolve(mergeUint8Arrays(parts)))
       .on('error' as any, (err) => reject(err));
   });
+
+/**
+ * The head box of a TrueType program in PDF glyph space, scaled by the
+ * program's own unitsPerEm (the bytes may come from any fontkit).
+ */
+export const sfntFontBBox = (bytes: Uint8Array): number[] => {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 12) throw new Error('Font program has no sfnt directory');
+  const numTables = view.getUint16(4);
+  if (12 + 16 * numTables > bytes.length) {
+    throw new Error('Font program sfnt directory is truncated');
+  }
+  for (let i = 0; i < numTables; i++) {
+    const record = 12 + 16 * i;
+    const tag = String.fromCharCode(...bytes.subarray(record, record + 4));
+    if (tag !== 'head') continue;
+    const offset = view.getUint32(record + 8);
+    if (view.getUint32(record + 12) < 54 || offset + 54 > bytes.length) {
+      throw new Error('Font program head table is truncated');
+    }
+    const unitsPerEm = view.getUint16(offset + 18);
+    if (unitsPerEm === 0) throw new Error('Font program head has unitsPerEm 0');
+    const scale = 1000 / unitsPerEm;
+    return [36, 38, 40, 42].map((at) => view.getInt16(offset + at) * scale);
+  }
+  throw new Error('Font program has no head table');
+};
 
 /** Runs of at least this many equal widths are written as `first last w`. */
 const MIN_WIDTH_RANGE = 4;
