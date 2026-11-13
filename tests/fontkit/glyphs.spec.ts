@@ -297,9 +297,48 @@ describe('composite variation metrics', () => {
       const font: any = openUbuntu();
       moveLeftOriginOf(font, gid!);
       const glyph = font.getGlyph(id);
-      expect(glyph.path.cbox.minX).toBe(unvaried.path.cbox.minX - shift!);
+      // The static path is already placed at the flagged component's origin.
+      expect(glyph.path.cbox.minX).toBe(
+        unvaried.path.cbox.minX + flaggedOrigin - shift!,
+      );
       expect(glyph.path.cbox.minX).toBe(glyph._getMetrics().leftBearing);
     }
+  });
+});
+
+describe('static TrueType left origin', () => {
+  // UbuntuMono-R's glyph 1249 has hmtx lsb 9 but glyf xMin -34.
+  const mono = () =>
+    fontkit.create(
+      new Uint8Array(
+        fs.readFileSync('./assets/fonts/ubuntu/UbuntuMono-R.ttf'),
+      ),
+    ) as any;
+
+  it('places the outline and cbox at the hmtx left side bearing', () => {
+    const glyph = mono().getGlyph(1249);
+    const header = glyph._getCBox(true);
+    const { leftBearing } = glyph._getMetrics();
+    expect(header.minX).not.toBe(leftBearing);
+    expect(glyph.path.cbox.minX).toBe(leftBearing);
+    expect(glyph.cbox.minX).toBe(leftBearing);
+    expect(glyph.cbox.width).toBe(header.width);
+    expect(glyph.cbox.maxY).toBe(header.maxY);
+  });
+
+  it('writes a re-encoded glyph bearing as its xMin', () => {
+    const font = mono();
+    // Mark the glyf table transformed, as WOFF2 does, to force flattening.
+    font.directory.tables.glyf = {
+      ...font.directory.tables.glyf,
+      transformed: true,
+    };
+    const subset = font.createSubset();
+    subset.includeGlyph(1249);
+    const out = fontkit.create(subset.encode()) as any;
+    const glyph = out.getGlyph(1);
+    expect(glyph._getCBox(true).minX).toBe(glyph._getMetrics().leftBearing);
+    expect(glyph.path.cbox.minX).toBe(mono().getGlyph(1249).path.cbox.minX);
   });
 });
 

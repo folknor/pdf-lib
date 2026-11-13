@@ -4,19 +4,6 @@ Open findings about the vendored fontkit (`src/fontkit`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Static TrueType outlines are not placed at their left origin
-
-A variation instance's outline is translated by its resolved left phantom
-point (`TTFGlyph._getContours`), but a static font's path and cbox stay in
-glyf coordinates. Where a glyph's hmtx lsb differs from its glyf xMin, FreeType
-and HarfBuzz draw it at xMin - lsb to the left of where `glyph.path` puts it
-(and an instance at the default coordinates differs from the static font).
-Static subsets copy glyf and hmtx as they are, so the embedded font is
-unaffected; the fix needs its own rule for the header cbox (static
-`_getCBox` reads the glyf header) and for flattened static WOFF2 glyphs
-(`TTFSubset` writes the source lsb), which pdf.js draws untranslated while a
-TTF copy of the same font keeps its original bytes.
-
 ## WOFF2 brotli decoding is not bounded by the decode cap
 
 `WOFF2Font._decompress` checks the declared table space against the cap, but

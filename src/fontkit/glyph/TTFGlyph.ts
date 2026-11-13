@@ -102,7 +102,11 @@ class Component {
 export default class TTFGlyph extends Glyph {
   type = 'TTF';
 
-  // Parses just the glyph header and returns the bounding box
+  // The control box. The internal one is the glyph's own box in glyf
+  // coordinates (header or transformed glyf box), which its unvaried
+  // phantom points are built from. The public one is where the outline is
+  // drawn: a varied glyph's path box, or a static glyph's header box
+  // translated by its left origin as _getContours translates its path.
   override _getCBox(internal?: boolean): BBox {
     // We need to decode the glyph if variation processing is requested,
     // so it's easier just to recompute the path's cbox after decoding.
@@ -110,6 +114,19 @@ export default class TTFGlyph extends Glyph {
       return this.path.cbox;
     }
 
+    const box = this._getGlyfBox();
+    if (internal) return box;
+    // A glyph with no points keeps its zero box, as Path.cbox gives one.
+    const { contours, phantoms } = this._resolve();
+    const originX = phantoms[0]?.x ?? 0;
+    if (originX === 0 || contours.length === 0) return box;
+    return Object.freeze(
+      new BBox(box.minX - originX, box.minY, box.maxX - originX, box.maxY),
+    );
+  }
+
+  // Parses just the glyph header and returns its bounding box.
+  _getGlyfBox(): BBox {
     // An empty glyph has no header; reading one would take the next glyph's
     // bytes, or run off the end of glyf.
     const offsets = this._font.loca.offsets;
@@ -399,19 +416,18 @@ export default class TTFGlyph extends Glyph {
   _defaultMetrics?: GlyphMetrics;
 
   // Decodes font data, resolves composite glyphs, and returns an array of
-  // contours. In a variation instance the outline is placed relative to its
-  // resolved left phantom point (the varied horizontal origin, which is
-  // xMin - hmtx lsb plus its deltas, so it can be nonzero even when gvar
-  // leaves it alone), as FreeType and HarfBuzz place it: translated once,
-  // here at the top-level glyph, never per component, so composites resolve
-  // their components in the components' own glyf coordinates. The points
-  // are copied, since _resolve returns decoded (possibly shared) points, and
-  // the metrics it publishes are measured before the shift, from unshifted
-  // points and phantoms. Static fonts keep glyf coordinates: their cbox is
-  // the glyf header box and their subsets copy glyf and hmtx as they are.
+  // contours. The outline is placed relative to its resolved left phantom
+  // point (the horizontal origin: xMin - hmtx lsb, plus deltas in a
+  // variation instance, so it is nonzero wherever lsb differs from xMin,
+  // static fonts included), as FreeType and HarfBuzz place it: translated
+  // once, here at the top-level glyph, never per component, so composites
+  // resolve their components in the components' own glyf coordinates. The
+  // points are copied, since _resolve returns decoded (possibly shared)
+  // points, and the metrics it publishes are measured before the shift, from
+  // unshifted points and phantoms.
   _getContours(): Point[][] {
     const { contours, phantoms } = this._resolve();
-    const originX = phantoms?.[0]?.x ?? 0;
+    const originX = phantoms[0]?.x ?? 0;
     if (originX === 0) return contours;
     return contours.map((contour) =>
       contour.map(
@@ -433,11 +449,14 @@ export default class TTFGlyph extends Glyph {
   // gvar spec and HarfBuzz do. They are the component's metrics, so they are
   // taken before its offset and scale are applied. Contours and phantoms are
   // both in glyf coordinates; _getContours shifts the top-level outline.
-  _resolve(): { contours: Point[][]; phantoms: Point[] | undefined } {
+  _resolve(): { contours: Point[][]; phantoms: Point[] } {
     const glyph = this._decode();
 
     let points: Point[] = [];
-    let phantoms = glyph.phantomPoints;
+    // A static glyph has no decoded phantom points; build its unvaried ones
+    // (never stored on the decoded glyph, which WOFF2 shares across fonts)
+    // so that its outline is placed by the same rule as a varied one.
+    let phantoms = glyph.phantomPoints ?? this._getPhantomPoints(glyph);
 
     if (glyph.numberOfContours < 0) {
       // resolve composite glyphs
@@ -447,7 +466,7 @@ export default class TTFGlyph extends Glyph {
         const componentGlyph = this._font._getBaseGlyph(component.glyphID);
         if (!componentGlyph) continue;
         const resolved = componentGlyph._resolve();
-        if (component.useMyMetrics && resolved.phantoms) {
+        if (component.useMyMetrics) {
           phantoms = resolved.phantoms;
         }
         const contours: Point[][] = resolved.contours;
@@ -482,8 +501,12 @@ export default class TTFGlyph extends Glyph {
     // not read, since the bearing it would supply must equal this one, and
     // without the mapping the spec derives it from the outline anyway. An
     // empty glyph's extents are zero, as its decoded header's are.
-    const [ph0, ph1, ph2, ph3] = phantoms ?? [];
-    if (ph0 && ph1 && ph2 && ph3) {
+    // A static font's metrics stay hmtx/vmtx as stored, USE_MY_METRICS
+    // notwithstanding, as HarfBuzz reads them: PDF positions glyphs by /W,
+    // so only layout reads the advance, and only the outline's placement
+    // follows the selected phantom points.
+    const [ph0, ph1, ph2, ph3] = phantoms;
+    if (this._font._variationProcessor && ph0 && ph1 && ph2 && ph3) {
       let xMin = points.length > 0 ? Infinity : glyph.xMin;
       let yMax = points.length > 0 ? -Infinity : glyph.yMax;
       for (const point of points) {

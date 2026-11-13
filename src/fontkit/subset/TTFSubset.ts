@@ -102,17 +102,11 @@ export default class TTFSubset extends Subset {
         glyf.numberOfContours !== 0
           ? this.glyphEncoder.encodeSimple(glyph.path)
           : new Uint8Array(0);
-      // A variation instance's outline is new geometry, written as the path
-      // (relative to its varied left origin); its bearing is the written
-      // xMin, the rounded varied left bearing.
-      // A static transformed WOFF2 glyph keeps the source's integer points,
-      // so its source hmtx bearing still describes them, even where it
-      // differs from xMin.
-      if (this.font._variationProcessor) {
-        this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
-      } else {
-        this._pushGlyph(glyph, buffer);
-      }
+      // The path is placed relative to the glyph's left origin (varied or
+      // not), so its bearing is the written xMin: the rounded left bearing,
+      // or for a static WOFF2 glyph whose hmtx lsb differs from its xMin,
+      // the source lsb that FreeType would have placed it by.
+      this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
       return this.glyf.length - 1;
     }
 
