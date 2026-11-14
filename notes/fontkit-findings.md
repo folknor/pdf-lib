@@ -115,16 +115,6 @@ ToUnicode maps an encoded glyph to the text it was drawn for, so the PUA
 glyphs then extract as the Thai marks, not as the private-use code points
 the cmap maps to them.
 
-## OS/2 version 0 tables decode without typo and win metrics
-
-`tables/OS2.ts` gives version 0 an empty tail, but a full Microsoft version 0
-table carries `sTypoAscender` through `usWinDescent` (only Apple's shortened
-legacy table ends early, which needs a length check rather than the version).
-So `typoAscender`, `winAscent` and friends are undefined on such fonts, and
-`Glyph._getDefaultMetrics` already falls back to hhea for them. Any future
-line-metric rule (fsSelection `useTypoMetrics`, a zero-hhea fallback) needs
-this decoded first.
-
 ## sbix fonts without glyf have no usable glyphs
 
 `SBIXGlyph` extends `TTFGlyph`, so its metrics (`_getMetrics` -> `_getCBox`)

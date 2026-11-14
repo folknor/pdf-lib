@@ -49,8 +49,14 @@ const OS2 = new r.VersionedStruct(r.uint16, {
     usLastCharIndex: r.uint16, // The maximum Unicode index in this font
   },
 
-  // The Apple version of this table ends here, but the Microsoft one continues on...
-  0: {},
+  // Version 0 has both a 68-byte legacy layout and a 78-byte layout.
+  0: {
+    typoAscender: new r.Optional(r.int16, (table: any) => table._length >= 78),
+    typoDescender: new r.Optional(r.int16, (table: any) => table._length >= 78),
+    typoLineGap: new r.Optional(r.int16, (table: any) => table._length >= 78),
+    winAscent: new r.Optional(r.uint16, (table: any) => table._length >= 78),
+    winDescent: new r.Optional(r.uint16, (table: any) => table._length >= 78),
+  },
 
   1: {
     typoAscender: r.int16,
