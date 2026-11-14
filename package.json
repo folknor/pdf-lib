@@ -44,6 +44,7 @@
     "@types/color": "^4.2.1",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
+    "oxfmt": "0.78.0",
     "oxlint": "1.93.0",
     "rimraf": "^6.1.4",
     "typescript": "^7.0.2",
@@ -83,6 +84,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist coverage",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "release": "pnpm release:prep && npm publish",
     "release:prep": "pnpm clean && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
