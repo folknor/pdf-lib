@@ -124,8 +124,13 @@ export const breakTextIntoLines = (
 
   const words = cleanText(text).match(regex)!;
 
+  // The candidate line is measured as one string, not as a sum of token
+  // widths: kerning and contextual shaping act across token boundaries, and
+  // the line is drawn shaped whole. A line's first token is taken whatever
+  // its width; after it, the line ends before the first token whose
+  // candidate line overflows (every candidate is measured, as a longer one
+  // is not assumed to be wider).
   let currLine = '';
-  let currWidth = 0;
   const lines: string[] = [];
 
   for (let idx = 0, len = words.length; idx < len; idx++) {
@@ -133,16 +138,12 @@ export const breakTextIntoLines = (
     if (isNewlineChar(word)) {
       lines.push(currLine);
       currLine = '';
-      currWidth = 0;
     } else {
-      const width = computeWidthOfText(word);
-      if (currWidth + width > maxWidth) {
-        if (currLine !== '') lines.push(currLine);
+      if (currLine !== '' && computeWidthOfText(currLine + word) > maxWidth) {
+        lines.push(currLine);
         currLine = '';
-        currWidth = 0;
       }
       currLine += word;
-      currWidth += width;
     }
   }
   if (currLine !== '') lines.push(currLine);

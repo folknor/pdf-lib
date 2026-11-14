@@ -1416,13 +1416,15 @@ describe('Layout with different standard fonts', () => {
 });
 
 // ---------------------------------------------------------------------------
-// splitOutLines binary search vs. a linear reference
+// splitOutLines forward scan vs. an exhaustive reference
 // ---------------------------------------------------------------------------
 
 /**
- * The straightforward algorithm: try every whitespace-run start from the
+ * Exhaustive longest-fitting search: try every whitespace-run start from the
  * longest prefix down, measuring each prefix exactly, and keep the first that
- * fits. splitOutLines must produce exactly the same lines.
+ * fits. splitOutLines ends a line at the first overflowing candidate instead,
+ * which gives the same lines whenever candidate widths grow along a line, as
+ * they do for the fonts and inputs below.
  */
 const linearLayout = (
   text: string,
@@ -1564,10 +1566,100 @@ describe('splitOutLines matches the linear reference', () => {
         0,
       );
       measure.mockRestore();
-      // Galloping + binary search measures O(log words) prefixes of at most
-      // ~2x the line per line. Scanning or measuring the remaining paragraph
-      // once per line would be on the order of lines * length / 2.
+      // The forward scan measures each candidate of a line plus the first
+      // overflowing one. Measuring the remaining paragraph once per line
+      // would be on the order of lines * length / 2.
       expect(measuredChars).toBeLessThan(paragraph.length * 30);
     },
   );
+});
+
+describe('line breaking does not assume prefix widths grow', () => {
+  // A stand-in font whose widths shrink as a line grows past one word.
+  const fakeFont = (widths: Record<string, number>) =>
+    ({
+      widthOfTextAtSize: (t: string) => widths[t] ?? 150,
+      heightAtSize: () => 10,
+      encodeText: (t: string) => t,
+    }) as unknown as PDFFont;
+
+  it('ends a line at the first overflowing candidate', () => {
+    // A search that skipped the overflowing "a bb" would draw "a bb c".
+    const layout = layoutMultilineText('a bb c', {
+      alignment: TextAlignment.Left,
+      bounds: { x: 0, y: 0, width: 200, height: 1000 },
+      font: fakeFont({ a: 100, 'a bb': 300, 'a bb c': 150, bb: 100 }),
+      fontSize: 12,
+    });
+    expect(layout.lines.map((l) => l.text)).toEqual(['a', 'bb c']);
+  });
+
+  it('keeps the whole input when its first candidate does not fit', () => {
+    const layout = layoutMultilineText('a b', {
+      alignment: TextAlignment.Left,
+      bounds: { x: 0, y: 0, width: 200, height: 1000 },
+      font: fakeFont({ a: 300, 'a b': 150 }),
+      fontSize: 12,
+    });
+    expect(layout.lines.map((l) => l.text)).toEqual(['a b']);
+  });
+});
+
+describe('auto font size fits the drawn lines', () => {
+  it('shrinks until an unbreakable word fits the width', () => {
+    const bounds = { x: 0, y: 0, width: 70, height: 100 };
+    const layout = layoutMultilineText('Hello World', {
+      alignment: TextAlignment.Left,
+      bounds,
+      font,
+      fontSize: undefined,
+    });
+    for (const line of layout.lines) {
+      expect(line.width).toBeLessThan(bounds.width);
+    }
+    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
+      bounds.height,
+    );
+    // The next size is rejected for width: "World" alone no longer fits.
+    expect(
+      font.widthOfTextAtSize('World', layout.fontSize + 1),
+    ).toBeGreaterThanOrEqual(bounds.width);
+  });
+
+  it('counts the wrapped and empty lines it draws when height-limited', () => {
+    const text = 'one  two   three\n\nfour five six seven';
+    const bounds = { x: 0, y: 0, width: 400, height: 60 };
+    const layout = layoutMultilineText(text, {
+      alignment: TextAlignment.Left,
+      bounds,
+      font,
+      fontSize: undefined,
+    });
+    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
+      bounds.height,
+    );
+    const larger = layoutMultilineText(text, {
+      alignment: TextAlignment.Left,
+      bounds,
+      font,
+      fontSize: layout.fontSize + 1,
+    });
+    expect(larger.lines.length * larger.lineHeight).toBeGreaterThan(
+      bounds.height,
+    );
+  });
+
+  it('sizes a single line by its whole kerned width', () => {
+    const bounds = { x: 0, y: 0, width: 50, height: 100 };
+    const { fontSize } = layoutSinglelineText('A V', {
+      alignment: TextAlignment.Left,
+      bounds,
+      font,
+      fontSize: undefined,
+    });
+    expect(font.widthOfTextAtSize('A V', fontSize)).toBeLessThan(50);
+    expect(font.widthOfTextAtSize('A V', fontSize + 1)).toBeGreaterThanOrEqual(
+      50,
+    );
+  });
 });

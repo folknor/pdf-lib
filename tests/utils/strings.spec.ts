@@ -59,14 +59,15 @@ describe('breakTextIntoLines', () => {
   it("breaks at the last possible 'wordBreak' before exceeding 'maxWidth' (1)", () => {
     const input =
       'Lorem Test ipsum dolor sit amet, consectetur adipiscing\nelit';
+    // Lines are measured whole, so the kerned "Te" pair lets "Lorem Te" fit.
     const expected = [
-      'Lorem T',
-      'est ipsu',
-      'm dolor s',
-      'it amet, c',
-      'onsectet',
-      'ur adipis',
-      'cing',
+      'Lorem Te',
+      'st ipsum ',
+      'dolor sit ',
+      'amet, co',
+      'nsectetur',
+      ' adipisci',
+      'ng',
       'elit',
     ];
     const actual = breakTextIntoLines(
@@ -76,6 +77,36 @@ describe('breakTextIntoLines', () => {
       computeTextWidth,
     );
     expect(actual).toEqual(expected);
+    for (const line of actual) {
+      expect(computeTextWidth(line)).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('measures a candidate line whole, kerning across a break included', () => {
+    // Helvetica kerns "space V": "A " + "V" sums wider than "A V".
+    const whole = computeTextWidth('A V');
+    expect(computeTextWidth('A ') + computeTextWidth('V')).toBeGreaterThan(
+      whole,
+    );
+    expect(breakTextIntoLines('A V', [' '], whole, computeTextWidth)).toEqual([
+      'A V',
+    ]);
+  });
+
+  it('ends a line at the first overflowing candidate', () => {
+    // Widths that shrink as the line grows: a skipping search would pass
+    // over the overflowing "bb " candidate.
+    const widths: Record<string, number> = { 'a ': 100, 'a bb ': 300 };
+    const measure = (t: string) => widths[t] ?? 150;
+    expect(breakTextIntoLines('a bb c', [' '], 200, measure)).toEqual([
+      'a ',
+      'bb c',
+    ]);
+  });
+
+  it("takes a line's first token whatever its width", () => {
+    const measure = (t: string) => (t === 'a' ? 300 : 150);
+    expect(breakTextIntoLines('ab', [''], 200, measure)).toEqual(['ab']);
   });
 
   it("breaks at the last possible 'wordBreak' before exceeding 'maxWidth' (2)", () => {

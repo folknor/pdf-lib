@@ -29,44 +29,29 @@ export interface LayoutBounds {
 const MIN_FONT_SIZE = 4;
 const MAX_FONT_SIZE = 500;
 
+// Auto font size: the size is accepted when the lines drawn at it (wrapped
+// by the same splitter the layout draws with, each measured as one shaped
+// string) are all narrower than the box and stack within its height. A word
+// that cannot fit at any size therefore drives the size down rather than
+// overflowing. The search walks up from MIN_FONT_SIZE and stops at the first
+// rejected size, so it finds the end of the first acceptable run, which is
+// the largest acceptable size only if acceptance does not recover at larger
+// sizes (contextual shaping makes no such promise).
 const computeFontSize = (
-  lines: string[],
+  measureLines: (fontSize: number) => { width: number }[],
   font: PDFFont,
   bounds: LayoutBounds,
-  multiline: boolean = false,
 ) => {
   let fontSize = MIN_FONT_SIZE;
 
   while (fontSize < MAX_FONT_SIZE) {
-    let linesUsed = 0;
-
-    for (
-      let lineIdx = 0, lineLen = lines.length;
-      lineIdx < lineLen;
-      lineIdx++
-    ) {
-      linesUsed += 1;
-
-      const line = lines[lineIdx]!;
-      const words = line.split(' ');
-
-      // Layout the words using the current `fontSize`, line wrapping
-      // whenever we reach the end of the current line.
-      let spaceInLineRemaining = bounds.width;
-      for (let idx = 0, len = words.length; idx < len; idx++) {
-        const isLastWord = idx === len - 1;
-        const word = isLastWord ? words[idx]! : `${words[idx]!} `;
-        const widthOfWord = font.widthOfTextAtSize(word, fontSize);
-        spaceInLineRemaining -= widthOfWord;
-        if (spaceInLineRemaining <= 0) {
-          linesUsed += 1;
-          spaceInLineRemaining = bounds.width - widthOfWord;
-        }
-      }
-    }
+    const lines = measureLines(fontSize);
 
     // Return if we exceeded the allowed width
-    if (!multiline && linesUsed > lines.length) return fontSize - 1;
+    if (lines.some((line) => !(line.width < bounds.width))) {
+      return fontSize - 1;
+    }
+    const linesUsed = lines.length;
 
     const height = font.heightAtSize(fontSize);
     const lineHeight = height + height * 0.2;
@@ -130,15 +115,22 @@ const splitOutLines = (
   fontSize: number,
 ) => {
   // Semantics: the candidate cut points are the start of every whitespace run
-  // (including index 0) and the end of the input. The line is the longest
-  // candidate prefix whose exact width (kerning, surrogate pairs, ...) is
-  // below maxWidth; the remainder starts after the whitespace run at the cut.
-  // If no candidate fits, the whole input is returned as one overflowing line.
+  // (including index 0) and the end of the input. Each candidate is measured
+  // as the whole prefix from the line start, shaped as one string (kerning,
+  // contextual rules, surrogate pairs, ...). The line ends before the first
+  // candidate whose width is not below maxWidth; the remainder starts after
+  // the whitespace run at the cut. If the first candidate does not fit, the
+  // whole input is returned as one line whatever its width.
   //
-  // Candidates are discovered lazily and searched by galloping forward from
-  // the line start (1, 2, 4, ... candidates) and then binary searching inside
-  // the bracket, so the work is proportional to the line, not the remaining
-  // paragraph.
+  // Candidates are discovered lazily and scanned forward one by one. A
+  // longer prefix is not assumed to be wider: positioned advances can be
+  // negative (GPOS, AFM kerning) and contextual rules can reach across a
+  // space, so a gallop or binary search would skip a candidate that does not
+  // fit and land on an arbitrary fitting one. The scan measures growing
+  // prefixes through the first failure, so shaping work is quadratic in the
+  // length of the drawn line (which can be the whole paragraph) rather than
+  // in the remaining paragraph per line; the fallback also measures the
+  // whole input once.
   const breaks: number[] = [];
   let scanned = 0;
   let exhausted = false;
@@ -173,42 +165,10 @@ const splitOutLines = (
     return width;
   };
 
-  // This relies on prefix width growing with the candidate index:
-  // - Custom fonts sum the positioned advances of the shaped glyphs, and
-  //   cutting before whitespace leaves the glyphs before the cut unchanged
-  //   unless the font substitutes or positions across the space (contextual
-  //   rules that reach over a word break), so a longer candidate's glyphs
-  //   extend a shorter one's. Positioned advances can be negative (GPOS
-  //   kerning), like the standard fonts' below. A font with such rules can
-  //   break the assumption, and then a line may end earlier than the longest
-  //   fitting candidate.
-  // - Standard fonts add pair kerning, which can be negative, but each step
-  //   between candidates adds a whitespace glyph plus a word, whose widths
-  //   are expected to dwarf any negative kerning between them (true for all
-  //   bundled Standard 14 AFM kerning pairs).
-  // The forward check after the search extends past the boundary if a longer
-  // candidate still fits, so a local non-monotonic step can't shorten a line.
   const fits = (idx: number) =>
     hasBreak(idx) && widthUpTo(breaks[idx]!) < maxWidth;
 
-  // Gallop: find found < high with fits(found) (or found = -1) and !fits(high)
   let found = -1;
-  let step = 1;
-  while (fits(found + step)) {
-    found += step;
-    step *= 2;
-  }
-  let low = found + 1;
-  let high = found + step - 1;
-  while (low <= high) {
-    const middle = (low + high) >> 1;
-    if (fits(middle)) {
-      found = middle;
-      low = middle + 1;
-    } else {
-      high = middle - 1;
-    }
-  }
   while (fits(found + 1)) found++;
 
   if (found >= 0) {
@@ -220,22 +180,39 @@ const splitOutLines = (
       remainderStart++;
     }
     const remainder = input.substring(remainderStart) || undefined;
-    return {
-      line,
-      encoded: font.encodeText(line),
-      width: widthUpTo(lastBreakPoint),
-      remainder,
-    };
+    return { line, width: widthUpTo(lastBreakPoint), remainder };
   }
 
   // We were unable to split the input enough to get a chunk that would fit
   // within the specified `maxWidth` so we'll just return everything
-  return {
-    line: input,
-    encoded: font.encodeText(input),
-    width: widthUpTo(input.length),
-    remainder: undefined,
-  };
+  return { line: input, width: widthUpTo(input.length), remainder: undefined };
+};
+
+// The lines layoutMultilineText draws, with their widths: both the drawing and
+// the auto font size use this, so the size is chosen for the drawn lines.
+const wrapLines = (
+  lines: string[],
+  maxWidth: number,
+  font: PDFFont,
+  fontSize: number,
+) => {
+  const wrapped: { line: string; width: number }[] = [];
+  for (const paragraph of lines) {
+    let prevRemainder: string | undefined = paragraph;
+    while (prevRemainder !== undefined) {
+      const { line, width, remainder } = splitOutLines(
+        prevRemainder,
+        maxWidth,
+        font,
+        fontSize,
+      );
+      wrapped.push({ line, width });
+      // Only trim lines that we had to split ourselves. So we won't trim lines
+      // that the user provided themselves with whitespace.
+      prevRemainder = remainder?.trim();
+    }
+  }
+  return wrapped;
 };
 
 export const layoutMultilineText = (
@@ -245,7 +222,11 @@ export const layoutMultilineText = (
   const lines = lineSplit(cleanText(text));
 
   if (fontSize === undefined || fontSize === 0) {
-    fontSize = computeFontSize(lines, font, bounds, true);
+    fontSize = computeFontSize(
+      (size) => wrapLines(lines, bounds.width, font, size),
+      font,
+      bounds,
+    );
   }
   const height = font.heightAtSize(fontSize);
   const lineHeight = height + height * 0.2;
@@ -258,39 +239,32 @@ export const layoutMultilineText = (
   let maxY = bounds.y + bounds.height;
 
   let y = bounds.y + bounds.height;
-  for (let idx = 0, len = lines.length; idx < len; idx++) {
-    let prevRemainder: string | undefined = lines[idx];
-    while (prevRemainder !== undefined) {
-      const { line, encoded, width, remainder } = splitOutLines(
-        prevRemainder,
-        bounds.width,
-        font,
-        fontSize,
-      );
+  for (const { line, width } of wrapLines(
+    lines,
+    bounds.width,
+    font,
+    fontSize,
+  )) {
+    const encoded = font.encodeText(line);
 
-      // prettier-ignore
-      const x =
-        alignment === TextAlignment.Left
-          ? bounds.x
-          : alignment === TextAlignment.Center
-            ? bounds.x + bounds.width / 2 - width / 2
-            : alignment === TextAlignment.Right
-              ? bounds.x + bounds.width - width
-              : bounds.x;
+    // prettier-ignore
+    const x =
+      alignment === TextAlignment.Left
+        ? bounds.x
+        : alignment === TextAlignment.Center
+          ? bounds.x + bounds.width / 2 - width / 2
+          : alignment === TextAlignment.Right
+            ? bounds.x + bounds.width - width
+            : bounds.x;
 
-      y -= lineHeight;
+    y -= lineHeight;
 
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x + width > maxX) maxX = x + width;
-      if (y + height > maxY) maxY = y + height;
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x + width > maxX) maxX = x + width;
+    if (y + height > maxY) maxY = y + height;
 
-      textLines.push({ text: line, encoded, width, height, x, y });
-
-      // Only trim lines that we had to split ourselves. So we won't trim lines
-      // that the user provided themselves with whitespace.
-      prevRemainder = remainder?.trim();
-    }
+    textLines.push({ text: line, encoded, width, height, x, y });
   }
 
   return {
@@ -399,7 +373,11 @@ export const layoutSinglelineText = (
   const line = mergeLines(cleanText(text));
 
   if (fontSize === undefined || fontSize === 0) {
-    fontSize = computeFontSize([line], font, bounds);
+    fontSize = computeFontSize(
+      (size) => [{ width: font.widthOfTextAtSize(line, size) }],
+      font,
+      bounds,
+    );
   }
 
   const encoded = font.encodeText(line);

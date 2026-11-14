@@ -36,31 +36,6 @@ page's resources). A fix detaches the resources dictionary and the category
 being written on first write, whatever caused the sharing, rather than only
 for inheritance.
 
-## Line breaking assumes shaped prefix widths grow monotonically
-
-`widthOfTextAtSize` on a custom font measures the positioned advances of the
-shaped glyphs (what `encodeText` draws), and `splitOutLines` in
-`src/api/text/layout.ts` gallops and binary-searches over break candidates
-assuming a longer prefix is never narrower. Positioned advances can be
-negative (GPOS kerning, contextual positioning), and a font with contextual
-substitutions or positioning that reach across a space can make a later
-candidate fit after an earlier one overflowed; the search then stops at the
-overflow and can return a line shorter than the longest fitting one, or an
-overflowing paragraph. Widths `100, 300, 150` against a limit of 200 show
-that the forward check after the search does not help: it stops at the first
-failure. Not reproduced with a real font. A fix is a search that does not
-rely on monotonicity; detecting a non-monotonic step only works if the search
-visits it, so for unrestricted fonts every candidate up to the limit has to
-be measured as a whole line.
-
-`breakTextIntoLines` (`src/utils/strings.ts`) and the form auto-size
-`computeFontSize` (`src/api/text/layout.ts`) have the same root in a
-different form: they measure words separately and add the widths, so
-anything acting across a token boundary is lost. Helvetica `"A "` plus
-`"V"` is 1612 units wide but `"A V"` is 1562, so a line that fits can be
-wrapped; for custom fonts any substitution or positioning across a space
-does the same. A fix measures each candidate line as one string.
-
 ## Text measurement ignores the text state it is drawn with
 
 `widthOfTextAtSize` is the font-only advance: `drawText` with `maxWidth`

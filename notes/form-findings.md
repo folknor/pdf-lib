@@ -60,3 +60,16 @@ those beside the advance. Combed fields also encode each Unicode scalar on
 its own (`layoutCombedText`), so a combining mark gets its own cell and
 joining scripts never join, while the length check counts UTF-16 units; the
 cell unit (scalar, grapheme cluster) is undecided.
+
+## Auto font size does not size what single-line and overflow layouts draw
+
+`computeFontSize` (`src/api/text/layout.ts`) now judges the lines the layout
+draws, but its vertical test is still full font height plus 20% leading per
+line, while `layoutSinglelineText` draws and centres with
+`heightAtSize(size, { descender: false })`. The search returns
+`MIN_FONT_SIZE - 1` (3) without checking that 3 fits, and never tests
+`MAX_FONT_SIZE` before returning it. And when a paragraph's first word does
+not fit, `splitOutLines` draws the whole remaining paragraph as one
+overflowing line, rather than that word alone and wrapping the rest; at a
+fixed size this is the drawn result, and auto size only avoids it by
+shrinking until every word fits.
