@@ -89,7 +89,7 @@ describe('USE Tibetan clusters', () => {
     expect(dotted(0x0f40, 0x0f81)).toBe(false);
   });
 
-  // Known cost, until a pre-shaping canonical reorder exists: the
+  // Known cost, until a pre-shaping mark reorder exists: the
   // non-canonical spelling with the vowel before AA is now broken.
   it('breaks a vowel sign before AA', () => {
     expect(dotted(0x0f40, 0x0f72, 0x0f71)).toBe(true);

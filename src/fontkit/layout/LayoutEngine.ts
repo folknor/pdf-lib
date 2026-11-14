@@ -1,6 +1,7 @@
 import AATLayoutEngine from '../aat/AATLayoutEngine.js';
 import type Glyph from '../glyph/Glyph.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
+import { composeCanonical } from './CanonicalCompose.js';
 import GlyphPosition from './GlyphPosition.js';
 import GlyphRun from './GlyphRun.js';
 import KernProcessor from './KernProcessor.js';
@@ -51,6 +52,22 @@ export default class LayoutEngine {
         script = Script.forString(string);
       }
 
+      // Pick the canonically equivalent spelling the font can draw
+      // (CanonicalCompose.ts). Runs for every engine, AAT included; the
+      // script above was detected from the typed text.
+      const hasGlyph = (cp: number): boolean =>
+        this.font.hasGlyphForCodePoint(cp);
+      {
+        const typed = Array.from(string, (c) => c.codePointAt(0)!);
+        const chosen = composeCanonical(typed, hasGlyph);
+        if (
+          chosen.length !== typed.length ||
+          chosen.some((cp, i) => cp !== typed[i])
+        ) {
+          string = chosen.map((cp) => String.fromCodePoint(cp)).join('');
+        }
+      }
+
       // morx fonts carry their own Thai processing, so AAT is left alone.
       const first = Array.isArray(script) ? script[0] : script;
       if (
@@ -58,9 +75,7 @@ export default class LayoutEngine {
         !(this.engine instanceof AATLayoutEngine)
       ) {
         const codePoints = Array.from(string, (c) => c.codePointAt(0)!);
-        const rewritten = decomposeSaraAm(codePoints, (cp) =>
-          this.font.hasGlyphForCodePoint(cp),
-        );
+        const rewritten = decomposeSaraAm(codePoints, hasGlyph);
         if (rewritten.length !== codePoints.length) {
           string = rewritten.map((cp) => String.fromCodePoint(cp)).join('');
         }

@@ -68,6 +68,11 @@ export default class DefaultShaper {
     plan.setFeatureOverrides(userFeatures);
   }
 
+  // Canonical composition does not live here (the cantoo fontkit fork put
+  // NFC in this hook): Indic, USE and Hangul shapers override it without
+  // chaining, fonts without GSUB/GPOS never reach a shaper, and
+  // String.prototype.normalize ties output to the runtime's Unicode version.
+  // It runs on code points in LayoutEngine.layout (CanonicalCompose.ts).
   static assignFeatures(_plan: ShapingPlan, glyphs: GlyphInfo[]): void {
     // Enable contextual fractions
     for (let i = 0; i < glyphs.length; i++) {

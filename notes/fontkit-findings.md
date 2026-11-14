@@ -42,30 +42,40 @@ advances; line breaking, alignment and form field appearances all measure
 through that one function. Most of the value of mark reordering (the Hebrew
 reorder below) is in GPOS attachment, so it pays little until this lands.
 
-## No normalisation stage before shaping
+## No mark reordering before shaping
 
-fontkit shapes code points as given: no canonical composition or
-decomposition, and no sort of mark runs by combining class. HarfBuzz runs
-such a stage for every font, and script shapers hook into it: Hebrew
-composes base+point pairs into FB1D-FB4F presentation forms when the plan has
-no GPOS `mark` (for fonts that rely on them), and swaps a patah/qamats +
-sheva/hiriq + meteg run into the order fonts expect - a swap that only makes
-sense after the sort. A Hebrew shaper class (as the cantoo fontkit fork and
-foliojs fontkit added) was refused for that reason: the reorder without the
-sort fires only on one input order, and composition inside a `hebr` shaper is
-unreachable for fonts with no `hebr` script record (selection follows the
-font's script list, GSUB's choice overriding GPOS's) and fonts with no
-layout tables at all (no OT engine). The Hebrew compose and reorder belong as
-script exceptions of this stage, together with NFC composition and the
-split-vowel decompositions `UniversalShaper` and `IndicShaper` do ad hoc.
+`LayoutEngine.layout` now picks a canonically equivalent spelling the font
+can draw (`CanonicalCompose.ts`: decompose what the font lacks, compose marks
+onto bases when the font has the composite), but nothing reorders marks, so
+canonically equivalent spellings with marks in different orders still shape
+differently. A sort by Unicode combining class is not the fix: HarfBuzz sorts
+by its own shaping ranks (Arabic shadda before the vowels, Hebrew dagesh and
+shin/sin dots before the vowels with the vowel classes permuted, Telugu length
+marks and Thai SARA U/UU before the virama/PHINTHU, Tibetan AA then U then
+the other vowels, TSA -PHRU before the vowels, PADMA GDAN and Tai Tham SAKOT
+last), and a plain canonical sort would break spellings that shape correctly
+as typed (shadda + damma, Tibetan U + E). The stage needs that rank data,
+versioned like the USE data, plus its contextual exceptions: the Hebrew swap
+of a patah/qamats + sheva/hiriq + meteg run (only meaningful after the sort),
+Arabic modifier-mark promotion (UTR #53), and the Hebrew FB1D-FB4F
+presentation-form composition for fonts with no GPOS `mark` (those forms are
+composition exclusions, so `CanonicalCompose` never produces them). A Hebrew
+shaper class (as the cantoo fontkit fork added) was refused for that reason:
+the reorder without the sort fires only on one input order, and composition
+inside a `hebr` shaper is unreachable for fonts with no `hebr` script record
+(selection follows the font's script list, GSUB's choice overriding GPOS's)
+and fonts with no layout tables at all (no OT engine). The split-vowel
+decompositions `UniversalShaper` and `IndicShaper` do ad hoc belong in the
+same code-point stage, since they run after it and can expand a character
+the font maps, or one a variation selector addresses.
 
 Tibetan needs it too. U+0F71 (AA) is a nukta (CMBlw) in the USE category
 trie, so AA must precede any vowel sign: canonical order works, but a
-vowel sign typed before AA (KA + I + AA) is a broken cluster. A canonical
-sort would cure that; it would not cure KA + AA + U+0F39 (TSA -PHRU), which
-is already canonical yet B CMBlw CMAbv, a broken cluster in the grammar -
-that needs a USE-specific move of TSA -PHRU before the vowels (font-tools
-issue 22). The specification's Tibetan positional overrides (I/E/O below,
+vowel sign typed before AA (KA + I + AA) is a broken cluster. A sort by
+shaping rank would cure that and, with TSA -PHRU ranked before the vowels,
+KA + AA + U+0F39, which is already canonical yet B CMBlw CMAbv, a broken
+cluster in the grammar (font-tools issue 22); a plain canonical sort would
+cure the first and keep the second broken. The specification's Tibetan positional overrides (I/E/O below,
 U above) were left out of `scripts/gen-use-trie.mjs` because they break
 canonical U + E; with a reorder stage in place they can be reconsidered.
 
