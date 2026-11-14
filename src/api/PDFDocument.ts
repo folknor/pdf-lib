@@ -81,6 +81,7 @@ import {
   range,
   toUint8Array,
 } from '../utils/index.js';
+import { detachSavedAttachments } from './detach.js';
 import type Embeddable from './Embeddable.js';
 import {
   EncryptedPDFCopyError,
@@ -1412,41 +1413,29 @@ export default class PDFDocument {
     return [...savedAttachments, ...unsavedAttachments];
   }
 
-  detach(name: string) {
-    const attachedFiles = this.getAttachments();
-    for (const file of attachedFiles) {
-      if (file.name !== name) continue;
-      // the file wasn't embedded into context yet
-      if ('pdfEmbeddedFile' in file) {
-        const i = this.embeddedFiles.indexOf(file.pdfEmbeddedFile);
-        if (i !== -1) this.embeddedFiles.splice(i, 1);
-      } else {
-        // remove references from catalog
-        const namesArr = this.catalog
-          .Names()
-          ?.lookup(PDFName.of('EmbeddedFiles'), PDFDict)
-          .lookup(PDFName.of('Names'), PDFArray);
-        const iNames = namesArr?.indexOf(file.specRef);
-        if (iNames !== undefined && iNames > 0) {
-          // attachment spec ref
-          namesArr?.remove(iNames);
-          // attachment name
-          namesArr?.remove(iNames - 1);
-        }
-        // AF-Tag for PDF-A3 compliance
-        const AF = this.catalog.AttachedFiles();
-        const afIndex = AF?.indexOf(file.specRef);
-        if (afIndex !== undefined) AF?.remove(afIndex);
-
-        // remove references from context
-        const streamRef = this.context
-          .lookupMaybe(file.specRef, PDFDict)
-          ?.lookupMaybe(PDFName.of('EF'), PDFDict)
-          ?.get(PDFName.of('F')) as PDFRef | undefined;
-        if (streamRef) this.context.delete(streamRef);
-        this.context.delete(file.specRef);
+  /**
+   * Remove every attachment named `name`: pending ones from [[attach]], and
+   * saved ones from the catalog's attachments name tree and catalog `/AF`.
+   * The objects only those attachments used are deleted; anything another
+   * structure still refers to (a file-attachment annotation, a page `/AF`,
+   * the same file under another name) is kept. Attachments are not decoded,
+   * so an unreadable one does not stop another being detached. A `/Kids`
+   * attachments tree is not searched.
+   *
+   * This does not erase the file's bytes from earlier revisions: after an
+   * incremental save they are still in the file's previous revision.
+   *
+   * @param name The name of the attachment, as [[getAttachments]] reports it.
+   */
+  detach(name: string): void {
+    assertIs(name, 'name', ['string']);
+    for (let i = this.embeddedFiles.length - 1; i >= 0; i--) {
+      const file = this.embeddedFiles[i]!;
+      if (!file.getAlreadyEmbedded() && file.getEmbedder().fileName === name) {
+        this.embeddedFiles.splice(i, 1);
       }
     }
+    detachSavedAttachments(this.context, this.catalog, name);
   }
 
   /**

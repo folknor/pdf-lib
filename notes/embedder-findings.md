@@ -15,16 +15,21 @@ attachments panel and from `getAttachments()`, silently, at save time.
 `attach()` should check the tree when called and throw (as `embedFacturX()`
 does before changing anything), or the tree helper should learn `/Kids`.
 
-## detach() deletes objects other structures may still use
+## Attachments in a /Kids name tree are invisible
 
-`detach()` removes the name-tree entry and one `/AF` occurrence, then deletes
-the file specification and its stream from the context without checking for
-other references (a file-attachment annotation, a page `/AF`, a second key
-for the same file specification), which leaves them dangling. It finds the
-file through `getAttachments()`, which decodes every attachment, so one
-unreadable attachment blocks detaching another; it removes only the first
-`/AF` occurrence; it leaves an existing `/Limits` stale. `embedFacturX()`
-unlinks instead of deleting for this reason.
+`getAttachments()` and `detach()` read only the flat `/Names` array of the
+catalog `/EmbeddedFiles` node, so a document whose attachments tree uses
+`/Kids` reports no saved attachments and `detach()` silently removes
+nothing. `getAttachments()` also decodes every attachment, so one
+unreadable stream makes the whole call throw (`detach()` no longer depends
+on it).
+
+## embedFacturX() keeps a replaced invoice's objects
+
+`embedFacturX()` unlinks an earlier invoice but never deletes its objects,
+so a full save still writes the old invoice's bytes. `detach()` now deletes
+what only the removed attachment used (`collectUnreferenced` in
+`src/api/detach.ts`); the replacement could do the same.
 
 ## attach() knows nothing of PDF/A
 

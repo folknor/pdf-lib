@@ -1447,6 +1447,108 @@ describe('PDFDocument', () => {
       attachments = pdfDoc.getAttachments();
       expect(attachments.length).toEqual(2);
     });
+
+    const threeAttachments = async () => {
+      const pdfDoc = await PDFDocument.create();
+      for (const name of ['a.txt', 'b.txt', 'c.txt']) {
+        await pdfDoc.attach(new Uint8Array([1, 2, 3]), name);
+      }
+      await pdfDoc.save();
+      const ef = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      const names = ef.lookup(PDFName.of('Names'), PDFArray);
+      const spec = (key: string) => {
+        for (let i = 0; i < names.size(); i += 2) {
+          if ((names.get(i) as PDFHexString).decodeText() === key) {
+            return names.get(i + 1) as any;
+          }
+        }
+        throw new Error(key);
+      };
+      const streamOf = (ref: any) =>
+        pdfDoc.context
+          .lookup(ref, PDFDict)
+          .lookup(PDFName.of('EF'), PDFDict)
+          .get(PDFName.of('F')) as any;
+      return { pdfDoc, ef, names, spec, streamOf };
+    };
+
+    it('unlinks every /AF occurrence, fixes /Limits and deletes the objects', async () => {
+      const { pdfDoc, ef, names, spec, streamOf } = await threeAttachments();
+      const ctx = pdfDoc.context;
+      const c = spec('c.txt');
+      const stream = streamOf(c);
+      const AF = pdfDoc.catalog.lookup(PDFName.of('AF'), PDFArray);
+      AF.push(c);
+      ef.set(
+        PDFName.of('Limits'),
+        ctx.obj([PDFHexString.fromText('a.txt'), PDFHexString.fromText('c.txt')]),
+      );
+
+      pdfDoc.detach('c.txt');
+
+      expect(names.size()).toBe(4);
+      expect(AF.asArray()).not.toContain(c);
+      expect(AF.size()).toBe(2);
+      const limits = ef.lookup(PDFName.of('Limits'), PDFArray);
+      expect((limits.get(1) as PDFHexString).decodeText()).toBe('b.txt');
+      expect(ctx.lookup(c)).toBeUndefined();
+      expect(ctx.lookup(stream)).toBeUndefined();
+    });
+
+    it('keeps objects another structure still refers to', async () => {
+      const { pdfDoc, names, spec, streamOf } = await threeAttachments();
+      const ctx = pdfDoc.context;
+      const a = spec('a.txt');
+      const b = spec('b.txt');
+      // b.txt is also a file-attachment annotation; a.txt also has a second key.
+      ctx.register(ctx.obj({ Type: 'Annot', Subtype: 'FileAttachment', FS: b }));
+      names.push(PDFHexString.fromText('z.txt'));
+      names.push(a);
+
+      pdfDoc.detach('a.txt');
+      pdfDoc.detach('b.txt');
+      expect(ctx.lookup(a)).toBeInstanceOf(PDFDict);
+      expect(ctx.lookup(streamOf(a))).toBeDefined();
+      expect(ctx.lookup(b)).toBeInstanceOf(PDFDict);
+      expect(pdfDoc.getAttachments().map((f) => f.name)).toEqual([
+        'c.txt',
+        'z.txt',
+      ]);
+
+      const stream = streamOf(a);
+      pdfDoc.detach('z.txt');
+      expect(ctx.lookup(a)).toBeUndefined();
+      expect(ctx.lookup(stream)).toBeUndefined();
+    });
+
+    it('collects indirect /EF dicts and cycles, and ignores unreadable attachments', async () => {
+      const { pdfDoc, spec } = await threeAttachments();
+      const ctx = pdfDoc.context;
+      const a = spec('a.txt');
+      const specDict = ctx.lookup(a, PDFDict);
+      const efRef = ctx.register(specDict.lookup(PDFName.of('EF'), PDFDict));
+      specDict.set(PDFName.of('EF'), efRef);
+      const streamRef = ctx.lookup(efRef, PDFDict).get(PDFName.of('F')) as any;
+      ctx.lookup(streamRef, PDFRawStream).dict.set(PDFName.of('Back'), a);
+      // b.txt cannot be decoded.
+      const bStream = ctx.lookup(
+        ctx
+          .lookup(spec('b.txt'), PDFDict)
+          .lookup(PDFName.of('EF'), PDFDict)
+          .get(PDFName.of('F')) as any,
+        PDFRawStream,
+      );
+      bStream.dict.set(PDFName.of('Filter'), PDFName.of('LZWDecode'));
+      bStream.dict.set(PDFName.of('DecodeParms'), ctx.obj({ Predictor: 99 }));
+
+      pdfDoc.detach('a.txt');
+      expect(ctx.lookup(a)).toBeUndefined();
+      expect(ctx.lookup(efRef)).toBeUndefined();
+      expect(ctx.lookup(streamRef)).toBeUndefined();
+      expect(() => pdfDoc.getAttachments()).toThrow();
+    });
   });
 
   describe('Page operations behavioral tests', () => {

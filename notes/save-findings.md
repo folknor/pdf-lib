@@ -33,3 +33,14 @@ this case: the parser recovers those entries one by one and the check
 runs. What remains is a chain the reader rejects outright, which the parser
 still reconstructs whole; closing it needs the reader to keep the
 dispositions of the sections it can read despite damage in another.
+
+## An edit to a shared direct object marks only one owner for an increment
+
+`PDFContext.registerObjectChange()` marks the first indirect object found
+containing the edited direct object (or only the object itself when it is
+registered too). When API code puts one direct `PDFDict`/`PDFArray`
+instance inside two indirect objects, an increment rewrites one owner and
+leaves the other's earlier body in force; if the edit removed a reference
+whose target was then deleted (as `detach()` does), that body now dangles.
+Parsed documents never alias direct objects, so only API-built sharing hits
+it. Fix by marking every owner, or by refusing to alias direct objects.
