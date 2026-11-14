@@ -1,3 +1,4 @@
+import { syllableRuns } from '../../src/fontkit/opentype/shapers/syllables.js';
 import StateMachine, { type CompiledDFA } from '../../src/vendors/dfa/index.js';
 
 // Hand-compiled DFA for the pattern `x: a b+` over the alphabet a=0, b=1.
@@ -56,5 +57,16 @@ describe('vendored dfa StateMachine', () => {
       [0, 3, [A, B, B, B]],
       [4, 5, [A, B]],
     ]);
+  });
+
+  it('syllableRuns covers every index with matches and gaps', () => {
+    expect([...syllableRuns(sm, [B, A, B, A, A, B, A])]).toEqual([
+      { start: 0, end: 1, tags: null },
+      { start: 1, end: 3, tags: ['x'] },
+      { start: 3, end: 4, tags: null },
+      { start: 4, end: 6, tags: ['x'] },
+      { start: 6, end: 7, tags: null },
+    ]);
+    expect([...syllableRuns(sm, [])]).toEqual([]);
   });
 });

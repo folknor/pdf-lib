@@ -52,13 +52,16 @@ in notes/mark-reorder-design.md):
   with the specification's positional overrides (I/E/O below, U above) left
   out of `scripts/gen-use-trie.mjs`.
 
-## USE shaper crashes on a glyph outside every syllable
+## GSUB lookups cross syllable boundaries in the Indic and USE shapers
 
-`UniversalShaper.reorder` and `nextSyllable` read `shaperInfo` of every
-glyph, but `setupSyllables` only sets it on glyphs the cluster state machine
-matched. Noto Serif Tibetan with KA + I + CGJ + AA throws "Cannot read
-properties of null (reading 'syllable')" from `nextSyllable`. Unmatched
-glyphs need a shaper info of their own (a non-cluster).
+`OTProcessor.sequenceMatchIndices` checks feature eligibility and glyph ids
+but not syllables, and a GSUB ligature takes its first component's
+`shaperInfo` (`GSUBProcessor`). A `ccmp`-style ligature of a glyph outside
+every cluster with the base of the next cluster leaves that cluster's
+pre-base vowel without a base, so `reorder` never moves it; a ligature
+starting in a cluster can likewise absorb the next syllable. Code-derived,
+not seen in a real font. A fix would confine the pre-reorder stages to one
+syllable, which needs its own argument per feature.
 
 ## The USE data and grammar are fontkit-era
 
@@ -80,7 +83,9 @@ exist. The fix is one versioned unit: the current specification grammar
 compiled to a new DFA (no compiler is vendored; the `dfa` package's runtime
 only), the current UCD, and the current override files, regenerated
 together, with `UniversalShaper` taught the new classes (RK, hieroglyph
-classes).
+classes). The old grammar has no place for CGJ either, so `setupSyllables`
+runs the state machine without CGJ glyphs and attaches each to the syllable
+before it; a grammar that models CGJ itself makes that filter go.
 
 ## Right-to-left is whole-run reversal, not bidi
 

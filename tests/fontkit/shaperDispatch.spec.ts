@@ -63,6 +63,13 @@ describe('shaper hook dispatch', () => {
     // SHARADA SIGN JIHVAMULIYA (repha) + SHARADA LETTER KA
     const run = font.layout(String.fromCodePoint(0x111c2, 0x11191));
     expect(run.codePoints).toEqual([[0x11191], [0x111c2]]);
+    // A CGJ between them changes neither the cluster nor the reorder.
+    const withCgj = font.layout(String.fromCodePoint(0x111c2, 0x034f, 0x11191));
+    expect(withCgj.codePoints.flat()).not.toContain(0x25cc);
+    expect(withCgj.codePoints.at(-1)).toEqual([0x111c2]);
+    // Nor does a CGJ before them.
+    const leading = font.layout(String.fromCodePoint(0x034f, 0x111c2, 0x11191));
+    expect(leading.codePoints.at(-1)).toEqual([0x111c2]);
   });
 });
 
@@ -104,7 +111,32 @@ describe('USE Tibetan clusters', () => {
     const run = font.layout(String.fromCodePoint(0x0f72, 0x0f40));
     const all = (arrays: number[][]) => arrays.flat();
     expect(all(run.codePoints)).toContain(0x25cc);
+    // The circle is the base, so it comes before the vowel sign.
+    expect(run.codePoints).toEqual([[0x25cc], [0x0f72], [0x0f40]]);
     expect(all(run.text)).not.toContain(0x25cc);
     expect(all(run.text).sort()).toEqual([0x0f40, 0x0f72].sort());
+  });
+
+  // A glyph no syllable takes (a lone joiner) is shaped on its own,
+  // untouched by the reordering.
+  it('shapes a glyph outside every syllable', () => {
+    expect(shape(0x200d, 0x0f40).flat()).toEqual(
+      expect.arrayContaining([0x200d, 0x0f40]),
+    );
+    expect(shape(0x200d).flat()).toEqual([0x200d]);
+  });
+
+  // CGJ has no effect on clustering (USE specification) though the grammar
+  // has no place for it: KA CGJ I stays one cluster, and the CGJ the user
+  // typed to keep I before AA leaves AA a broken cluster of its own (AA,
+  // a nukta, goes before vowel signs), with its circle before it.
+  it('treats CGJ as transparent to clustering', () => {
+    expect(dotted(0x0f40, 0x034f, 0x0f72)).toBe(false);
+    expect(shape(0x0f40, 0x0f72, 0x034f, 0x0f71).slice(-2)).toEqual([
+      [0x25cc],
+      [0x0f71],
+    ]);
+    expect(shape(0x034f).flat()).toEqual([0x034f]);
+    expect(dotted(0x034f, 0x0f40, 0x0f72)).toBe(false);
   });
 });

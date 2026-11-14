@@ -6,6 +6,7 @@ import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
 import DefaultShaper from './DefaultShaper.js';
+import { syllableRuns } from './syllables.js';
 import base64DeflatedTrie from './trieUse.js';
 import base64DeflatedUseData from './use.js';
 
@@ -93,27 +94,49 @@ class USEInfo {
   }
 }
 
+/**
+ * Gives every glyph a syllable. CGJ "may occur anywhere in a cluster with no
+ * effect" (USE specification), but the fontkit-era grammar in use.ts has no
+ * place for it, so the state machine runs on the other glyphs only and each
+ * CGJ joins the syllable of the glyph before it (leading CGJs form a
+ * 'non_cluster' of their own, so every syllable starts with a matched glyph). Glyphs no match covers form syllables of type 'non_cluster',
+ * which keep their own category and are never reordered.
+ */
 function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
+  const all = glyphs.map(useCategory);
+  const kept: number[] = [];
+  for (let i = 0; i < glyphs.length; i++) {
+    if (categories[all[i]!] !== 'CGJ') kept.push(i);
+  }
+
   let syllable = 0;
-  for (const [start, end, tags] of stateMachine.match(
-    glyphs.map(useCategory),
-  ) as Iterable<[number, number, string[]]>) {
+  const assign = (from: number, to: number, type: string) => {
     ++syllable;
-
-    // Create shaper info
-    for (let i = start; i <= end; i++) {
-      glyphs[i]!.shaperInfo = new USEInfo(
-        categories[useCategory(glyphs[i]!)],
-        tags[0]!,
-        syllable,
-      );
+    for (let i = from; i < to; i++) {
+      glyphs[i]!.shaperInfo = new USEInfo(categories[all[i]!], type, syllable);
     }
+  };
 
-    // Assign rphf feature
+  // CGJs with no glyph before them follow no cluster: a syllable of their own.
+  const lead = kept.length > 0 ? kept[0]! : glyphs.length;
+  if (lead > 0) assign(0, lead, 'non_cluster');
+
+  for (const { start, end, tags } of syllableRuns(
+    stateMachine,
+    kept.map((i) => all[i]!),
+  )) {
+    const from = kept[start]!;
+    const to = end < kept.length ? kept[end]! : glyphs.length;
+    assign(from, to, tags ? tags[0]! : 'non_cluster');
+    if (!tags) continue;
+
+    // Assign rphf feature, counting the matched glyphs only: CGJ is
+    // transparent here too.
+    const first = glyphs[kept[start]!]!;
     const limit =
-      glyphs[start]!.shaperInfo.category === 'R' ? 1 : Math.min(3, end - start);
-    for (let i = start; i < start + limit; i++) {
-      glyphs[i]!.features['rphf'] = true;
+      first.shaperInfo.category === 'R' ? 1 : Math.min(3, end - start - 1);
+    for (let k = start; k < start + limit; k++) {
+      glyphs[kept[k]!]!.features['rphf'] = true;
     }
   }
 }
@@ -163,7 +186,9 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
       continue;
     }
 
-    // Insert a dotted circle glyph in broken clusters.
+    // Insert a dotted circle glyph in broken clusters: it is the cluster's
+    // base, so it has a base's info of its own (not the first glyph's), and
+    // goes before the first glyph that is neither a repha nor CGJ.
     if (type === 'broken_cluster' && dottedCircle) {
       // Inserted, so it stands for no character in extracted text.
       const g = new GlyphInfo(
@@ -171,11 +196,16 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
         dottedCircle,
         inserted([0x25cc], glyphs[start]!.cluster),
       );
-      g.shaperInfo = info;
+      g.shaperInfo = new USEInfo('B', type, info.syllable);
 
-      // Insert after possible Repha.
-      for (i = start; i < end && glyphs[i]!.shaperInfo.category === 'R'; i++);
-      glyphs.splice(++i, 0, g);
+      for (
+        i = start;
+        i < end &&
+        (glyphs[i]!.shaperInfo.category === 'R' ||
+          glyphs[i]!.shaperInfo.category === 'CGJ');
+        i++
+      );
+      glyphs.splice(i, 0, g);
       end++;
     }
 

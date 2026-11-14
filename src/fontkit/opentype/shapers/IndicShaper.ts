@@ -19,6 +19,7 @@ import {
   JOINER_FLAGS,
   POSITIONS,
 } from './indic-data.js';
+import { syllableRuns } from './syllables.js';
 import base64DeflatedTrie from './trieIndic.js';
 import base64DeflatedUseData from './use.js';
 
@@ -156,46 +157,25 @@ class IndicInfo {
 
 function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   let syllable = 0;
-  let last = 0;
-  for (const [start, end, tags] of stateMachine.match(
+  for (const { start, end, tags } of syllableRuns(
+    stateMachine,
     glyphs.map(indicCategory),
-  ) as Iterable<[number, number, string[]]>) {
-    if (start > last) {
-      ++syllable;
-      for (let i = last; i < start; i++) {
-        glyphs[i]!.shaperInfo = new IndicInfo(
-          CATEGORIES['X']!,
-          POSITIONS['End']!,
-          'non_indic_cluster',
-          syllable,
-        );
-      }
-    }
-
+  )) {
     ++syllable;
-
-    // Create shaper info
-    for (let i = start; i <= end; i++) {
-      glyphs[i]!.shaperInfo = new IndicInfo(
-        1 << indicCategory(glyphs[i]!),
-        indicPosition(glyphs[i]!),
-        tags[0]!,
-        syllable,
-      );
-    }
-
-    last = end + 1;
-  }
-
-  if (last < glyphs.length) {
-    ++syllable;
-    for (let i = last; i < glyphs.length; i++) {
-      glyphs[i]!.shaperInfo = new IndicInfo(
-        CATEGORIES['X']!,
-        POSITIONS['End']!,
-        'non_indic_cluster',
-        syllable,
-      );
+    for (let i = start; i < end; i++) {
+      glyphs[i]!.shaperInfo = tags
+        ? new IndicInfo(
+            1 << indicCategory(glyphs[i]!),
+            indicPosition(glyphs[i]!),
+            tags[0]!,
+            syllable,
+          )
+        : new IndicInfo(
+            CATEGORIES['X']!,
+            POSITIONS['End']!,
+            'non_indic_cluster',
+            syllable,
+          );
     }
   }
 }
