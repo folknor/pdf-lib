@@ -226,7 +226,8 @@ const roundPosition = (value: number) => {
 /**
  * Shows encoded text from the current text position, drawing every glyph
  * where the font's layout placed it and leaving the pen at the end of its
- * measured advance (plus the usual character spacing per glyph).
+ * measured advance (plus any `Tc`/`Tw` in effect, which the library's own
+ * drawing never sets: its spacing is in the advances).
  *
  * Text that needs no positioning is a single `Tj`. Otherwise horizontal
  * placement is written as `TJ` adjustments, which are in thousandths of an em
@@ -312,7 +313,7 @@ export const setCharacterSpacing = (spacing: number | PDFNumber) =>
 export const setWordSpacing = (spacing: number | PDFNumber) =>
   PDFOperator.of(Ops.SetWordSpacing, [asPDFNumber(spacing)]);
 
-/** @param squeeze horizontal character spacing */
+/** @param squeeze horizontal scaling (`Tz`), percent of normal width */
 export const setCharacterSqueeze = (squeeze: number | PDFNumber) =>
   PDFOperator.of(Ops.SetTextHorizontalScaling, [asPDFNumber(squeeze)]);
 

@@ -1088,7 +1088,18 @@ export default class PDFPage {
     const fontSize = options.size || this.fontSize;
 
     const wordBreaks = options.wordBreaks || this.doc.defaultWordBreaks;
-    const textWidth = (t: string) => newFont.widthOfTextAtSize(t, fontSize);
+    // Spacing is drawn as positions in the encoded text, not with Tc/Tw, so
+    // lines are broken with the width they are drawn at (see
+    // EncodedText.withSpacing for why the operators cannot do it).
+    const characterSpacing = options.characterSpacing ?? 0;
+    const wordSpacing = options.wordSpacing ?? 0;
+    const textState = {
+      characterSpacing,
+      wordSpacing,
+      horizontalScaling: options.horizontalScaling ?? 100,
+    };
+    const textWidth = (t: string) =>
+      newFont.widthOfTextAtSize(t, fontSize, textState);
     const lines =
       options.maxWidth === undefined
         ? lineSplit(cleanText(text))
@@ -1096,7 +1107,9 @@ export default class PDFPage {
 
     const encodedLines = new Array(lines.length) as EncodedText[];
     for (let idx = 0, len = lines.length; idx < len; idx++) {
-      encodedLines[idx] = newFont.encodeText(lines[idx]!);
+      encodedLines[idx] = newFont
+        .encodeText(lines[idx]!)
+        .withSpacing(characterSpacing, wordSpacing, fontSize);
     }
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
@@ -1132,12 +1145,6 @@ export default class PDFPage {
         }),
         ...(options.renderMode !== undefined && {
           renderMode: options.renderMode,
-        }),
-        ...(options.characterSpacing !== undefined && {
-          characterSpacing: options.characterSpacing,
-        }),
-        ...(options.wordSpacing !== undefined && {
-          wordSpacing: options.wordSpacing,
         }),
         ...(options.horizontalScaling !== undefined && {
           horizontalScaling: options.horizontalScaling,

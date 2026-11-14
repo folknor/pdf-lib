@@ -38,7 +38,6 @@ import {
   rotateDegrees,
   rotateRadians,
   scale,
-  setCharacterSpacing,
   setCharacterSqueeze,
   setDashPattern,
   setFillingColorComponents,
@@ -52,7 +51,6 @@ import {
   setStrokingColorSpace,
   setTextRenderingMode,
   setTextRise,
-  setWordSpacing,
   showEncodedText,
   skewRadians,
   stroke,
@@ -116,11 +114,10 @@ export interface DrawTextOptions {
   strokeWidth?: number;
   strokeColor?: ColorOperand;
   renderMode?: TextRenderingMode;
-  /** Character spacing (Tc operator) in PDF points */
-  characterSpacing?: number | PDFNumber;
-  /** Word spacing (Tw operator) in PDF points */
-  wordSpacing?: number | PDFNumber;
-  /** Horizontal scaling (Th operator) as a percentage (100 = normal) */
+  // No character or word spacing here: Tc moves attached marks off their
+  // anchors and Tw does nothing in two-byte encodings, so spacing is put into
+  // the lines' positions with EncodedText.withSpacing instead.
+  /** Horizontal scaling (Tz operator) as a percentage (100 = normal) */
   horizontalScaling?: number | PDFNumber;
   /** Text rise (Ts operator) in PDF points */
   textRise?: number | PDFNumber;
@@ -169,9 +166,6 @@ export const drawText = (
     beginText(),
     ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
-    options.characterSpacing !== undefined &&
-      setCharacterSpacing(options.characterSpacing),
-    options.wordSpacing !== undefined && setWordSpacing(options.wordSpacing),
     options.horizontalScaling !== undefined &&
       setCharacterSqueeze(options.horizontalScaling),
     riseOperator,
@@ -209,9 +203,6 @@ export const drawLinesOfText = (
     ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
     setLineHeight(options.lineHeight),
-    options.characterSpacing !== undefined &&
-      setCharacterSpacing(options.characterSpacing),
-    options.wordSpacing !== undefined && setWordSpacing(options.wordSpacing),
     options.horizontalScaling !== undefined &&
       setCharacterSqueeze(options.horizontalScaling),
     riseOperator,

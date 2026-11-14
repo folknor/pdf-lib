@@ -165,6 +165,18 @@ export interface GlyphPosition {
    * this glyph.
    */
   yOffset: number;
+
+  /**
+   * Index in the run of the glyph GPOS mark positioning attached this one to
+   * (its offsets follow that glyph's placement), or null.
+   */
+  attachedTo?: number | null;
+
+  /** True when the font classifies this glyph as a mark. */
+  isMark?: boolean;
+
+  /** True when this glyph stands for a hidden default-ignorable character. */
+  hidden?: boolean;
 }
 
 /**

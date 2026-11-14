@@ -3,6 +3,7 @@ import {
   type EncodedText,
   PDFRef,
   StandardFontEmbedder,
+  type TextSpacing,
 } from '../core/index.js';
 import {
   assertIs,
@@ -88,13 +89,29 @@ export default class PDFFont implements Embeddable {
    * ```
    * @param text The string of text to be measured.
    * @param size The font size to be used for this measurement.
+   * @param textState The spacing and scaling the text is drawn with, as the
+   *          [[PDFPage.drawText]] options of the same names: character and
+   *          word spacing as `EncodedText.withSpacing` applies them, and
+   *          horizontal scaling (percent) multiplying the result.
    * @returns The width of the string of text when drawn in this font at the
    *          given size.
    */
-  widthOfTextAtSize(text: string, size: number): number {
+  widthOfTextAtSize(
+    text: string,
+    size: number,
+    textState: TextSpacing & { horizontalScaling?: number } = {},
+  ): number {
     assertIs(text, 'text', ['string']);
     assertIs(size, 'size', ['number']);
-    return this.embedder.widthOfTextAtSize(mergeLines(cleanText(text)), size);
+    const { horizontalScaling = 100, ...spacing } = textState;
+    const width = this.embedder.widthOfTextAtSize(
+      mergeLines(cleanText(text)),
+      size,
+      spacing,
+    );
+    return horizontalScaling === 100
+      ? width
+      : (width * horizontalScaling) / 100;
   }
 
   /**

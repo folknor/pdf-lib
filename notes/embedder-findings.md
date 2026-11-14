@@ -36,19 +36,19 @@ page's resources). A fix detaches the resources dictionary and the category
 being written on first write, whatever caused the sharing, rather than only
 for inheritance.
 
-## Text measurement ignores the text state it is drawn with
+## Character spacing is per glyph, not per cluster or character
 
-`widthOfTextAtSize` is the font-only advance: `drawText` with `maxWidth`
-breaks lines with it while drawing with `characterSpacing` (Tc),
-`wordSpacing` (Tw) and `horizontalScaling` (Tz) applied, so lines can
-overflow `maxWidth`. The drawn width is
-`(advance * size / 1000 + glyphs * Tc + spaces * Tw) * Tz / 100`. Tc is
-added after every shown glyph, including a mark attached to its base (the
-mark then lands Tc to the right of its anchor) and once per ligature rather
-than per character; Tw applies only to the single-byte code 32, so it does
-nothing for custom fonts (two-byte Identity-H codes). Tracking and word
-spacing that hold for both font kinds need cluster boundaries from layout
-and explicit advances in `EncodedText`, not the PDF operators.
+`drawText` spacing is drawn as `EncodedText.withSpacing` positions (no
+`Tc`/`Tw`), which keeps only GPOS-attached marks on their bases: a mark the
+layout did not attach (a font without mark positioning, or an AAT or
+non-OpenType engine, which set no `isMark`/`attachedTo` on positions) takes
+no spacing itself but moves with the pen, so it lands the base's spacing to
+the right of where the font put it. A ligature takes spacing once, not once
+per character it stands for, and word spacing goes to the font's glyph for
+U+0020 rather than to occurrences of U+0020. All three need per-occurrence
+code-point provenance out of `layout()` (cluster of each glyph), the same
+plumbing the ToUnicode entry below needs. Form field layout and `drawSvg`
+apply no character or word spacing at all.
 
 ## Shaped glyphs outside the cmap get no ToUnicode mapping
 

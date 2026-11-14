@@ -17,7 +17,11 @@ import type PDFRef from '../objects/PDFRef.js';
 import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import { createCmap } from './CMap.js';
-import EncodedText from './EncodedText.js';
+import EncodedText, {
+  type GlyphSpacing,
+  spacingExtras,
+  type TextSpacing,
+} from './EncodedText.js';
 import { deriveFontFlags } from './FontFlags.js';
 
 /**
@@ -95,7 +99,32 @@ class CustomFontEmbedder {
       xOffsets[idx] = position.xOffset * scale;
       yOffsets[idx] = position.yOffset * scale;
     }
-    return new EncodedText(codes, advances, widths, xOffsets, yOffsets);
+    return new EncodedText(
+      codes,
+      advances,
+      widths,
+      xOffsets,
+      yOffsets,
+      this.glyphSpacing(glyphs, positions),
+      positions.map((position) => position.attachedTo ?? null),
+    );
+  }
+
+  // Marks and hidden default-ignorables take no spacing; the font's glyph for
+  // U+0020 takes word spacing. That is a property of the glyph, so another
+  // character the font draws with the same glyph (often U+00A0) takes it too.
+  private glyphSpacing(
+    glyphs: Glyph[],
+    positions: GlyphPosition[],
+  ): GlyphSpacing[] {
+    const spaceId = this.font.hasGlyphForCodePoint(0x20)
+      ? this.font.glyphForCodePoint(0x20).id
+      : -1;
+    return glyphs.map((glyph, idx) => {
+      const position = positions[idx]!;
+      if (position.isMark || position.hidden) return 'none';
+      return glyph.id === spaceId ? 'space' : 'base';
+    });
   }
 
   // Measures exactly what encodeText() draws: the sum of the positioned
@@ -105,13 +134,30 @@ class CustomFontEmbedder {
   // goes wrong wherever shaping substitutes - Arabic joining forms, Hangul
   // jamo composition, Indic conjuncts, ligatures - by up to a factor of two.
   // Measuring does not add glyphs to a subset.
-  widthOfTextAtSize(text: string, size: number): number {
-    const { positions } = this.positionedLayout(text);
+  // With spacing, it measures what encodeText(text).withSpacing() draws.
+  widthOfTextAtSize(
+    text: string,
+    size: number,
+    spacing: TextSpacing = {},
+  ): number {
+    const { glyphs, positions } = this.positionedLayout(text);
     let total = 0;
     for (let idx = 0, len = positions.length; idx < len; idx++) {
       total += positions[idx]!.xAdvance;
     }
-    return (total * size) / this.font.unitsPerEm;
+    let width = (total * size) / this.font.unitsPerEm;
+    const { characterSpacing = 0, wordSpacing = 0 } = spacing;
+    if (characterSpacing !== 0 || wordSpacing !== 0) {
+      for (const extra of spacingExtras(
+        this.glyphSpacing(glyphs, positions),
+        characterSpacing,
+        wordSpacing,
+        size,
+      )) {
+        width += (extra * size) / 1000;
+      }
+    }
+    return width;
   }
 
   /**

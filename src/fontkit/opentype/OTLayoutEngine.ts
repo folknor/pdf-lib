@@ -114,8 +114,23 @@ export default class OTLayoutEngine {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
+    // Record which glyphs are marks and what GPOS attached them to, so text
+    // drawn with extra spacing can keep them at their anchors.
+    const rtl = glyphRun.direction === 'rtl';
+    if (this.glyphInfos && glyphRun.positions) {
+      const last = this.glyphInfos.length - 1;
+      for (let i = 0; i <= last; i++) {
+        const info = this.glyphInfos[i]!;
+        const position = glyphRun.positions[i];
+        if (!position) continue;
+        position.isMark = info.isMark;
+        const base = info.markAttachment;
+        position.attachedTo = base == null ? null : rtl ? last - base : base;
+      }
+    }
+
     // Reverse the glyphs and positions if the script is right-to-left
-    if (glyphRun.direction === 'rtl' && glyphRun.positions) {
+    if (rtl && glyphRun.positions) {
       glyphRun.glyphs.reverse();
       glyphRun.positions.reverse();
     }

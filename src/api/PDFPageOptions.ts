@@ -67,21 +67,33 @@ export interface PDFPageDrawTextOptions extends SvgOptions {
   strokeColor?: PaintColor;
   renderMode?: TextRenderingMode;
   /**
-   * Extra spacing between characters in PDF points.
-   * Positive values increase spacing, negative decrease it.
+   * Extra spacing after each glyph in PDF points (before horizontal
+   * scaling). Positive values increase spacing, negative decrease it. Marks
+   * take none and stay on the glyph they are attached to; a ligature takes
+   * it once. It is drawn as glyph positions (`TJ`), not with `Tc`, and
+   * `maxWidth` line breaking measures it.
    * Default: 0 (normal character spacing)
    */
   characterSpacing?: number;
   /**
-   * Extra spacing between words in PDF points.
-   * This spacing is added in addition to the normal space width.
+   * Extra spacing after each space glyph in PDF points (before horizontal
+   * scaling), in addition to the normal space width and `characterSpacing`.
+   * It applies to the font's glyph for U+0020, with standard and embedded
+   * fonts alike, so also to any character the font draws with that glyph.
+   * It is drawn as glyph positions (`TJ`), not with `Tw`, and `maxWidth`
+   * line breaking measures it.
    * Default: 0 (normal word spacing)
    */
   wordSpacing?: number;
   /**
-   * Horizontal scaling of text as a percentage.
+   * Horizontal scaling of text as a percentage (`Tz`).
    * 100 = normal width, 50 = half width, 200 = double width.
+   * `maxWidth` line breaking measures it.
    * Default: 100
+   *
+   * Text is measured assuming the content stream has character and word
+   * spacing 0 and, without this option, scaling 100 when it is drawn; the
+   * library never leaves them otherwise, but operators pushed by hand can.
    */
   horizontalScaling?: number;
   /**

@@ -7,7 +7,10 @@ import {
 } from '../../vendors/standard-fonts/index.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
-import EncodedText from './EncodedText.js';
+import EncodedText, {
+  type GlyphSpacing,
+  type TextSpacing,
+} from './EncodedText.js';
 
 export interface Glyph {
   code: number;
@@ -42,14 +45,11 @@ class StandardFontEmbedder {
   }
 
   /**
-   * Encode the JavaScript string into this font. (JavaScript encodes strings in
-   * Unicode, but standard fonts use either WinAnsi, ZapfDingbats, or Symbol
-   * encodings)
-   */
-  /**
-   * Encodes with the AFM pair kerning applied to each glyph's advance, which
-   * is what widthOfTextAtSize measures: a Type1 font shown with `Tj` does not
-   * kern by itself, so the kerning is written as `TJ` adjustments.
+   * Encodes the JavaScript string into this font's WinAnsi, ZapfDingbats or
+   * Symbol encoding, with the AFM pair kerning applied to each glyph's
+   * advance, which is what widthOfTextAtSize measures: a Type1 font shown
+   * with `Tj` does not kern by itself, so the kerning is written as `TJ`
+   * adjustments. The glyph named `space` takes word spacing.
    */
   encodeText(text: string): EncodedText {
     const glyphs = this.encodeTextAsGlyphs(text);
@@ -58,9 +58,11 @@ class StandardFontEmbedder {
     const advances = new Array<number>(count);
     const widths = new Array<number>(count);
     const zeros = new Array<number>(count).fill(0);
+    const spacing = new Array<GlyphSpacing>(count);
     for (let idx = 0; idx < count; idx++) {
       const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
+      spacing[idx] = left === 'space' ? 'space' : 'base';
       codes[idx] = toHexString(glyphs[idx]!.code);
       widths[idx] = this.widthOfGlyph(left);
       advances[idx] =
@@ -69,11 +71,29 @@ class StandardFontEmbedder {
           ? 0
           : this.font.getXAxisKerningForPair(left, right) || 0);
     }
-    return new EncodedText(codes, advances, widths, zeros, zeros.slice());
+    return new EncodedText(
+      codes,
+      advances,
+      widths,
+      zeros,
+      zeros.slice(),
+      spacing,
+    );
   }
 
-  widthOfTextAtSize(text: string, size: number): number {
-    return (this.encodeText(text).advance * size) / 1000;
+  // With spacing, it measures what encodeText(text).withSpacing() draws.
+  widthOfTextAtSize(
+    text: string,
+    size: number,
+    spacing: TextSpacing = {},
+  ): number {
+    const { characterSpacing = 0, wordSpacing = 0 } = spacing;
+    const encoded = this.encodeText(text);
+    return (
+      (encoded.withSpacing(characterSpacing, wordSpacing, size).advance *
+        size) /
+      1000
+    );
   }
 
   heightOfFontAtSize(

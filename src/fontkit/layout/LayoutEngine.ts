@@ -188,6 +188,7 @@ export default class LayoutEngine {
         glyphs[i] = space;
         positions[i]!.xAdvance = 0;
         positions[i]!.yAdvance = 0;
+        positions[i]!.hidden = true;
       }
     }
   }
