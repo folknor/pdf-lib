@@ -30,7 +30,7 @@ const processor = (Class: any, lookups: any[] = []) => {
 };
 
 const run = (lookup: any, glyphs: any[], lookups: any[] = []) => {
-  processor(GSUBProcessor, lookups).applyLookups([{ feature: 'test', index: 0, lookup }], glyphs);
+  processor(GSUBProcessor, lookups).applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
   return glyphs.map((g) => g.id);
 };
 

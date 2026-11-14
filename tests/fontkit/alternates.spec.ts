@@ -15,9 +15,52 @@ const run = (lookup: any, glyphs: any[], values: Record<string, number> = {}, lo
   const p = Object.create(GSUBProcessor.prototype);
   p.table = { lookupList: { get: (i: number) => lookups[i] } };
   p.featureValues = values;
-  p.applyLookups([{ feature: 'test', index: 0, lookup }], glyphs);
+  p.applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
   return glyphs.map((g) => g.id);
 };
+
+// A processor whose script offers the given features over `lookupList`.
+const staged = (features: Record<string, number[]>, lookupList: any[]) => {
+  const p = Object.create(GSUBProcessor.prototype);
+  p.table = { lookupList: { get: (i: number) => lookupList[i] } };
+  p.features = Object.fromEntries(
+    Object.entries(features).map(([tag, lookupListIndexes]) => [tag, { lookupListIndexes }]),
+  );
+  return p;
+};
+
+describe('a lookup several features of a stage reference', () => {
+  // 1 -> 2 and 2 -> 3: run twice, glyph 1 would end as 3.
+  const chain = { lookupType: 1, flags: {}, subTables: [{ version: 2, coverage: cov(1, 2), substitute: { get: (i: number) => [2, 3][i] } }] };
+  const alt = { lookupType: 3, flags: {}, subTables: [alternates([1], [[5, 6, 7]])] };
+
+  it('runs once, across features and within one', () => {
+    const glyphs = [glyph(1, { a: true, b: true })];
+    staged({ a: [0], b: [0] }, [chain]).applyFeatures(['a', 'b'], glyphs);
+    expect(glyphs.map((g) => g.id)).toEqual([2]);
+    const again = [glyph(1, { a: true })];
+    staged({ a: [0, 0] }, [chain]).applyFeatures(['a'], again);
+    expect(again.map((g) => g.id)).toEqual([2]);
+  });
+
+  it('applies on glyphs eligible for any of them', () => {
+    const glyphs = [glyph(1, { a: true }), glyph(1, { b: true }), glyph(1, {})];
+    staged({ a: [0], b: [0] }, [chain]).applyFeatures(['a', 'b'], glyphs);
+    expect(glyphs.map((g) => g.id)).toEqual([2, 2, 1]);
+  });
+
+  it('takes the largest value among the features the glyph is eligible for', () => {
+    const pick = (order: string[], features: object, values: Record<string, number>) => {
+      const glyphs = [glyph(1, features)];
+      staged({ aalt: [0], salt: [0] }, [alt]).applyFeatures(order, glyphs, undefined, values);
+      return glyphs[0]!.id;
+    };
+    expect(pick(['aalt', 'salt'], { aalt: true, salt: true }, { aalt: 2, salt: 3 })).toBe(7);
+    expect(pick(['salt', 'aalt'], { aalt: true, salt: true }, { aalt: 2, salt: 3 })).toBe(7);
+    expect(pick(['aalt', 'salt'], { aalt: true, salt: true }, { salt: 2 })).toBe(6);
+    expect(pick(['aalt', 'salt'], { aalt: true }, { aalt: 2, salt: 3 })).toBe(6);
+  });
+});
 
 describe('GSUB alternate substitution', () => {
   const lookup = { lookupType: 3, flags: {}, subTables: [alternates([1], [[5, 6, 7]])] };

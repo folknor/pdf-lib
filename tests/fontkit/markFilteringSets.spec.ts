@@ -37,7 +37,7 @@ const context = (flags: any, markFilteringSet?: number) => ({
 
 const run = (lookup: any, glyphs: any[], gdef?: any) => {
   const p = gdef === undefined ? processor([single]) : processor([single], gdef);
-  p.applyLookups([{ feature: 'test', index: 0, lookup }], glyphs);
+  p.applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
   return glyphs.map((g) => g.id);
 };
 
@@ -70,7 +70,7 @@ describe('mark filtering sets', () => {
   it('restores the outer lookup filter after a nested lookup', () => {
     const p = processor([single]);
     const outer = context(filtered, 0);
-    p.applyLookups([{ feature: 'test', index: 0, lookup: outer }], [base(1), mark(10)]);
+    p.applyLookups([{ features: ['test'], index: 0, lookup: outer }], [base(1), mark(10)]);
     expect(p.glyphIterator.markFilter?.(10)).toBe(true);
     expect(p.glyphIterator.markFilter?.(11)).toBe(false);
   });

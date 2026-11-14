@@ -24,7 +24,7 @@ const processor = (lookups: any[]) => {
 };
 
 const run = (lookups: any[], glyphs: any[]) => {
-  processor(lookups).applyLookups([{ feature: 'test', index: 0, lookup: lookups[0] }], glyphs);
+  processor(lookups).applyLookups([{ features: ['test'], index: 0, lookup: lookups[0] }], glyphs);
   return glyphs.map((g) => g.id);
 };
 

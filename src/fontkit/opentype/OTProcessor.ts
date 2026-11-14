@@ -24,6 +24,13 @@ interface TrackedSequence {
   end: number;
 }
 
+/** One lookup's application in a stage, for every feature that names it. */
+export interface LookupApplication {
+  features: string[];
+  index: number;
+  lookup: any;
+}
+
 export default class OTProcessor {
   font: any;
   table: any;
@@ -38,7 +45,11 @@ export default class OTProcessor {
   glyphs: GlyphInfo[];
   positions: GlyphPosition[];
   ligatureID: number;
-  currentFeature: string | null;
+  /**
+   * The features the running top-level lookup serves; a lookup a contextual
+   * rule invokes runs under the same set.
+   */
+  currentFeatures: string[] = [];
   featureValues: Record<string, number> = {};
   glyphIterator!: GlyphIterator;
   /**
@@ -73,7 +84,6 @@ export default class OTProcessor {
     this.glyphs = [];
     this.positions = []; // only used by GPOS
     this.ligatureID = 1;
-    this.currentFeature = null;
   }
 
   findScript(script: string | string[]): any {
@@ -163,11 +173,14 @@ export default class OTProcessor {
     return this.scriptTag;
   }
 
-  lookupsForFeatures(
-    userFeatures: string[] = [],
-    exclude?: number[],
-  ): Array<{ feature: string; index: number; lookup: any }> {
-    const lookups: Array<{ feature: string; index: number; lookup: any }> = [];
+  /**
+   * The stage's lookups, one application per lookup index in LookupList
+   * order: the union of the features' lookups, as OpenType prescribes for
+   * features processed together. A lookup two features (or one feature
+   * twice) reference runs once, on glyphs eligible for any of them.
+   */
+  lookupsForFeatures(userFeatures: string[] = []): LookupApplication[] {
+    const byIndex = new Map<number, LookupApplication>();
     for (const tag of userFeatures) {
       const feature = this.features[tag];
       if (!feature) {
@@ -175,20 +188,25 @@ export default class OTProcessor {
       }
 
       for (const lookupIndex of feature.lookupListIndexes) {
-        if (exclude && exclude.indexOf(lookupIndex) !== -1) {
+        const entry = byIndex.get(lookupIndex);
+        if (entry) {
+          if (!entry.features.includes(tag)) entry.features.push(tag);
           continue;
         }
-
-        lookups.push({
-          feature: tag,
+        byIndex.set(lookupIndex, {
+          features: [tag],
           index: lookupIndex,
           lookup: this.table.lookupList.get(lookupIndex),
         });
       }
     }
 
-    lookups.sort((a, b) => a.index - b.index);
-    return lookups;
+    return [...byIndex.values()].sort((a, b) => a.index - b.index);
+  }
+
+  /** Whether `glyph` is eligible for any feature the running lookup serves. */
+  appliesTo(glyph: GlyphInfo): boolean {
+    return this.currentFeatures.some((tag) => tag in glyph.features);
   }
 
   substituteFeatureForVariations(featureIndex: number): any {
@@ -254,21 +272,27 @@ export default class OTProcessor {
   }
 
   /**
-   * The value of the feature being applied on `glyph`: 0 where the glyph is
-   * not eligible for it (a contextual rule can reach such a glyph, and
-   * HarfBuzz's glyph mask then gives 0), else the requested alternate
-   * number, default 1.
+   * The feature value the running lookup applies on `glyph`: 0 where the
+   * glyph is eligible for none of its features (a contextual rule can reach
+   * such a glyph), else the largest requested alternate number among the
+   * features it is eligible for, default 1. OpenType gives no rule for two
+   * features asking one shared lookup for different alternates; the largest
+   * is independent of request order, and a plain `true` (1) never overrides
+   * a number. A largest value past a glyph's set substitutes nothing, even
+   * if a smaller request would have fitted.
    */
   currentFeatureValue(glyph: GlyphInfo): number {
-    const feature = this.currentFeature;
-    if (feature == null || !(feature in glyph.features)) {
-      return 0;
+    let value = 0;
+    for (const tag of this.currentFeatures) {
+      if (tag in glyph.features) {
+        value = Math.max(value, this.featureValues[tag] ?? 1);
+      }
     }
-    return this.featureValues[feature] ?? 1;
+    return value;
   }
 
   applyLookups(
-    lookups: Array<{ feature: string; index: number; lookup: any }>,
+    lookups: LookupApplication[],
     glyphs: GlyphInfo[],
     positions?: GlyphPosition[],
   ): void {
@@ -277,8 +301,8 @@ export default class OTProcessor {
     this.glyphIterator = new GlyphIterator(glyphs);
     this.sequences = [];
 
-    for (const { feature, lookup } of lookups) {
-      this.currentFeature = feature;
+    for (const { features, lookup } of lookups) {
+      this.currentFeatures = features;
       // Start one outside the buffer and enter through move(), so the first
       // glyph visited also honours the lookup flags. Reverse lookups walk
       // from the logical end to the start.
@@ -287,7 +311,7 @@ export default class OTProcessor {
       this.glyphIterator.reset(options, dir === 1 ? -1 : glyphs.length);
 
       while (this.glyphIterator.move(dir)) {
-        if (!(feature in this.glyphIterator.cur!.features)) {
+        if (!this.appliesTo(this.glyphIterator.cur!)) {
           continue;
         }
 
@@ -495,8 +519,9 @@ export default class OTProcessor {
     sequence: number[],
   ): false | number[] {
     return this.match(sequenceIndex, sequence, (component, glyph) => {
-      // If the current feature doesn't apply to this glyph,
-      if (!(this.currentFeature! in glyph.features)) {
+      // Each component must be eligible for some feature the lookup serves
+      // (not necessarily the same one for every component).
+      if (!this.appliesTo(glyph)) {
         return false;
       }
 

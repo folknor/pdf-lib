@@ -115,17 +115,6 @@ ToUnicode maps an encoded glyph to the text it was drawn for, so the PUA
 glyphs then extract as the Thai marks, not as the private-use code points
 the cmap maps to them.
 
-## A lookup shared by two features runs once per feature
-
-`OTProcessor.lookupsForFeatures` emits one entry per feature and lookup
-pair, so a lookup that two enabled features of one stage both reference
-(common for `aalt` and `salt`) is applied twice, the second pass seeing the
-first pass's output. HarfBuzz applies each lookup once per stage with the
-union of its features' glyph masks. With numeric feature values the two
-passes may even pick different alternates (`{ aalt: 2, salt: 3 }`). Fixing it
-means compiling one application per lookup per stage, with a defined rule
-for which contributing feature's value an alternate substitution uses.
-
 ## OS/2 version 0 tables decode without typo and win metrics
 
 `tables/OS2.ts` gives version 0 an empty tail, but a full Microsoft version 0
