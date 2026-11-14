@@ -18,3 +18,17 @@ That set is wider than field setters (adding or removing fields, flatten,
 `copyPages` registering copied widget fields, and possibly page operations
 that change XFA presentation), and low-level dictionary edits bypass any
 such hook, so the contract needs designing before it changes.
+
+## copyPages() does not carry the source's optional content groups
+
+`copyPages()` copies page objects with everything they reach, so optional
+content groups a page names (`/Properties` entries used by `BDC /OC`,
+XObject or annotation `/OC`) arrive as objects, but the destination catalog
+`/OCProperties` is never created or extended: the copied groups are not in
+its `/OCGs`, their default state is not in its `/D`, and
+`getOptionalContentGroups()` (`src/core/interactive/OptionalContent.ts`)
+does not list them. A fix would register each copied group in the
+destination `/OCGs` and carry its source default state and `/RBGroups`
+membership into `/D`, as `copyPages` already registers copied form fields
+with the destination AcroForm. Names may then repeat; the ref-keyed API
+tolerates that.

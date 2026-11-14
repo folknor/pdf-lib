@@ -42,6 +42,7 @@ import {
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
 } from '../core/index.js';
+import { listOptionalContentGroups } from '../core/interactive/OptionalContent.js';
 import {
   FACTUR_X_FILE_NAME,
   readFacturXInvoice,
@@ -119,6 +120,7 @@ import PDFEmbeddedPage from './PDFEmbeddedPage.js';
 import PDFFont from './PDFFont.js';
 import PDFImage from './PDFImage.js';
 import PDFJavaScript from './PDFJavaScript.js';
+import PDFOptionalContentGroup from './PDFOptionalContentGroup.js';
 import PDFPage from './PDFPage.js';
 import PDFSvg from './PDFSvg.js';
 import type { StandardFonts } from './StandardFonts.js';
@@ -2082,6 +2084,22 @@ export default class PDFDocument {
    * on every call, or `undefined` when it declares none. Throws when the
    * XMP cannot be read or states contradictory identification.
    */
+  /**
+   * The document's optional content groups (layers): the /OCProperties
+   * /OCGs entries that are refs to /Type /OCG dictionaries, each once, in
+   * order. Empty when the document has no optional content. Groups that
+   * pages reach but /OCGs does not list (for instance on pages brought in by
+   * [[copyPages]], which does not merge /OCProperties) are not included.
+   *
+   * See [[PDFOptionalContentGroup]] for what their state means: the initial
+   * state in the default configuration, not what a viewer renders.
+   */
+  getOptionalContentGroups(): PDFOptionalContentGroup[] {
+    return listOptionalContentGroups(this.catalog).map(
+      (ref) => new PDFOptionalContentGroup(ref, this.catalog),
+    );
+  }
+
   getPDFADeclaration(): PDFADeclaration | undefined {
     const state = getPDFAState(this.context);
     if (state.kind === 'unreadable') {
