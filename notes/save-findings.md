@@ -16,20 +16,21 @@ ISO 32000-1 7.5.4 allows only for 65535 entries. The freed generation is
 the one of the removed object as the context holds it, not the file's
 effective one. Both need the file's effective xref, which
 `PDFXRefChainReader` (`src/core/parser`) reads from the bytes along the
-`/Prev` chain; today only a `fillXrefGaps` table increment uses it, and that
-path does link earlier free entries in.
+`/Prev` chain. `freeEntries()` already reads it on every increment, but only
+to check the refs written in use; it does not build the free chain from it.
+A `fillXrefGaps` table increment does link earlier free entries in.
 
-## An increment can reuse a number an earlier revision froze
+## Frozen numbers go unchecked when the xref chain cannot be read
 
-A free entry of generation 65535 is never to be reused (ISO 32000-1 7.5.4),
-but neither writer checks a number it emits in use against the file's
-effective xref: an object the caller assigns under such a number is written
-in use. (Loading through the xref no longer brings freed bodies into the
-context, but a file the parser has to reconstruct by scanning still can.)
-A fix reads the
-effective xref (`PDFXRefChainReader`) on every increment and refuses that
-write; an ordinary reuse of an earlier free number should likewise carry
-the generation the free entry names.
+Increments refuse to write in use a number the file's effective xref lists
+free at generation 65535, or a free number under another generation than
+the entry names (`assertInheritedFreeEntriesRespected` in
+`src/core/writers/PDFWriter.ts`). When `PDFXRefChainReader` rejects the chain
+(one damaged section rejects it all) the check is skipped, so a file loaded
+by reconstruction can still have a freed body written back in use. Closing
+it needs dispositions read per entry despite unrelated damage, the same
+per-object recovery the parser finding on whole-document reconstruction
+asks for.
 
 ## The trailer /ID never changes between revisions
 

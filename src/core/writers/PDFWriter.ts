@@ -17,7 +17,9 @@ import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
-import PDFXRefChainReader from '../parser/PDFXRefChainReader.js';
+import PDFXRefChainReader, {
+  XRefChainError,
+} from '../parser/PDFXRefChainReader.js';
 import type {
   BaselineEncryption,
   ObjectEncryptor,
@@ -43,6 +45,9 @@ export interface FreeEntry {
  * The chain covers this revision's deletions only: free entries of earlier
  * revisions are not linked in, except where `fillXrefGaps` rebuilds an
  * increment's table over the file's effective xref (fillInheritedGaps).
+ *
+ * An increment's in-use refs are also checked against the file's free
+ * entries (assertInheritedFreeEntriesRespected).
  */
 export const freeEntries = (
   context: PDFContext,
@@ -51,12 +56,20 @@ export const freeEntries = (
 ): FreeEntry[] => {
   const written = new Set<number>();
   for (const ref of inUse) {
+    if (ref.objectNumber === 0) {
+      throw new Error(
+        'Cannot write object number 0: it is the head of the free list.',
+      );
+    }
     if (written.has(ref.objectNumber)) {
       throw new Error(
         `Cannot write object number ${ref.objectNumber} twice: the document holds more than one generation of it.`,
       );
     }
     written.add(ref.objectNumber);
+  }
+  if (!(snapshot instanceof DefaultDocumentSnapshot)) {
+    assertInheritedFreeEntriesRespected(context, snapshot, inUse);
   }
   const deleted = snapshot.deletedRefs();
   if (deleted.length === 0) return [];
@@ -69,6 +82,58 @@ export const freeEntries = (
     ref: PDFRef.of(ref.objectNumber, Math.min(ref.generationNumber + 1, 65535)),
     nextFreeObjectNumber: freed[idx + 1]?.objectNumber ?? 0,
   }));
+};
+
+/**
+ * ISO 32000-1 7.5.4: a free entry names the generation its number carries on
+ * its next use, and a free entry of generation 65535 is never reused. An
+ * increment that writes in use a number the file's effective xref lists free
+ * must therefore carry exactly that generation, and may not write a frozen
+ * (65535) number at all. The ref cannot be re-generationed here: other
+ * objects reference it as the caller assigned it. Entries in use, compressed,
+ * null or unlisted impose nothing (re-emitting an in-use number under a new
+ * generation is a deletion and reuse within this revision).
+ *
+ * Numbers the stream writer allocates for its own containers are not passed
+ * in; they lie above context.largestObjectNumber, which covers the inherited
+ * /Size, so no inherited entry names them.
+ *
+ * Best effort on damaged files: when the chain cannot be read strictly
+ * (XRefChainError), nothing is checked, as before; refusing would forbid
+ * every increment of a file loaded by reconstruction.
+ */
+const assertInheritedFreeEntriesRespected = (
+  context: PDFContext,
+  snapshot: DocumentSnapshot,
+  inUse: readonly PDFRef[],
+): void => {
+  const { originalBytes } = context.pdfFileDetails;
+  if (!originalBytes || inUse.length === 0) return;
+  let entries;
+  try {
+    entries = PDFXRefChainReader.read(
+      originalBytes,
+      snapshot.prevStartXRef,
+      context.maxDecodedStreamSize,
+    ).entries;
+  } catch (e) {
+    if (e instanceof XRefChainError) return;
+    throw e;
+  }
+  for (const ref of inUse) {
+    const entry = entries.get(ref.objectNumber);
+    if (entry?.kind !== 'free') continue;
+    if (entry.generation === 65535) {
+      throw new Error(
+        `Cannot write object ${ref.objectNumber} ${ref.generationNumber} R: the file froze number ${ref.objectNumber} (free at generation 65535), which is never reused. Register a new object instead.`,
+      );
+    }
+    if (entry.generation !== ref.generationNumber) {
+      throw new Error(
+        `Cannot write object ${ref.objectNumber} ${ref.generationNumber} R: the file lists number ${ref.objectNumber} free, to be reused with generation ${entry.generation}.`,
+      );
+    }
+  }
 };
 
 export interface SerializationInfo {
