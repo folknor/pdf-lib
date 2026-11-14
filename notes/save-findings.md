@@ -27,10 +27,12 @@ free at generation 65535, or a free number under another generation than
 the entry names (`assertInheritedFreeEntriesRespected` in
 `src/core/writers/PDFWriter.ts`). When `PDFXRefChainReader` rejects the chain
 (one damaged section rejects it all) the check is skipped, so a file loaded
-by reconstruction can still have a freed body written back in use. Closing
-it needs dispositions read per entry despite unrelated damage, the same
-per-object recovery the parser finding on whole-document reconstruction
-asks for.
+by reconstruction can still have a freed body written back in use. A
+readable chain whose entries do not lead to their objects is no longer
+this case: the parser recovers those entries one by one and the check
+runs. What remains is a chain the reader rejects outright, which the parser
+still reconstructs whole; closing it needs the reader to keep the
+dispositions of the sections it can read despite damage in another.
 
 ## The trailer /ID never changes between revisions
 

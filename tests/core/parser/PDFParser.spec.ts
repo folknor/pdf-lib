@@ -367,8 +367,12 @@ describe('PDFParser', () => {
     expect(context.header).toBeInstanceOf(PDFHeader);
     expect(context.header.toString()).toEqual('%PDF-1.5\n%');
     expect(context.trailerInfo.Root).toBe(PDFRef.of(2, 0));
-    // Note: XRef stream objects are now registered for incremental update support
-    expect(context.enumerateIndirectObjects().length).toBe(29);
+    // The effective xref's offsets are all wrong, so each in-use entry is
+    // found by a scan; the bodies of 19-23, which it frees, stay out.
+    expect(context.enumerateIndirectObjects().length).toBe(24);
+    for (const num of [19, 20, 21, 22, 23]) {
+      expect(context.lookup(PDFRef.of(num))).toBeUndefined();
+    }
   });
 
   it("can parse files containing indirect objects missing their 'endobj' keyword", async () => {

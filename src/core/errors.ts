@@ -60,6 +60,19 @@ export class ReparseError extends Error {
   }
 }
 
+/**
+ * The trailer declares encryption but its /Encrypt entry does not resolve
+ * to a dictionary: the file cannot be read as encrypted, and must not be
+ * read as clear.
+ */
+export class UnreadableEncryptionError extends Error {
+  constructor(ref?: PDFObject) {
+    const msg = `The trailer declares encryption, but its /Encrypt (${ref}) is not a readable dictionary`;
+    super(msg);
+    this.name = 'UnreadableEncryptionError';
+  }
+}
+
 export class MissingCatalogError extends Error {
   constructor(ref?: PDFObject) {
     const msg = `Missing catalog (ref=${ref})`;

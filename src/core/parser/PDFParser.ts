@@ -10,6 +10,7 @@ import {
   PDFInvalidObjectParsingError,
   ReparseError,
   StalledParserError,
+  UnreadableEncryptionError,
 } from '../errors.js';
 import PDFArray from '../objects/PDFArray.js';
 import PDFDict from '../objects/PDFDict.js';
@@ -46,8 +47,10 @@ import PDFXRefChainReader, {
 import PDFXRefStreamParser from './PDFXRefStreamParser.js';
 
 /**
- * The file's effective xref cannot locate an object it names (or cannot be
- * read at all): loading falls back to reconstructing the document by a scan.
+ * The file's effective xref cannot be read at all (no usable startxref, or
+ * PDFXRefChainReader rejects the chain): loading falls back to
+ * reconstructing the whole document by a scan. An entry that does not lead
+ * to its object is not this: it is recovered on its own (see `load`).
  */
 class XRefLoadError extends Error {
   constructor(reason: string) {
@@ -55,6 +58,26 @@ class XRefLoadError extends Error {
     this.name = 'XRefLoadError';
   }
 }
+
+/**
+ * An in-use entry does not lead to its object and the header index is not
+ * built yet. Loading is synchronous (a stream's indirect /Length is loaded
+ * mid-parse) while the index scan is not, so the attempt is abandoned,
+ * the index built, and the load restarted with it.
+ */
+class BodyIndexNeeded extends Error {
+  constructor() {
+    super('header index needed');
+    this.name = 'BodyIndexNeeded';
+  }
+}
+
+/**
+ * How a parser reads the file: through the effective xref, by rebuilding
+ * the whole document from a scan, or by a scan that only indexes where
+ * each top-level `N G obj` header is (for per-entry recovery).
+ */
+type LoadMode = 'xref' | 'rebuild' | 'index';
 
 /** Failures that end the load instead of starting a reconstruction. */
 const isFatal = (e: unknown) =>
@@ -99,8 +122,14 @@ class PDFParser extends PDFObjectParser {
   private readonly encryptRef: PDFRef | undefined;
   private readonly pdfBytes: Uint8Array;
   private readonly forIncrementalUpdate: boolean;
-  /** Load by scanning every body (the fallback), never through the xref. */
-  private readonly reconstruct: boolean;
+  private readonly mode: LoadMode;
+  /**
+   * Where the scan met the last top-level header of each `num gen`, keyed
+   * `${num} ${gen}`: filled in 'index' mode, consulted in 'xref' mode.
+   */
+  private readonly bodyIndex: Map<string, number> | undefined;
+  /** Object streams whose members cannot be read; each fails once. */
+  private readonly failedContainers = new Set<number>();
   /** Effective xref entries while loading through the xref. */
   private effective: Map<number, XRefDisposition> | undefined;
   /** An encrypted file parsed without its key: members are not read. */
@@ -138,7 +167,8 @@ class PDFParser extends PDFObjectParser {
     forIncrementalUpdate = false,
     maxDecodedStreamSize?: number,
     encryptRef?: PDFRef,
-    reconstruct = false,
+    mode: LoadMode = 'xref',
+    bodyIndex?: Map<string, number>,
   ) {
     super(
       ByteStream.of(pdfBytes),
@@ -152,7 +182,8 @@ class PDFParser extends PDFObjectParser {
     this.encryptRef = encryptRef;
     this.pdfBytes = pdfBytes;
     this.forIncrementalUpdate = forIncrementalUpdate;
-    this.reconstruct = reconstruct;
+    this.mode = mode;
+    this.bodyIndex = mode === 'index' ? new Map() : bodyIndex;
     this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
     this.context.pdfFileDetails.pdfSize = pdfBytes.length;
     // Set before parsing so object/xref streams decoded during the parse
@@ -174,7 +205,7 @@ class PDFParser extends PDFObjectParser {
       this.context.pdfFileDetails.originalHeader = this.context.header;
     }
 
-    if (!this.reconstruct) {
+    if (this.mode === 'xref') {
       const startXRef = this.locateStartXRef();
       try {
         if (startXRef === undefined) {
@@ -183,38 +214,50 @@ class PDFParser extends PDFObjectParser {
         await this.loadByXRef(startXRef);
         return this.context;
       } catch (e) {
+        if (e instanceof BodyIndexNeeded) {
+          const indexer = new PDFParser(
+            this.pdfBytes,
+            this.objectsPerTick,
+            false,
+            false,
+            this.capNumbers,
+            undefined,
+            false,
+            this.context.maxDecodedStreamSize,
+            undefined,
+            'index',
+          );
+          await indexer.parseDocument();
+          return this.restart('xref', indexer.bodyIndex);
+        }
         if (!(e instanceof XRefLoadError)) throw e;
       }
-      // A fresh parser: nothing this attempt queued or decrypted carries over.
-      const fallback = new PDFParser(
-        this.pdfBytes,
-        this.objectsPerTick,
-        this.throwOnInvalidObject,
-        this.warnOnInvalidObjects,
-        this.capNumbers,
-        this.cryptoFactory,
-        this.forIncrementalUpdate,
-        this.context.maxDecodedStreamSize,
-        this.encryptRef,
-        true,
-      );
-      const context = await fallback.parseDocument();
-      this.streamCryptPlans.clear();
-      for (const [num, plan] of fallback.streamCryptPlans) {
-        this.streamCryptPlans.set(num, plan);
-      }
-      return context;
+      return this.restart('rebuild');
     }
 
     let prevOffset;
     while (!this.bytes.done()) {
-      await this.parseDocumentSection();
+      try {
+        await this.parseDocumentSection();
+      } catch (e) {
+        // An index stops at a truncated body and keeps what it met before:
+        // loading through the xref may never need what follows.
+        if (
+          this.mode === 'index' &&
+          e instanceof PDFInvalidObjectParsingError
+        ) {
+          break;
+        }
+        throw e;
+      }
       const offset = this.bytes.offset();
       if (offset === prevOffset) {
         throw new StalledParserError(this.bytes.position());
       }
       prevOffset = offset;
     }
+
+    if (this.mode === 'index') return this.context;
 
     this.keepLastAssigned();
 
@@ -228,6 +271,35 @@ class PDFParser extends PDFObjectParser {
     await this.decryptStreams();
 
     return this.context;
+  }
+
+  /**
+   * Loads the file again with a fresh parser (nothing this attempt queued,
+   * decrypted or assigned carries over) and takes its result.
+   */
+  private async restart(
+    mode: LoadMode,
+    bodyIndex?: Map<string, number>,
+  ): Promise<PDFContext> {
+    const parser = new PDFParser(
+      this.pdfBytes,
+      this.objectsPerTick,
+      this.throwOnInvalidObject,
+      this.warnOnInvalidObjects,
+      this.capNumbers,
+      this.cryptoFactory,
+      this.forIncrementalUpdate,
+      this.context.maxDecodedStreamSize,
+      this.encryptRef,
+      mode,
+      bodyIndex,
+    );
+    const context = await parser.parseDocument();
+    this.streamCryptPlans.clear();
+    for (const [num, plan] of parser.streamCryptPlans) {
+      this.streamCryptPlans.set(num, plan);
+    }
+    return context;
   }
 
   /**
@@ -274,12 +346,17 @@ class PDFParser extends PDFObjectParser {
    * number no entry lists. A body an earlier revision freed or replaced is
    * never seen, whatever its generation.
    *
-   * Throws XRefLoadError when the chain cannot be read or does not lead to
-   * what it names (no `N G obj` header of that number and generation at the
-   * offset, a compressed entry whose container is not an in-use object
-   * stream, a member that is not where the stream's table puts it); the
-   * caller then reconstructs the document from a scan. A body that is found
-   * but does not parse becomes a PDFInvalidObject, as in a scan.
+   * Throws XRefLoadError only when the chain cannot be read; the caller then
+   * reconstructs the document from a scan. An entry that does not lead to
+   * its object is recovered on its own and the rest of the file keeps the
+   * xref's selection (see `load`). A body that is found but does not parse
+   * becomes a PDFInvalidObject, as in a scan. Recovery repairs only what is
+   * loaded: an increment inherits the damaged entry unless the caller
+   * changes that object; a full save writes a fresh xref.
+   *
+   * A trailer /Encrypt that does not resolve to a dictionary throws
+   * UnreadableEncryptionError: the file is never read as clear because its
+   * encryption dictionary is missing.
    */
   private async loadByXRef(startXRef: number): Promise<void> {
     const { context } = this;
@@ -321,6 +398,14 @@ class PDFParser extends PDFObjectParser {
       this.decryptContainer(ref, stream);
     }
 
+    const encrypt = context.trailerInfo.Encrypt;
+    if (
+      encrypt !== undefined &&
+      !(context.lookup(encrypt) instanceof PDFDict)
+    ) {
+      throw new UnreadableEncryptionError(encrypt);
+    }
+
     if (this.forIncrementalUpdate) {
       context.largestObjectNumber = Math.max(
         context.largestObjectNumber,
@@ -345,6 +430,17 @@ class PDFParser extends PDFObjectParser {
    * Loads number `num` as its effective entry says, once. Called again for
    * a number already being loaded (an object whose stream /Length names
    * itself), it returns and leaves the number unresolved for that caller.
+   *
+   * An entry that does not lead to its object is recovered for that number
+   * alone, never by borrowing what the xref did not select:
+   * - in use, `num G`: the last top-level `num G obj` header the scan index
+   *   met (same generation only); a wrong guess is possible when such a
+   *   header sits where the scan could not tell it was inside a stream;
+   * - compressed: only from its own object stream, by number when the
+   *   index is wrong (see PDFObjectStreamParser.readMember); never a
+   *   top-level body, which is what the compressed entry replaced, and
+   *   never another object stream's copy.
+   * What cannot be recovered loads nothing, like a free entry.
    */
   private load(num: number): void {
     if (this.loaded.has(num) || this.loading.has(num)) return;
@@ -355,7 +451,9 @@ class PDFParser extends PDFObjectParser {
     this.loading.add(num);
     try {
       if (entry?.kind === 'inUse') {
-        this.loadBody(num, entry.offset, entry.generation);
+        if (!this.loadBody(num, entry.offset, entry.generation)) {
+          this.recoverBody(num, entry.generation, entry.offset);
+        }
       } else if (entry?.kind === 'compressed') {
         this.loadMember(num, entry.container, entry.index);
       }
@@ -365,11 +463,22 @@ class PDFParser extends PDFObjectParser {
     }
   }
 
-  private loadBody(num: number, offset: number, generation: number): void {
+  private recoverBody(num: number, generation: number, failed: number): void {
+    if (!this.bodyIndex) throw new BodyIndexNeeded();
+    const offset = this.bodyIndex.get(`${num} ${generation}`);
+    if (offset !== undefined && offset !== failed) {
+      this.loadBody(num, offset, generation);
+    }
+  }
+
+  /**
+   * Loads the body of `num generation` at `offset`. False when there is no
+   * `N G obj` header of that number and generation there, with nothing
+   * assigned.
+   */
+  private loadBody(num: number, offset: number, generation: number): boolean {
     if (!Number.isSafeInteger(offset) || offset >= this.pdfBytes.length) {
-      throw new XRefLoadError(
-        `object ${num}: offset ${offset} is not in the file`,
-      );
+      return false;
     }
     const saved = this.bytes.position();
     try {
@@ -378,23 +487,22 @@ class PDFParser extends PDFObjectParser {
       try {
         ref = this.parseIndirectObjectHeader();
       } catch {
-        throw new XRefLoadError(`object ${num}: no object header at ${offset}`);
+        return false;
       }
       if (ref.objectNumber !== num || ref.generationNumber !== generation) {
-        throw new XRefLoadError(
-          `object ${num} ${generation}: the header at ${offset} is ${ref}`,
-        );
+        return false;
       }
       let object: PDFObject;
       try {
         object = this.parseBody(ref);
       } catch (e) {
-        if (isFatal(e) || e instanceof XRefLoadError) throw e;
+        if (isFatal(e) || e instanceof BodyIndexNeeded) throw e;
         this.bytes.moveTo(offset);
         this.tryToParseInvalidIndirectObject();
-        return;
+        return true;
       }
       this.context.assign(ref, object);
+      return true;
     } finally {
       this.bytes.restorePosition(saved);
     }
@@ -432,13 +540,12 @@ class PDFParser extends PDFObjectParser {
 
   private loadMember(num: number, container: number, index: number): void {
     const parser = this.prepareContainer(container);
+    if (!parser) return;
     let object: PDFObject;
     try {
       object = parser.readMember(index, num);
     } catch (e) {
-      if (e instanceof ObjectStreamMemberError) {
-        throw new XRefLoadError(e.message);
-      }
+      if (e instanceof ObjectStreamMemberError) return;
       throw e;
     }
     this.context.assign(PDFRef.of(num, 0), object);
@@ -450,15 +557,19 @@ class PDFParser extends PDFObjectParser {
    * /N and /First name, and those their arrays and parameter dictionaries
    * name - not every reference in its dictionary), decrypts it, and reads
    * its offset table. Decoding a container that needs one of its own
-   * members is a cycle no reader can resolve.
+   * members is a cycle no reader can resolve. Undefined, once and for good,
+   * for a container that cannot be read (not an in-use object stream, a
+   * cycle, a body that does not decrypt or lacks /N or /First): none of its
+   * members loads.
    */
-  private prepareContainer(num: number): PDFObjectStreamParser {
+  private prepareContainer(num: number): PDFObjectStreamParser | undefined {
     const prepared = this.preparedContainers.get(num);
     if (prepared) return prepared;
+    if (this.failedContainers.has(num)) return undefined;
     if (this.preparingContainers.has(num)) {
-      throw new XRefLoadError(
-        `object stream ${num} depends on its own members`,
-      );
+      // Fails the outer preparation too, which checks before publishing.
+      this.failedContainers.add(num);
+      return undefined;
     }
     this.preparingContainers.add(num);
     try {
@@ -472,19 +583,21 @@ class PDFParser extends PDFObjectParser {
         !(stream instanceof PDFRawStream) ||
         stream.dict.lookup(TypeName) !== ObjStmName
       ) {
-        throw new XRefLoadError(`object ${num} is not an in-use object stream`);
+        this.failedContainers.add(num);
+        return undefined;
       }
       this.loadDecodeDependencies(stream.dict);
+      if (this.failedContainers.has(num)) return undefined;
       try {
         this.decryptContainer(ref, stream);
         const parser = PDFObjectStreamParser.forStream(stream);
+        parser.memberTable();
         this.preparedContainers.set(num, parser);
         return parser;
       } catch (e) {
         if (isFatal(e)) throw e;
-        throw new XRefLoadError(
-          `object stream ${num}: ${e instanceof Error ? e.message : String(e)}`,
-        );
+        this.failedContainers.add(num);
+        return undefined;
       }
     } finally {
       this.preparingContainers.delete(num);
@@ -686,7 +799,15 @@ class PDFParser extends PDFObjectParser {
   };
 
   private async parseIndirectObject(): Promise<PDFRef> {
+    const headerOffset = this.bytes.offset();
     const ref = this.parseIndirectObjectHeader();
+    // Recorded before the body is parsed, so a body that fails still counts.
+    if (this.mode === 'index') {
+      this.bodyIndex!.set(
+        `${ref.objectNumber} ${ref.generationNumber}`,
+        headerOffset,
+      );
+    }
 
     this.skipWhitespaceAndComments();
     // ISO 32000-2 7.6.2: the encryption dictionary and cross-reference
@@ -728,6 +849,13 @@ class PDFParser extends PDFObjectParser {
 
     // TODO: Log a warning if this fails...
     this.matchKeyword(Keywords.endobj);
+
+    if (this.mode === 'index') {
+      // Assigned only so a later stream's indirect /Length resolves as in a
+      // rebuild; no member or xref-stream content is read.
+      this.context.assign(ref, object);
+      return ref;
+    }
 
     if (
       object instanceof PDFRawStream &&

@@ -7,6 +7,7 @@ import {
   PDFRef,
   PDFString,
 } from '../../../src/index';
+import { UnreadableEncryptionError } from '../../../src/core/errors';
 import PDFParser from '../../../src/core/parser/PDFParser';
 
 /** Appends parts to a file, remembering where each one starts. */
@@ -359,7 +360,10 @@ describe('loading through the cross-reference chain', () => {
       }
     });
 
-    it('is used when an xref entry does not lead to its object', async () => {
+  });
+
+  describe('an entry that does not lead to its object', () => {
+    it('loads nothing when no body has the generation it names', async () => {
       const f = new FileBuilder();
       const o1 = f.add(catalog(1));
       const o2 = f.add(pages(2));
@@ -373,8 +377,131 @@ describe('loading through the cross-reference chain', () => {
       );
       f.add(`startxref\n${x}\n%%EOF\n`);
       const context = await parse(f.bytes());
-      expect(context.lookup(PDFRef.of(3))).toEqual(PDFString.of('three'));
+      expect(context.lookup(PDFRef.of(3))).toBeUndefined();
       expect(context.lookup(PDFRef.of(1))).toBeDefined();
+    });
+
+    it('finds that body alone, and the rest keeps the xref selection', async () => {
+      const f = new FileBuilder();
+      const o1 = f.add(catalog(1));
+      const o2 = f.add(pages(2));
+      f.add('3 0 obj\n(gone)\nendobj\n');
+      f.add('4 0 obj\n(four)\nendobj\n');
+      // A later stream whose data holds a header of 4 0, which is no body.
+      const data = '4 0 obj\n(inside)\nendobj\n';
+      f.add(`5 0 obj\n<< /Length ${data.length} >>\nstream\n${data}\nendstream\nendobj\n`);
+      const x = f.add(
+        table(
+          [[0, [
+            entry(0, 65535, 'f'),
+            entry(o1, 0, 'n'),
+            entry(o2, 0, 'n'),
+            entry(0, 1, 'f'),
+            // A stale offset: object 2's.
+            entry(o2, 0, 'n'),
+          ]]],
+          '/Size 5 /Root 1 0 R',
+        ),
+      );
+      f.add(`startxref\n${x}\n%%EOF\n`);
+      const context = await parse(f.bytes());
+      expect(context.lookup(PDFRef.of(4))).toEqual(PDFString.of('four'));
+      // Freed and unlisted numbers stay out, unlike in a rebuild.
+      expect(context.lookup(PDFRef.of(3))).toBeUndefined();
+      expect(context.lookup(PDFRef.of(5))).toBeUndefined();
+    });
+
+    it('reads a member by number from its own object stream when the index is wrong', async () => {
+      const f = new FileBuilder();
+      const o1 = f.add(catalog(1));
+      const o2 = f.add(pages(2));
+      const o4 = f.add(objectStream(4, [[5, '(five)'], [6, '(six)']]));
+      // Another stream's copy of 5, met later in the file.
+      const o7 = f.add(objectStream(7, [[5, '(stale)']]));
+      const xs = f.offset;
+      f.add(
+        xrefStream(3, 8, [
+          [0, 0, 65535],
+          [1, o1, 0],
+          [1, o2, 0],
+          [1, xs, 0],
+          [1, o4, 0],
+          [2, 4, 1],
+          [2, 4, 1],
+          [1, o7, 0],
+        ], ' /Root 1 0 R'),
+      );
+      f.add(`startxref\n${xs}\n%%EOF\n`);
+      const context = await parse(f.bytes());
+      expect(context.lookup(PDFRef.of(5))).toEqual(PDFString.of('five'));
+      expect(context.lookup(PDFRef.of(6))).toEqual(PDFString.of('six'));
+    });
+
+    it('loads no member of an object stream whose offset table is bad', async () => {
+      const f = new FileBuilder();
+      const o1 = f.add(catalog(1));
+      const o2 = f.add(pages(2));
+      // Descending offsets; the padding after them reads as a valid table.
+      const data = `${'5 9 6 0 7 0 8 3 '.padEnd(40, ' ')}42 43`;
+      const o4 = f.add(`4 0 obj\n<< /Type /ObjStm /N 2 /First 40 /Length ${data.length} >>\nstream\n${data}\nendstream\nendobj\n`);
+      const xs = f.offset;
+      f.add(
+        xrefStream(3, 9, [
+          [0, 0, 65535],
+          [1, o1, 0],
+          [1, o2, 0],
+          [1, xs, 0],
+          [1, o4, 0],
+          [2, 4, 0],
+          [0, 0, 1],
+          [2, 4, 0],
+          [2, 4, 1],
+        ], ' /Root 1 0 R'),
+      );
+      f.add(`startxref\n${xs}\n%%EOF\n`);
+      const context = await parse(f.bytes());
+      for (const num of [5, 7, 8]) {
+        expect(context.lookup(PDFRef.of(num))).toBeUndefined();
+      }
+    });
+
+    it('loads nothing for a member whose container is not an object stream', async () => {
+      const f = new FileBuilder();
+      const o1 = f.add(catalog(1));
+      const o2 = f.add(pages(2));
+      f.add('5 0 obj\n(replaced)\nendobj\n');
+      const o4 = f.add('4 0 obj\n(not a stream)\nendobj\n');
+      const o6 = f.add(objectStream(6, [[5, '(elsewhere)']]));
+      const xs = f.offset;
+      f.add(
+        xrefStream(3, 7, [
+          [0, 0, 65535],
+          [1, o1, 0],
+          [1, o2, 0],
+          [1, xs, 0],
+          [1, o4, 0],
+          [2, 4, 0],
+          [1, o6, 0],
+        ], ' /Root 1 0 R'),
+      );
+      f.add(`startxref\n${xs}\n%%EOF\n`);
+      const context = await parse(f.bytes());
+      expect(context.lookup(PDFRef.of(5))).toBeUndefined();
+      expect(context.lookup(PDFRef.of(1))).toBeDefined();
+    });
+
+    it('refuses a declared encryption dictionary it cannot load', async () => {
+      const f = new FileBuilder();
+      const o1 = f.add(catalog(1));
+      const o2 = f.add(pages(2));
+      const x = f.add(
+        table(
+          [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o2, 0, 'n')]]],
+          '/Size 4 /Root 1 0 R /Encrypt 3 0 R',
+        ),
+      );
+      f.add(`startxref\n${x}\n%%EOF\n`);
+      await expect(parse(f.bytes())).rejects.toThrow(UnreadableEncryptionError);
     });
   });
 

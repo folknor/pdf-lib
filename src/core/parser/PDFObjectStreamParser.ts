@@ -40,11 +40,14 @@ class PDFObjectStreamParser extends PDFObjectParser {
   }
 
   /**
-   * Reads one member, for loading through the xref: entry `index` of the
-   * offset table must name `objectNumber`, and the member must parse within
-   * its own extent (up to the next member's offset, or the end of the data)
-   * with nothing but whitespace and comments after it. Throws
-   * ObjectStreamMemberError otherwise.
+   * Reads one member, for loading through the xref: `objectNumber` at entry
+   * `index` of the offset table, and the member must parse within its own
+   * extent (up to the next member's offset, or the end of the data) with
+   * nothing but whitespace and comments after it. A wrong index is the one
+   * coordinate repaired: when entry `index` names another number (or does
+   * not exist), the member is the one entry of this stream's table that
+   * names `objectNumber`; none or several is a failure. Malformed member
+   * bytes are never repaired. Throws ObjectStreamMemberError on failure.
    */
   readMember(index: number, objectNumber: number): PDFObject {
     const table = this.memberTable();
@@ -52,15 +55,26 @@ class PDFObjectStreamParser extends PDFObjectParser {
       new ObjectStreamMemberError(
         `object ${objectNumber} at index ${index} of an object stream: ${why}`,
       );
-    const member = table[index];
-    if (!member) throw fail('no such index');
-    if (member.objectNumber !== objectNumber) {
-      throw fail(`the stream lists object ${member.objectNumber} there`);
+    let at = index;
+    if (table[at]?.objectNumber !== objectNumber) {
+      const found: number[] = [];
+      for (let idx = 0; idx < table.length; idx++) {
+        if (table[idx]!.objectNumber === objectNumber) found.push(idx);
+      }
+      if (found.length !== 1) {
+        throw fail(
+          found.length === 0
+            ? 'the stream does not list it'
+            : 'the stream lists it more than once',
+        );
+      }
+      at = found[0]!;
     }
+    const member = table[at]!;
     const start = this.firstOffset + member.offset;
     const end =
-      index + 1 < table.length
-        ? this.firstOffset + table[index + 1]!.offset
+      at + 1 < table.length
+        ? this.firstOffset + table[at + 1]!.offset
         : this.dataLength;
     if (start > end || end > this.dataLength) throw fail('bad extent');
     const parser = PDFObjectParser.forBytes(
@@ -79,7 +93,12 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
   private table: { objectNumber: number; offset: number }[] | undefined;
 
-  private memberTable(): { objectNumber: number; offset: number }[] {
+  /**
+   * The offset table, read and validated once. Throws
+   * ObjectStreamMemberError when it is unreadable; call it when readying the
+   * stream, so a bad table fails the whole stream rather than one member.
+   */
+  memberTable(): { objectNumber: number; offset: number }[] {
     if (this.table) return this.table;
     const safe = (n: number) => Number.isSafeInteger(n) && n >= 0;
     if (!safe(this.firstOffset) || !safe(this.objectCount)) {
