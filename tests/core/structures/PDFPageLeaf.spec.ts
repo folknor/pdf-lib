@@ -272,6 +272,68 @@ describe('PDFPageLeaf', () => {
     expect(originalFont.get(PDFName.of('F2'))).toBeUndefined();
   });
 
+  it('isolates writes when two pages own the same Resources reference', () => {
+    const context = PDFContext.create();
+    const parentRef = context.register(PDFPageTree.withContext(context));
+    const existing = PDFRef.of(100);
+    const resources = context.obj({
+      Font: { Existing: existing },
+      XObject: { Existing: existing },
+      ExtGState: { Existing: existing },
+      ColorSpace: { Existing: existing },
+    });
+    const resourcesRef = context.register(resources);
+    const page1 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    const page2 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    page1.set(PDFName.Resources, resourcesRef);
+    page2.set(PDFName.Resources, resourcesRef);
+    const original = resources.toString();
+
+    const added = PDFName.of('Added');
+    page1.setFontDictionary(added, PDFRef.of(200));
+    page1.setXObject(added, PDFRef.of(201));
+    page1.setExtGState(added, PDFRef.of(202));
+    const colorKey = page1.getOrCreateColorSpace('CS', PDFRef.of(203));
+
+    expect(page2.get(PDFName.Resources)).toBe(resourcesRef);
+    expect(resources.toString()).toBe(original);
+    for (const category of [
+      PDFName.Font,
+      PDFName.XObject,
+      PDFName.ExtGState,
+      PDFName.ColorSpace,
+    ]) {
+      const local = page1.Resources()!.lookup(category, PDFDict);
+      const shared = resources.lookup(category, PDFDict);
+      expect(local).not.toBe(shared);
+      expect(local.get(PDFName.of('Existing'))).toBe(existing);
+      expect(local.has(category === PDFName.ColorSpace ? colorKey : added)).toBe(true);
+    }
+    page2.setFontDictionary(PDFName.of('Other'), PDFRef.of(204));
+    expect(page1.normalizedEntries().Font.has(PDFName.of('Other'))).toBe(false);
+    expect(resources.toString()).toBe(original);
+  });
+
+  it('isolates writes when separate Resources share a Font reference', () => {
+    const context = PDFContext.create();
+    const parentRef = context.register(PDFPageTree.withContext(context));
+    const existing = PDFRef.of(100);
+    const font = context.obj({ Existing: existing });
+    const fontRef = context.register(font);
+    const page1 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    const page2 = PDFPageLeaf.withContextAndParent(context, parentRef);
+    page1.set(PDFName.Resources, context.obj({ Font: fontRef }));
+    page2.set(PDFName.Resources, context.obj({ Font: fontRef }));
+
+    page1.setFontDictionary(PDFName.of('Added'), PDFRef.of(200));
+
+    expect(font.entries()).toEqual([[PDFName.of('Existing'), existing]]);
+    expect(page2.Resources()!.get(PDFName.Font)).toBe(fontRef);
+    expect(page1.normalizedEntries().Font.get(PDFName.of('Existing'))).toBe(existing);
+    expect(page1.normalizedEntries().Font.get(PDFName.of('Added'))).toBe(PDFRef.of(200));
+    expect(page2.normalizedEntries().Font.has(PDFName.of('Added'))).toBe(false);
+  });
+
   it('can set its Parent', () => {
     const context = PDFContext.create();
     const parentRef = PDFRef.of(1);

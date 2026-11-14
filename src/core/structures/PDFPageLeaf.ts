@@ -281,43 +281,21 @@ class PDFPageLeaf extends PDFDict {
       );
     }
 
-    // Clone Resources if it is inherited to avoid mutating shared dictionaries
-    const ownResources = this.get(PDFName.Resources);
-    const inheritedResources = this.getInheritableAttribute(PDFName.Resources);
-    const isInherited = !ownResources && inheritedResources;
-    const resolvedResources = context.lookupMaybe(inheritedResources, PDFDict);
-
-    const Resources = isInherited
-      ? resolvedResources?.clone(context) || context.obj({})
-      : resolvedResources || context.obj({});
+    // Resource dictionaries can be shared directly, by reference, or through
+    // inheritance. Take shallow page-local copies before normalization writes
+    // categories or drawing adds entries; the resource objects stay shared.
+    const Resources = this.Resources()?.clone(context) || context.obj({});
     this.set(PDFName.Resources, Resources);
 
-    // Clone Font/XObject/ExtGState if they came from inherited Resources
-    const Font = isInherited
-      ? Resources.lookupMaybe(PDFName.Font, PDFDict)?.clone(context) ||
-        context.obj({})
-      : Resources.lookupMaybe(PDFName.Font, PDFDict) || context.obj({});
-    Resources.set(PDFName.Font, Font);
-
-    const XObject = isInherited
-      ? Resources.lookupMaybe(PDFName.XObject, PDFDict)?.clone(context) ||
-        context.obj({})
-      : Resources.lookupMaybe(PDFName.XObject, PDFDict) || context.obj({});
-    Resources.set(PDFName.XObject, XObject);
-
-    const ExtGState = isInherited
-      ? Resources.lookupMaybe(PDFName.ExtGState, PDFDict)?.clone(context) ||
-        context.obj({})
-      : Resources.lookupMaybe(PDFName.ExtGState, PDFDict) || context.obj({});
-    Resources.set(PDFName.ExtGState, ExtGState);
-
-    // ColorSpace is cloned like the others when inherited, but not created when
-    // absent: most pages have none, and an empty one would be pure noise.
-    if (isInherited) {
-      const ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
-      if (ColorSpace)
-        Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
+    for (const category of [PDFName.Font, PDFName.XObject, PDFName.ExtGState]) {
+      const dictionary = Resources.lookupMaybe(category, PDFDict);
+      Resources.set(category, dictionary?.clone(context) || context.obj({}));
     }
+
+    // Most pages have no ColorSpace, so do not create an empty dictionary.
+    const ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
+    if (ColorSpace)
+      Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
 
     const Annots = this.Annots() || context.obj([]);
     this.set(PDFName.Annots, Annots);
