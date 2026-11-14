@@ -13,6 +13,32 @@ describe('StandardFontEmbedder', () => {
     expect(embedder).toBeInstanceOf(StandardFontEmbedder);
   });
 
+  it.each([
+    { ascent: 700, descent: -200, top: 700, bottom: -200 },
+    { ascent: 0, descent: -200, top: 900, bottom: -200 },
+    { ascent: 700, descent: 0, top: 700, bottom: -300 },
+  ])('measures ascent $ascent and descent $descent independently', ({ ascent, descent, top, bottom }) => {
+    const embedder = StandardFontEmbedder.for(FontNames.Helvetica);
+    const originalFont = embedder.font;
+    const font = Object.create(originalFont);
+    Object.defineProperties(font, {
+      Ascender: { value: ascent },
+      Descender: { value: descent },
+      FontBBox: { value: [0, -300, 1000, 900] },
+    });
+    Object.defineProperty(embedder, 'font', { value: font });
+
+    expect(embedder.heightOfFontAtSize(24)).toBeCloseTo(
+      ((top - bottom) / 1000) * 24,
+    );
+    expect(embedder.heightOfFontAtSize(24, { descender: false })).toBeCloseTo(
+      (top / 1000) * 24,
+    );
+    expect(embedder.sizeOfFontAtHeight(24)).toBeCloseTo(
+      (1000 * 24) / (top - bottom),
+    );
+  });
+
   it("exposes the font's name", () => {
     const embedder = StandardFontEmbedder.for(FontNames.HelveticaOblique);
     expect(embedder.fontName).toBe('Helvetica-Oblique');

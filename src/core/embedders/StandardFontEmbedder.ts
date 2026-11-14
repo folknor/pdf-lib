@@ -111,7 +111,7 @@ class StandardFontEmbedder {
     const yBottom = Descender || FontBBox[1];
 
     let height = yTop - yBottom;
-    if (!descender) height += Descender || 0;
+    if (!descender) height -= Math.abs(yBottom);
 
     return (height / 1000) * size;
   }

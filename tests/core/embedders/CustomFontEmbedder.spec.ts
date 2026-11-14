@@ -166,6 +166,35 @@ describe('CustomFontEmbedder', () => {
     expect(embedder.heightOfFontAtSize(24)).toBeCloseTo(26.904);
   });
 
+  for (const Embedder of [CustomFontEmbedder, CustomFontSubsetEmbedder]) {
+    describe(`${Embedder.name} height metrics`, () => {
+      it.each([
+        { ascent: 1500, descent: -400, top: 1500, bottom: -400 },
+        { ascent: 0, descent: -400, top: 1800, bottom: -400 },
+        { ascent: 1500, descent: 0, top: 1500, bottom: -600 },
+      ])('measures ascent $ascent and descent $descent independently', async ({ ascent, descent, top, bottom }) => {
+        const font = fontkit.create(ubuntuFont);
+        Object.defineProperties(font, {
+          unitsPerEm: { value: 2000 },
+          ascent: { value: ascent },
+          descent: { value: descent },
+          bbox: { value: { minX: 0, minY: -600, maxX: 2000, maxY: 1800 } },
+        });
+        const embedder = await Embedder.for({ create: () => font }, ubuntuFont);
+
+        expect(embedder.heightOfFontAtSize(24)).toBeCloseTo(
+          ((top - bottom) / 2000) * 24,
+        );
+        expect(embedder.heightOfFontAtSize(24, { descender: false })).toBeCloseTo(
+          (top / 2000) * 24,
+        );
+        expect(embedder.sizeOfFontAtHeight(24)).toBeCloseTo(
+          (2000 * 24) / (top - bottom),
+        );
+      });
+    });
+  }
+
   it('can measure the size of the font at a given height', async () => {
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
     expect(embedder.sizeOfFontAtHeight(12)).toBeCloseTo(10.705);

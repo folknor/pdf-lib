@@ -354,7 +354,7 @@ class CustomFontEmbedder {
     const yBottom = (descent || bbox.minY) * this.scale;
 
     let height = yTop - yBottom;
-    if (!descender) height -= Math.abs(descent) || 0;
+    if (!descender) height -= Math.abs(yBottom);
 
     return (height / 1000) * size;
   }
