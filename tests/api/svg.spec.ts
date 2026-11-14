@@ -1198,21 +1198,20 @@ describe('Multiple elements in single SVG', () => {
 // 11. Edge cases
 // ===========================================================================
 describe('Edge cases', () => {
-  it('drawSvg with empty string does not throw', () => {
-    expect(async () => {
-      const doc = await PDFDocument.create();
-      const page = doc.addPage();
-      page.drawSvg('');
-    }).not.toThrow();
-  });
-
-  it('drawSvg with non-SVG HTML does not throw (logs error)', async () => {
+  it('drawSvg with empty string throws', async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage();
-    // This should not throw, just log error
+    expect(() => page.drawSvg('')).toThrow('This is not an svg');
+  });
+
+  it('drawSvg with non-SVG HTML throws without logging', async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    page.drawSvg('<div>Not an SVG</div>');
-    expect(consoleSpy).toHaveBeenCalled();
+    expect(() => page.drawSvg('<div>Not an SVG</div>')).toThrow(
+      'This is not an svg',
+    );
+    expect(consoleSpy).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
 

@@ -118,10 +118,7 @@ describe('PDFDocument', () => {
     const origConsoleWarn = console.warn;
 
     beforeAll(() => {
-      const ignoredWarnings = [
-        'Trying to parse invalid object:',
-        'Invalid object ref:',
-      ];
+      const ignoredWarnings = ['Invalid object '];
       console.warn = vi.fn((...args) => {
         const isIgnored = ignoredWarnings.some((iw) => args[0].includes(iw));
         if (!isIgnored) origConsoleWarn(...args);

@@ -69,6 +69,7 @@ import PDFSecurity, {
   BaselineEncryption,
   type SecurityOptions,
 } from '../core/security/PDFSecurity.js';
+import { consoleWarningHandler } from '../core/warnings.js';
 import { savableBaseline, writeEncryption } from '../core/writers/PDFWriter.js';
 import type { Fontkit } from '../types/fontkit.js';
 import type { TransformationMatrix } from '../types/matrix.js';
@@ -226,7 +227,7 @@ export default class PDFDocument {
       ignoreEncryption = false,
       parseSpeed = ParseSpeeds.Slow,
       throwOnInvalidObject = false,
-      warnOnInvalidObjects = false,
+      onWarning = consoleWarningHandler,
       updateMetadata = true,
       capNumbers = false,
       password,
@@ -243,7 +244,7 @@ export default class PDFDocument {
     assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
     assertIs(parseSpeed, 'parseSpeed', ['number']);
     assertIs(throwOnInvalidObject, 'throwOnInvalidObject', ['boolean']);
-    assertIs(warnOnInvalidObjects, 'warnOnInvalidObjects', ['boolean']);
+    assertIs(onWarning, 'onWarning', ['function']);
     assertIs(password, 'password', ['string', 'undefined']);
     assertIs(forIncrementalUpdate, 'forIncrementalUpdate', ['boolean']);
     assertIs(copyStreams, 'copyStreams', ['boolean']);
@@ -253,7 +254,6 @@ export default class PDFDocument {
       bytes,
       parseSpeed,
       throwOnInvalidObject,
-      undefined,
       capNumbers,
       undefined,
       forIncrementalUpdate,
@@ -298,7 +298,6 @@ export default class PDFDocument {
         bytes,
         parseSpeed,
         throwOnInvalidObject,
-        warnOnInvalidObjects,
         capNumbers,
         cryptoFactory,
         forIncrementalUpdate,
@@ -316,6 +315,9 @@ export default class PDFDocument {
         cryptoFactory,
         decryptingParser.streamCryptPlans,
       );
+      // Only this parse's warnings: the keyless first parse is discarded.
+      if (cryptoFactory.warning) decryptedContext.warn(cryptoFactory.warning);
+      decryptedContext.deliverWarnings(onWarning);
       const pdfDoc = new PDFDocument(decryptedContext, true, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
       return pdfDoc;
@@ -323,6 +325,7 @@ export default class PDFDocument {
       if (encrypted) {
         context.baselineEncryption = 'keyless';
       }
+      context.deliverWarnings(onWarning);
       const pdfDoc = new PDFDocument(context, ignoreEncryption, updateMetadata);
       if (forIncrementalUpdate) pdfDoc.takeSnapshot();
       return pdfDoc;
@@ -334,9 +337,12 @@ export default class PDFDocument {
    * @returns Resolves with the newly created document.
    */
   static async create(options: CreateOptions = {}) {
-    const { updateMetadata = true } = options;
+    const { updateMetadata = true, onWarning = consoleWarningHandler } =
+      options;
+    assertIs(onWarning, 'onWarning', ['function']);
 
     const context = PDFContext.create();
+    context.onWarning = onWarning;
     const pageTree = PDFPageTree.withContext(context);
     const pageTreeRef = context.register(pageTree);
     const catalog = PDFCatalog.withContextAndPages(context, pageTreeRef);
@@ -458,9 +464,11 @@ export default class PDFDocument {
   getForm(): PDFForm {
     const form = this.formCache.access();
     if (form.hasXFA()) {
-      console.warn(
-        'Removing XFA form data as pdf-lib does not support reading or writing XFA',
-      );
+      this.context.warn({
+        code: 'xfa-removed',
+        message:
+          'Removing XFA form data as pdf-lib does not support reading or writing XFA',
+      });
       form.deleteXFA();
     }
     return form;
@@ -1156,7 +1164,9 @@ export default class PDFDocument {
    * @returns Resolves with a copy this document.
    */
   async copy(): Promise<PDFDocument> {
-    const pdfCopy = await PDFDocument.create();
+    const pdfCopy = await PDFDocument.create({
+      onWarning: this.context.onWarning,
+    });
     const contentPages = await pdfCopy.copyPages(this, this.getPageIndices());
 
     for (let idx = 0, len = contentPages.length; idx < len; idx++) {
@@ -1819,7 +1829,9 @@ export default class PDFDocument {
     assertIs(indices, 'indices', [Array]);
 
     const srcDoc =
-      pdf instanceof PDFDocument ? pdf : await PDFDocument.load(pdf);
+      pdf instanceof PDFDocument
+        ? pdf
+        : await PDFDocument.load(pdf, { onWarning: this.context.onWarning });
 
     const srcPages = pluckIndices(srcDoc.getPages(), indices);
 

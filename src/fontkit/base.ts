@@ -3,8 +3,6 @@ import type { FontOptions } from './TTFFont.js';
 
 export type { FontOptions };
 
-export const logErrors: boolean = false;
-
 export interface FontFormat {
   new (stream: DecodeStream, options?: FontOptions): any;
   probe(buffer: Uint8Array): boolean;

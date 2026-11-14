@@ -35,6 +35,7 @@ import { IsDelimiter } from '../syntax/Delimiters.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit } from '../syntax/Numeric.js';
 import { IsWhitespace } from '../syntax/Whitespace.js';
+import { silentWarningHandler } from '../warnings.js';
 import ByteStream from './ByteStream.js';
 import PDFObjectParser from './PDFObjectParser.js';
 import PDFObjectStreamParser, {
@@ -97,7 +98,6 @@ class PDFParser extends PDFObjectParser {
     pdfBytes: Uint8Array,
     objectsPerTick?: number,
     throwOnInvalidObject?: boolean,
-    warnOnInvalidObjects?: boolean,
     capNumbers?: boolean,
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate?: boolean,
@@ -109,7 +109,6 @@ class PDFParser extends PDFObjectParser {
       pdfBytes,
       objectsPerTick,
       throwOnInvalidObject,
-      warnOnInvalidObjects,
       capNumbers,
       cryptoFactory,
       forIncrementalUpdate,
@@ -120,7 +119,6 @@ class PDFParser extends PDFObjectParser {
 
   private readonly objectsPerTick: number;
   private readonly throwOnInvalidObject: boolean;
-  private readonly warnOnInvalidObjects: boolean;
   private readonly encryptRef: PDFRef | undefined;
   private readonly pdfBytes: Uint8Array;
   private readonly forIncrementalUpdate: boolean;
@@ -165,7 +163,6 @@ class PDFParser extends PDFObjectParser {
     pdfBytes: Uint8Array,
     objectsPerTick = Infinity,
     throwOnInvalidObject = false,
-    warnOnInvalidObjects = false,
     capNumbers = false,
     cryptoFactory?: CipherTransformFactory,
     forIncrementalUpdate = false,
@@ -183,7 +180,11 @@ class PDFParser extends PDFObjectParser {
     );
     this.objectsPerTick = objectsPerTick;
     this.throwOnInvalidObject = throwOnInvalidObject;
-    this.warnOnInvalidObjects = warnOnInvalidObjects;
+    // Only the parse that becomes the document reports (PDFDocument.load
+    // delivers the buffer); an index pass reports nothing, its parse is
+    // repeated by the load that uses it.
+    if (mode === 'index') this.context.onWarning = silentWarningHandler;
+    else this.context.bufferWarnings();
     this.encryptRef = encryptRef;
     this.pdfBytes = pdfBytes;
     this.forIncrementalUpdate = forIncrementalUpdate;
@@ -224,7 +225,6 @@ class PDFParser extends PDFObjectParser {
           const indexer = new PDFParser(
             this.pdfBytes,
             this.objectsPerTick,
-            false,
             false,
             this.capNumbers,
             undefined,
@@ -293,7 +293,6 @@ class PDFParser extends PDFObjectParser {
       this.pdfBytes,
       this.objectsPerTick,
       this.throwOnInvalidObject,
-      this.warnOnInvalidObjects,
       this.capNumbers,
       this.cryptoFactory,
       this.forIncrementalUpdate,
@@ -672,7 +671,10 @@ class PDFParser extends PDFObjectParser {
   private keepLastAssigned(): void {
     for (const [ref] of this.context.enumerateIndirectObjects()) {
       if (ref.objectNumber === 0) {
-        console.warn(`Removing parsed object: ${ref}`);
+        this.context.warn({
+          code: 'object-zero-removed',
+          message: `Removing parsed object: ${ref}`,
+        });
         this.context.delete(ref);
       } else if (this.lastAssigned.get(ref.objectNumber) !== ref) {
         this.context.delete(ref);
@@ -895,13 +897,13 @@ class PDFParser extends PDFObjectParser {
   private tryToParseInvalidIndirectObject() {
     const startPos = this.bytes.position();
 
-    const msg = `Trying to parse invalid object: ${JSON.stringify(startPos)})`;
-    if (this.throwOnInvalidObject) throw new Error(msg);
-    if (this.warnOnInvalidObjects) console.warn(msg);
+    if (this.throwOnInvalidObject) {
+      throw new Error(
+        `Trying to parse invalid object: ${JSON.stringify(startPos)})`,
+      );
+    }
 
     const ref = this.parseIndirectObjectHeader();
-
-    if (this.warnOnInvalidObjects) console.warn(`Invalid object ref: ${ref}`);
 
     this.skipWhitespaceAndComments();
     const start = this.bytes.offset();
@@ -927,6 +929,11 @@ class PDFParser extends PDFObjectParser {
     const object = PDFInvalidObject.of(this.bytes.slice(start, end));
     this.context.assign(ref, object);
     this.lastAssigned.set(ref.objectNumber, ref);
+    // Reported only once recovered: an attempt that fails throws instead.
+    this.warnAt(startPos.offset, {
+      code: 'invalid-object-recovered',
+      message: `Invalid object ${ref} at offset ${startPos.offset} read as raw bytes`,
+    });
 
     return ref;
   }

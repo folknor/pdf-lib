@@ -1823,6 +1823,7 @@ export default class PDFPage {
    * const pdfSvg = await pdfDoc.embedSvg(svg)
    * page.drawSvg(pdfSvg, { x: 25, y: 75 })
    * ```
+   * Markup with no `<svg>` element, the empty string included, throws.
    * @param svg The SVG to be drawn.
    * @param options The options to be used when drawing the SVG.
    */

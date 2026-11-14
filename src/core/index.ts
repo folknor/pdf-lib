@@ -73,5 +73,10 @@ export { default as PDFObjectStream } from './structures/PDFObjectStream.js';
 export { default as PDFPageLeaf } from './structures/PDFPageLeaf.js';
 export { default as PDFPageTree } from './structures/PDFPageTree.js';
 export { default as CharCodes } from './syntax/CharCodes.js';
+export type {
+  PDFWarning,
+  PDFWarningCode,
+  PDFWarningHandler,
+} from './warnings.js';
 export { default as PDFStreamWriter } from './writers/PDFStreamWriter.js';
 export { default as PDFWriter } from './writers/PDFWriter.js';

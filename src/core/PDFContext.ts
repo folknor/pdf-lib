@@ -21,6 +21,11 @@ import Ops from './operators/PDFOperatorNames.js';
 import type PDFSecurity from './security/PDFSecurity.js';
 import type { BaselineEncryption } from './security/PDFSecurity.js';
 import PDFContentStream from './structures/PDFContentStream.js';
+import {
+  consoleWarningHandler,
+  type PDFWarning,
+  type PDFWarningHandler,
+} from './warnings.js';
 
 type LookupKey = PDFRef | PDFObject | undefined;
 
@@ -61,6 +66,51 @@ class PDFContext {
    */
   maxDecodedStreamSize: number | undefined;
   static create = () => new PDFContext();
+
+  /**
+   * Where this context's warnings go. Defaults to the console; `PDFParser`
+   * buffers instead (`bufferWarnings`), so that only the parse that becomes
+   * the document reports, and `PDFDocument.load` delivers the buffer.
+   */
+  onWarning: PDFWarningHandler = consoleWarningHandler;
+  private buffered: PDFWarning[] | undefined;
+  /** Byte offsets already reported, per source buffer (`warnAt`). */
+  private readonly warnedOffsets = new WeakMap<Uint8Array, Set<number>>();
+
+  warn(warning: PDFWarning): void {
+    if (this.buffered) this.buffered.push(warning);
+    else this.onWarning(warning);
+  }
+
+  /**
+   * Reports a warning about the bytes at `offset` in `source` at most once
+   * per context, however many parsers or lookaheads read them.
+   */
+  warnAt(source: Uint8Array, offset: number, warning: PDFWarning): void {
+    let seen = this.warnedOffsets.get(source);
+    if (!seen) {
+      seen = new Set();
+      this.warnedOffsets.set(source, seen);
+    }
+    if (seen.has(offset)) return;
+    seen.add(offset);
+    this.warn(warning);
+  }
+
+  bufferWarnings(): void {
+    this.buffered ??= [];
+  }
+
+  /**
+   * Ends buffering: installs `handler`, then delivers the buffered warnings
+   * to it in order. A throwing handler stops delivery and propagates.
+   */
+  deliverWarnings(handler: PDFWarningHandler): void {
+    const pending = this.buffered ?? [];
+    this.buffered = undefined;
+    this.onWarning = handler;
+    for (const warning of pending) handler(warning);
+  }
 
   largestObjectNumber: number;
   header: PDFHeader;

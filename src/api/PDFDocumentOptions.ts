@@ -1,4 +1,5 @@
 import type { EmbeddedFileOptions } from '../core/embedders/FileEmbedder.js';
+import type { PDFWarningHandler } from '../core/warnings.js';
 import type { TypeFeatures } from '../types/fontkit.js';
 
 export enum ParseSpeeds {
@@ -84,7 +85,17 @@ export interface LoadOptions {
   ignoreEncryption?: boolean;
   parseSpeed?: ParseSpeeds | number;
   throwOnInvalidObject?: boolean;
-  warnOnInvalidObjects?: boolean;
+  /**
+   * Receives every warning about this document: those of the load, then
+   * those of later operations on it (see [[PDFWarningCode]]). Defaults to
+   * `console.warn` of the message; pass `() => {}` to silence the library,
+   * or route warnings to an application logger. Load warnings are delivered
+   * in order once parsing is done, and only from the parse that produced
+   * the document; a load that throws delivers none. A throwing handler
+   * propagates, stopping delivery. Documents made from this one (`copy`,
+   * `embedPdf` of bytes) use the same handler.
+   */
+  onWarning?: PDFWarningHandler;
   updateMetadata?: boolean;
   capNumbers?: boolean;
   /**
@@ -128,6 +139,8 @@ export interface LoadOptions {
 
 export interface CreateOptions {
   updateMetadata?: boolean;
+  /** As [[LoadOptions.onWarning]]. */
+  onWarning?: PDFWarningHandler;
 }
 
 export interface EmbedFontOptions {

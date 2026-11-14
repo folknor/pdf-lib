@@ -25,6 +25,7 @@ import PDFString from './objects/PDFString.js';
 import { r6PasswordCandidates } from './security/passwordPrep.js';
 import DecryptStream from './streams/DecryptStream.js';
 import type { StreamType } from './streams/Stream.js';
+import type { PDFWarning } from './warnings.js';
 
 class ARCFourCipher {
   private s: Uint8Array;
@@ -1648,6 +1649,8 @@ class CipherTransformFactory {
   stmf!: PDFName;
   strf!: PDFName;
   eff!: PDFName;
+  /** An inconsistency found while recovering the key, for the loader to report. */
+  warning: PDFWarning | undefined;
 
   private defaultPasswordBytes = new Uint8Array([
     0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56,
@@ -1821,7 +1824,12 @@ class CipherTransformFactory {
         encryptMetadata,
       );
       if (problem) {
-        console.warn(`Encryption dictionary /Perms ${problem}`);
+        // Reported by PDFDocument.load through the loaded document's
+        // warning handler, after the warnings of the parse.
+        this.warning = {
+          code: 'encryption-perms-inconsistent',
+          message: `Encryption dictionary /Perms ${problem}`,
+        };
       }
     }
 

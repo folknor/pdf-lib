@@ -67,6 +67,11 @@ class ByteStream {
     return this.idx >= this.length;
   }
 
+  /** The buffer read: identifies these bytes across parsers sharing it. */
+  source(): Uint8Array {
+    return this.bytes;
+  }
+
   size(): number {
     return this.length;
   }

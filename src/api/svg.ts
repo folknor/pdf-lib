@@ -1189,11 +1189,14 @@ export const drawSvg = (
   options: PDFPageDrawSVGElementOptions,
 ) => {
   const pdfSvg = typeof svg === 'string' ? new PDFSvg(svg) : svg;
-  if (!pdfSvg.svg) return;
   const size = page.getSize();
-  const svgNode = parseHtml(pdfSvg.svg).querySelector('svg');
+  // Markup with no <svg> element (empty included) is a caller error, not
+  // something to draw nothing for.
+  const svgNode = pdfSvg.svg
+    ? parseHtml(pdfSvg.svg).querySelector('svg')
+    : null;
   if (!svgNode) {
-    return console.error(`This is not an svg. Ignoring: ${pdfSvg.svg}`);
+    throw new Error(`This is not an svg: ${pdfSvg.svg}`);
   }
 
   const attributes = svgNode.attributes;

@@ -114,11 +114,10 @@ export default class TTFFont {
     if (!(table.tag in this._tables)) {
       try {
         this._tables[table.tag] = this._decodeTable(table);
-      } catch (e: any) {
-        if (fontkit.logErrors) {
-          console.error(`Error decoding table ${table.tag}`);
-          console.error(e.stack);
-        }
+      } catch {
+        // An undecodable table reads as absent. (Upstream fontkit could log
+        // here behind a `logErrors` flag; this copy's flag was a constant
+        // false that no caller could set, so it was removed.)
       }
     }
 

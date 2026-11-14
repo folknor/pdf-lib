@@ -759,17 +759,20 @@ describe('PDFSecurity', () => {
       };
       if (entries.Perms === undefined) delete entries.Perms;
       const dict = contextFor(1, 7).obj(entries as any) as PDFDict;
+      // The factory records the problem; PDFDocument.load reports it.
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       try {
         const factory = new CipherTransformFactory(dict, ref.id, 'u');
         expect(Array.from(factory.encryptionKey)).toEqual(Array.from(ref.key));
-        if (problem) {
-          expect(warn).toHaveBeenCalledExactlyOnceWith(
-            `Encryption dictionary /Perms ${problem}`,
-          );
-        } else {
-          expect(warn).not.toHaveBeenCalled();
-        }
+        expect(factory.warning).toEqual(
+          problem
+            ? {
+                code: 'encryption-perms-inconsistent',
+                message: `Encryption dictionary /Perms ${problem}`,
+              }
+            : undefined,
+        );
+        expect(warn).not.toHaveBeenCalled();
       } finally {
         warn.mockRestore();
       }

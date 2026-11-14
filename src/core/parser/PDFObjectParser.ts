@@ -27,6 +27,7 @@ import { IsDelimiter } from '../syntax/Delimiters.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit, IsNumeric } from '../syntax/Numeric.js';
 import { IsWhitespace } from '../syntax/Whitespace.js';
+import type { PDFWarning } from '../warnings.js';
 import BaseParser from './BaseParser.js';
 import ByteStream from './ByteStream.js';
 
@@ -67,6 +68,10 @@ class PDFObjectParser extends BaseParser {
     super(byteStream, capNumbers);
     this.context = context;
     this.cryptoFactory = cryptoFactory;
+  }
+
+  protected warnAt(offset: number, warning: PDFWarning): void {
+    this.context.warnAt(this.bytes.source(), offset, warning);
   }
 
   /** Whether only whitespace and comments remain. */

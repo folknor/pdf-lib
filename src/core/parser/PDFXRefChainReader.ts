@@ -10,6 +10,7 @@ import { decodePDFRawStream } from '../streams/decode.js';
 import CharCodes from '../syntax/CharCodes.js';
 import { Keywords } from '../syntax/Keywords.js';
 import { IsDigit } from '../syntax/Numeric.js';
+import { silentWarningHandler } from '../warnings.js';
 import ByteStream from './ByteStream.js';
 import PDFObjectParser from './PDFObjectParser.js';
 
@@ -91,7 +92,12 @@ class PDFXRefChainReader extends PDFObjectParser {
     context?: PDFContext,
   ): EffectiveXRef => {
     const into = context ?? PDFContext.create();
-    if (!context) into.maxDecodedStreamSize = maxDecodedStreamSize;
+    if (!context) {
+      into.maxDecodedStreamSize = maxDecodedStreamSize;
+      // A read without a document's context is a writer re-reading bytes
+      // their load already parsed and reported: it reports nothing.
+      into.onWarning = silentWarningHandler;
+    }
     try {
       return new PDFXRefChainReader(bytes, into).readChain(startXRef);
     } catch (e) {

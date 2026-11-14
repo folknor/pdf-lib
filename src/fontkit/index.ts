@@ -2,7 +2,6 @@ import {
   create,
   defaultLanguage,
   type FontFormat,
-  logErrors,
   registerFormat,
   setDefaultLanguage,
 } from './base.js';
@@ -28,7 +27,6 @@ interface Fontkit {
   registerFormat: typeof registerFormat;
   defaultLanguage: string;
   setDefaultLanguage: typeof setDefaultLanguage;
-  logErrors: boolean;
 }
 
 const fontkit: Fontkit = {
@@ -36,6 +34,5 @@ const fontkit: Fontkit = {
   registerFormat,
   defaultLanguage,
   setDefaultLanguage,
-  logErrors,
 };
 export default fontkit;

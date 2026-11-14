@@ -24,8 +24,7 @@ describe('PDFParser', () => {
 
   beforeAll(() => {
     const ignoredWarnings = [
-      'Trying to parse invalid object:',
-      'Invalid object ref:',
+      'Invalid object ',
       'Removing parsed object: 0 0 R',
     ];
     console.warn = vi.fn((...args) => {
@@ -122,7 +121,6 @@ describe('PDFParser', () => {
     );
     const parser = PDFParser.forBytesWithOptions(
       input,
-      undefined,
       undefined,
       undefined,
       undefined,

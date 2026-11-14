@@ -4,11 +4,12 @@ import type ByteStream from '../parser/ByteStream.js';
 import CharCodes from '../syntax/CharCodes.js';
 import { IsDigit, IsNumeric } from '../syntax/Numeric.js';
 import { IsWhitespace } from '../syntax/Whitespace.js';
+import type { PDFWarning } from '../warnings.js';
 
 const { Newline, CarriageReturn } = CharCodes;
 
 // TODO: Throw error if eof is reached before finishing object parse...
-class BaseParser {
+abstract class BaseParser {
   protected readonly bytes: ByteStream;
   protected readonly capNumbers: boolean;
 
@@ -16,6 +17,12 @@ class BaseParser {
     this.bytes = bytes;
     this.capNumbers = capNumbers;
   }
+
+  /**
+   * Reports a warning about the bytes at `offset` of this parser's stream;
+   * the subclass routes it to its document, once per offset.
+   */
+  protected abstract warnAt(offset: number, warning: PDFWarning): void;
 
   protected parseRawInt(): number {
     let value = '';
@@ -62,14 +69,18 @@ class BaseParser {
     }
 
     if (numberValue > Number.MAX_SAFE_INTEGER) {
+      const start = this.bytes.offset() - value.length;
       if (this.capNumbers) {
-        const msg = `Parsed number that is too large for some PDF readers: ${value}, using Number.MAX_SAFE_INTEGER instead.`;
-        console.warn(msg);
+        this.warnAt(start, {
+          code: 'number-too-large-capped',
+          message: `Parsed number that is too large for some PDF readers: ${value}, using Number.MAX_SAFE_INTEGER instead.`,
+        });
         return Number.MAX_SAFE_INTEGER;
-      } else {
-        const msg = `Parsed number that is too large for some PDF readers: ${value}, not capping.`;
-        console.warn(msg);
       }
+      this.warnAt(start, {
+        code: 'number-too-large',
+        message: `Parsed number that is too large for some PDF readers: ${value}, not capping.`,
+      });
     }
 
     return numberValue;
