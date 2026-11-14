@@ -85,14 +85,18 @@ class CustomFontEmbedder {
     return PDFHexString.of(hexCodes.join(''));
   }
 
-  // Use glyphsForString instead of font.layout for width measurement.
-  // font.layout() applies full OpenType shaping which is much slower
-  // and unnecessary when only raw advance widths are needed. This does
-  // not apply ligatures, but the width difference is negligible and
-  // the performance gain is significant (~50x faster).
+  // Measures exactly the glyphs encodeText() emits: the PDF advances each
+  // shown glyph by its /W width, so the width of a string is the sum of the
+  // shaped glyphs' advances. Measuring the unshaped cmap glyphs instead goes
+  // wrong wherever shaping substitutes - Arabic joining forms, Hangul jamo
+  // composition, Indic conjuncts, ligatures - by up to a factor of two.
+  // GPOS offsets and adjustments are not included because encodeText()
+  // does not emit them either.
   widthOfTextAtSize(text: string, size: number): number {
     // Entries are null where the font has no glyph object for a code point.
-    const glyphs = this.font.glyphsForString(text) as (Glyph | null)[];
+    const { glyphs } = this.font.layout(text, this.fontFeatures) as {
+      glyphs: (Glyph | null)[];
+    };
     let totalWidth = 0;
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
       // Rounded per glyph, as /W writes it (computeWidths).

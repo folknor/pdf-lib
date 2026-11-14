@@ -180,12 +180,10 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
             i--;
           }
 
-          glyphs.splice(
-            start,
-            0,
-            ...glyphs.splice(start + 1, i - start),
-            glyphs[i]!,
-          );
+          // Take the repha out, then put it back at i: the glyphs from
+          // start + 1 to i have shifted down by one, so it lands after them.
+          const [repha] = glyphs.splice(start, 1);
+          glyphs.splice(i, 0, repha!);
           break;
         }
       }

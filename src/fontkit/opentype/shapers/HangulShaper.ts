@@ -73,8 +73,7 @@ export default class HangulShaper extends DefaultShaper {
 }
 
 const HANGUL_BASE = 0xac00;
-const HANGUL_END = 0xd7a4;
-const HANGUL_COUNT = HANGUL_END - HANGUL_BASE + 1;
+const HANGUL_END = 0xd7a3; // HANGUL SYLLABLE HIH, the last of the 11172
 const L_BASE = 0x1100; // lead
 const V_BASE = 0x1161; // vowel
 const T_BASE = 0x11a7; // trail
@@ -95,8 +94,11 @@ const isT = (code: number): boolean =>
 const isTone = (code: number): boolean => 0x302e <= code && code <= 0x302f;
 const isLVT = (code: number): boolean =>
   HANGUL_BASE <= code && code <= HANGUL_END;
+// Bounded below too: without isLVT, code points under U+AC00 whose offset
+// happens to be divisible by T_COUNT (H, comma, d, ...) passed as syllables
+// and were "composed" with a following trailing jamo into another letter.
 const isLV = (code: number): boolean =>
-  code - HANGUL_BASE < HANGUL_COUNT && (code - HANGUL_BASE) % T_COUNT === 0;
+  isLVT(code) && (code - HANGUL_BASE) % T_COUNT === 0;
 const isCombiningL = (code: number): boolean => L_BASE <= code && code <= L_END;
 const isCombiningV = (code: number): boolean => V_BASE <= code && code <= V_END;
 const isCombiningT = (code: number): boolean =>

@@ -108,8 +108,26 @@ describe('CustomFontEmbedder', () => {
   it('can measure the width of text strings at the given font size', async () => {
     const text = 'Stuff and thingz!';
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
-    expect(embedder.widthOfTextAtSize(text, 12)).toBe(90.624);
-    expect(embedder.widthOfTextAtSize(text, 24)).toBe(181.248);
+    // Measured from the shaped glyphs encodeText() emits ("ff" is a ligature).
+    expect(embedder.widthOfTextAtSize(text, 12)).toBe(90.672);
+    expect(embedder.widthOfTextAtSize(text, 24)).toBe(181.344);
+  });
+
+  it('measures the glyphs it encodes', async () => {
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const text = 'office ffl';
+    const ids = String(embedder.encodeText(text))
+      .slice(1, -1)
+      .match(/.{4}/g)!
+      .map((h) => parseInt(h, 16));
+    const expected = ids.reduce(
+      (sum, id) => sum + Math.round(embedder.font.getGlyph(id).advanceWidth),
+      0,
+    );
+    expect(ids.length).toBeLessThan(text.length);
+    expect(embedder.widthOfTextAtSize(text, 1000)).toBeCloseTo(
+      (expected * 1000) / embedder.font.unitsPerEm,
+    );
   });
 
   it('can measure the height of the font at the given size', async () => {

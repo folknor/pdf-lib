@@ -20,6 +20,18 @@ needs a pending item that can be cancelled, embeds that are shared per item
 rather than repeated, and iteration over a snapshot, or a refusal of
 mutation while a flush is in progress.
 
+## Line breaking assumes shaped prefix widths grow monotonically
+
+`widthOfTextAtSize` on a custom font measures the shaped glyphs (what
+`encodeText` emits), and `splitOutLines` in `src/api/text/layout.ts`
+gallops and binary-searches over break candidates assuming a longer prefix
+is never narrower. A font with contextual substitutions that reach across a
+space can make a later candidate fit after an earlier one overflowed; the
+search then stops at the overflow and can return a line shorter than the
+longest fitting one, or an overflowing paragraph. Not reproduced with a
+real font. A fix is a search that does not rely on monotonicity (or that
+detects a non-monotonic step and falls back to a linear scan of the line).
+
 ## Embedded files that do not come through attach() skip the PDF/A check
 
 `attach()` checks each new attachment against the document's PDF/A

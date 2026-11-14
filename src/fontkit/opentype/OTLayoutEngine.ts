@@ -74,10 +74,15 @@ export default class OTLayoutEngine {
   }
 
   substitute(glyphRun: GlyphRun): void {
-    if (this.GSUBProcessor && this.plan && this.glyphInfos) {
-      this.plan.process(this.GSUBProcessor, this.glyphInfos);
+    if (this.plan && this.glyphInfos) {
+      if (this.GSUBProcessor) {
+        this.plan.process(this.GSUBProcessor, this.glyphInfos);
+      }
 
-      // Map glyph infos back to normal Glyph objects
+      // Map glyph infos back to normal Glyph objects. Done with or without
+      // GSUB: the shaper's assignFeatures may already have composed,
+      // decomposed or inserted glyphs, and GPOS and the positions built from
+      // glyphRun.glyphs must see the same sequence.
       glyphRun.glyphs = this.glyphInfos.map((glyphInfo) =>
         this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints),
       );

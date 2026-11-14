@@ -27,16 +27,23 @@ export default class DefaultShaper {
     glyphs: GlyphInfo[],
     features: string[] | Record<string, boolean>,
   ): void {
-    // Plan the features we want to apply
-    DefaultShaper.planPreprocessing(plan);
-    DefaultShaper.planFeatures(plan);
-    DefaultShaper.planPostprocessing(plan, features);
+    // Every hook is dispatched through `this`, the shaper class choose()
+    // selected, so subclass overrides (Arabic joining features, Indic and
+    // USE reordering, Hangul composition) run. Naming DefaultShaper here
+    // silently skips them all; the TypeScript migration did exactly that.
+    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
+    this.planPreprocessing(plan);
+    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
+    this.planFeatures(plan);
+    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
+    this.planPostprocessing(plan, features);
 
     // Assign the global features to all the glyphs
     plan.assignGlobalFeatures(glyphs);
 
     // Assign local features to glyphs
-    DefaultShaper.assignFeatures(plan, glyphs);
+    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
+    this.assignFeatures(plan, glyphs);
   }
 
   static planPreprocessing(plan: ShapingPlan): void {

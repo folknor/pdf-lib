@@ -1528,7 +1528,9 @@ describe('splitOutLines matches the linear reference', () => {
     check(await pdfDoc.embedFont(name), inputs);
   });
 
-  it('with a custom font, including non-BMP characters', async () => {
+  // The linear reference shapes every candidate prefix of every line, which
+  // is quadratic in full OpenType layouts; give it room.
+  it('with a custom font, including non-BMP characters', { timeout: 60_000 }, async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
     const ubuntu = await doc.embedFont(
