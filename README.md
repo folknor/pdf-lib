@@ -14,6 +14,7 @@ Built with LLMs. See [LLM.md](LLM.md).
 - pnpm instead of yarn
 - Truncated PDFs (an indirect object with no `endobj`) are rejected on load rather than silently dropping the unfinished object
 - No `convertToPDFA()`. Upstream's version writes a PDF/A identification, output intent and XMP packet without converting or checking content (unembedded standard fonts, uncovered device colour and the like still claim conformance), regenerates XMP from the Info dictionary at every save (losing richer or XMP-only values), and drops XMP blocks that mix its namespaces with others. `declarePDFA()` (below) declares instead, preserving existing metadata.
+- No `PDFPage.extractContents()`. Upstream's version merges every text run of a `BT`..`ET` block into one asset placed at its first run, reports `Tf` sizes unscaled by the text and page matrices, drops `TJ` spacing, misreads ToUnicode maps of small font subsets as one-byte codes, decodes Symbol and `/Differences` fonts as WinAnsi, extracts a Form drawn twice only once, and modifies the page it reads. A content-stream parser exists (`copyPages({ optimizeResources: true })` prunes resources with it); text, image and graphics extraction are not built.
 - Saving with `useObjectStreams: true` raises the declared version to 1.5 when it is lower: the header on a full save, the catalog `/Version` in an increment (whose header is the original file's)
 
 ## Install

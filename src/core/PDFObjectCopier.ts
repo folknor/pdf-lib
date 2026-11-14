@@ -6,10 +6,7 @@ import PDFRef from './objects/PDFRef.js';
 import PDFStream from './objects/PDFStream.js';
 import type PDFContext from './PDFContext.js';
 import PDFPageLeaf from './structures/PDFPageLeaf.js';
-import {
-  analyzePageResources,
-  filterResources,
-} from './utils/ContentStreamResourceAnalyzer.js';
+import { pruneResources } from './utils/ContentStreamResourceAnalyzer.js';
 
 export interface CopyOptions {
   /**
@@ -114,18 +111,8 @@ class PDFObjectCopier {
     // This fixes issue #1338 where copying pages from documents with many
     // shared resources causes file size explosion.
     if (this.options.optimizeResources) {
-      const usedResources = analyzePageResources(originalPage, this.src);
-      if (usedResources) {
-        const resources = originalPage.Resources();
-        if (resources) {
-          const filteredResources = filterResources(
-            resources,
-            usedResources,
-            this.src,
-          );
-          clonedPage.set(PDFName.Resources, filteredResources);
-        }
-      }
+      const prunedResources = pruneResources(originalPage, this.src);
+      if (prunedResources) clonedPage.set(PDFName.Resources, prunedResources);
     }
 
     // Remove the parent reference to prevent the whole donor document's page

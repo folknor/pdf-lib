@@ -30,9 +30,14 @@ const ENFORCER = {};
 const pool = new Map<string, PDFName>();
 
 class PDFName extends PDFObject {
-  static of = (name: string): PDFName => {
-    const decodedValue = decodeName(name);
+  static of = (name: string): PDFName => PDFName.fromDecoded(decodeName(name));
 
+  /**
+   * The name whose decoded value is exactly `decodedValue`. Unlike
+   * {@link PDFName.of}, no `#XX` sequence in it is decoded again: a name read
+   * from PDF syntax (`/F#2320`, value `F#20`) has already been decoded once.
+   */
+  static fromDecoded = (decodedValue: string): PDFName => {
     let instance = pool.get(decodedValue);
     if (!instance) {
       instance = new PDFName(ENFORCER, decodedValue);

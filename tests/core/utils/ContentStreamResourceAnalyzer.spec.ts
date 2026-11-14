@@ -1,267 +1,230 @@
-import {
-  analyzePageResources,
-  filterResources,
-  type UsedResources,
-} from '../../../src/core/utils/ContentStreamResourceAnalyzer.js';
+import { zlibSync } from 'fflate';
+import { pruneResources } from '../../../src/core/utils/ContentStreamResourceAnalyzer.js';
 import {
   PDFContext,
   PDFDict,
   PDFName,
-  PDFNumber,
   PDFRawStream,
   PDFRef,
 } from '../../../src/core/index.js';
 import PDFPageLeaf from '../../../src/core/structures/PDFPageLeaf.js';
-import { zlibSync } from 'fflate';
+import { PDFDocument } from '../../../src/index.js';
 
-describe('ContentStreamResourceAnalyzer', () => {
-  describe('analyzePageResources', () => {
-    it('returns empty sets for page with no content streams', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
+const enc = (s: string) => new TextEncoder().encode(s);
 
-      const result = analyzePageResources(page, context);
+const stream = (
+  context: PDFContext,
+  content: string | Uint8Array,
+  dict: Record<string, unknown> = {},
+) =>
+  context.register(
+    PDFRawStream.of(
+      context.obj(dict as never),
+      typeof content === 'string' ? enc(content) : content,
+    ),
+  );
 
-      expect(result).toBeDefined();
-      expect(result!.Font.size).toBe(0);
-      expect(result!.XObject.size).toBe(0);
-      expect(result!.ExtGState.size).toBe(0);
-    });
+/** A page whose resources hold F1..F3, Im1..Im2, GS1, CS1, P1, Sh1, MC1. */
+const setup = (contents: string | string[]) => {
+  const context = PDFContext.create();
+  const page = PDFPageLeaf.withContextAndParent(context, context.nextRef());
+  const refs: Record<string, PDFRef> = {};
+  const dummy = (name: string) => {
+    refs[name] = context.register(context.obj({ Name: name }));
+    return refs[name];
+  };
+  const resources = context.obj({
+    Font: { F1: dummy('F1'), F2: dummy('F2'), F3: dummy('F3') },
+    XObject: { Im1: dummy('Im1'), Im2: dummy('Im2') },
+    ExtGState: { GS1: dummy('GS1') },
+    ColorSpace: { CS1: dummy('CS1'), DefaultRGB: dummy('DefaultRGB') },
+    Pattern: { P1: dummy('P1') },
+    Shading: { Sh1: dummy('Sh1') },
+    Properties: { MC1: dummy('MC1') },
+    ProcSet: ['PDF', 'Text'],
+  });
+  page.set(PDFName.Resources, resources);
+  const list = Array.isArray(contents) ? contents : [contents];
+  page.set(
+    PDFName.Contents,
+    context.obj(list.map((c) => stream(context, c))),
+  );
+  return { context, page, resources, refs };
+};
 
-    it('extracts font references from Tf operator', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
+const kept = (pruned: PDFDict | undefined, category: string) => {
+  expect(pruned).toBeDefined();
+  const dict = pruned!.lookupMaybe(PDFName.of(category), PDFDict);
+  if (!dict) return [];
+  return dict
+    .keys()
+    .map((k) => k.decodeText())
+    .sort();
+};
 
-      // Create content stream with font reference
-      const contentData = new TextEncoder().encode(
-        'BT /F1 12 Tf (Hello) Tj ET',
-      );
-      const contentStream = PDFRawStream.of(context.obj({}), contentData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.Font.has('F1')).toBe(true);
-    });
-
-    it('extracts XObject references from Do operator', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create content stream with XObject reference
-      const contentData = new TextEncoder().encode('q /Im1 Do Q');
-      const contentStream = PDFRawStream.of(context.obj({}), contentData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.XObject.has('Im1')).toBe(true);
-    });
-
-    it('extracts ExtGState references from gs operator', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create content stream with ExtGState reference
-      const contentData = new TextEncoder().encode('/GS1 gs');
-      const contentStream = PDFRawStream.of(context.obj({}), contentData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.ExtGState.has('GS1')).toBe(true);
-    });
-
-    it('extracts ColorSpace references from cs/CS operators', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create content stream with colorspace references
-      const contentData = new TextEncoder().encode('/CS1 cs /CS2 CS');
-      const contentStream = PDFRawStream.of(context.obj({}), contentData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.ColorSpace.has('CS1')).toBe(true);
-      expect(result!.ColorSpace.has('CS2')).toBe(true);
-    });
-
-    it('extracts multiple resource types from complex content stream', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create content stream with multiple resource types
-      const contentData = new TextEncoder().encode(`
-        q
-        /GS1 gs
-        BT
-        /F1 12 Tf (Hello) Tj
-        /F2 14 Tf (World) Tj
-        ET
-        /Im1 Do
-        /Im2 Do
-        Q
-      `);
-      const contentStream = PDFRawStream.of(context.obj({}), contentData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.Font.has('F1')).toBe(true);
-      expect(result!.Font.has('F2')).toBe(true);
-      expect(result!.XObject.has('Im1')).toBe(true);
-      expect(result!.XObject.has('Im2')).toBe(true);
-      expect(result!.ExtGState.has('GS1')).toBe(true);
-    });
-
-    it('handles compressed content streams', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create compressed content stream
-      const contentText = 'BT /F1 12 Tf (Hello) Tj ET';
-      const compressedData = zlibSync(new TextEncoder().encode(contentText));
-      const streamDict = context.obj({});
-      streamDict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
-      const contentStream = PDFRawStream.of(streamDict, compressedData);
-      const contentRef = context.register(contentStream);
-      page.set(PDFName.Contents, contentRef);
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.Font.has('F1')).toBe(true);
-    });
-
-    it('handles multiple content streams in array', () => {
-      const context = PDFContext.create();
-      const pageRef = context.nextRef();
-      const page = PDFPageLeaf.withContextAndParent(context, pageRef);
-
-      // Create two content streams
-      const stream1Data = new TextEncoder().encode('BT /F1 12 Tf ET');
-      const stream1 = PDFRawStream.of(context.obj({}), stream1Data);
-      const ref1 = context.register(stream1);
-
-      const stream2Data = new TextEncoder().encode('/Im1 Do');
-      const stream2 = PDFRawStream.of(context.obj({}), stream2Data);
-      const ref2 = context.register(stream2);
-
-      page.set(PDFName.Contents, context.obj([ref1, ref2]));
-
-      const result = analyzePageResources(page, context);
-
-      expect(result).toBeDefined();
-      expect(result!.Font.has('F1')).toBe(true);
-      expect(result!.XObject.has('Im1')).toBe(true);
-    });
+describe('pruneResources', () => {
+  it('keeps what each resource operator names, and nothing else', () => {
+    const { context, page } = setup(
+      'q /GS1 gs BT /F1 12 Tf (x) Tj ET /Im1 Do /CS1 cs 0.5 /P1 scn /Sh1 sh ' +
+        '/OC /MC1 BDC EMC Q',
+    );
+    const pruned = pruneResources(page, context);
+    expect(kept(pruned, 'Font')).toEqual(['F1']);
+    expect(kept(pruned, 'XObject')).toEqual(['Im1']);
+    expect(kept(pruned, 'ExtGState')).toEqual(['GS1']);
+    expect(kept(pruned, 'ColorSpace')).toEqual(['CS1', 'DefaultRGB']);
+    expect(kept(pruned, 'Pattern')).toEqual(['P1']);
+    expect(kept(pruned, 'Shading')).toEqual(['Sh1']);
+    expect(kept(pruned, 'Properties')).toEqual(['MC1']);
+    expect(pruned!.get(PDFName.of('ProcSet'))).toBeDefined();
   });
 
-  describe('filterResources', () => {
-    it('filters resources to only include used ones', () => {
-      const context = PDFContext.create();
+  it('reads a /Contents array as one stream split between tokens', () => {
+    const { context, page } = setup(['BT /F1 12 ', 'Tf (x) Tj ET']);
+    expect(kept(pruneResources(page, context), 'Font')).toEqual(['F1']);
+  });
 
-      // Create a resources dict with multiple fonts
-      const fontDict = context.obj({});
-      fontDict.set(PDFName.of('F1'), PDFRef.of(100));
-      fontDict.set(PDFName.of('F2'), PDFRef.of(101));
-      fontDict.set(PDFName.of('F3'), PDFRef.of(102));
+  it('reads names with no whitespace between them, signed numbers and comments', () => {
+    const { context, page } = setup(
+      '/OC/MC1 BDC EMC BT /F1 +12 Tf /F2 12 % c\nTf ET',
+    );
+    const pruned = pruneResources(page, context);
+    expect(kept(pruned, 'Properties')).toEqual(['MC1']);
+    expect(kept(pruned, 'Font')).toEqual(['F1', 'F2']);
+  });
 
-      const xobjectDict = context.obj({});
-      xobjectDict.set(PDFName.of('Im1'), PDFRef.of(200));
-      xobjectDict.set(PDFName.of('Im2'), PDFRef.of(201));
+  it('ignores operator-like bytes inside strings and inline image data', () => {
+    const { context, page } = setup(
+      'BT /F1 12 Tf (/F2 12 Tf) Tj ET BI /W 4 /H 1 /BPC 8 /CS /G ID /F3 EI\n',
+    );
+    expect(kept(pruneResources(page, context), 'Font')).toEqual(['F1']);
+  });
 
-      const resources = context.obj({});
-      resources.set(PDFName.Font, fontDict);
-      resources.set(PDFName.XObject, xobjectDict);
+  it('finds the end of ASCIIHex inline data by its marker', () => {
+    const { context, page } = setup(
+      'BI /W 1 /H 1 /CS /G /BPC 8 /F /AHx ID 4520 4549>\nEI /Im1 Do',
+    );
+    expect(kept(pruneResources(page, context), 'XObject')).toEqual(['Im1']);
+  });
 
-      // Only F1 and Im1 are used
-      const used: UsedResources = {
-        Font: new Set(['F1']),
-        XObject: new Set(['Im1']),
-        ExtGState: new Set(),
-        ColorSpace: new Set(),
-        Pattern: new Set(),
-        Shading: new Set(),
-        Properties: new Set(),
-      };
+  it('keeps a colour space named by an ASCIIHex inline image', () => {
+    const { context, page } = setup(
+      'BI /W 1 /H 1 /BPC 8 /CS /CS1 /F /AHx ID 00> EI',
+    );
+    expect(kept(pruneResources(page, context), 'ColorSpace')).toEqual([
+      'CS1',
+      'DefaultRGB',
+    ]);
+  });
 
-      const filtered = filterResources(resources, used, context);
+  it.each([
+    ['a filtered inline image', 'BI /W 1 /H 1 /F /Fl ID x EI'],
+    ['an inline image in a named colour space', 'BI /W 1 /H 1 /BPC 8 /CS /CS1 ID x EI'],
+    ['CR LF after ID', 'BI /W 1 /H 1 /BPC 8 /CS /G ID\r\nx EI'],
+    ['an unknown operator', '/F1 12 Tf foo'],
+    ['operands with no operator', '/F1 12'],
+    ['an unterminated string', '(abc'],
+    ['a malformed Tf', '/F1 Tf'],
+    ['a bare keyword in an array', '[(a) Tj] TJ'],
+  ])('keeps everything for %s', (_, content) => {
+    const { context, page } = setup(content);
+    expect(pruneResources(page, context)).toBeUndefined();
+  });
 
-      // Check that filtered resources only include used ones
-      const filteredFont = filtered.lookup(PDFName.Font, PDFDict);
-      expect(filteredFont.get(PDFName.of('F1'))).toBeDefined();
-      expect(filteredFont.get(PDFName.of('F2'))).toBeUndefined();
-      expect(filteredFont.get(PDFName.of('F3'))).toBeUndefined();
+  it('keeps everything when a content stream cannot be decoded', () => {
+    const { context, page } = setup('');
+    page.set(
+      PDFName.Contents,
+      stream(context, 'garbage', { Filter: 'FlateDecode' }),
+    );
+    expect(pruneResources(page, context)).toBeUndefined();
+  });
 
-      const filteredXObject = filtered.lookup(PDFName.XObject, PDFDict);
-      expect(filteredXObject.get(PDFName.of('Im1'))).toBeDefined();
-      expect(filteredXObject.get(PDFName.of('Im2'))).toBeUndefined();
+  it('decodes compressed content', () => {
+    const { context, page } = setup('');
+    page.set(
+      PDFName.Contents,
+      stream(context, zlibSync(enc('/Im2 Do')), { Filter: 'FlateDecode' }),
+    );
+    expect(kept(pruneResources(page, context), 'XObject')).toEqual(['Im2']);
+  });
+
+  it('parses a Form without resources in page scope, however deep', () => {
+    const { context, page, resources } = setup('/Im1 Do');
+    const inner = stream(context, '/F2 12 Tf', {
+      Type: 'XObject',
+      Subtype: 'Form',
     });
-
-    it('excludes empty resource categories', () => {
-      const context = PDFContext.create();
-
-      const fontDict = context.obj({});
-      fontDict.set(PDFName.of('F1'), PDFRef.of(100));
-
-      const resources = context.obj({});
-      resources.set(PDFName.Font, fontDict);
-
-      // No fonts are used
-      const used: UsedResources = {
-        Font: new Set(),
-        XObject: new Set(),
-        ExtGState: new Set(),
-        ColorSpace: new Set(),
-        Pattern: new Set(),
-        Shading: new Set(),
-        Properties: new Set(),
-      };
-
-      const filtered = filterResources(resources, used, context);
-
-      expect(filtered.get(PDFName.Font)).toBeUndefined();
+    const outer = stream(context, '/X Do', {
+      Type: 'XObject',
+      Subtype: 'Form',
+      Resources: { XObject: { X: inner } },
     });
+    resources.lookup(PDFName.XObject, PDFDict).set(PDFName.of('Im1'), outer);
+    expect(kept(pruneResources(page, context), 'Font')).toEqual(['F2']);
+  });
 
-    it('preserves ProcSet entry', () => {
-      const context = PDFContext.create();
-
-      const procSet = context.obj(['PDF', 'Text', 'ImageC']);
-      const resources = context.obj({});
-      resources.set(PDFName.of('ProcSet'), procSet);
-
-      const used: UsedResources = {
-        Font: new Set(),
-        XObject: new Set(),
-        ExtGState: new Set(),
-        ColorSpace: new Set(),
-        Pattern: new Set(),
-        Shading: new Set(),
-        Properties: new Set(),
-      };
-
-      const filtered = filterResources(resources, used, context);
-
-      expect(filtered.get(PDFName.of('ProcSet'))).toBeDefined();
+  it('does not read names of a Form with resources against the page', () => {
+    const { context, page, resources } = setup('/Im1 Do');
+    const form = stream(context, '/F2 12 Tf', {
+      Subtype: 'Form',
+      Resources: { Font: {} },
     });
+    resources.lookup(PDFName.XObject, PDFDict).set(PDFName.of('Im1'), form);
+    expect(kept(pruneResources(page, context), 'Font')).toEqual([]);
+  });
+
+  it('follows a Type 3 font set through an ExtGState', () => {
+    const { context, page, resources } = setup('/GS1 gs BT (a) Tj ET');
+    const glyph = stream(context, '0 0 d0 /Im2 Do');
+    const font = context.register(
+      context.obj({ Type: 'Font', Subtype: 'Type3', CharProcs: { a: glyph } }),
+    );
+    resources
+      .lookup(PDFName.ExtGState, PDFDict)
+      .set(PDFName.of('GS1'), context.obj({ Font: [font, 12] }));
+    expect(kept(pruneResources(page, context), 'XObject')).toEqual(['Im2']);
+  });
+
+  it('parses annotation appearances without resources in page scope', () => {
+    const { context, page } = setup('');
+    const ap = stream(context, '/F3 9 Tf');
+    page.set(
+      PDFName.Annots,
+      context.obj([context.obj({ Subtype: 'Widget', AP: { N: { On: ap } } })]),
+    );
+    expect(kept(pruneResources(page, context), 'Font')).toEqual(['F3']);
+  });
+});
+
+describe('copyPages({ optimizeResources: true })', () => {
+  it('keeps a resource whose name has an escaped #', async () => {
+    const src = await PDFDocument.create();
+    const page = src.addPage();
+    const font = src.context.register(src.context.obj({ Type: 'Font' }));
+    page.node.set(
+      PDFName.Resources,
+      src.context.obj({ Font: { [`F#20`]: font, Other: font } }),
+    );
+    // PDFName.of decodes #20; build the key that a file's /F#2320 reads as.
+    const fonts = page.node.Resources()!.lookup(PDFName.Font, PDFDict);
+    fonts.delete(PDFName.of('F#20'));
+    fonts.set(PDFName.fromDecoded('F#20'), font);
+    page.node.set(
+      PDFName.Contents,
+      stream(src.context, 'BT /F#2320 12 Tf ET'),
+    );
+    const bytes = await src.save({ useObjectStreams: false });
+    const loaded = await PDFDocument.load(bytes);
+    const dst = await PDFDocument.create();
+    const [copied] = await dst.copyPages(loaded, [0], {
+      optimizeResources: true,
+    });
+    const names = copied!.node
+      .Resources()!
+      .lookup(PDFName.Font, PDFDict)
+      .keys()
+      .map((k) => k.decodeText());
+    expect(names).toEqual(['F#20']);
   });
 });

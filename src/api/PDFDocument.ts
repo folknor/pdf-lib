@@ -937,6 +937,10 @@ export default class PDFDocument {
    * @param options.optimizeResources When true, analyzes content streams to copy
    *        only resources that are actually used by the page. This can significantly
    *        reduce file size when copying from documents with many shared resources.
+   *        A resource is dropped only when nothing copied with the page can use
+   *        it; content that cannot be analysed (undecodable or malformed
+   *        streams, unknown operators, most filtered inline images, PDF 1.1
+   *        files) keeps the page's resources whole.
    * @returns Resolves with an array of pages copied into this document.
    */
   async copyPages(

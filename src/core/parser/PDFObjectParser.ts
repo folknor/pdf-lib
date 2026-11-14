@@ -200,7 +200,7 @@ class PDFObjectParser extends BaseParser {
       this.bytes.next();
     }
 
-    return PDFName.of(decodePdfNameEscapes(name));
+    return PDFName.fromDecoded(decodePdfNameEscapes(name));
   }
 
   protected parseArray(ref?: PDFRef): PDFArray {
