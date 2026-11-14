@@ -88,7 +88,9 @@ describe('USE Tibetan clusters', () => {
 
   it('keeps AA before a vowel sign in one cluster', () => {
     expect(shape(0x0f40, 0x0f71, 0x0f72)).toEqual([[0x0f40, 0x0f71], [0x0f72]]);
-    expect(shape(0x0f40, 0x0f73)).toEqual([[0x0f40, 0x0f71], [0x0f72]]);
+    // The font maps II: preserve it through the canonical stage and let
+    // the font's own multiple substitution split its drawing, not its text.
+    expect(shape(0x0f40, 0x0f73).flat()).toEqual([0x0f40, 0x0f73]);
     for (const v of [0x0f74, 0x0f7a, 0x0f7c, 0x0f80]) {
       expect(dotted(0x0f40, 0x0f71, v)).toBe(false);
     }
@@ -102,6 +104,17 @@ describe('USE Tibetan clusters', () => {
     expect(dotted(0x0f40, 0x0f72, 0x0f71)).toBe(false);
     expect(dotted(0x0f40, 0x0f71, 0x0f39)).toBe(false);
     expect(dotted(0x0f40, 0x0f39, 0x0f71)).toBe(false);
+  });
+
+  it('keeps mapped II followed by TSA -PHRU out of broken clusters', () => {
+    expect(font.hasGlyphForCodePoint(0x0f73)).toBe(true);
+    const run = font.layout(String.fromCodePoint(0x0f40, 0x0f73, 0x0f39));
+    expect(run.codePoints.flat()).not.toContain(0x25cc);
+    expect(run.text.flat()).toEqual([0x0f40, 0x0f73, 0x0f39]);
+    expect(run.clusters).toEqual(run.glyphs.map(() => 0));
+    // The exception requires an existing standard cluster: a lone II is
+    // still broken, and cannot give the following TSA -PHRU a base.
+    expect(dotted(0x0f73, 0x0f39)).toBe(true);
   });
 
   // The inserted dotted circle is shaped as U+25CC but stands for no

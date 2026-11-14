@@ -69,13 +69,25 @@ the last link closes the finding and deletes this file.
    positioning (rulings 7, 8, 9). Noto Serif Hebrew and Noto Naskh Arabic
    fixtures added. The planned dagesh/shin-dot promotion and meteg swap were
    refused on font evidence. Size: ~200 lines of source and tests.
-3. **Split vowels into the stage.** Move IndicShaper/UniversalShaper
-   split-vowel decompositions into the canonical stage so their parts are
-   sorted (KA + mapped U+0F73 + TSA -PHRU stays broken until then: II is
-   class 0 and USE expands it after the sort), with a glyph check the
-   shapers lack, and the VS lock covering them. Size: medium, ~150 lines.
+3. **Split vowels into the stage (landed).** Indic/USE split vowels now
+   decompose inside `composeCanonical`, before sorting, only when the font
+   lacks the original and maps every part. Canonical entries use the existing
+   data; `SplitVowels.ts` holds shaping-only additions. Khmer self-containing
+   splits cannot provide a mapped fallback for an absent original and stay
+   typed. Thai/Lao SARA AM keeps its dedicated script-specific stage.
+   The typed variation-selector lock covers every split. The shapers no
+   longer decompose; mapped U+0F73 stays class 0. A narrow compatibility
+   exception in USE syllable recognition accepts a single TSA -PHRU directly
+   after mapped II ending a standard cluster (KA + II + TSA -PHRU). It keeps
+   glyphs and typed order intact; the canonical stage never reorders across
+   mapped II under ruling 3. A lone II remains broken.
+   Unmapped II exposes its parts before sorting. Source clusters survive
+   decomposition and the existing Occurrence.ts glyph substitution helpers.
 4. **Tibetan U and positional overrides.** Rank U before the other vowels
    and take the specification's positional overrides (I/E/O below, U above)
    in gen-use-trie.mjs together, or refuse with evidence; also review
-   HALANTA (ccc 9) and repeated vowels. Size: small, ~50 lines plus
+   HALANTA (ccc 9) and repeated vowels. Revisit the slice 3 mapped-II /
+   TSA -PHRU syllable-recognition exception: it belongs to the old USE grammar
+   and should go when the grammar accepts that intact sequence itself.
+   Size: small, ~50 lines plus
    regenerated trie and fixture.

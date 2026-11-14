@@ -1,8 +1,8 @@
 // Font-aware canonical composition and decomposition, run on code points
 // before cmap mapping (LayoutEngine.layout), for every font and script.
 //
-// Contract: the output is canonically equivalent to the input, and the only
-// choice made is which equivalent representation the font can draw.
+// Contract: choose the representation the font can draw; canonical
+// decompositions plus the Indic/USE split vowels (SplitVowels.ts).
 // - A code point the font does not map is replaced by its canonical
 //   decomposition, taking at each level the shortest form whose parts the font
 //   maps (an unmapped A WITH RING ABOVE AND ACUTE becomes A-WITH-RING + acute
@@ -48,6 +48,7 @@ import {
   DECOMPOSITIONS,
 } from './canonicalData.js';
 import { arabicKeys, isArabicRun, shapingRank } from './MarkOrder.js';
+import { SPLIT_VOWELS } from './SplitVowels.js';
 
 interface Tables {
   decompositions: Map<number, number[]>;
@@ -108,7 +109,7 @@ const isVariationSelector = (cp: number) =>
   (cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef);
 
 /**
- * Rewrites `codePoints` into the canonically equivalent sequence the font
+ * Rewrites `codePoints` into the equivalent shaping sequence the font
  * draws best by the rules above. `hasGlyph` is the font's cmap test.
  * `clusters` (one per code point, see Clusters.ts) is carried along: a
  * decomposition's parts keep their code point's cluster, a composite takes
@@ -136,13 +137,15 @@ export function composeCanonical(
   }
 
   // Shortest mapped decomposition of cp, or null when none is fully mapped.
-  const decompose = (cp: number): number[] | null => {
+  const decompose = (cp: number, seen = new Set<number>()): number[] | null => {
     if (hasGlyph(cp)) return [cp];
-    const parts = decompositions.get(cp);
+    if (seen.has(cp)) return null;
+    const parts = SPLIT_VOWELS.get(cp) ?? decompositions.get(cp);
     if (!parts) return null;
+    const path = new Set(seen).add(cp);
     const out: number[] = [];
     for (const part of parts) {
-      const sub = decompose(part);
+      const sub = decompose(part, path);
       if (!sub) return null;
       out.push(...sub);
     }
@@ -155,7 +158,9 @@ export function composeCanonical(
   for (let i = 0; i < codePoints.length; i++) {
     const cp = codePoints[i]!;
     const parts =
-      protectedAt[i] || hasGlyph(cp) || !decompositions.has(cp)
+      protectedAt[i] ||
+      hasGlyph(cp) ||
+      (!decompositions.has(cp) && !SPLIT_VOWELS.has(cp))
         ? null
         : decompose(cp);
     for (const part of parts ?? [cp]) {

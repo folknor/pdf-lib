@@ -1,7 +1,7 @@
 import { unzlibSync } from 'fflate';
 import StateMachine from '../../../vendors/dfa/index.js';
 import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
-import { inserted, piece } from '../../layout/Occurrence.js';
+import { inserted } from '../../layout/Occurrence.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
@@ -16,7 +16,7 @@ const useData = JSON.parse(
     Array.from(unzlibSync(decodeBase64(base64DeflatedUseData))),
   ),
 );
-const { categories, decompositions } = useData;
+const { categories } = useData;
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(useData);
 
@@ -53,29 +53,11 @@ export default class UniversalShaper extends DefaultShaper {
     plan.addStage(['abvs', 'blws', 'pres', 'psts', 'dist', 'abvm', 'blwm']);
   }
 
-  static override assignFeatures(plan: ShapingPlan, glyphs: GlyphInfo[]): void {
-    // Decompose split vowels
-    // TODO: do this in a more general unicode normalizer
-    for (let i = glyphs.length - 1; i >= 0; i--) {
-      const glyph = glyphs[i]!;
-      const codepoint = glyph.codePoints[0]!;
-      if (decompositions[String(codepoint)]) {
-        const decomposed = decompositions[String(codepoint)].map(
-          (c: number) => {
-            const g = plan.font.glyphForCodePoint(c);
-            return new GlyphInfo(
-              plan.font,
-              g.id,
-              piece(glyph, [c]),
-              glyph.features,
-            );
-          },
-        );
-
-        glyphs.splice(i, 1, ...decomposed);
-      }
-    }
-  }
+  // Split vowels are handled before cmap mapping by composeCanonical.
+  static override assignFeatures(
+    _plan: ShapingPlan,
+    _glyphs: GlyphInfo[],
+  ): void {}
 }
 
 function useCategory(glyph: GlyphInfo): number {
@@ -127,6 +109,25 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   )) {
     const from = kept[start]!;
     const to = end < kept.length ? kept[end]! : glyphs.length;
+    // The old USE grammar expects split II and rejects TSA -PHRU after
+    // intact, mapped U+0F73. Keep this single following mark in the preceding
+    // standard cluster without decomposing II or changing the typed order.
+    // Revisit this compatibility exception with the slice 4 grammar review.
+    const previous = glyphs[from - 1];
+    if (
+      tags?.[0] === 'broken_cluster' &&
+      to === from + 1 &&
+      glyphs[from]!.codePoints[0] === 0x0f39 &&
+      previous?.codePoints[0] === 0x0f73 &&
+      previous.shaperInfo.syllableType === 'standard_cluster'
+    ) {
+      glyphs[from]!.shaperInfo = new USEInfo(
+        categories[all[from]!],
+        'standard_cluster',
+        previous.shaperInfo.syllable,
+      );
+      continue;
+    }
     assign(from, to, tags ? tags[0]! : 'non_cluster');
     if (!tags) continue;
 

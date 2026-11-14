@@ -219,6 +219,38 @@ describe('canonical composition', () => {
     ]);
   });
 
+  it('splits Indic/USE vowels only into fully mapped parts before sorting', () => {
+    // Telugu AI exposes length mark (91), which ranks before virama (9).
+    expect(compose([0x0c15, 0x0c48, 0x0c4d],
+      font(0x0c15, 0x0c46, 0x0c56, 0x0c4d), [0, 1, 2])).toEqual({
+      codePoints: [0x0c15, 0x0c46, 0x0c56, 0x0c4d], clusters: [0, 1, 1, 2],
+    });
+    for (const [cp, parts] of [
+      [0x0b4b, [0x0b47, 0x0b3e]],
+      [0x0f77, [0x0fb2, 0x0f71, 0x0f80]],
+      [0x0f79, [0x0fb3, 0x0f71, 0x0f80]],
+      [0x1b3d, [0x1b3c, 0x1b35]],
+    ] as [number, number[]][]) {
+      expect(composeCanonical([cp], font(...parts))).toEqual(parts);
+      expect(composeCanonical([cp], font(cp, ...parts))).toEqual([cp]);
+      expect(composeCanonical([cp], font(...parts.slice(1)))).toEqual([cp]);
+      for (const vs of [0xfe00, 0xe0100]) {
+        expect(composeCanonical([cp, vs], font(...parts))).toEqual([cp, vs]);
+      }
+    }
+    // Self-containing Khmer splits cannot rescue an unmapped vowel.
+    expect(composeCanonical([0x17be], font(0x17c1))).toEqual([0x17be]);
+    expect(composeCanonical([0x17be], font(0x17c1, 0x17be))).toEqual([0x17be]);
+    // II exposes AA and I only if absent, so TSA -PHRU sorts before AA.
+    expect(composeCanonical([0x0f40, 0x0f73, 0x0f39],
+      font(0x0f40, 0x0f71, 0x0f72, 0x0f39))).toEqual([0x0f40, 0x0f39, 0x0f71, 0x0f72]);
+    expect(composeCanonical([0x0f40, 0x0f73, 0x0f39], () => true))
+      .toEqual([0x0f40, 0x0f73, 0x0f39]);
+    expect(composeCanonical([0x0c15, 0x0c48, 0x0c4d, 0xfe00],
+      font(0x0c15, 0x0c46, 0x0c56, 0x0c4d)))
+      .toEqual([0x0c15, 0x0c48, 0x0c4d, 0xfe00]);
+  });
+
   it('never decomposes a mapped code point', () => {
     expect(composeCanonical([0xe9], font(0xe9, 0x65, 0x301))).toEqual([0xe9]);
   });

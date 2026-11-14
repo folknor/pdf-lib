@@ -3,7 +3,7 @@ import { unzlibSync } from 'fflate';
 import StateMachine from '../../../vendors/dfa/index.js';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
 import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
-import { inserted, mapped, piece } from '../../layout/Occurrence.js';
+import { inserted, mapped } from '../../layout/Occurrence.js';
 import * as Script from '../../layout/Script.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
@@ -15,13 +15,11 @@ import {
   CONSONANT_FLAGS,
   HALANT_OR_COENG_FLAGS,
   INDIC_CONFIGS,
-  INDIC_DECOMPOSITIONS,
   JOINER_FLAGS,
   POSITIONS,
 } from './indic-data.js';
 import { syllableRuns } from './syllables.js';
 import base64DeflatedTrie from './trieIndic.js';
-import base64DeflatedUseData from './use.js';
 
 const indicMachine = JSON.parse(
   String.fromCharCode.apply(
@@ -29,13 +27,6 @@ const indicMachine = JSON.parse(
     Array.from(unzlibSync(decodeBase64(base64DeflatedIndicMachine))),
   ),
 );
-const useData = JSON.parse(
-  String.fromCharCode.apply(
-    String,
-    Array.from(unzlibSync(decodeBase64(base64DeflatedUseData))),
-  ),
-);
-const { decompositions } = useData;
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(indicMachine);
 
@@ -102,30 +93,11 @@ export default class IndicShaper extends DefaultShaper {
     // TODO: turn off kern (Khmer) and liga features.
   }
 
-  static override assignFeatures(plan: ShapingPlan, glyphs: GlyphInfo[]): void {
-    // Decompose split matras
-    // TODO: do this in a more general unicode normalizer
-    for (let i = glyphs.length - 1; i >= 0; i--) {
-      const codepoint = glyphs[i]!.codePoints[0]!;
-      const d =
-        (INDIC_DECOMPOSITIONS as Record<number, number[]>)[codepoint] ||
-        decompositions[String(codepoint)];
-      if (d) {
-        const parent = glyphs[i]!;
-        const decomposed = d.map((c: number) => {
-          const g = plan.font.glyphForCodePoint(c);
-          return new GlyphInfo(
-            plan.font,
-            g.id,
-            piece(parent, [c]),
-            parent.features,
-          );
-        });
-
-        glyphs.splice(i, 1, ...decomposed);
-      }
-    }
-  }
+  // Split vowels are handled before cmap mapping by composeCanonical.
+  static override assignFeatures(
+    _plan: ShapingPlan,
+    _glyphs: GlyphInfo[],
+  ): void {}
 }
 
 function indicCategory(glyph: GlyphInfo): number {

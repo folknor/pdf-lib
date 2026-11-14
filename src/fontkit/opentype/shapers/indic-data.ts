@@ -171,11 +171,3 @@ export const INDIC_CONFIGS = {
 };
 
 // Additional decompositions that aren't in Unicode
-export const INDIC_DECOMPOSITIONS = {
-  // Khmer
-  6078: [0x17c1, 0x17be],
-  6079: [0x17c1, 0x17bf],
-  6080: [0x17c1, 0x17c0],
-  6084: [0x17c1, 0x17c4],
-  6085: [0x17c1, 0x17c5],
-};
