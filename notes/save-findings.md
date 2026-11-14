@@ -5,21 +5,6 @@ paths, `src/core/writers`). Each entry stands alone; remove it when it is
 fixed or ruled against (leaving a comment at the code site in the second
 case).
 
-## An increment's free list ignores earlier revisions
-
-Each increment's free entries come from `freeEntries()` in
-`src/core/writers/PDFWriter.ts`, which knows only this revision's
-deletions: the chain runs from object 0 through them and ends at 0, so a
-number freed by an earlier revision (including one this library committed)
-drops out of the newest chain while keeping a generation below 65535, which
-ISO 32000-1 7.5.4 allows only for 65535 entries. The freed generation is
-the one of the removed object as the context holds it, not the file's
-effective one. Both need the file's effective xref, which
-`PDFXRefChainReader` (`src/core/parser`) reads from the bytes along the
-`/Prev` chain. `freeEntries()` already reads it on every increment, but only
-to check the refs written in use; it does not build the free chain from it.
-A `fillXrefGaps` table increment does link earlier free entries in.
-
 ## Frozen numbers go unchecked when the xref chain cannot be read
 
 Increments refuse to write in use a number the file's effective xref lists

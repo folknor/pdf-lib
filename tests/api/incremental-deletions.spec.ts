@@ -107,7 +107,7 @@ describe('deletions in an increment', () => {
     expect(doc.takeSnapshot().deletedRefs()).toEqual([]);
   });
 
-  it('caps the generation of a freed entry at 65535', async () => {
+  it('uses the effective generation when a removed context ref has another generation', async () => {
     const doc = await loadThreePages();
     const ref = doc.getPage(1).ref;
     const page = doc.context.lookup(ref)!;
@@ -117,7 +117,7 @@ describe('deletions in an increment', () => {
     doc.context.delete(old);
     const text = decode(await doc.saveIncremental(doc.takeSnapshot(), { useObjectStreams: false }));
     expect(tableEntries(text).find(([n]) => n === ref.objectNumber)![1]).toBe(
-      '0000000000 65535 f',
+      '0000000000 00001 f',
     );
   });
 
@@ -141,6 +141,37 @@ describe('deletions in an increment', () => {
     ]);
     expect(entries.find(([n]) => n === high!.objectNumber)![1]).toEqual([0, 0, 1]);
   });
+
+  for (const useObjectStreams of [false, true]) {
+    it(`links earlier committed free entries in ${useObjectStreams ? 'streams' : 'tables'}`, async () => {
+      const doc = await loadThreePages();
+      const first = doc.getPage(0).ref;
+      const second = doc.getPage(1).ref;
+      doc.removePage(0);
+      await doc.commit({ useObjectStreams });
+      doc.removePage(0);
+      await doc.commit({ useObjectStreams });
+
+      // Even a revision without deletions must retain the complete chain.
+      const snapshot = doc.takeSnapshot();
+      doc.context.register(doc.context.obj({ Test: true }));
+      const writer = useObjectStreams
+        ? PDFStreamWriter.forContextWithSnapshot(doc.context, 50, snapshot, false)
+        : PDFWriter.forContextWithSnapshot(doc.context, 50, snapshot);
+      const text = decode(await writer.serializeToBuffer());
+      if (useObjectStreams) {
+        const entries = new Map(streamEntries(text));
+        expect(entries.get(0)).toEqual([0, first.objectNumber, 65535]);
+        expect(entries.get(first.objectNumber)).toEqual([0, second.objectNumber, 1]);
+        expect(entries.get(second.objectNumber)).toEqual([0, 0, 1]);
+      } else {
+        const entries = new Map(tableEntries(text));
+        expect(entries.get(0)).toBe(`${String(first.objectNumber).padStart(10, '0')} 65535 f`);
+        expect(entries.get(first.objectNumber)).toBe(`${String(second.objectNumber).padStart(10, '0')} 00001 f`);
+        expect(entries.get(second.objectNumber)).toBe('0000000000 00001 f');
+      }
+    });
+  }
 
   it('refuses to write two generations of one number', async () => {
     const doc = await loadThreePages();

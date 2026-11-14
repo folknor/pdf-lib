@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { freeEntries } from '../../src/core/writers/PDFWriter';
 import { PDFDocument, PDFRef, PDFString } from '../../src/index';
 
 const entry = (offset: number, gen: number, type: 'n' | 'f') =>
@@ -31,6 +32,41 @@ const load = () =>
   PDFDocument.load(fileWithFreeEntries(), { forIncrementalUpdate: true });
 
 describe('increments respect the free entries of the file they extend', () => {
+  it('keeps inherited free generations and excludes a reused number', async () => {
+    const doc = await load();
+    const snapshot = doc.takeSnapshot();
+    expect(freeEntries(doc.context, snapshot, [])).toEqual([
+      { ref: PDFRef.of(3, 65535), nextFreeObjectNumber: 4 },
+      { ref: PDFRef.of(4, 1), nextFreeObjectNumber: 0 },
+    ]);
+    const reused = PDFRef.of(4, 1);
+    doc.context.assign(reused, PDFString.of('reused'));
+    expect(freeEntries(doc.context, snapshot, [reused])).toEqual([
+      { ref: PDFRef.of(3, 65535), nextFreeObjectNumber: 0 },
+    ]);
+    // Assigning and deleting a free number does not advance its generation.
+    doc.context.delete(reused);
+    expect(freeEntries(doc.context, snapshot, [])).toEqual([
+      { ref: PDFRef.of(3, 65535), nextFreeObjectNumber: 4 },
+      { ref: PDFRef.of(4, 1), nextFreeObjectNumber: 0 },
+    ]);
+  });
+
+  it('falls back to context generations only for an unreadable chain', async () => {
+    const doc = await load();
+    const snapshot = doc.takeSnapshot();
+    const page = doc.context.lookup(PDFRef.of(5))!;
+    doc.context.delete(PDFRef.of(5));
+    const ref = PDFRef.of(5, 65535);
+    doc.context.assign(ref, page);
+    doc.context.delete(ref);
+    expect(freeEntries(doc.context, snapshot, []).find(({ ref }) => ref.objectNumber === 5)?.ref).toBe(PDFRef.of(5, 1));
+    doc.context.pdfFileDetails.originalBytes = new Uint8Array();
+    expect(freeEntries(doc.context, snapshot, [])).toEqual([
+      { ref, nextFreeObjectNumber: 0 },
+    ]);
+  });
+
   for (const useObjectStreams of [false, true]) {
     describe(useObjectStreams ? 'xref stream' : 'xref table', () => {
       it('refuses to write a number frozen at generation 65535', async () => {

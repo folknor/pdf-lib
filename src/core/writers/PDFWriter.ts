@@ -22,6 +22,7 @@ import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import PDFXRefChainReader, {
   XRefChainError,
+  type XRefDisposition,
 } from '../parser/PDFXRefChainReader.js';
 import type {
   BaselineEncryption,
@@ -46,9 +47,9 @@ export interface FreeEntry {
  * 65535 (ISO 32000-1 7.5.4: such an entry is never reused). The chain runs
  * in ascending order and ends at 0.
  *
- * The chain covers this revision's deletions only: free entries of earlier
- * revisions are not linked in, except where `fillXrefGaps` rebuilds an
- * increment's table over the file's effective xref (fillInheritedGaps).
+ * Increments rebuild the chain from the file's effective free entries and
+ * this revision's deletions, using the file's generations. Only an unreadable
+ * chain falls back to this revision's deletions and context generations.
  *
  * An increment's in-use refs are also checked against the file's free
  * entries (assertInheritedFreeEntriesRespected).
@@ -72,19 +73,50 @@ export const freeEntries = (
     }
     written.add(ref.objectNumber);
   }
-  if (!(snapshot instanceof DefaultDocumentSnapshot)) {
-    assertInheritedFreeEntriesRespected(context, snapshot, inUse);
+  let inherited: Map<number, XRefDisposition> | undefined;
+  const { originalBytes } = context.pdfFileDetails;
+  if (!(snapshot instanceof DefaultDocumentSnapshot) && originalBytes) {
+    try {
+      inherited = PDFXRefChainReader.read(
+        originalBytes,
+        snapshot.prevStartXRef,
+        context.maxDecodedStreamSize,
+      ).entries;
+    } catch (e) {
+      if (!(e instanceof XRefChainError)) throw e;
+    }
+    if (inherited) assertInheritedFreeEntriesRespected(inherited, inUse);
   }
-  const deleted = snapshot.deletedRefs();
-  if (deleted.length === 0) return [];
+  const generations = new Map<number, number>();
+  for (const [num, entry] of inherited ?? []) {
+    if (entry.kind === 'free' && !written.has(num)) {
+      generations.set(num, entry.generation);
+    }
+  }
   const live = new Set<number>();
   for (const [ref] of context.enumerateIndirectObjects()) {
     live.add(ref.objectNumber);
   }
-  const freed = deleted.filter((ref) => !live.has(ref.objectNumber));
-  return freed.map((ref, idx) => ({
-    ref: PDFRef.of(ref.objectNumber, Math.min(ref.generationNumber + 1, 65535)),
-    nextFreeObjectNumber: freed[idx + 1]?.objectNumber ?? 0,
+  for (const ref of snapshot.deletedRefs()) {
+    if (live.has(ref.objectNumber) || written.has(ref.objectNumber)) continue;
+    const entry = inherited?.get(ref.objectNumber);
+    const generation =
+      entry?.kind === 'free'
+        ? entry.generation
+        : Math.min(
+            (entry?.kind === 'inUse'
+              ? entry.generation
+              : entry?.kind === 'compressed'
+                ? 0
+                : ref.generationNumber) + 1,
+            65535,
+          );
+    generations.set(ref.objectNumber, generation);
+  }
+  const freed = [...generations].sort(([a], [b]) => a - b);
+  return freed.map(([num, generation], idx) => ({
+    ref: PDFRef.of(num, generation),
+    nextFreeObjectNumber: freed[idx + 1]?.[0] ?? 0,
   }));
 };
 
@@ -107,23 +139,9 @@ export const freeEntries = (
  * every increment of a file loaded by reconstruction.
  */
 const assertInheritedFreeEntriesRespected = (
-  context: PDFContext,
-  snapshot: DocumentSnapshot,
+  entries: Map<number, XRefDisposition>,
   inUse: readonly PDFRef[],
 ): void => {
-  const { originalBytes } = context.pdfFileDetails;
-  if (!originalBytes || inUse.length === 0) return;
-  let entries;
-  try {
-    entries = PDFXRefChainReader.read(
-      originalBytes,
-      snapshot.prevStartXRef,
-      context.maxDecodedStreamSize,
-    ).entries;
-  } catch (e) {
-    if (e instanceof XRefChainError) return;
-    throw e;
-  }
   for (const ref of inUse) {
     const entry = entries.get(ref.objectNumber);
     if (entry?.kind !== 'free') continue;
