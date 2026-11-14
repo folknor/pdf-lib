@@ -46,3 +46,17 @@ destination `/OCGs` and carry its source default state and `/RBGroups`
 membership into `/D`, as `copyPages` already registers copied form fields
 with the destination AcroForm. Names may then repeat; the ref-keyed API
 tolerates that.
+
+## Field text layout fits advances, not ink, and combs shape per scalar
+
+`src/api/text/layout.ts` treats a line's advance width as its horizontal
+extent and the font height as its vertical one, when choosing an auto font
+size, aligning and fitting comb cells; text fields then clip to the field
+box (`drawTextField`). Glyph ink can overhang the advance, and attached
+marks drawn above or below the base (now emitted with their GPOS offsets)
+can extend past the font height, so text that "fits" can still be clipped.
+fontkit computes positioned ink bounds (`GlyphRun.bbox`); layout would need
+those beside the advance. Combed fields also encode each Unicode scalar on
+its own (`layoutCombedText`), so a combining mark gets its own cell and
+joining scripts never join, while the length check counts UTF-16 units; the
+cell unit (scalar, grapheme cluster) is undecided.

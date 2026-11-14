@@ -1,6 +1,6 @@
 import {
   CustomFontEmbedder,
-  type PDFHexString,
+  type EncodedText,
   PDFRef,
   StandardFontEmbedder,
 } from '../core/index.js';
@@ -66,12 +66,16 @@ export default class PDFFont implements Embeddable {
    * > [[PDFPage.drawText]] method will automatically encode the text it is
    * > given.
    *
-   * Encodes a string of text in this font.
+   * Encodes a string of text in this font: its glyph codes and where the
+   * font's layout places each glyph (kerning, mark attachment). Show it with
+   * [[showEncodedText]], which draws every glyph at that position, so the
+   * text spans exactly [[widthOfTextAtSize]]. Its `toHexString()` holds the
+   * codes alone, for a plain `Tj` that ignores the positions.
    *
    * @param text The text to be encoded.
-   * @returns The encoded text as a hex string.
+   * @returns The encoded text.
    */
-  encodeText(text: string): PDFHexString {
+  encodeText(text: string): EncodedText {
     assertIs(text, 'text', ['string']);
     return this.embedder.encodeText(text);
   }

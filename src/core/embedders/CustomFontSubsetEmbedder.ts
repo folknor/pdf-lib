@@ -5,12 +5,12 @@ import type {
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
-import { Cache, toHexStringOfMinLength } from '../../utils/index.js';
-import PDFHexString from '../objects/PDFHexString.js';
+import { Cache } from '../../utils/index.js';
 import CustomFontEmbedder, {
   asFont,
   encodeSubset,
 } from './CustomFontEmbedder.js';
+import type EncodedText from './EncodedText.js';
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -51,26 +51,30 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
 
     this.subset = this.font.createSubset();
     this.glyphs = [];
-    this.glyphCache = Cache.populatedBy(() => this.glyphs);
+    // The glyphs ToUnicode maps: .notdef (subset id 0) stands for no
+    // character, whatever code point it was shown for.
+    this.glyphCache = Cache.populatedBy(() =>
+      this.glyphs.filter((glyph, id) => id !== 0 && glyph !== undefined),
+    );
     this.glyphIdMap = new Map();
   }
 
-  override encodeText(text: string): PDFHexString {
-    const { glyphs } = this.font.layout(text, this.fontFeatures);
-    const hexCodes = new Array(glyphs.length);
-
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const glyph = glyphs[idx]!;
-      const subsetGlyphId = this.subset.includeGlyph(glyph);
-
-      this.glyphs[subsetGlyphId - 1] = glyph;
-      this.glyphIdMap.set(glyph.id, subsetGlyphId);
-
-      hexCodes[idx] = toHexStringOfMinLength(subsetGlyphId, 4);
-    }
-
+  override encodeText(text: string): EncodedText {
+    const encoded = super.encodeText(text);
     this.glyphCache.invalidate();
-    return PDFHexString.of(hexCodes.join(''));
+    return encoded;
+  }
+
+  // Only encoding adds a glyph to the subset; measuring (positionedLayout)
+  // does not, so rejected line-break candidates never enter it.
+  protected override codeForGlyph(glyph: Glyph): number {
+    const subsetGlyphId = this.subset.includeGlyph(glyph);
+    // Indexed by subset id, 0 included: the subset always holds .notdef at
+    // id 0, and a code shown for it needs its /W entry like any other (with
+    // none and no /DW the PDF advances it by 1000).
+    this.glyphs[subsetGlyphId] = glyph;
+    this.glyphIdMap.set(glyph.id, subsetGlyphId);
+    return subsetGlyphId;
   }
 
   protected override isCFF(): boolean {
@@ -81,9 +85,9 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     return glyph ? this.glyphIdMap.get(glyph.id)! : -1;
   }
 
-  // A subset only carries the glyphs actually used, all of which are cached.
+  // A subset only carries the glyphs actually used, all of which encodeText recorded.
   protected override glyphsForWidths(): Glyph[] {
-    return this.glyphCache.access();
+    return this.glyphs.filter((glyph) => glyph !== undefined);
   }
 
   protected override serializeFont(): Promise<Uint8Array> {

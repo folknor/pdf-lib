@@ -6,6 +6,7 @@ export { default as PDFTrailer } from './document/PDFTrailer.js';
 export { default as PDFTrailerDict } from './document/PDFTrailerDict.js';
 export { default as CustomFontEmbedder } from './embedders/CustomFontEmbedder.js';
 export { default as CustomFontSubsetEmbedder } from './embedders/CustomFontSubsetEmbedder.js';
+export { default as EncodedText } from './embedders/EncodedText.js';
 export {
   AFRelationship,
   default as FileEmbedder,

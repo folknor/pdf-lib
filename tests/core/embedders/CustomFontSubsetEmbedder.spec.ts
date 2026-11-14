@@ -35,8 +35,10 @@ describe('CustomFontSubsetEmbedder', () => {
       '00010002000300040005000600070008000500020009000A0007000B000C000D';
     const embedder = await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont);
 
-    expect(embedder.encodeText(text)).toBeInstanceOf(PDFHexString);
-    expect(String(embedder.encodeText(text))).toBe(
+    expect(embedder.encodeText(text).toHexString()).toBeInstanceOf(
+      PDFHexString,
+    );
+    expect(String(embedder.encodeText(text).toHexString())).toBe(
       String(PDFHexString.of(hexCodes)),
     );
   });
@@ -47,6 +49,22 @@ describe('CustomFontSubsetEmbedder', () => {
     // Measured from the shaped glyphs encodeText() emits ("ff" is a ligature).
     expect(embedder.widthOfTextAtSize(text, 12)).toBe(90.672);
     expect(embedder.widthOfTextAtSize(text, 24)).toBe(181.344);
+  });
+
+  it('does not add measured glyphs to the subset', async () => {
+    const embedder = await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont);
+    embedder.widthOfTextAtSize('Stuff and thingz!', 12);
+    expect((embedder as any).glyphsForWidths()).toEqual([]);
+  });
+
+  it('writes a /W width for .notdef when it is shown', async () => {
+    const embedder = await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont);
+    // U+10FFFF is unmapped, so it is shown as .notdef (subset id 0).
+    const encoded = embedder.encodeText('\u{10FFFF}');
+    expect(encoded.codes).toEqual(['0000']);
+    const widths = (embedder as any).computeWidths() as (number | number[])[];
+    expect(widths[0]).toBe(0);
+    expect(widths[1]).toEqual([encoded.widths[0]]);
   });
 
   it('can measure the height of the font at the given size', async () => {

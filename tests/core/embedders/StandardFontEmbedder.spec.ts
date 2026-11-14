@@ -52,8 +52,10 @@ describe('StandardFontEmbedder', () => {
   it('can encode text strings into PDFHexString objects', () => {
     const text = 'Stuff and thingz!';
     const embedder = StandardFontEmbedder.for(FontNames.TimesRoman);
-    expect(embedder.encodeText(text)).toBeInstanceOf(PDFHexString);
-    expect(String(embedder.encodeText(text))).toBe(
+    expect(embedder.encodeText(text).toHexString()).toBeInstanceOf(
+      PDFHexString,
+    );
+    expect(String(embedder.encodeText(text).toHexString())).toBe(
       String(PDFHexString.of('537475666620616E64207468696E677A21')),
     );
   });

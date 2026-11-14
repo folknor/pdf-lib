@@ -5,9 +5,9 @@ import {
   Font,
   FontNames,
 } from '../../vendors/standard-fonts/index.js';
-import PDFHexString from '../objects/PDFHexString.js';
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
+import EncodedText from './EncodedText.js';
 
 export interface Glyph {
   code: number;
@@ -46,28 +46,34 @@ class StandardFontEmbedder {
    * Unicode, but standard fonts use either WinAnsi, ZapfDingbats, or Symbol
    * encodings)
    */
-  encodeText(text: string): PDFHexString {
+  /**
+   * Encodes with the AFM pair kerning applied to each glyph's advance, which
+   * is what widthOfTextAtSize measures: a Type1 font shown with `Tj` does not
+   * kern by itself, so the kerning is written as `TJ` adjustments.
+   */
+  encodeText(text: string): EncodedText {
     const glyphs = this.encodeTextAsGlyphs(text);
-    const hexCodes = new Array(glyphs.length);
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      hexCodes[idx] = toHexString(glyphs[idx]!.code);
+    const count = glyphs.length;
+    const codes = new Array<string>(count);
+    const advances = new Array<number>(count);
+    const widths = new Array<number>(count);
+    const zeros = new Array<number>(count).fill(0);
+    for (let idx = 0; idx < count; idx++) {
+      const left = glyphs[idx]!.name;
+      const right = glyphs[idx + 1]?.name;
+      codes[idx] = toHexString(glyphs[idx]!.code);
+      widths[idx] = this.widthOfGlyph(left);
+      advances[idx] =
+        widths[idx]! +
+        (right === undefined
+          ? 0
+          : this.font.getXAxisKerningForPair(left, right) || 0);
     }
-    return PDFHexString.of(hexCodes.join(''));
+    return new EncodedText(codes, advances, widths, zeros, zeros.slice());
   }
 
   widthOfTextAtSize(text: string, size: number): number {
-    const glyphs = this.encodeTextAsGlyphs(text);
-    let totalWidth = 0;
-
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      const left = glyphs[idx]!.name;
-      const right = glyphs[idx + 1]?.name;
-      const kernAmount = this.font.getXAxisKerningForPair(left, right!) || 0;
-      totalWidth += this.widthOfGlyph(left) + kernAmount;
-    }
-
-    const scale = size / 1000;
-    return totalWidth * scale;
+    return (this.encodeText(text).advance * size) / 1000;
   }
 
   heightOfFontAtSize(

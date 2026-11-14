@@ -1,4 +1,4 @@
-import type { PDFHexString } from '../../core/index.js';
+import type { EncodedText } from '../../core/index.js';
 import {
   charAtIndex,
   charSplit,
@@ -12,7 +12,7 @@ import { TextAlignment } from './alignment.js';
 
 export interface TextPosition {
   text: string;
-  encoded: PDFHexString;
+  encoded: EncodedText;
   x: number;
   y: number;
   width: number;
@@ -174,12 +174,14 @@ const splitOutLines = (
   };
 
   // This relies on prefix width growing with the candidate index:
-  // - Custom fonts sum non-negative advance widths of the shaped glyphs, and
+  // - Custom fonts sum the positioned advances of the shaped glyphs, and
   //   cutting before whitespace leaves the glyphs before the cut unchanged
-  //   unless the font substitutes across the space (contextual rules that
-  //   reach over a word break), so a longer candidate's glyphs extend a
-  //   shorter one's. A font with such rules can break the assumption, and
-  //   then a line may end earlier than the longest fitting candidate.
+  //   unless the font substitutes or positions across the space (contextual
+  //   rules that reach over a word break), so a longer candidate's glyphs
+  //   extend a shorter one's. Positioned advances can be negative (GPOS
+  //   kerning), like the standard fonts' below. A font with such rules can
+  //   break the assumption, and then a line may end earlier than the longest
+  //   fitting candidate.
   // - Standard fonts add pair kerning, which can be negative, but each step
   //   between candidates adds a whitespace glyph plus a word, whose widths
   //   are expected to dwarf any negative kerning between them (true for all

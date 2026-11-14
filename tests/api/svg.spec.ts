@@ -1482,7 +1482,8 @@ describe('drawSvg with fonts option', () => {
 
     const text = getAllContentStreamText(page);
     expect(text).toContain('BT');
-    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj/);
+    // Kerned pairs make the line a TJ array, otherwise it is a plain Tj.
+    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj|\[<[0-9A-Fa-f]+>[^\]]*\] TJ/);
   });
 
   it('uses bold font variant when font-weight is bold', async () => {
@@ -1503,7 +1504,8 @@ describe('drawSvg with fonts option', () => {
 
     const text = getAllContentStreamText(page);
     expect(text).toContain('BT');
-    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj/);
+    // Kerned pairs make the line a TJ array, otherwise it is a plain Tj.
+    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj|\[<[0-9A-Fa-f]+>[^\]]*\] TJ/);
   });
 
   it('uses italic font variant when font-style is italic', async () => {
@@ -1524,7 +1526,8 @@ describe('drawSvg with fonts option', () => {
 
     const text = getAllContentStreamText(page);
     expect(text).toContain('BT');
-    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj/);
+    // Kerned pairs make the line a TJ array, otherwise it is a plain Tj.
+    expect(text).toMatch(/<[0-9A-Fa-f]+> Tj|\[<[0-9A-Fa-f]+>[^\]]*\] TJ/);
   });
 });
 

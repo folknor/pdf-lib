@@ -2,6 +2,7 @@ import type {
   Font,
   Fontkit,
   Glyph,
+  GlyphPosition,
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
@@ -12,11 +13,11 @@ import {
   sortedUniq,
   toHexStringOfMinLength,
 } from '../../utils/index.js';
-import PDFHexString from '../objects/PDFHexString.js';
 import type PDFRef from '../objects/PDFRef.js';
 import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import { createCmap } from './CMap.js';
+import EncodedText from './EncodedText.js';
 import { deriveFontFlags } from './FontFlags.js';
 
 /**
@@ -76,33 +77,98 @@ class CustomFontEmbedder {
    * Encode the JavaScript string into this font. (JavaScript encodes strings in
    * Unicode, but embedded fonts use their own custom encodings)
    */
-  encodeText(text: string): PDFHexString {
-    const { glyphs } = this.font.layout(text, this.fontFeatures);
-    const hexCodes = new Array(glyphs.length);
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      hexCodes[idx] = toHexStringOfMinLength(glyphs[idx]!.id, 4);
+  encodeText(text: string): EncodedText {
+    const { glyphs, positions } = this.positionedLayout(text);
+    const { scale } = this;
+    const count = glyphs.length;
+    const codes = new Array<string>(count);
+    const advances = new Array<number>(count);
+    const widths = new Array<number>(count);
+    const xOffsets = new Array<number>(count);
+    const yOffsets = new Array<number>(count);
+    for (let idx = 0; idx < count; idx++) {
+      const glyph = glyphs[idx]!;
+      const position = positions[idx]!;
+      codes[idx] = toHexStringOfMinLength(this.codeForGlyph(glyph), 4);
+      advances[idx] = position.xAdvance * scale;
+      widths[idx] = this.pdfWidthOf(glyph);
+      xOffsets[idx] = position.xOffset * scale;
+      yOffsets[idx] = position.yOffset * scale;
     }
-    return PDFHexString.of(hexCodes.join(''));
+    return new EncodedText(codes, advances, widths, xOffsets, yOffsets);
   }
 
-  // Measures exactly the glyphs encodeText() emits: the PDF advances each
-  // shown glyph by its /W width, so the width of a string is the sum of the
-  // shaped glyphs' advances. Measuring the unshaped cmap glyphs instead goes
-  // wrong wherever shaping substitutes - Arabic joining forms, Hangul jamo
-  // composition, Indic conjuncts, ligatures - by up to a factor of two.
-  // GPOS offsets and adjustments are not included because encodeText()
-  // does not emit them either.
+  // Measures exactly what encodeText() draws: the sum of the positioned
+  // advances of the shaped glyphs (GPOS and kern-table kerning, zeroed mark
+  // advances, hidden default-ignorables), which the drawing operators
+  // reproduce against the /W widths. Measuring unshaped cmap glyphs instead
+  // goes wrong wherever shaping substitutes - Arabic joining forms, Hangul
+  // jamo composition, Indic conjuncts, ligatures - by up to a factor of two.
+  // Measuring does not add glyphs to a subset.
   widthOfTextAtSize(text: string, size: number): number {
-    // Entries are null where the font has no glyph object for a code point.
-    const { glyphs } = this.font.layout(text, this.fontFeatures) as {
-      glyphs: (Glyph | null)[];
-    };
-    let totalWidth = 0;
-    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-      // Rounded per glyph, as /W writes it (computeWidths).
-      totalWidth += Math.round(glyphs[idx]?.advanceWidth ?? 0);
+    const { positions } = this.positionedLayout(text);
+    let total = 0;
+    for (let idx = 0, len = positions.length; idx < len; idx++) {
+      total += positions[idx]!.xAdvance;
     }
-    return (totalWidth * size) / this.font.unitsPerEm;
+    return (total * size) / this.font.unitsPerEm;
+  }
+
+  /**
+   * The font's layout of `text`, checked before anything is encoded from it.
+   * Built-in layout always returns one glyph object and one position per
+   * glyph; anything else (a fontkit with no glyph source) is refused rather
+   * than drawn with made-up metrics.
+   */
+  protected positionedLayout(text: string): {
+    glyphs: Glyph[];
+    positions: GlyphPosition[];
+  } {
+    const run = this.font.layout(text, this.fontFeatures);
+    const glyphs = run.glyphs as (Glyph | null | undefined)[];
+    const positions = (run.positions ?? []) as (
+      | GlyphPosition
+      | null
+      | undefined
+    )[];
+    if (positions.length !== glyphs.length) {
+      throw new Error(
+        `Font layout returned ${glyphs.length} glyphs but ${positions.length} positions`,
+      );
+    }
+    for (let idx = 0, len = glyphs.length; idx < len; idx++) {
+      const position = positions[idx];
+      if (!glyphs[idx] || !position) {
+        throw new Error(`Font layout returned no glyph at index ${idx}`);
+      }
+      // yAdvance is not honoured: text is laid out horizontally only.
+      if (
+        !Number.isFinite(position.xAdvance) ||
+        !Number.isFinite(position.xOffset) ||
+        !Number.isFinite(position.yOffset)
+      ) {
+        throw new Error(`Font layout returned a non-finite position at ${idx}`);
+      }
+    }
+    return {
+      glyphs: glyphs as Glyph[],
+      positions: positions as GlyphPosition[],
+    };
+  }
+
+  /** The code (CID) a shown glyph is written as; Identity, so its id. */
+  protected codeForGlyph(glyph: Glyph): number {
+    return glyph.id;
+  }
+
+  /**
+   * The width the PDF gives a glyph's code (its /W entry, see computeWidths),
+   * in thousandths of an em.
+   */
+  protected pdfWidthOf(glyph: Glyph): number {
+    // A variation instance's advance can be fractional; the embedded
+    // font's hmtx holds it rounded (TTFSubset._pushGlyph), and /W agrees.
+    return Math.round(glyph.advanceWidth) * this.scale;
   }
 
   heightOfFontAtSize(
@@ -343,9 +409,7 @@ class CustomFontEmbedder {
     return compressWidths(
       this.glyphsForWidths().map((glyph) => [
         this.glyphId(glyph),
-        // A variation instance's advance can be fractional; the embedded
-        // font's hmtx holds it rounded (TTFSubset._pushGlyph), and /W agrees.
-        Math.round(glyph.advanceWidth) * this.scale,
+        this.pdfWidthOf(glyph),
       ]),
     );
   }

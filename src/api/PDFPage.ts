@@ -7,11 +7,11 @@ import {
 import {
   AnnotationFactory,
   AnnotationTypes,
+  type EncodedText,
   type PDFAnnotation,
   PDFArray,
   PDFContentStream,
   PDFDict,
-  type PDFHexString,
   type PDFLinkAnnotation,
   PDFName,
   PDFOperator,
@@ -1094,7 +1094,7 @@ export default class PDFPage {
         ? lineSplit(cleanText(text))
         : breakTextIntoLines(text, wordBreaks, options.maxWidth, textWidth);
 
-    const encodedLines = new Array(lines.length) as PDFHexString[];
+    const encodedLines = new Array(lines.length) as EncodedText[];
     for (let idx = 0, len = lines.length; idx < len; idx++) {
       encodedLines[idx] = newFont.encodeText(lines[idx]!);
     }

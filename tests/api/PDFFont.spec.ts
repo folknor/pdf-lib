@@ -1,4 +1,5 @@
 import {
+  EncodedText,
   PDFDocument,
   PDFFont,
   PDFHexString,
@@ -301,33 +302,33 @@ describe('PDFFont', () => {
   });
 
   describe('encodeText()', () => {
-    it('returns a PDFHexString for non-empty text', async () => {
+    it('returns EncodedText whose codes are a PDFHexString', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const encoded = font.encodeText('Hello');
-      expect(encoded).toBeInstanceOf(PDFHexString);
+      expect(encoded).toBeInstanceOf(EncodedText);
+      expect(encoded.toHexString()).toBeInstanceOf(PDFHexString);
     });
 
     it('returns a non-empty hex string for non-empty text', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const encoded = font.encodeText('ABC');
-      expect(encoded.asString().length).toBeGreaterThan(0);
+      expect(encoded.toHexString().asString().length).toBeGreaterThan(0);
     });
 
-    it('returns a PDFHexString for a single character', async () => {
+    it('encodes a single character', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const encoded = font.encodeText('A');
-      expect(encoded).toBeInstanceOf(PDFHexString);
-      expect(encoded.asString().length).toBeGreaterThan(0);
+      expect(encoded.codes).toEqual(['41']);
     });
 
     it('encodes different text to different hex strings', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encodedA = font.encodeText('A');
-      const encodedB = font.encodeText('B');
+      const encodedA = font.encodeText('A').toHexString();
+      const encodedB = font.encodeText('B').toHexString();
       expect(encodedA.toString()).not.toBe(encodedB.toString());
     });
 
@@ -336,7 +337,16 @@ describe('PDFFont', () => {
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const encoded1 = font.encodeText('Test');
       const encoded2 = font.encodeText('Test');
-      expect(encoded1.toString()).toBe(encoded2.toString());
+      expect(encoded1).toEqual(encoded2);
+    });
+
+    it('advances by what widthOfTextAtSize measures, kerning included', async () => {
+      const doc = await PDFDocument.create();
+      const font = doc.embedStandardFont(StandardFonts.Helvetica);
+      const encoded = font.encodeText('AV');
+      // Helvetica kerns A V by -70.
+      expect(encoded.advances[0]).toBe(encoded.widths[0]! - 70);
+      expect(encoded.advance).toBeCloseTo(font.widthOfTextAtSize('AV', 1000));
     });
   });
 
@@ -360,7 +370,7 @@ describe('PDFFont', () => {
       expect(height).toBeGreaterThan(0);
 
       const encoded = font.encodeText('Hello');
-      expect(encoded).toBeInstanceOf(PDFHexString);
+      expect(encoded).toBeInstanceOf(EncodedText);
     });
 
     it('can be called multiple times without error', async () => {

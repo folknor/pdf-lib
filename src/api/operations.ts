@@ -1,5 +1,5 @@
 import type {
-  PDFHexString,
+  EncodedText,
   PDFName,
   PDFNumber,
   PDFOperator,
@@ -53,7 +53,7 @@ import {
   setTextRenderingMode,
   setTextRise,
   setWordSpacing,
-  showText,
+  showEncodedText,
   skewRadians,
   stroke,
   type TextRenderingMode,
@@ -137,16 +137,44 @@ const clipSpace = ({ topLeft, topRight, bottomRight, bottomLeft }: Space) => [
 ];
 const clipSpaces = (spaces: Space[]) => spaces.flatMap(clipSpace);
 
+/**
+ * The text rise lines are shown with, and the operator establishing it. A
+ * text object inherits the rise in effect (BT does not reset it, and a form
+ * XObject inherits it from where it is painted), so where glyphs change the
+ * rise around themselves and the caller gave none, 0 is set explicitly; the
+ * glyphs after them then return to a rise that is really in effect.
+ */
+const textRiseFor = (
+  lines: readonly EncodedText[],
+  textRise: number | PDFNumber | undefined,
+): { rise: number | PDFNumber; operator: PDFOperator | undefined } => {
+  if (textRise !== undefined) {
+    return { rise: textRise, operator: setTextRise(textRise) };
+  }
+  const needed = lines.some((line) => line.hasVerticalOffsets());
+  return { rise: 0, operator: needed ? setTextRise(0) : undefined };
+};
+
 export const drawText = (
-  line: PDFHexString,
+  line: EncodedText,
   options: DrawTextOptions,
-): PDFOperator[] =>
-  [
+): PDFOperator[] => {
+  const { rise, operator: riseOperator } = textRiseFor(
+    [line],
+    options.textRise,
+  );
+  return [
     pushGraphicsState(),
     options.graphicsState && setGraphicsState(options.graphicsState),
     beginText(),
     ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
+    options.characterSpacing !== undefined &&
+      setCharacterSpacing(options.characterSpacing),
+    options.wordSpacing !== undefined && setWordSpacing(options.wordSpacing),
+    options.horizontalScaling !== undefined &&
+      setCharacterSqueeze(options.horizontalScaling),
+    riseOperator,
     options.strokeWidth && setLineWidth(options.strokeWidth),
     ...maybeStroke(options.strokeColor),
     options.renderMode && setTextRenderingMode(options.renderMode),
@@ -157,19 +185,21 @@ export const drawText = (
       options.x,
       options.y,
     ),
-    showText(line),
+    ...showEncodedText(line, options.size, rise),
     endText(),
     popGraphicsState(),
   ].filter(Boolean) as PDFOperator[];
+};
 
 export interface DrawLinesOfTextOptions extends DrawTextOptions {
   lineHeight: number | PDFNumber;
 }
 
 export const drawLinesOfText = (
-  lines: PDFHexString[],
+  lines: EncodedText[],
   options: DrawLinesOfTextOptions,
 ): PDFOperator[] => {
+  const { rise, operator: riseOperator } = textRiseFor(lines, options.textRise);
   const operators = [
     pushGraphicsState(),
     options.graphicsState && setGraphicsState(options.graphicsState),
@@ -184,7 +214,7 @@ export const drawLinesOfText = (
     options.wordSpacing !== undefined && setWordSpacing(options.wordSpacing),
     options.horizontalScaling !== undefined &&
       setCharacterSqueeze(options.horizontalScaling),
-    options.textRise !== undefined && setTextRise(options.textRise),
+    riseOperator,
     options.strokeWidth && setLineWidth(options.strokeWidth),
     ...maybeStroke(options.strokeColor),
     options.renderMode && setTextRenderingMode(options.renderMode),
@@ -198,7 +228,10 @@ export const drawLinesOfText = (
   ].filter(Boolean) as PDFOperator[];
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
-    operators.push(showText(lines[idx]!), nextLine());
+    operators.push(
+      ...showEncodedText(lines[idx]!, options.size, rise),
+      nextLine(),
+    );
   }
 
   operators.push(endText(), popGraphicsState());
@@ -649,7 +682,7 @@ export const drawButton = (options: {
   borderWidth: number | PDFNumber;
   color: Color | undefined;
   borderColor: Color | undefined;
-  textLines: { encoded: PDFHexString; x: number; y: number }[];
+  textLines: { encoded: EncodedText; x: number; y: number }[];
   textColor: Color;
   font: string | PDFName;
   fontSize: number | PDFNumber;
@@ -694,14 +727,19 @@ export interface DrawTextLinesOptions {
 }
 
 export const drawTextLines = (
-  lines: { encoded: PDFHexString; x: number; y: number }[],
+  lines: { encoded: EncodedText; x: number; y: number }[],
   options: DrawTextLinesOptions,
 ): PDFOperator[] => {
+  const { rise, operator: riseOperator } = textRiseFor(
+    lines.map((line) => line.encoded),
+    undefined,
+  );
   const operators = [
     beginText(),
     setFillingColor(options.color),
     setFontAndSize(options.font, options.size),
   ];
+  if (riseOperator) operators.push(riseOperator);
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
     const { encoded, x, y } = lines[idx]!;
@@ -713,7 +751,7 @@ export const drawTextLines = (
         x,
         y,
       ),
-      showText(encoded),
+      ...showEncodedText(encoded, options.size, rise),
     );
   }
 
@@ -730,7 +768,7 @@ export const drawTextField = (options: {
   borderWidth: number | PDFNumber;
   color: Color | undefined;
   borderColor: Color | undefined;
-  textLines: { encoded: PDFHexString; x: number; y: number }[];
+  textLines: { encoded: EncodedText; x: number; y: number }[];
   textColor: Color;
   font: string | PDFName;
   fontSize: number | PDFNumber;
@@ -971,7 +1009,7 @@ export const drawOptionList = (options: {
   borderWidth: number | PDFNumber;
   color: Color | undefined;
   borderColor: Color | undefined;
-  textLines: { encoded: PDFHexString; x: number; y: number; height: number }[];
+  textLines: { encoded: EncodedText; x: number; y: number; height: number }[];
   textColor: Color;
   font: string | PDFName;
   fontSize: number | PDFNumber;

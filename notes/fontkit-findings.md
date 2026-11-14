@@ -28,19 +28,18 @@ each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 draw their outlines, not their colour images or layers, for the same reason;
 `COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
-## PDF text drops all GPOS positioning
+## Shaping depends on which spelling first created a glyph object
 
-`CustomFontEmbedder.encodeText` keeps only the glyph ids of `font.layout()`;
-text is shown with `Tj` and each glyph advances by its `/W` width. GPOS
-kerning, mark attachment (Hebrew points, Arabic harakat, Indic reph and
-matra offsets, Tibetan stacks) and cursive attachment never reach the PDF, so
-every mark is drawn at its glyph's default place. `widthOfTextAtSize` measures
-the same unpositioned advances, so it agrees with what is drawn. Honouring
-positions means emitting the x adjustments (`TJ` numbers) and y offsets (text
-rise, `Ts`, or per-glyph positioning), and measuring with the positioned
-advances; line breaking, alignment and form field appearances all measure
-through that one function. Most of the value of mark reordering (the Hebrew
-reorder below) is in GPOS attachment, so it pays little until this lands.
+`TTFFont.getGlyph` caches glyph objects by id, and the first construction
+fixes their `codePoints` (and so `isMark`). `OTLayoutEngine` seeds shaping
+input from those cached code points, and the Unicode mark fallback
+(`UnicodeLayoutEngine`) and `LayoutEngine.hideDefaultIgnorables` read them,
+so two code points mapping to one glyph id can shape and position
+differently depending on which one was laid out first in the font's
+lifetime. Repeated layout of one string is stable; the history dependence
+is across strings. The fix is the per-occurrence code-point provenance the
+ToUnicode finding (notes/embedder-findings.md) needs: shaping reads the
+occurrence's code points, never the cached glyph's.
 
 ## No mark reordering before shaping
 

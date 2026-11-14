@@ -1,10 +1,12 @@
 import {
+  type EncodedText,
   PDFOperatorNames as Ops,
   type PDFHexString,
   type PDFName,
   type PDFNumber,
   PDFOperator,
 } from '../core/index.js';
+import { numberToString } from '../utils/index.js';
 import { asNumber, asPDFName, asPDFNumber } from './objects.js';
 import { degreesToRadians } from './rotations.js';
 
@@ -209,6 +211,90 @@ export const moveText = (x: number | PDFNumber, y: number | PDFNumber) =>
 
 export const showText = (text: PDFHexString) =>
   PDFOperator.of(Ops.ShowText, [text]);
+
+/** `TJ` with an already serialised array, e.g. `[<0041> -80 <0056>]`. */
+const showTextAdjusted = (array: string) =>
+  PDFOperator.of(Ops.ShowTextAdjusted, [array]);
+
+// Four decimals of a thousandth of an em: far below a device pixel, and it
+// keeps float noise (1e-13) out of the content stream.
+const roundPosition = (value: number) => {
+  const rounded = Math.round(value * 10000) / 10000;
+  return rounded === 0 ? 0 : rounded;
+};
+
+/**
+ * Shows encoded text from the current text position, drawing every glyph
+ * where the font's layout placed it and leaving the pen at the end of its
+ * measured advance (plus the usual character spacing per glyph).
+ *
+ * Text that needs no positioning is a single `Tj`. Otherwise horizontal
+ * placement is written as `TJ` adjustments, which are in thousandths of an em
+ * and so hold at any font size and horizontal scaling: before a glyph drawn
+ * `xOffset` from the pen, `-xOffset`; after it, whatever brings the pen from
+ * where its PDF width left it to its advance. Glyphs drawn above or below the
+ * baseline change the text rise (`Ts`, in unscaled text space units) around
+ * them, which is why the font size is needed, and set it back to `rise`
+ * after them. `rise` must therefore be the text rise in effect when this is
+ * shown; callers that do not know it set it first.
+ */
+export const showEncodedText = (
+  text: EncodedText,
+  fontSize: number | PDFNumber,
+  rise: number | PDFNumber = 0,
+): PDFOperator[] => {
+  if (text.isUnpositioned()) return [showText(text.toHexString())];
+
+  const size = asNumber(fontSize);
+  const baseRise = asNumber(rise);
+  const operators: PDFOperator[] = [];
+  let parts: string[] = [];
+  let pendingCodes = '';
+  let pendingAdjust = 0;
+  let currentRise = roundPosition(baseRise);
+
+  const flushCodes = () => {
+    if (pendingCodes !== '') parts.push(`<${pendingCodes}>`);
+    pendingCodes = '';
+  };
+  const flushAdjust = () => {
+    const adjust = roundPosition(pendingAdjust);
+    if (adjust !== 0) {
+      flushCodes();
+      parts.push(numberToString(adjust));
+    }
+    pendingAdjust = 0;
+  };
+  const flushArray = () => {
+    flushAdjust();
+    flushCodes();
+    if (parts.length > 0)
+      operators.push(showTextAdjusted(`[${parts.join(' ')}]`));
+    parts = [];
+  };
+
+  for (let idx = 0, len = text.codes.length; idx < len; idx++) {
+    const xOffset = text.xOffsets[idx]!;
+    const glyphRise = roundPosition(
+      baseRise + (text.yOffsets[idx]! * size) / 1000,
+    );
+    if (glyphRise !== currentRise) {
+      flushArray();
+      operators.push(setTextRise(glyphRise));
+      currentRise = glyphRise;
+    }
+    // A TJ number n moves the pen by -n/1000 em.
+    pendingAdjust -= xOffset;
+    flushAdjust();
+    pendingCodes += text.codes[idx]!;
+    pendingAdjust += text.widths[idx]! + xOffset - text.advances[idx]!;
+  }
+  flushArray();
+  if (currentRise !== roundPosition(baseRise)) {
+    operators.push(setTextRise(baseRise));
+  }
+  return operators;
+};
 
 /* ==================== Text State Operators ==================== */
 

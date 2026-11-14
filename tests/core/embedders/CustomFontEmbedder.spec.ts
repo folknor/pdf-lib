@@ -99,10 +99,34 @@ describe('CustomFontEmbedder', () => {
       '00360057005801AA000300440051004700030057004B004C0051004A005D0004';
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
 
-    expect(embedder.encodeText(text)).toBeInstanceOf(PDFHexString);
-    expect(String(embedder.encodeText(text))).toBe(
+    expect(embedder.encodeText(text).toHexString()).toBeInstanceOf(
+      PDFHexString,
+    );
+    expect(String(embedder.encodeText(text).toHexString())).toBe(
       String(PDFHexString.of(hexCodes)),
     );
+  });
+
+  it('encodes the positions of kerned glyphs and measures with them', async () => {
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const encoded = embedder.encodeText('AVA');
+    // Ubuntu kerns A V through GPOS: the advance is narrower than /W's.
+    expect(encoded.advances[0]).toBeLessThan(encoded.widths[0]!);
+    expect(encoded.isUnpositioned()).toBe(false);
+    expect(embedder.widthOfTextAtSize('AVA', 1000)).toBeCloseTo(
+      encoded.advance,
+    );
+    const unkerned = encoded.widths.reduce((sum, w) => sum + w, 0);
+    expect(encoded.advance).toBeLessThan(unkerned);
+  });
+
+  it('gives a hidden default-ignorable no advance', async () => {
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    const withZwsp = embedder.encodeText('a​b');
+    const without = embedder.encodeText('ab');
+    expect(withZwsp.codes.length).toBe(3);
+    expect(withZwsp.advances[1]).toBe(0);
+    expect(withZwsp.advance).toBeCloseTo(without.advance);
   });
 
   it('can measure the width of text strings at the given font size', async () => {
@@ -116,15 +140,15 @@ describe('CustomFontEmbedder', () => {
   it('measures the glyphs it encodes', async () => {
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
     const text = 'office ffl';
-    const ids = String(embedder.encodeText(text))
-      .slice(1, -1)
-      .match(/.{4}/g)!
-      .map((h) => parseInt(h, 16));
+    const encoded = embedder.encodeText(text);
+    const ids = encoded.codes.map((h) => parseInt(h, 16));
     const expected = ids.reduce(
       (sum, id) => sum + Math.round(embedder.font.getGlyph(id).advanceWidth),
       0,
     );
     expect(ids.length).toBeLessThan(text.length);
+    // No kerning in this string, so the advances are the /W widths.
+    expect(encoded.isUnpositioned()).toBe(true);
     expect(embedder.widthOfTextAtSize(text, 1000)).toBeCloseTo(
       (expected * 1000) / embedder.font.unitsPerEm,
     );
