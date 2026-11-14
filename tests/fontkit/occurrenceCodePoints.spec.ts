@@ -9,6 +9,7 @@ import { initialClusters, mergeClusters } from '../../src/fontkit/layout/Cluster
 const han = fs.readFileSync(
   './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
 );
+
 const hidden = (font: any, text: string) =>
   font.layout(text).positions.map((p: any) => !!p.hidden);
 
@@ -36,6 +37,7 @@ describe('per-occurrence code points', () => {
     const ubuntu: any = fontkit.create(
       fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
     );
+
     const run = ubuntu.layout('Stuff');
     expect(run.codePoints.flat()).toEqual([...'Stuff'].map((c) => c.codePointAt(0)));
     expect(run.codePoints.some((cps: number[]) => cps.length > 1)).toBe(true);
@@ -46,6 +48,7 @@ describe('per-occurrence code points', () => {
     const ubuntu: any = fontkit.create(
       fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
     );
+
     const run = ubuntu.layout('Stuff');
     const ligature = run.codePoints.findIndex((cps: number[]) => cps.length > 1);
     expect(run.clusters[ligature]).toBe(3);

@@ -30,8 +30,10 @@ class AsciiHexStream extends DecodeStream {
   protected override readBlock() {
     const UPSTREAM_BLOCK_SIZE = 8000;
     const bytes = this.stream.getBytes(UPSTREAM_BLOCK_SIZE);
+
     if (!bytes.length) {
       this.eof = true;
+
       return;
     }
 
@@ -40,9 +42,11 @@ class AsciiHexStream extends DecodeStream {
     let bufferLength = this.bufferLength;
 
     let firstDigit = this.firstDigit;
+
     for (let i = 0, ii = bytes.length; i < ii; i++) {
       const ch = bytes[i]!;
       let digit;
+
       if (ch >= 0x30 && ch <= 0x39) {
         // '0'-'9'
         digit = ch & 0x0f;
@@ -57,6 +61,7 @@ class AsciiHexStream extends DecodeStream {
         // probably whitespace
         continue; // ignoring
       }
+
       if (firstDigit < 0) {
         firstDigit = digit;
       } else {
@@ -64,11 +69,13 @@ class AsciiHexStream extends DecodeStream {
         firstDigit = -1;
       }
     }
+
     if (firstDigit >= 0 && this.eof) {
       // incomplete byte
       buffer[bufferLength++] = firstDigit << 4;
       firstDigit = -1;
     }
+
     this.firstDigit = firstDigit;
     this.bufferLength = bufferLength;
   }

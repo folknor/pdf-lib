@@ -22,6 +22,7 @@ describe('Stream', () => {
 
     it('when the current position is before the end', () => {
       const stream = new Stream(bytes, 0);
+
       for (let pos = 0; pos < bytes.length; pos++) {
         expect(stream.getByte()).toEqual(bytes[pos]);
       }

@@ -35,6 +35,7 @@ describe('PNG', () => {
       24, 87, 99, 248, 95, 17, 208, 0, 0, 6, 137, 2, 72, 25, 58, 220, 62, 0, 0,
       0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
     ]);
+
     const padded = new Uint8Array(input.length + 3);
     padded.set([0, 1, 2]);
     padded.set(input, 3);
@@ -49,10 +50,13 @@ describe('PNG', () => {
     const chunk = (type: string, body: Uint8Array) => {
       const c = new Uint8Array(12 + body.length);
       new DataView(c.buffer).setUint32(0, body.length);
+
       for (let i = 0; i < 4; i++) c[4 + i] = type.charCodeAt(i);
       c.set(body, 8);
+
       return c;
     };
+
     const ihdr = (w: number, h: number, interlace = 0) => {
       const b = new Uint8Array(13);
       const v = new DataView(b.buffer);
@@ -61,17 +65,21 @@ describe('PNG', () => {
       b[8] = 8; // depth
       b[9] = 6; // RGBA
       b[12] = interlace;
+
       return chunk('IHDR', b);
     };
+
     const png = (...chunks: Uint8Array[]) => {
       const sig = [137, 80, 78, 71, 13, 10, 26, 10];
       const parts = [new Uint8Array(sig), ...chunks, chunk('IEND', new Uint8Array(0))];
       const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
       let o = 0;
+
       for (const p of parts) {
         out.set(p, o);
         o += p.length;
       }
+
       return out;
     };
 

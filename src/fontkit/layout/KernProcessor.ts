@@ -44,6 +44,7 @@ export default class KernProcessor {
 
       let val = 0;
       const s = table.subtable;
+
       switch (table.format) {
         case 0: {
           const pairIdx = binarySearch(
@@ -62,6 +63,7 @@ export default class KernProcessor {
         case 2: {
           let leftOffset = 0,
             rightOffset = 0;
+
           if (
             left >= s.leftTable.firstGlyph &&
             left < s.leftTable.firstGlyph + s.leftTable.nGlyphs

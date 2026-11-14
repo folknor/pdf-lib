@@ -27,8 +27,10 @@ describe('PDFParser', () => {
       'Invalid object ',
       'Removing parsed object: 0 0 R',
     ];
+
     console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
+
       if (!isIgnored) origConsoleWarn(...args);
     });
   });
@@ -48,6 +50,7 @@ describe('PDFParser', () => {
         (foobar)
       endobj
     `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     await expect(parser.parseDocument()).rejects.toThrow();
   });
@@ -59,6 +62,7 @@ describe('PDFParser', () => {
         (foobar)
       foo
     `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     expect(context.lookup(PDFRef.of(1))).toBeInstanceOf(PDFString);
@@ -69,10 +73,12 @@ describe('PDFParser', () => {
     // Avoid the word "stream" in the data: the fallback scanner would count it
     // as a nested stream keyword.
     const data = 'These payload bytes end in a CR byte.\r';
+
     const input =
       '%PDF-1.7\n' +
       `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data}\nendstream\nendobj\n` +
       `2 0 obj\n${data.length}\nendobj\n`;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     const stream = context.lookup(PDFRef.of(1));
@@ -85,6 +91,7 @@ describe('PDFParser', () => {
       '%PDF-1.7\n' +
       '1 0 obj\n<< /Length 2 0 R >>\nstream\nabc\r\nendstream\nendobj\n' +
       '2 0 obj\n2\nendobj\n';
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     const stream = context.lookup(PDFRef.of(1)) as PDFRawStream;
@@ -96,6 +103,7 @@ describe('PDFParser', () => {
     // Updated data's last byte is a space, so the stale length (one less)
     // would still be followed by whitespace + endstream and pass validation.
     const data2 = 'Updated payload bytes, one byte more. ';
+
     const input =
       '%PDF-1.7\n' +
       `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data1}\nendstream\nendobj\n` +
@@ -103,6 +111,7 @@ describe('PDFParser', () => {
       // Incremental update: the stream comes before its new length object.
       `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data2}\nendstream\nendobj\n` +
       `2 0 obj\n${data2.length}\nendobj\n`;
+
     expect(data2.length).toBe(data1.length + 1);
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
@@ -112,6 +121,7 @@ describe('PDFParser', () => {
 
   it('propagates DecodedStreamTooLargeError from an oversized object stream', async () => {
     const compressed = zlibSync(new Uint8Array(4 << 20));
+
     const input = mergeIntoTypedArray(
       '%PDF-1.7\n',
       '1 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode ' +
@@ -119,6 +129,7 @@ describe('PDFParser', () => {
       compressed,
       '\nendstream\nendobj\n',
     );
+
     const parser = PDFParser.forBytesWithOptions(
       input,
       undefined,
@@ -128,6 +139,7 @@ describe('PDFParser', () => {
       undefined,
       1024,
     );
+
     await expect(parser.parseDocument()).rejects.toThrow(
       DecodedStreamTooLargeError,
     );
@@ -151,6 +163,7 @@ describe('PDFParser', () => {
       52
       %%EOF
     `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 
@@ -166,6 +179,7 @@ describe('PDFParser', () => {
       ' . (foobar)\n',
       'endobj',
     );
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     expect(context.enumerateIndirectObjects().length).toBe(1);
@@ -179,6 +193,7 @@ describe('PDFParser', () => {
       ' . (foobar)\n',
       'endobj',
     );
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     expect(context.enumerateIndirectObjects().length).toBe(1);
@@ -195,6 +210,7 @@ describe('PDFParser', () => {
       %%EOL
       @@@@@@@@@@@@@@@@@@
     `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     expect(context.enumerateIndirectObjects().length).toBe(1);
@@ -205,6 +221,7 @@ describe('PDFParser', () => {
     %PDF-1.7
     22 0 obj <</Type/Outlines/First ## 0 R/Last ** 0 R/Count 2>> endobj
   `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 
@@ -218,11 +235,13 @@ describe('PDFParser', () => {
     %PDF-1.7
     22 0 obj <</Type/Outlines/First ## 0 R/Last ** 0 R/Count 2>> endobj
   `;
+
     const parser = PDFParser.forBytesWithOptions(
       typedArrayFor(input),
       100,
       true,
     );
+
     await expect(parser.parseDocument()).rejects.toBeInstanceOf(Error);
   });
 
@@ -240,6 +259,7 @@ describe('PDFParser', () => {
     21
     %%EOF
   `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 
@@ -368,6 +388,7 @@ describe('PDFParser', () => {
     // The effective xref's offsets are all wrong, so each in-use entry is
     // found by a scan; the bodies of 19-23, which it frees, stay out.
     expect(context.enumerateIndirectObjects().length).toBe(24);
+
     for (const num of [19, 20, 21, 22, 23]) {
       expect(context.lookup(PDFRef.of(num))).toBeUndefined();
     }
@@ -444,6 +465,7 @@ describe('PDFParser', () => {
     21
     %%EOF
   `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 
@@ -478,6 +500,7 @@ describe('PDFParser', () => {
     % Bar
     %%EOF
   `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 
@@ -502,6 +525,7 @@ describe('PDFParser', () => {
     endobj
     %%EOF
   `;
+
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
 

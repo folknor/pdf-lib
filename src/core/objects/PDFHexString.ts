@@ -21,6 +21,7 @@ class PDFHexString extends PDFObject {
     const encoded = utf16Encode(value);
 
     let hex = '';
+
     for (let idx = 0, len = encoded.length; idx < len; idx++) {
       hex += toHexStringOfMinLength(encoded[idx]!, 4);
     }
@@ -64,15 +65,20 @@ class PDFHexString extends PDFObject {
 
   decodeText(): string {
     const bytes = this.asBytes();
+
     if (hasUtf16BOM(bytes)) return utf16Decode(bytes);
+
     if (hasUtf8BOM(bytes)) return utf8Decode(bytes);
+
     return pdfDocEncodingDecode(bytes);
   }
 
   decodeDate(): Date {
     const text = this.decodeText();
     const date = parseDate(text);
+
     if (!date) throw new InvalidPDFDateStringError(text);
+
     return date;
   }
 
@@ -96,6 +102,7 @@ class PDFHexString extends PDFObject {
     buffer[offset++] = CharCodes.LessThan;
     offset += copyStringIntoBuffer(this.value, buffer, offset);
     buffer[offset++] = CharCodes.GreaterThan;
+
     return this.value.length + 2;
   }
 }

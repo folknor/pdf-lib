@@ -12,6 +12,7 @@ const loadThreePages = async () => {
   doc.addPage();
   doc.addPage();
   const bytes = await doc.save({ useObjectStreams: false });
+
   return PDFDocument.load(bytes, { forIncrementalUpdate: true });
 };
 
@@ -23,17 +24,21 @@ const tableEntries = (text: string): [number, string][] => {
     text.lastIndexOf('\nxref\n') + 6,
     text.lastIndexOf('\ntrailer'),
   );
+
   const lines = section.split('\n').filter((l) => l.length > 0);
   const entries: [number, string][] = [];
   let num = 0;
+
   for (const line of lines) {
     const header = /^(\d+) (\d+)$/.exec(line);
+
     if (header) {
       num = Number(header[1]);
     } else {
       entries.push([num++, line.trim()]);
     }
   }
+
   return entries;
 };
 
@@ -46,14 +51,19 @@ const streamEntries = (text: string): [number, number[]][] => {
   const index = /\/Index \[ ([\d ]+) \]/.exec(dict)![1]!.split(' ').map(Number);
   const start = text.indexOf('stream\n', at) + 7;
   const data = Buffer.from(text.slice(start), 'latin1');
+
   const read = (off: number, n: number) => {
     let v = 0;
+
     for (let i = 0; i < n; i++) v = v * 256 + data[off + i]!;
+
     return v;
   };
+
   const width = w[0]! + w[1]! + w[2]!;
   const out: [number, number[]][] = [];
   let off = 0;
+
   for (let i = 0; i < index.length; i += 2) {
     for (let k = 0; k < index[i + 1]!; k++) {
       out.push([
@@ -63,6 +73,7 @@ const streamEntries = (text: string): [number, number[]][] => {
       off += width;
     }
   }
+
   return out;
 };
 
@@ -155,10 +166,13 @@ describe('deletions in an increment', () => {
       // Even a revision without deletions must retain the complete chain.
       const snapshot = doc.takeSnapshot();
       doc.context.register(doc.context.obj({ Test: true }));
+
       const writer = useObjectStreams
         ? PDFStreamWriter.forContextWithSnapshot(doc.context, 50, snapshot, false)
         : PDFWriter.forContextWithSnapshot(doc.context, 50, snapshot);
+
       const text = decode(await writer.serializeToBuffer());
+
       if (useObjectStreams) {
         const entries = new Map(streamEntries(text));
         expect(entries.get(0)).toEqual([0, first.objectNumber, 65535]);

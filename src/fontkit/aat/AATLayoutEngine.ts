@@ -24,6 +24,7 @@ export default class AATLayoutEngine {
       cluster: glyphRun.clusters[i]!,
       components: glyphRun.components[i]!,
     }));
+
     if (glyphRun.direction === 'rtl') {
       records.reverse();
     }
@@ -32,6 +33,7 @@ export default class AATLayoutEngine {
       records,
       AATFeatureMap.mapOTToAAT(glyphRun.features),
     );
+
     glyphRun.glyphs = out.map((record) => this.font.getGlyph(record.id));
     glyphRun.codePoints = out.map((record) => record.codePoints);
     glyphRun.text = out.map((record) => record.text);
@@ -71,6 +73,7 @@ export default class AATLayoutEngine {
 
     for (const codePoint of codePoints) {
       const s = string + String.fromCodePoint(codePoint);
+
       if (index < glyphs.length - 1) {
         this._addStrings(glyphs, index + 1, strings, s);
       } else {

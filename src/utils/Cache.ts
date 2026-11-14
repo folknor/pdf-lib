@@ -15,6 +15,7 @@ class Cache<T> {
 
   access(): T {
     if (!this.value) this.value = this.populate();
+
     return this.value;
   }
 

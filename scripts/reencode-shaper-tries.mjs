@@ -73,6 +73,7 @@ const FIXTURE_RANGES = [
   [0x11000, 0x1107f], // Brahmi
   [0x1e900, 0x1e95f], // Adlam
 ];
+
 const FIXTURE_STRIDE = 4099; // plus every 4099th code point
 
 function fail(msg) {
@@ -83,7 +84,9 @@ function fail(msg) {
 function readBlob(file) {
   const src = readFileSync(join(shaperDir, file), 'utf8');
   const m = /^export default '([A-Za-z0-9+/=]+)';?\s*$/.exec(src);
+
   if (!m) fail(`${file}: unexpected file layout`);
+
   return m[1];
 }
 
@@ -92,22 +95,28 @@ function readBlob(file) {
 // header fields it misread as little-endian are replaced.
 function loadOld(file, b64) {
   const outer = Buffer.from(unzlibSync(Buffer.from(b64, 'base64')));
+
   if (outer.length < 12) fail(`${file}: blob too short`);
   let trie;
+
   try {
     trie = new OldUnicodeTrie(new Uint8Array(outer));
   } catch (e) {
     fail(`${file}: could not decode as unicode-trie 0.3 (already converted?): ${e}`);
   }
+
   const misread = trie.highStart;
   trie.highStart = outer.readUInt32BE(0);
   trie.errorValue = outer.readUInt32BE(4);
+
   if (!(trie.data.length >= 0x820) || trie.highStart > 0x110000) {
     fail(`${file}: implausible trie (already converted?)`);
   }
+
   console.log(
     `${file}: header highStart 0x${trie.highStart.toString(16)} (HEAD's reader saw 0x${misread.toString(16)})`,
   );
+
   return { trie, misread };
 }
 
@@ -116,9 +125,11 @@ function encodeNew(t) {
   const view = new DataView(bytes.buffer);
   view.setUint32(0, t.highStart >>> 0, true);
   view.setUint32(4, t.errorValue >>> 0, true);
+
   for (let i = 0; i < t.data.length; i++) {
     view.setUint32(8 + i * 4, t.data[i], true);
   }
+
   return Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
 }
 
@@ -126,39 +137,47 @@ function encodeNew(t) {
 // then evaluated with the reference lookup algorithm.
 function loadNew(b64) {
   const raw = unzlibSync(Buffer.from(b64, 'base64'));
+
   if ((raw.length - 8) % 4 !== 0) fail('new blob payload not 4-byte aligned');
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const highStart = view.getUint32(0, true);
   const errorValue = view.getUint32(4, true);
   const data = new Uint32Array((raw.length - 8) / 4);
+
   for (let i = 0; i < data.length; i++) {
     data[i] = view.getUint32(8 + i * 4, true);
   }
+
   return new OldUnicodeTrie({ data, highStart, errorValue });
 }
 
 function compareAll(label, get1, get2, maxReport = 10) {
   let mismatches = 0;
+
   for (let cp = 0; cp <= 0x10ffff; cp++) {
     const a = get1(cp);
     const b = get2(cp);
+
     if (a !== b || a === undefined) {
       if (mismatches++ < maxReport) {
         console.error(`${label}: U+${cp.toString(16)} ${a} vs ${b}`);
       }
     }
   }
+
   return mismatches;
 }
 
 function verify(file, srcTrie, newTrie) {
   let n = compareAll(file, (cp) => srcTrie.get(cp), (cp) => newTrie.get(cp));
+
   for (const cp of [-1, 0x110000, 0x7fffffff]) {
     if (srcTrie.get(cp) !== newTrie.get(cp)) {
       n++;
       console.error(`${file}: probe ${cp} differs`);
     }
   }
+
   if (n) fail(`${file}: ${n} mismatching code points`);
 }
 
@@ -168,38 +187,48 @@ function arabicReference() {
     Non_Joining: 0, Left_Joining: 1, Right_Joining: 2, Dual_Joining: 3,
     Join_Causing: 3, ALAPH: 4, 'DALATH RISH': 5, Transparent: 6,
   };
+
   const JT = { U: 'Non_Joining', L: 'Left_Joining', R: 'Right_Joining', D: 'Dual_Joining', C: 'Join_Causing', T: 'Transparent' };
   const assigned = new Set();
   let rangeStart = -1;
+
   for (const line of readFileSync(join(ucdDir, 'UnicodeData.txt'), 'ascii').split('\n')) {
     if (!line) continue;
     const [hex, name] = line.split(';');
     const cp = parseInt(hex, 16);
+
     if (rangeStart >= 0) {
       for (let c = rangeStart; c <= cp; c++) assigned.add(c);
       rangeStart = -1;
     } else if (/<.+, First>/.test(name)) rangeStart = cp;
     else assigned.add(cp);
   }
+
   const map = new Map();
+
   for (const line of readFileSync(join(ucdDir, 'ArabicShaping.txt'), 'ascii').split('\n')) {
     if (!line || line[0] === '#') continue;
     const [hex, , jt, group] = line.replace(/\s*#.*$/, '').split(/\s*;\s*/);
     const cp = parseInt(hex, 16);
+
     if (!assigned.has(cp)) continue;
     const v = group === 'ALAPH' || group === 'DALATH RISH' ? SC[group] + 1 : SC[JT[jt]] + 1;
     map.set(cp, v);
   }
+
   return (cp) => map.get(cp) ?? 0;
 }
 
 function sampleCodePoints() {
   const set = new Set();
+
   for (const [lo, hi] of FIXTURE_RANGES) {
     for (let cp = lo; cp <= hi; cp++) set.add(cp);
   }
+
   for (let cp = 0; cp <= 0x10ffff; cp += FIXTURE_STRIDE) set.add(cp);
   set.add(0x10ffff);
+
   return [...set].sort((a, b) => a - b);
 }
 
@@ -216,8 +245,10 @@ const oldUse = loadOld('trieUse.ts', readBlob('trieUse.ts'));
 void oldTrieTs;
 
 const arabicRef = arabicReference();
+
 {
   const n = compareAll('old trieUse.ts vs ArabicShaping', (cp) => oldUse.trie.get(cp), arabicRef);
+
   if (n) fail(`old trieUse.ts is not the Arabic joining trie (${n} mismatches)`);
   console.log('old trieUse.ts == Arabic joining trie (generate-data.js, Unicode 12): all code points');
 }
@@ -237,12 +268,14 @@ const targets = [
     highStart: oldIndic.misread,
     errorValue: oldIndic.trie.errorValue,
   });
+
   const headIndicBroken = compareAll(
     'HEAD trieIndic',
     (cp) => oldIndic.trie.get(cp),
     (cp) => head.get(cp),
     0,
   );
+
   console.log(`HEAD trieIndic.ts: ${headIndicBroken} code points wrong due to the LE header misread`);
 }
 
@@ -264,6 +297,9 @@ for (const [file, newB64] of results) {
   writeFileSync(join(shaperDir, file), `export default '${newB64}';\n`);
   console.log(`${file}: wrote ${newB64.length} base64 chars`);
 }
+
 mkdirSync(dirname(fixturePath), { recursive: true });
+
 writeFileSync(fixturePath, JSON.stringify(fixture) + '\n');
+
 console.log(`wrote ${fixturePath} (${cps.length} code points)`);

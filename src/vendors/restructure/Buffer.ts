@@ -22,6 +22,7 @@ export class BufferT extends Base<Uint8Array> {
 
   decode(stream: DecodeStream, parent?: Record<string, unknown>): Uint8Array {
     const length = utils.resolveLength(this.length, stream, parent ?? null);
+
     return stream.readBuffer(length);
   }
 
@@ -31,6 +32,7 @@ export class BufferT extends Base<Uint8Array> {
     }
 
     let len = val.length;
+
     if (this.length instanceof NumberT) {
       len += this.length.size();
     }

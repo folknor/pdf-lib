@@ -110,6 +110,7 @@ export default class PDFEmbeddedFile implements Embeddable {
      * https://www.pdfa.org/wp-content/uploads/2018/10/PDF20_AN002-AF.pdf
      */
     const rawAF = catalog.get(AF);
+
     if (rawAF instanceof PDFRef) displaced.push(rawAF);
     const oldAF = catalog.lookupMaybe(AF, PDFArray);
     const newAF = context.obj(oldAF ? oldAF.asArray() : []) as PDFArray;

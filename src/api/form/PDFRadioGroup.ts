@@ -95,19 +95,24 @@ export default class PDFRadioGroup extends PDFField {
    */
   getOptions(): string[] {
     const exportValues = this.acroField.getExportValues();
+
     if (exportValues) {
       const exportOptions = new Array<string>(exportValues.length);
+
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
         exportOptions[idx] = exportValues[idx]!.decodeText();
       }
+
       return exportOptions;
     }
 
     const onValues = this.acroField.getOnValues();
     const onOptions = new Array<string>(onValues.length);
+
     for (let idx = 0, len = onOptions.length; idx < len; idx++) {
       onOptions[idx] = onValues[idx]!.decodeText();
     }
+
     return onOptions;
   }
 
@@ -126,14 +131,18 @@ export default class PDFRadioGroup extends PDFField {
    */
   getSelected(): string | undefined {
     const value = this.acroField.getValue();
+
     if (value === PDFName.of('Off')) return;
     const exportValues = this.acroField.getExportValues();
+
     if (exportValues) {
       const onValues = this.acroField.getOnValues();
+
       for (let idx = 0, len = onValues.length; idx < len; idx++) {
         if (onValues[idx] === value) return exportValues[idx]!.decodeText();
       }
     }
+
     return value.decodeText();
   }
 
@@ -196,6 +205,7 @@ export default class PDFRadioGroup extends PDFField {
 
     const onValues = this.acroField.getOnValues();
     const exportValues = this.acroField.getExportValues();
+
     if (exportValues) {
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
         if (exportValues[idx]!.decodeText() === option) {
@@ -205,6 +215,7 @@ export default class PDFRadioGroup extends PDFField {
     } else {
       for (let idx = 0, len = onValues.length; idx < len; idx++) {
         const value = onValues[idx]!;
+
         if (value.decodeText() === option) this.acroField.setValue(value);
       }
     }
@@ -374,6 +385,7 @@ export default class PDFRadioGroup extends PDFField {
       options && 'backgroundColor' in options
         ? options.backgroundColor
         : rgb(1, 1, 1);
+
     const widget = this.createWidget({
       x: options?.x ?? 0,
       y: options?.y ?? 0,
@@ -387,6 +399,7 @@ export default class PDFRadioGroup extends PDFField {
       ...(options?.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
+
     const widgetRef = this.doc.context.register(widget.dict);
 
     // Add widget to this field
@@ -415,12 +428,14 @@ export default class PDFRadioGroup extends PDFField {
    */
   override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       const state = widget.getAppearanceState();
       const normal = widget.getAppearances()?.normal;
 
       if (!(normal instanceof PDFDict)) return true;
+
       if (state && !normal.has(state)) return true;
     }
 
@@ -467,9 +482,11 @@ export default class PDFRadioGroup extends PDFField {
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       const onValue = widget.getOnValue();
+
       if (!onValue) continue;
       this.updateWidgetAppearance(widget, onValue, provider);
     }

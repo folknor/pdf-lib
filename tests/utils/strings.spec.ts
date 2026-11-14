@@ -59,6 +59,7 @@ describe('breakTextIntoLines', () => {
   it("breaks at the last possible 'wordBreak' before exceeding 'maxWidth' (1)", () => {
     const input =
       'Lorem Test ipsum dolor sit amet, consectetur adipiscing\nelit';
+
     // Lines are measured whole, so the kerned "Te" pair lets "Lorem Te" fit.
     const expected = [
       'Lorem Te',
@@ -70,13 +71,16 @@ describe('breakTextIntoLines', () => {
       'ng',
       'elit',
     ];
+
     const actual = breakTextIntoLines(
       input,
       ['', 'Test'],
       100,
       computeTextWidth,
     );
+
     expect(actual).toEqual(expected);
+
     for (const line of actual) {
       expect(computeTextWidth(line)).toBeLessThanOrEqual(100);
     }
@@ -120,6 +124,7 @@ describe('breakTextIntoLines', () => {
     const sourceHansBytes = fs.readFileSync(
       'assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
     );
+
     const sourceHansFont = await CustomFontEmbedder.for(
       fontkit,
       sourceHansBytes,
@@ -127,6 +132,7 @@ describe('breakTextIntoLines', () => {
 
     const input =
       '遅未亮惑職界転藤柔索名午納，問通桑転加料演載満経信回込町者訟窃。';
+
     const expected = [
       '遅未亮惑職',
       '界転藤柔索',
@@ -136,9 +142,11 @@ describe('breakTextIntoLines', () => {
       '回込町者訟',
       '窃。',
     ];
+
     const actual = breakTextIntoLines(input, [''], 125, (text: string) =>
       sourceHansFont.widthOfTextAtSize(text, 24),
     );
+
     expect(actual).toEqual(expected);
   });
 });

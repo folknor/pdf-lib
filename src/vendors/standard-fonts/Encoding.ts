@@ -14,6 +14,7 @@ const decompressedEncodings = decompressJson(
 );
 
 type EncodingCharCode = number;
+
 type EncodingCharName = string;
 
 interface UnicodeMappings {
@@ -48,12 +49,14 @@ class Encoding {
     codePoint: number,
   ): { code: number; name: string } => {
     const mapped = this.unicodeMappings[codePoint];
+
     if (!mapped) {
       const str = String.fromCharCode(codePoint);
       const hexCode = `0x${padStart(codePoint.toString(16), 4, '0')}`;
       const msg = `${this.name} cannot encode "${str}" (${hexCode})`;
       throw new Error(msg);
     }
+
     return { code: mapped[0], name: mapped[1] };
   };
 }

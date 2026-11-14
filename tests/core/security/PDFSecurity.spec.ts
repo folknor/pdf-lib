@@ -156,9 +156,11 @@ const OPTIONS: Array<[string, SecurityOptions]> = [
 
 // Deterministic stand-in for crypto.getRandomValues, so output is reproducible
 let seed = 0;
+
 const resetRandom = () => {
   seed = 0x2545f491;
 };
+
 const realGetRandomValues = globalThis.crypto.getRandomValues;
 
 beforeAll(() => {
@@ -167,6 +169,7 @@ beforeAll(() => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
       array[idx] = (seed >>> 16) & 0xff;
     }
+
     return array;
   }) as typeof realGetRandomValues;
 });
@@ -181,6 +184,7 @@ const contextFor = (major: number, minor: number) => {
   context.trailerInfo.Root = context.register(
     context.obj({ Type: 'Catalog' }),
   );
+
   return context;
 };
 
@@ -199,10 +203,12 @@ const randomBytes = (length: number) =>
 const concat = (...parts: Uint8Array[]) => {
   const out = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
   let offset = 0;
+
   for (const part of parts) {
     out.set(part, offset);
     offset += part.length;
   }
+
   return out;
 };
 
@@ -217,6 +223,7 @@ const aes = (
 ) => {
   const cipher = createCipheriv(mode, key, iv);
   cipher.setAutoPadding(false);
+
   return new Uint8Array(Buffer.concat([cipher.update(data), cipher.final()]));
 };
 
@@ -227,14 +234,18 @@ const algorithm2B = (
   udata: Uint8Array,
 ) => {
   let k = digest('sha256', concat(password, salt, udata));
+
   for (let round = 1; ; round++) {
     const k1 = concat(...Array(64).fill(concat(password, k, udata)));
     const e = aes('aes-128-cbc', k.subarray(0, 16), k.subarray(16, 32), k1);
     let sum = 0;
+
     for (let i = 0; i < 16; i++) sum += e[i]!;
     k = digest(['sha256', 'sha384', 'sha512'][sum % 3]!, e);
+
     if (round >= 64 && e[e.length - 1]! <= round - 32) break;
   }
+
   return k.subarray(0, 32);
 };
 
@@ -249,31 +260,37 @@ const referenceR6 = (
 ) => {
   const id = randomBytes(16);
   const key = randomBytes(32);
+
   const [uvs, uks, ovs, oks] = [8, 8, 8, 8].map(randomBytes) as [
     Uint8Array,
     Uint8Array,
     Uint8Array,
     Uint8Array,
   ];
+
   const empty = new Uint8Array(0);
   const zero = new Uint8Array(16);
   const U = concat(algorithm2B(userPassword, uvs, empty), uvs, uks);
+
   const UE = aes(
     'aes-256-cbc',
     algorithm2B(userPassword, uks, empty),
     zero,
     key,
   );
+
   const O = concat(algorithm2B(ownerPassword, ovs, U), ovs, oks);
   const OE = aes('aes-256-cbc', algorithm2B(ownerPassword, oks, U), zero, key);
   const p = new Uint8Array(4);
   new DataView(p.buffer).setInt32(0, permissions, true);
+
   const Perms = aes(
     'aes-256-ecb',
     key,
     null,
     concat(p, new Uint8Array([0xff, 0xff, 0xff, 0xff, 0x54, 0x61, 0x64, 0x62]), randomBytes(4)),
   );
+
   return { id, key, U, UE, O, OE, Perms };
 };
 
@@ -289,6 +306,7 @@ const decryptWith = (
     security.id,
     password,
   );
+
   return Array.from(
     factory
       .createCipherTransform(7, 0)
@@ -304,6 +322,7 @@ describe('PDFSecurity', () => {
       // R5 entries with node:crypto, independently of the reader and R6 prep.
       const passwords = ['u\u00ad\u00a0\uff21é', 'o\u00ad\u00a0\uff22é'];
       const prepared = ['u Aé', 'o Bé'];
+
       const [user, owner] = passwords.map((password, i) =>
         encoding === 'prepared'
           ? utf8(prepared[i]!)
@@ -311,6 +330,7 @@ describe('PDFSecurity', () => {
             ? utf8(password)
             : Uint8Array.from(password, (char) => char.charCodeAt(0)),
       ) as [Uint8Array, Uint8Array];
+
       const key = new Uint8Array(32).fill(42);
       const zero = new Uint8Array(16);
       const uvs = new Uint8Array(8).fill(1);
@@ -319,6 +339,7 @@ describe('PDFSecurity', () => {
       const oks = new Uint8Array(8).fill(4);
       const U = concat(digest('sha256', concat(user, uvs)), uvs, uks);
       const context = contextFor(1, 7);
+
       const dict = context.obj({
         Filter: 'Standard', V: 5, R: 5, Length: 256, P: -3904,
         CF: { StdCF: { AuthEvent: 'DocOpen', CFM: 'AESV3', Length: 32 } },
@@ -331,15 +352,19 @@ describe('PDFSecurity', () => {
           new Uint8Array([0xc0, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
           new Uint8Array([0x54, 0x61, 0x64, 0x62, 0, 0, 0, 0]))),
       } as any) as PDFDict;
+
       const warn = vi.spyOn(console, 'warn');
       const pad = 16 - (PLAINTEXT.length % 16);
+
       const ciphertext = concat(zero, aes('aes-256-cbc', key, zero,
         concat(PLAINTEXT, new Uint8Array(pad).fill(pad))));
+
       for (const password of passwords) {
         const factory = new CipherTransformFactory(dict, new Uint8Array(16), password);
         expect(Array.from(factory.createCipherTransform(7, 0).decryptBytes(ciphertext)))
           .toEqual(Array.from(PLAINTEXT));
       }
+
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     },
@@ -350,16 +375,19 @@ describe('PDFSecurity', () => {
     (revision) => {
       resetRandom();
       const context = contextFor(1, 7);
+
       const security: any = PDFSecurity.create(context, {
         userPassword: USER_PASSWORD,
         ownerPassword: OWNER_PASSWORD,
       }).encrypt();
+
       const dict = context.lookup(context.trailerInfo.Encrypt) as PDFDict;
       // Neither candidate matches these entries under either revision.
       dict.set(PDFName.of('R'), PDFNumber.of(revision));
       const decode = vi.spyOn(CipherTransformFactory.prototype, 'decodeUserPassword');
       const prepare = vi.spyOn(CipherTransformFactory.prototype, 'prepareKeyData');
       const modern = vi.spyOn(CipherTransformFactory.prototype, 'createEncryptionKey20');
+
       try {
         expect(() => new CipherTransformFactory(dict, security.id, 'wrong-\u00a0é'))
           .toThrow('Password incorrect');
@@ -412,9 +440,11 @@ describe('PDFSecurity', () => {
       it(`matches ISO 32000-2 Algorithms 8-10 with ${optionName}`, () => {
         resetRandom();
         const user = utf8(options.userPassword ?? '');
+
         const owner = options.ownerPassword
           ? utf8(options.ownerPassword)
           : user;
+
         const permissions = options.permissions ? -4 : -3904;
         const expected = referenceR6(user, owner, permissions);
 
@@ -434,15 +464,18 @@ describe('PDFSecurity', () => {
 
         // Streams: a random IV, then AES-256-CBC with PKCS#7 padding
         const ciphertext = security.getEncryptFn(1, 0)(PLAINTEXT);
+
         const decipher = createDecipheriv(
           'aes-256-cbc',
           expected.key,
           ciphertext.subarray(0, 16),
         );
+
         const plain = Buffer.concat([
           decipher.update(ciphertext.subarray(16)),
           decipher.final(),
         ]);
+
         expect(Array.from(plain)).toEqual(Array.from(PLAINTEXT));
       });
 
@@ -453,6 +486,7 @@ describe('PDFSecurity', () => {
         expect(
           decryptWith(context, security, options.userPassword),
         ).toEqual(Array.from(PLAINTEXT));
+
         if (options.ownerPassword) {
           expect(
             decryptWith(context, security, options.ownerPassword),
@@ -470,9 +504,11 @@ describe('PDFSecurity', () => {
       expect(encrypt.get(PDFName.of('V'))).toEqual(PDFNumber.of(5));
       expect(encrypt.get(PDFName.of('R'))).toEqual(PDFNumber.of(6));
       expect(context.header.getVersionString()).toBe('1.7');
+
       const adbe = (
         catalogOf(context).lookup(PDFName.of('Extensions')) as PDFDict
       ).lookup(PDFName.of('ADBE')) as PDFDict;
+
       expect(adbe.get(PDFName.of('BaseVersion'))).toBe(PDFName.of('1.7'));
       expect(adbe.get(PDFName.of('ExtensionLevel'))).toEqual(
         PDFNumber.of(8),
@@ -519,9 +555,11 @@ describe('PDFSecurity', () => {
         }),
       );
       PDFSecurity.create(low, { userPassword: 'x' }).encrypt();
+
       const extensions = catalogOf(low).lookup(
         PDFName.of('Extensions'),
       ) as PDFDict;
+
       const adbe = extensions.lookup(PDFName.of('ADBE')) as PDFDict;
       expect(adbe.get(PDFName.of('ExtensionLevel'))).toEqual(PDFNumber.of(8));
       expect(adbe.get(PDFName.of('Other'))).toBe(PDFName.of('kept'));
@@ -533,9 +571,11 @@ describe('PDFSecurity', () => {
         high.obj({ ADBE: { BaseVersion: '1.7', ExtensionLevel: 11 } }),
       );
       PDFSecurity.create(high, { userPassword: 'x' }).encrypt();
+
       const kept = (
         catalogOf(high).lookup(PDFName.of('Extensions')) as PDFDict
       ).lookup(PDFName.of('ADBE')) as PDFDict;
+
       expect(kept.get(PDFName.of('ExtensionLevel'))).toEqual(
         PDFNumber.of(11),
       );
@@ -572,6 +612,7 @@ describe('PDFSecurity', () => {
             ),
         ],
       ];
+
       for (const [, setup] of cases) {
         const context = contextFor(1, 3);
         setup(context);
@@ -587,9 +628,11 @@ describe('PDFSecurity', () => {
       resetRandom();
       const context = contextFor(1, 7);
       const password = 'clé 🔒 пароль';
+
       const security = PDFSecurity.create(context, {
         userPassword: password,
       }).encrypt();
+
       expect(decryptWith(context, security, password)).toEqual(
         Array.from(PLAINTEXT),
       );
@@ -598,11 +641,13 @@ describe('PDFSecurity', () => {
     it('applies the SASLprep mapping, so readers that prepare agree', () => {
       resetRandom();
       const context = contextFor(1, 7);
+
       // U+00A0 maps to a space; U+00AD and U+200B (in both B.1 and C.1.2)
       // map to nothing.
       const security = PDFSecurity.create(context, {
         userPassword: 'a b­c​d',
       }).encrypt();
+
       expect(decryptWith(context, security, 'a bcd')).toEqual(
         Array.from(PLAINTEXT),
       );
@@ -640,6 +685,7 @@ describe('PDFSecurity', () => {
         [0xfd92, 0xfdc7], [0xfdf0, 0xfdfc], [0xfe70, 0xfe74],
         [0xfe76, 0xfefc],
       ];
+
       for (const [lo, hi] of d1) {
         for (let code = lo; code <= hi; code++) {
           expect(() =>
@@ -676,9 +722,11 @@ describe('PDFSecurity', () => {
       resetRandom();
       const expected = referenceR6(prepared, prepared, -3904);
       resetRandom();
+
       const security: any = PDFSecurity.create(contextFor(1, 7), {
         userPassword: password,
       });
+
       expect(toHex(security.encryption.U)).toBe(toHex(expected.U));
       expect(toHex(security.encryption.O)).toBe(toHex(expected.O));
       expect(toHex(security.encryption.UE)).toBe(toHex(expected.UE));
@@ -703,6 +751,7 @@ describe('PDFSecurity', () => {
       const raw = utf8(password);
       const ref = referenceR6(raw, raw, -3904);
       const context = contextFor(1, 7);
+
       const dict = context.obj({
         Filter: 'Standard',
         V: 5,
@@ -718,8 +767,10 @@ describe('PDFSecurity', () => {
         UE: ref.UE,
         Perms: ref.Perms,
       } as any) as PDFDict;
+
       const iv = new Uint8Array(16);
       const pad = 16 - (PLAINTEXT.length % 16);
+
       const ciphertext = concat(
         iv,
         aes(
@@ -729,6 +780,7 @@ describe('PDFSecurity', () => {
           concat(PLAINTEXT, new Uint8Array(pad).fill(pad)),
         ),
       );
+
       const factory = new CipherTransformFactory(dict, ref.id, password);
       expect(
         Array.from(factory.createCipherTransform(7, 0).decryptBytes(ciphertext)),
@@ -750,6 +802,7 @@ describe('PDFSecurity', () => {
       // still decrypts.
       resetRandom();
       const ref = referenceR6(utf8('u'), utf8('o'), -3904);
+
       const entries: Record<string, unknown> = {
         Filter: 'Standard', V: 5, R: 6, Length: 256, P: -3904,
         CF: { StdCF: { AuthEvent: 'DocOpen', CFM: 'AESV3', Length: 32 } },
@@ -757,10 +810,12 @@ describe('PDFSecurity', () => {
         O: ref.O, U: ref.U, OE: ref.OE, UE: ref.UE, Perms: ref.Perms,
         ...change,
       };
+
       if (entries.Perms === undefined) delete entries.Perms;
       const dict = contextFor(1, 7).obj(entries as any) as PDFDict;
       // The factory records the problem; PDFDocument.load reports it.
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
       try {
         const factory = new CipherTransformFactory(dict, ref.id, 'u');
         expect(Array.from(factory.encryptionKey)).toEqual(Array.from(ref.key));
@@ -809,6 +864,7 @@ describe('PDFSecurity', () => {
       describe(`with ${optionName} and ${algorithm}`, () => {
         it('derives the documented encryption dictionary', () => {
           resetRandom();
+
           const security: any = PDFSecurity.create(
             contextFor(major, minor),
             options,
@@ -827,6 +883,7 @@ describe('PDFSecurity', () => {
 
         it('encrypts objects as documented', () => {
           resetRandom();
+
           const security = PDFSecurity.create(
             contextFor(major, minor),
             options,
@@ -845,6 +902,7 @@ describe('PDFSecurity', () => {
           it('draws a fresh IV per call', () => {
             resetRandom();
             const context = contextFor(major, minor);
+
             const security: any = PDFSecurity.create(
               context,
               options,
@@ -864,10 +922,12 @@ describe('PDFSecurity', () => {
               security.id,
               options.userPassword ?? options.ownerPassword,
             );
+
             [first, second].forEach((ciphertext) => {
               const decrypted = factory
                 .createCipherTransform(7, 0)
                 .decryptBytes(ciphertext);
+
               expect(Array.from(decrypted)).toEqual(Array.from(PLAINTEXT));
             });
           });
@@ -881,6 +941,7 @@ describe('PDFSecurity', () => {
           const encryptDict = context.lookup(
             context.trailerInfo.Encrypt,
           ) as PDFDict;
+
           const factory = new CipherTransformFactory(
             encryptDict,
             security.id,
@@ -888,6 +949,7 @@ describe('PDFSecurity', () => {
           );
 
           const ciphertext = security.getEncryptFn(7, 0)(PLAINTEXT);
+
           const decrypted = factory
             .createCipherTransform(7, 0)
             .decryptBytes(ciphertext);

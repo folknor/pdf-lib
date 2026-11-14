@@ -4,9 +4,11 @@ import CFFOperand from './CFFOperand.js';
 /** Compares a dict value with its default: primitives, or nested arrays. */
 const isEqual = (a: unknown, b: unknown): boolean => {
   if (a === b) return true;
+
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
     return false;
   }
+
   return a.every((item, idx) => isEqual(item, b[idx]));
 };
 
@@ -19,10 +21,12 @@ export default class CFFDict {
   constructor(ops: CFFDictOp[] = []) {
     this.ops = ops;
     this.fields = {};
+
     for (const field of ops) {
       const key = Array.isArray(field[0])
         ? (field[0][0] << 8) | field[0][1]
         : field[0];
+
       this.fields[key] = field;
     }
   }
@@ -86,17 +90,20 @@ export default class CFFDict {
 
     while (stream.pos < end) {
       let b = stream.readUInt8();
+
       if (b < 28) {
         if (b === 12) {
           b = (b << 8) | stream.readUInt8();
         }
 
         const field = this.fields[b];
+
         if (!field) {
           throw new Error(`Unknown operator ${b}`);
         }
 
         const val = this.decodeOperands(field[2], stream, ret, operands);
+
         if (val != null) {
           if (val instanceof PropertyDescriptor) {
             Object.defineProperty(ret, field[1], val);
@@ -131,11 +138,13 @@ export default class CFFDict {
     for (const k in this.fields) {
       const field = this.fields[k]!;
       const val = dict[field[1]];
+
       if (val == null || isEqual(val, field[3])) {
         continue;
       }
 
       const operands = this.encodeOperands(field[2], null, ctx, val);
+
       for (const op of operands) {
         len += CFFOperand.size(op);
       }
@@ -164,22 +173,26 @@ export default class CFFDict {
 
     for (const field of this.ops) {
       const val = dict[field[1]];
+
       if (val == null || isEqual(val, field[3])) {
         continue;
       }
 
       const operands = this.encodeOperands(field[2], stream, ctx, val);
+
       for (const op of operands) {
         CFFOperand.encode(stream, op);
       }
 
       const key = Array.isArray(field[0]) ? field[0] : [field[0]];
+
       for (const op of key) {
         stream.writeUInt8(op);
       }
     }
 
     let i = 0;
+
     while (i < ctx['pointers'].length) {
       const ptr = ctx['pointers'][i++];
       ptr.type.encode(stream, ptr.val, ptr.parent);

@@ -23,6 +23,7 @@ import { isMark } from '../../vendors/unicode-properties/index.js';
  * U+1160, U+3164 and U+FFA0, as Harfbuzz and Uniscribe do. */
 export function isDefaultIgnorable(ch: number): boolean {
   const plane = ch >> 16;
+
   if (plane === 0) {
     switch (ch >> 8) {
       case 0x00:
@@ -49,6 +50,7 @@ export function isDefaultIgnorable(ch: number): boolean {
         return false;
     }
   }
+
   switch (plane) {
     case 0x01:
       return (
@@ -66,12 +68,16 @@ type Jamo = 'L' | 'V' | 'T' | 'LV' | 'LVT' | null;
 const jamo = (cp: number): Jamo => {
   if ((cp >= 0x1100 && cp <= 0x115f) || (cp >= 0xa960 && cp <= 0xa97c))
     return 'L';
+
   if ((cp >= 0x1160 && cp <= 0x11a7) || (cp >= 0xd7b0 && cp <= 0xd7c6))
     return 'V';
+
   if ((cp >= 0x11a8 && cp <= 0x11ff) || (cp >= 0xd7cb && cp <= 0xd7fb))
     return 'T';
+
   if (cp >= 0xac00 && cp <= 0xd7a3)
     return (cp - 0xac00) % 28 === 0 ? 'LV' : 'LVT';
+
   return null;
 };
 
@@ -88,20 +94,30 @@ const isRegionalIndicator = (cp: number) => cp >= 0x1f1e6 && cp <= 0x1f1ff;
 export function continuesCharacter(codePoints: number[], i: number): boolean {
   if (i === 0) return false;
   const cp = codePoints[i]!;
+
   if (isMark(cp) || isDefaultIgnorable(cp)) return true;
+
   if (cp >= 0x1f3fb && cp <= 0x1f3ff) return true;
+
   if (isRegionalIndicator(cp)) {
     let run = 0;
+
     for (let j = i - 1; j >= 0 && isRegionalIndicator(codePoints[j]!); j--) {
       run++;
     }
+
     return run % 2 === 1;
   }
+
   const type = jamo(cp);
+
   if (type === null || type === 'LV' || type === 'LVT') return false;
   const before = jamo(codePoints[i - 1]!);
+
   if (type === 'L') return before === 'L';
+
   if (type === 'V') return before === 'L' || before === 'V' || before === 'LV';
+
   return (
     before === 'V' || before === 'T' || before === 'LV' || before === 'LVT'
   );
@@ -121,24 +137,30 @@ export function initialClusters(string: string): {
 } {
   const codePoints: number[] = [];
   const offsets: number[] = [];
+
   for (let at = 0; at < string.length; ) {
     const cp = string.codePointAt(at)!;
     codePoints.push(cp);
     offsets.push(at);
     at += cp > 0xffff ? 2 : 1;
   }
+
   const clusters: number[] = [];
   const characters: number[] = [];
   let counted = false;
+
   for (let i = 0; i < codePoints.length; i++) {
     const continues = continuesCharacter(codePoints, i);
     clusters.push(continues ? clusters[i - 1]! : offsets[i]!);
+
     if (!continues) counted = false;
+
     if (!counted && !isDefaultIgnorable(codePoints[i]!)) {
       characters.push(offsets[i]!);
       counted = true;
     }
   }
+
   return { codePoints, clusters, characters };
 }
 
@@ -151,27 +173,34 @@ export function initialClusters(string: string): {
  */
 export function mergeClusters(clusters: number[], descending = false): void {
   const n = clusters.length;
+
   if (n === 0) return;
   const order = descending ? [...clusters].reverse() : clusters;
   const suffixMin = new Array<number>(n);
   let min = Infinity;
+
   for (let i = n - 1; i >= 0; i--) {
     min = Math.min(min, order[i]!);
     suffixMin[i] = min;
   }
+
   let start = 0;
   let max = -Infinity;
   let groupMin = Infinity;
+
   for (let i = 0; i < n; i++) {
     max = Math.max(max, order[i]!);
     groupMin = Math.min(groupMin, order[i]!);
+
     if (i === n - 1 || max < suffixMin[i + 1]!) {
       const value = start === 0 ? 0 : groupMin;
+
       for (let j = start; j <= i; j++) order[j] = value;
       start = i + 1;
       groupMin = Infinity;
     }
   }
+
   if (descending) {
     for (let i = 0; i < n; i++) clusters[i] = order[n - 1 - i]!;
   }

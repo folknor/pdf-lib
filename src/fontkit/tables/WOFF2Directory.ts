@@ -3,6 +3,7 @@ import * as r from '../../vendors/restructure/index.js';
 const Base128 = {
   decode(stream: any): number {
     let result = 0;
+
     for (let j = 0; j < 5; j++) {
       const code = stream.readUInt8();
 
@@ -14,6 +15,7 @@ const Base128 = {
       }
 
       result = result * 128 + (code & 0x7f);
+
       if ((code & 0x80) === 0) {
         return result;
       }
@@ -125,6 +127,7 @@ const WOFF2Directory = new r.Struct({
 
 WOFF2Directory.process = function (this: Record<string, unknown>) {
   const tables: Record<string, unknown> = {};
+
   for (const table of this['tables'] as any[]) {
     tables[table.tag] = table;
   }

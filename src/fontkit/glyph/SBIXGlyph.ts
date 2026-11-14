@@ -31,8 +31,10 @@ export default class SBIXGlyph extends TTFGlyph {
    */
   getImageForSize(size: number): SBIXImageData | null {
     let table;
+
     for (let i = 0; i < this._font.sbix.imageTables.length; i++) {
       table = this._font.sbix.imageTables[i];
+
       if (table.ppem >= size) {
         break;
       }
@@ -47,6 +49,7 @@ export default class SBIXGlyph extends TTFGlyph {
     }
 
     this._font.stream.pos = start;
+
     return SBIXImage.decode(this._font.stream, {
       buflen: end - start,
     }) as unknown as SBIXImageData;
@@ -54,6 +57,7 @@ export default class SBIXGlyph extends TTFGlyph {
 
   override render(ctx: any, size: number): void {
     const img = this.getImageForSize(size);
+
     if (img != null) {
       const scale = size / this._font.unitsPerEm;
       ctx.image(img.data, {

@@ -13,8 +13,10 @@ const table = (text: string, at = text.lastIndexOf('\nxref\n') + 1) => {
   const entries = new Map<number, string>();
   let subsections = 0;
   let num = 0;
+
   for (const line of section.split('\n').filter((l) => l.length > 0)) {
     const header = /^(\d+) (\d+)$/.exec(line);
+
     if (header) {
       num = Number(header[1]);
       subsections++;
@@ -22,6 +24,7 @@ const table = (text: string, at = text.lastIndexOf('\nxref\n') + 1) => {
       entries.set(num++, line.trim());
     }
   }
+
   return { entries, subsections };
 };
 
@@ -33,6 +36,7 @@ const loadThreePages = async () => {
   doc.addPage();
   doc.addPage();
   const bytes = await doc.save({ useObjectStreams: false });
+
   return {
     bytes,
     doc: await PDFDocument.load(bytes, { forIncrementalUpdate: true }),
@@ -43,18 +47,22 @@ describe('fillXrefGaps in an increment', () => {
   it('lists every number it does not write as the file already resolves it', async () => {
     const { bytes, doc } = await loadThreePages();
     doc.getPage(1).drawText('x');
+
     const text = decode(
       await doc.saveIncremental(doc.takeSnapshot(), {
         useObjectStreams: false,
         fillXrefGaps: true,
       }),
     );
+
     const base = table(decode(bytes)).entries;
     const filled = table(text);
     expect(filled.subsections).toBe(1);
     const written = new Set<number>();
+
     for (const m of text.matchAll(/^(\d+) 0 obj$/gm)) written.add(Number(m[1]));
     expect(written.size).toBeGreaterThan(0);
+
     for (const [num, line] of filled.entries) {
       if (num === 0 || written.has(num)) continue;
       expect(line).toBe(base.get(num));
@@ -69,9 +77,11 @@ describe('fillXrefGaps in an increment', () => {
     await doc.commit({ useObjectStreams: false });
     const third = doc.getPage(1).ref.objectNumber;
     doc.removePage(1);
+
     const text = decode(
       await doc.commit({ useObjectStreams: false, fillXrefGaps: true }),
     );
+
     const { entries, subsections } = table(text);
     expect(subsections).toBe(1);
     expect(entries.get(first)).toMatch(/ 00001 f$/);
@@ -97,13 +107,16 @@ describe('fillXrefGaps in an increment', () => {
     const text = decode(bytes);
     const at = text.lastIndexOf('startxref\n') + 10;
     const offset = Number(/\d+/.exec(text.slice(at))![0]);
+
     const broken = Buffer.from(
       text.slice(0, at) + String(offset + 1) + text.slice(at + String(offset).length),
       'latin1',
     );
+
     const doc = await PDFDocument.load(new Uint8Array(broken), {
       forIncrementalUpdate: true,
     });
+
     doc.getPage(0).drawText('x');
     await expect(
       doc.saveIncremental(doc.takeSnapshot(), {
@@ -118,10 +131,12 @@ describe('increment trailers', () => {
   it('keep /Size over an unchanged highest object', async () => {
     const { bytes, doc } = await loadThreePages();
     const size = /\/Size (\d+)/.exec(lastTrailer(decode(bytes)))![1];
+
     // Only the catalog is written; the highest number is skipped.
     const text = decode(
       await doc.saveIncremental(doc.takeSnapshot(), { useObjectStreams: false }),
     );
+
     expect(/\/Size (\d+)/.exec(lastTrailer(text))![1]).toBe(size);
   });
 

@@ -42,9 +42,11 @@ describe('fontkit shaper tries', () => {
     expect(trie.get(0x0f71)).toBe(11); // TIBETAN AA: Nukta, CMBlw
     expect(trie.get(0x0f00)).toBe(4); // TIBETAN OM: Consonant, B
     expect(trie.get(0x0f86)).toBe(7); // TIBETAN LCI RTAGS: Tone_Mark, VMAbv
+
     for (const cp of [0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80]) {
       expect(trie.get(cp)).toBe(13); // I/E/O: VBlw, grammar position
     }
+
     expect(trie.get(0x0f74)).toBe(9); // U: VAbv, grammar position
     expect(trie.get(0x0f90)).toBe(20); // TIBETAN SUBJOINED KA: SUB
     expect(trie.get(0x1b34)).toBe(16); // BALINESE REREKAN: CMAbv

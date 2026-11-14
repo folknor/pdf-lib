@@ -50,8 +50,10 @@ function fail(msg) {
 
 function ucd(name) {
   const p = join(ucdDir, name);
+
   if (!existsSync(p)) {
     mkdirSync(ucdDir, { recursive: true });
+
     const body = execFileSync(
       'gh',
       [
@@ -62,8 +64,10 @@ function ucd(name) {
       ],
       { maxBuffer: 64 << 20 },
     );
+
     writeFileSync(p, body);
   }
+
   return readFileSync(p, 'utf8');
 }
 
@@ -76,20 +80,27 @@ function makeTrie(highStart, errorValue, data) {
     get(cp) {
       if (cp < 0 || cp > 0x10ffff) return errorValue;
       let i;
+
       if (cp < 0xd800 || (cp > 0xdbff && cp <= 0xffff)) {
         i = (data[cp >> 5] << 2) + (cp & 31);
+
         return data[i];
       }
+
       if (cp <= 0xffff) {
         i = (data[2048 + ((cp - 0xd800) >> 5)] << 2) + (cp & 31);
+
         return data[i];
       }
+
       if (cp < highStart) {
         i = data[0x840 - 32 + (cp >> 11)];
         i = data[i + ((cp >> 5) & 63)];
         i = (i << 2) + (cp & 31);
+
         return data[i];
       }
+
       return data[data.length - 4];
     },
   };
@@ -99,7 +110,9 @@ function u32le(bytes) {
   if (bytes.length % 4 !== 0) fail('payload not 4-byte aligned');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const out = new Uint32Array(bytes.length / 4);
+
   for (let i = 0; i < out.length; i++) out[i] = view.getUint32(i * 4, true);
+
   return out;
 }
 
@@ -109,14 +122,18 @@ function loadOld(b64) {
   const highStart = view.getUint32(0, false);
   const errorValue = view.getUint32(4, false);
   const length = view.getUint32(8, false);
+
   if (highStart > 0x110000 || length % 4 !== 0) {
     fail('trie.json is not a unicode-trie 0.3 blob (already converted?)');
   }
+
   // The 0.3 builder deflated the data twice.
   const payload = inflateSync(inflateSync(outer.subarray(12)));
+
   if (payload.length !== length) {
     fail(`inner payload length ${payload.length}, header says ${length}`);
   }
+
   return makeTrie(highStart, errorValue, u32le(payload));
 }
 
@@ -125,13 +142,16 @@ function encodeNew(t) {
   const view = new DataView(bytes.buffer);
   view.setUint32(0, t.highStart >>> 0, true);
   view.setUint32(4, t.errorValue >>> 0, true);
+
   for (let i = 0; i < t.data.length; i++) view.setUint32(8 + i * 4, t.data[i], true);
+
   return Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
 }
 
 function loadNew(b64) {
   const raw = unzlibSync(Buffer.from(b64, 'base64'));
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+
   return makeTrie(view.getUint32(0, true), view.getUint32(4, true), u32le(raw.subarray(8)));
 }
 
@@ -141,6 +161,7 @@ const data = JSON.parse(
     unzlibSync(Buffer.from(JSON.parse(readFileSync(join(vendorDir, 'data.json'), 'utf8')), 'base64')),
   ).toString('latin1'),
 );
+
 const bits = (n) => (Math.log2(n) + 1) | 0;
 const CB = bits(data.categories.length - 1);
 const KB = bits(data.combiningClasses.length - 1);
@@ -148,6 +169,7 @@ const SB = bits(data.scripts.length - 1);
 const EB = bits(data.eaw.length - 1);
 const NB = 10;
 const field = (v, shift, nbits) => (v >>> shift) & ((1 << nbits) - 1);
+
 const decode = (v) => ({
   category: data.categories[field(v, KB + SB + EB + NB, CB)],
   ccc: data.combiningClasses[field(v, SB + EB + NB, KB)],
@@ -157,83 +179,111 @@ const decode = (v) => ({
 
 // --- UCD reference ---------------------------------------------------------
 const cccName = new Map();
+
 for (const line of ucd('PropertyValueAliases.txt').split('\n')) {
   const m = /^ccc;\s*(\d+);\s*[^;]+;\s*([A-Za-z_0-9]+)/.exec(line);
+
   if (m) cccName.set(Number(m[1]), m[2]);
 }
+
 const refCategory = new Map();
 const refCcc = new Map();
+
 {
   let first = -1;
+
   for (const line of ucd('UnicodeData.txt').split('\n')) {
     if (!line) continue;
     const f = line.split(';');
     const cp = parseInt(f[0], 16);
+
     const set = (c) => {
       refCategory.set(c, f[2]);
       const n = Number(f[3]);
       refCcc.set(c, cccName.get(n) ?? `CCC${n}`);
     };
+
     if (first >= 0) {
       for (let c = first; c <= cp; c++) set(c);
       first = -1;
-    } else if (/, First>$/.test(f[1])) first = cp;
+    } else if (f[1].endsWith(', First>')) first = cp;
     else set(cp);
   }
 }
+
 function rangeFile(name) {
   const map = new Map();
+
   for (const raw of ucd(name).split('\n')) {
     const line = raw.replace(/#.*$/, '').trim();
+
     if (!line) continue;
     const [range, value] = line.split(/\s*;\s*/);
     const [lo, hi] = range.split('..').map((h) => parseInt(h, 16));
+
     for (let c = lo; c <= (hi ?? lo); c++) map.set(c, value);
   }
+
   return map;
 }
+
 const refScript = rangeFile('Scripts.txt');
 const refEaw = rangeFile('EastAsianWidth.txt');
 
 // --- decode, verify, write -------------------------------------------------
 const oldTrie = loadOld(JSON.parse(readFileSync(triePath, 'utf8')));
+
 console.log(
   `old trie: highStart 0x${oldTrie.highStart.toString(16)}, ${oldTrie.data.length} words`,
 );
 
 const mismatches = { category: 0, ccc: 0, script: 0, eaw: 0 };
 const samples = { category: [], ccc: [], script: [], eaw: [] };
+
 const note = (k, cp, got, want) => {
   if (mismatches[k]++ < 10) samples[k].push(`U+${cp.toString(16)} ${got} != ${want}`);
 };
+
 for (let cp = 0; cp <= 0x10ffff; cp++) {
   const d = decode(oldTrie.get(cp));
+
   if (refCategory.has(cp)) {
     if (d.category !== refCategory.get(cp)) note('category', cp, d.category, refCategory.get(cp));
+
     if (d.ccc !== refCcc.get(cp)) note('ccc', cp, d.ccc, refCcc.get(cp));
   }
+
   if (refScript.has(cp) && d.script !== refScript.get(cp)) {
     note('script', cp, d.script, refScript.get(cp));
   }
+
   // The original builder only stored EAW for assigned code points.
   if (refCategory.has(cp) && refEaw.has(cp) && d.eaw !== refEaw.get(cp)) note('eaw', cp, d.eaw, refEaw.get(cp));
 }
+
 console.log('mismatches vs UCD', ucdRef, JSON.stringify(mismatches));
+
 for (const [k, s] of Object.entries(samples)) for (const line of s) console.log(`  ${k}: ${line}`);
+
 if (Object.values(mismatches).some((n) => n > 0)) fail('decoded trie disagrees with the UCD');
 
 const newB64 = encodeNew(oldTrie);
 const newTrie = loadNew(newB64);
+
 for (let cp = -1; cp <= 0x110000; cp++) {
   if (oldTrie.get(cp) !== newTrie.get(cp)) fail(`re-encoded trie differs at ${cp}`);
 }
 
 const fixture = { codePoints: [], values: [] };
+
 // Latin through Arabic densely, then a sparse stride over everything.
 for (let cp = 0; cp <= 0x10ffff; cp += cp < 0x700 ? 1 : 997) {
   fixture.codePoints.push(cp);
   fixture.values.push(oldTrie.get(cp));
 }
+
 writeFileSync(triePath, `${JSON.stringify(newB64)}\n`);
+
 writeFileSync(fixturePath, `${JSON.stringify(fixture)}\n`);
+
 console.log(`wrote ${triePath} and ${fixturePath} (${fixture.codePoints.length} code points)`);

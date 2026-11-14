@@ -33,11 +33,13 @@ const profileByGuideline: Record<string, FacturXProfile> = {
 };
 
 const RSM_NS = 'urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100';
+
 const RAM_NS =
   'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100';
 
 export const FACTUR_X_NS =
   'urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#';
+
 export const FACTUR_X_FILE_NAME = 'factur-x.xml';
 
 /** Earlier ZUGFeRD / Factur-X namespaces; a packet using one is refused. */
@@ -84,14 +86,18 @@ const utf8 = new TextDecoder('utf-8', { fatal: true });
 /** Check an XML declaration, if any: XML 1.0, UTF-8. */
 const checkDeclaration = (doc: XmlDocument) => {
   const [first] = doc.prolog;
+
   if (first?.kind !== 'pi' || first.target !== 'xml') return;
   const version = /version\s*=\s*["']([^"']*)["']/.exec(first.data)?.[1];
+
   if (version !== '1.0') {
     throw new Error(
       `The invoice XML declares version ${version}; only XML 1.0 is supported.`,
     );
   }
+
   const encoding = /encoding\s*=\s*["']([^"']*)["']/.exec(first.data)?.[1];
+
   if (encoding !== undefined && encoding.toLowerCase() !== 'utf-8') {
     throw new Error(
       `The invoice XML declares encoding ${encoding}; only UTF-8 is supported.`,
@@ -109,18 +115,21 @@ export const readFacturXInvoice = (
 ): { bytes: Uint8Array; profile: FacturXProfile } => {
   let text: string;
   let bytes: Uint8Array;
+
   if (typeof xml === 'string') {
     if (!isXmlText(xml)) {
       throw new Error(
         'The invoice XML contains characters XML cannot represent.',
       );
     }
+
     // A leading byte order mark is kept in the bytes (as a UTF-8 one) but
     // is not part of the XML text.
     text = xml.charCodeAt(0) === 0xfeff ? xml.slice(1) : xml;
     bytes = new TextEncoder().encode(xml);
   } else {
     bytes = xml.slice();
+
     try {
       // Drops a leading UTF-8 byte order mark; a UTF-16 one is refused as
       // a malformed UTF-8 sequence.
@@ -129,22 +138,28 @@ export const readFacturXInvoice = (
       throw new Error('The invoice XML is not valid UTF-8.');
     }
   }
+
   let doc: XmlDocument;
+
   try {
     doc = parseXml(text);
   } catch (e) {
     if (e instanceof XmlError) {
-      throw new Error(`The invoice XML is not well-formed: ${e.message}`);
+      throw new Error(`The invoice XML is not well-formed: ${e.message}`, { cause: e });
     }
+
     throw e;
   }
+
   checkDeclaration(doc);
   const { root } = doc;
+
   if (root.ns !== RSM_NS || root.local !== 'CrossIndustryInvoice') {
     throw new Error(
       'The invoice XML is not a Cross Industry Invoice (rsm:CrossIndustryInvoice, D16B).',
     );
   }
+
   const ids = childElements(root)
     .filter((e) => e.ns === RSM_NS && e.local === 'ExchangedDocumentContext')
     .flatMap((c) =>
@@ -157,22 +172,28 @@ export const readFacturXInvoice = (
     .flatMap((p) =>
       childElements(p).filter((e) => e.ns === RAM_NS && e.local === 'ID'),
     );
+
   if (ids.length !== 1) {
     throw new Error(
       `The invoice XML states ${ids.length === 0 ? 'no' : 'more than one'} guideline identifier (GuidelineSpecifiedDocumentContextParameter/ID).`,
     );
   }
+
   const id = ids[0]!;
+
   if (childElements(id).length > 0) {
     throw new Error('The invoice XML guideline identifier is not plain text.');
   }
+
   const guideline = textContent(id).trim();
   const profile = profileByGuideline[guideline];
+
   if (!profile) {
     throw new Error(
       `The invoice XML states guideline ${guideline}, which is not a supported Factur-X profile (MINIMUM, BASIC WL, BASIC, EN 16931, EXTENDED).`,
     );
   }
+
   return { bytes, profile };
 };
 
@@ -188,6 +209,7 @@ export const writeFacturXMetadata = (
   profile: FacturXProfile,
 ): void => {
   const declared = packet.extensionSchemaNamespaces();
+
   for (const ns of legacyNamespaces) {
     if (packet.hasNamespace(ns) || declared.includes(ns)) {
       throw new XmpError(
@@ -195,7 +217,9 @@ export const writeFacturXMetadata = (
       );
     }
   }
+
   const fileName = packet.readText(FACTUR_X_NS, 'DocumentFileName');
+
   if (
     fileName.kind === 'text' &&
     fileName.value.trim() !== FACTUR_X_FILE_NAME
@@ -204,6 +228,7 @@ export const writeFacturXMetadata = (
       `the XMP names the invoice file ${fileName.value.trim()}, not ${FACTUR_X_FILE_NAME}`,
     );
   }
+
   packet.setText(FACTUR_X_NS, 'DocumentType', 'INVOICE', 'fx');
   packet.setText(FACTUR_X_NS, 'DocumentFileName', FACTUR_X_FILE_NAME, 'fx');
   packet.setText(FACTUR_X_NS, 'Version', '1.0', 'fx');

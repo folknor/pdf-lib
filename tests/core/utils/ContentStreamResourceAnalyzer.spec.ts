@@ -29,10 +29,13 @@ const setup = (contents: string | string[]) => {
   const context = PDFContext.create();
   const page = PDFPageLeaf.withContextAndParent(context, context.nextRef());
   const refs: Record<string, PDFRef> = {};
+
   const dummy = (name: string) => {
     refs[name] = context.register(context.obj({ Name: name }));
+
     return refs[name];
   };
+
   const resources = context.obj({
     Font: { F1: dummy('F1'), F2: dummy('F2'), F3: dummy('F3') },
     XObject: { Im1: dummy('Im1'), Im2: dummy('Im2') },
@@ -43,19 +46,23 @@ const setup = (contents: string | string[]) => {
     Properties: { MC1: dummy('MC1') },
     ProcSet: ['PDF', 'Text'],
   });
+
   page.set(PDFName.Resources, resources);
   const list = Array.isArray(contents) ? contents : [contents];
   page.set(
     PDFName.Contents,
     context.obj(list.map((c) => stream(context, c))),
   );
+
   return { context, page, resources, refs };
 };
 
 const kept = (pruned: PDFDict | undefined, category: string) => {
   expect(pruned).toBeDefined();
   const dict = pruned!.lookupMaybe(PDFName.of(category), PDFDict);
+
   if (!dict) return [];
+
   return dict
     .keys()
     .map((k) => k.decodeText())
@@ -68,6 +75,7 @@ describe('pruneResources', () => {
       'q /GS1 gs BT /F1 12 Tf (x) Tj ET /Im1 Do /CS1 cs 0.5 /P1 scn /Sh1 sh ' +
         '/OC /MC1 BDC EMC Q',
     );
+
     const pruned = pruneResources(page, context);
     expect(kept(pruned, 'Font')).toEqual(['F1']);
     expect(kept(pruned, 'XObject')).toEqual(['Im1']);
@@ -88,6 +96,7 @@ describe('pruneResources', () => {
     const { context, page } = setup(
       '/OC/MC1 BDC EMC BT /F1 +12 Tf /F2 12 % c\nTf ET',
     );
+
     const pruned = pruneResources(page, context);
     expect(kept(pruned, 'Properties')).toEqual(['MC1']);
     expect(kept(pruned, 'Font')).toEqual(['F1', 'F2']);
@@ -97,6 +106,7 @@ describe('pruneResources', () => {
     const { context, page } = setup(
       'BT /F1 12 Tf (/F2 12 Tf) Tj ET BI /W 4 /H 1 /BPC 8 /CS /G ID /F3 EI\n',
     );
+
     expect(kept(pruneResources(page, context), 'Font')).toEqual(['F1']);
   });
 
@@ -104,6 +114,7 @@ describe('pruneResources', () => {
     const { context, page } = setup(
       'BI /W 1 /H 1 /CS /G /BPC 8 /F /AHx ID 4520 4549>\nEI /Im1 Do',
     );
+
     expect(kept(pruneResources(page, context), 'XObject')).toEqual(['Im1']);
   });
 
@@ -111,6 +122,7 @@ describe('pruneResources', () => {
     const { context, page } = setup(
       'BI /W 1 /H 1 /BPC 8 /CS /CS1 /F /AHx ID 00> EI',
     );
+
     expect(kept(pruneResources(page, context), 'ColorSpace')).toEqual([
       'CS1',
       'DefaultRGB',
@@ -151,25 +163,30 @@ describe('pruneResources', () => {
 
   it('parses a Form without resources in page scope, however deep', () => {
     const { context, page, resources } = setup('/Im1 Do');
+
     const inner = stream(context, '/F2 12 Tf', {
       Type: 'XObject',
       Subtype: 'Form',
     });
+
     const outer = stream(context, '/X Do', {
       Type: 'XObject',
       Subtype: 'Form',
       Resources: { XObject: { X: inner } },
     });
+
     resources.lookup(PDFName.XObject, PDFDict).set(PDFName.of('Im1'), outer);
     expect(kept(pruneResources(page, context), 'Font')).toEqual(['F2']);
   });
 
   it('does not read names of a Form with resources against the page', () => {
     const { context, page, resources } = setup('/Im1 Do');
+
     const form = stream(context, '/F2 12 Tf', {
       Subtype: 'Form',
       Resources: { Font: {} },
     });
+
     resources.lookup(PDFName.XObject, PDFDict).set(PDFName.of('Im1'), form);
     expect(kept(pruneResources(page, context), 'Font')).toEqual([]);
   });
@@ -177,9 +194,11 @@ describe('pruneResources', () => {
   it('follows a Type 3 font set through an ExtGState', () => {
     const { context, page, resources } = setup('/GS1 gs BT (a) Tj ET');
     const glyph = stream(context, '0 0 d0 /Im2 Do');
+
     const font = context.register(
       context.obj({ Type: 'Font', Subtype: 'Type3', CharProcs: { a: glyph } }),
     );
+
     resources
       .lookup(PDFName.ExtGState, PDFDict)
       .set(PDFName.of('GS1'), context.obj({ Font: [font, 12] }));
@@ -217,14 +236,17 @@ describe('copyPages({ optimizeResources: true })', () => {
     const bytes = await src.save({ useObjectStreams: false });
     const loaded = await PDFDocument.load(bytes);
     const dst = await PDFDocument.create();
+
     const [copied] = await dst.copyPages(loaded, [0], {
       optimizeResources: true,
     });
+
     const names = copied!.node
       .Resources()!
       .lookup(PDFName.Font, PDFDict)
       .keys()
       .map((k) => k.decodeText());
+
     expect(names).toEqual(['F#20']);
   });
 });

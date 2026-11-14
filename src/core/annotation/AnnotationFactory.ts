@@ -7,6 +7,7 @@ import PDFTextMarkupAnnotation from './PDFTextMarkupAnnotation.js';
 
 function getSubtype(dict: PDFDict): AnnotationTypes | undefined {
   const subtypePdfName = dict.lookup(PDFName.of('Subtype'), PDFName);
+
   if (subtypePdfName instanceof PDFName) {
     return subtypePdfName.toString() as AnnotationTypes;
   } else {

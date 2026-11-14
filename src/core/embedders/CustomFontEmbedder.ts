@@ -39,6 +39,7 @@ class CustomFontEmbedder {
     const font = asFont(
       await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
     );
+
     return new CustomFontEmbedder(font, fontData, customName, fontFeatures);
   }
 
@@ -101,6 +102,7 @@ class CustomFontEmbedder {
     const xOffsets = new Array<number>(count);
     const yOffsets = new Array<number>(count);
     const glyphCodes = new Array<number>(count);
+
     for (let idx = 0; idx < count; idx++) {
       const glyph = glyphs[idx]!;
       const position = positions[idx]!;
@@ -113,7 +115,9 @@ class CustomFontEmbedder {
       xOffsets[idx] = position.xOffset * scale;
       yOffsets[idx] = position.yOffset * scale;
     }
+
     const groups = clusterGroups(layout.clusters, count, text.length);
+
     return new EncodedText(
       codes,
       advances,
@@ -138,23 +142,30 @@ class CustomFontEmbedder {
     groups: readonly ClusterGroup[],
   ): ActualTextSpan[] {
     const spans: ActualTextSpan[] = [];
+
     for (const group of groups) {
       const typed = text.slice(group.from, group.to);
       let extracted: string | null = '';
+
       for (let idx = group.start; idx < group.end; idx++) {
         const code = glyphCodes[idx]!;
+
         if (code === 0) continue;
         const mapping = this.firstText.get(code);
+
         if (mapping === undefined) {
           extracted = null;
           break;
         }
+
         extracted += String.fromCodePoint(...mapping);
       }
+
       if (extracted !== typed) {
         spans.push({ start: group.start, end: group.end, text: typed });
       }
     }
+
     return spans;
   }
 
@@ -171,7 +182,9 @@ class CustomFontEmbedder {
     position: GlyphPosition,
   ): void {
     this.encodedCodes.add(code);
+
     if (code === 0 || position.hidden || text.length === 0) return;
+
     if (!this.firstText.has(code)) this.firstText.set(code, [...text]);
   }
 
@@ -194,31 +207,43 @@ class CustomFontEmbedder {
     groups: readonly ClusterGroup[],
   ): GlyphSpacing[] {
     const { glyphs, positions, codePoints, clusters, characters } = layout;
+
     if (clusters !== undefined && characters !== undefined) {
       const spacing = glyphs.map(() => NO_SPACING);
+
       for (const group of groups) {
         let count = 0;
+
         for (const at of characters) {
           if (at >= group.from && at < group.to) count++;
         }
+
         let spaces = 0;
+
         for (let at = group.from; at < group.to; at++) {
           if (text.charCodeAt(at) === 0x20) spaces++;
         }
+
         spacing[group.end - 1] = { characters: count, spaces };
       }
+
       return spacing;
     }
+
     const spaceId =
       codePoints === undefined && this.font.hasGlyphForCodePoint(0x20)
         ? this.font.glyphForCodePoint(0x20).id
         : -1;
+
     return glyphs.map((glyph, idx) => {
       const position = positions[idx]!;
+
       if (position.isMark || position.hidden) return NO_SPACING;
+
       const isSpace = codePoints
         ? codePoints[idx]!.length === 1 && codePoints[idx]![0] === 0x20
         : glyph.id === spaceId;
+
       return isSpace ? SPACE_SPACING : BASE_SPACING;
     });
   }
@@ -239,11 +264,14 @@ class CustomFontEmbedder {
     const layout = this.positionedLayout(text);
     const { positions } = layout;
     let total = 0;
+
     for (let idx = 0, len = positions.length; idx < len; idx++) {
       total += positions[idx]!.xAdvance;
     }
+
     let width = (total * size) / this.font.unitsPerEm;
     const { characterSpacing = 0, wordSpacing = 0 } = spacing;
+
     if (characterSpacing !== 0 || wordSpacing !== 0) {
       for (const extra of spacingExtras(
         this.glyphSpacing(
@@ -258,6 +286,7 @@ class CustomFontEmbedder {
         width += (extra * size) / 1000;
       }
     }
+
     return width;
   }
 
@@ -281,21 +310,26 @@ class CustomFontEmbedder {
   } {
     const run = this.font.layout(text, this.fontFeatures);
     const glyphs = run.glyphs as (Glyph | null | undefined)[];
+
     const positions = (run.positions ?? []) as (
       | GlyphPosition
       | null
       | undefined
     )[];
+
     if (positions.length !== glyphs.length) {
       throw new Error(
         `Font layout returned ${glyphs.length} glyphs but ${positions.length} positions`,
       );
     }
+
     for (let idx = 0, len = glyphs.length; idx < len; idx++) {
       const position = positions[idx];
+
       if (!glyphs[idx] || !position) {
         throw new Error(`Font layout returned no glyph at index ${idx}`);
       }
+
       // yAdvance is not honoured: text is laid out horizontally only.
       if (
         !Number.isFinite(position.xAdvance) ||
@@ -305,19 +339,23 @@ class CustomFontEmbedder {
         throw new Error(`Font layout returned a non-finite position at ${idx}`);
       }
     }
+
     const { codePoints } = run;
     const clusters = validClusters(run.clusters, glyphs.length, text.length);
     const characters = clusters === undefined ? undefined : run.characters;
+
     // Another fontkit build may report no per-occurrence text; its glyph
     // objects' codePoints are then the best there is.
     const occurrenceText =
       run.text ?? glyphs.map((glyph) => glyph!.codePoints ?? []);
+
     if (
       occurrenceText.length !== glyphs.length ||
       (codePoints !== undefined && codePoints.length !== glyphs.length)
     ) {
       throw new Error('Font layout returned code points for other glyphs');
     }
+
     return {
       glyphs: glyphs as Glyph[],
       positions: positions as GlyphPosition[],
@@ -354,6 +392,7 @@ class CustomFontEmbedder {
     const yBottom = (descent || bbox.minY) * this.scale;
 
     let height = yTop - yBottom;
+
     if (!descender) height -= Math.abs(yBottom);
 
     return (height / 1000) * size;
@@ -363,12 +402,14 @@ class CustomFontEmbedder {
     const { ascent, descent, bbox } = this.font;
     const yTop = (ascent || bbox.maxY) * this.scale;
     const yBottom = (descent || bbox.minY) * this.scale;
+
     return (1000 * height) / (yTop - yBottom);
   }
 
   embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
     this.baseFontName =
       this.customName || context.addRandomSuffix(this.fontName);
+
     return this.embedFontDict(context, ref);
   }
 
@@ -390,6 +431,7 @@ class CustomFontEmbedder {
 
     if (ref) {
       context.assign(ref, fontDict);
+
       return ref;
     } else {
       return context.register(fontDict);
@@ -404,6 +446,7 @@ class CustomFontEmbedder {
       cff?: unknown;
       directory?: { tables?: Record<string, unknown> };
     };
+
     return !!(font.cff || font.directory?.tables?.['CFF ']);
   }
 
@@ -438,6 +481,7 @@ class CustomFontEmbedder {
     } else {
       this.cidFontDictRef = context.register(cidFontDict);
     }
+
     return this.cidFontDictRef;
   }
 
@@ -471,6 +515,7 @@ class CustomFontEmbedder {
     } else {
       this.fontDescriptorRef = context.register(fontDescriptor);
     }
+
     return this.fontDescriptorRef;
   }
 
@@ -491,6 +536,7 @@ class CustomFontEmbedder {
     if (isWebFont(this.font) || this.isCFF() || isCFF2(this.font)) {
       return encodeWholeFont(this.font);
     }
+
     return this.fontData;
   }
 
@@ -514,6 +560,7 @@ class CustomFontEmbedder {
   ): Promise<{ ref: PDFRef; bbox: number[] }> {
     const fontProgram = await this.serializeFont();
     let bbox: number[];
+
     if (this.isCFF()) {
       const { scale } = this;
       const { minX, minY, maxX, maxY } = this.font.bbox;
@@ -534,6 +581,7 @@ class CustomFontEmbedder {
     } else {
       this.fontStreamRef = context.register(fontStream);
     }
+
     return { ref: this.fontStreamRef, bbox };
   }
 
@@ -574,6 +622,7 @@ class CustomFontEmbedder {
     } else {
       this.unicodeCmapRef = context.register(cmapStream);
     }
+
     return this.unicodeCmapRef;
   }
 
@@ -588,10 +637,13 @@ class CustomFontEmbedder {
    */
   protected glyphsForWidths(): Glyph[] {
     const glyphs: Glyph[] = [];
+
     for (let id = 0, len = this.font.numGlyphs; id < len; id++) {
       const glyph = this.font.getGlyph(id);
+
       if (glyph) glyphs.push(glyph);
     }
+
     return glyphs;
   }
 
@@ -618,14 +670,18 @@ const withCmapFill = (
 ): ToUnicodeEntry[] => {
   const entries = new Map<number, readonly number[]>(recorded);
   const characterSet = [...font.characterSet].sort((a, b) => a - b);
+
   for (const codePoint of characterSet) {
     // fontkit returns null when it cannot build a glyph object for the
     // code point; the declared return type omits that.
     const glyph = font.glyphForCodePoint(codePoint) as Glyph | null;
+
     if (!glyph || glyph.id === 0) continue;
+
     if (wasEncoded(glyph.id) || entries.has(glyph.id)) continue;
     entries.set(glyph.id, [codePoint]);
   }
+
   return [...entries].sort(([a], [b]) => a - b);
 };
 
@@ -640,7 +696,9 @@ export const asFont = (font: unknown): Font => {
       'fontkit.create() returned no font. Check the font bytes, or the PostScript name used to select a face from a collection.',
     );
   }
+
   const candidate = font as Partial<Font> & { fonts?: unknown };
+
   if (
     typeof candidate.layout !== 'function' ||
     typeof candidate.glyphForCodePoint !== 'function'
@@ -650,8 +708,10 @@ export const asFont = (font: unknown): Font => {
         'fontkit.create() returned a font collection (e.g. .ttc/.dfont). Select a face by its PostScript name, or embed a single-font file.',
       );
     }
+
     throw new Error('fontkit.create() did not return a usable font.');
   }
+
   return font as Font;
 };
 
@@ -659,11 +719,13 @@ const isCFF2 = (font: Font): boolean => {
   const { directory } = font as {
     directory?: { tables?: Record<string, unknown> };
   };
+
   return !!directory?.tables?.['CFF2'];
 };
 
 const isWebFont = (font: Font): boolean => {
   const { type } = font as { type?: unknown };
+
   return type === 'WOFF' || type === 'WOFF2';
 };
 
@@ -677,11 +739,13 @@ const isWebFont = (font: Font): boolean => {
  */
 const encodeWholeFont = (font: Font): Promise<Uint8Array> => {
   const subset = font.createSubset();
+
   for (let id = 1, len = font.numGlyphs; id < len; id++) {
     if (subset.includeGlyph(id) !== id) {
       throw new Error(`Glyph ${id} was renumbered while re-encoding the font`);
     }
   }
+
   return encodeSubset(subset);
 };
 
@@ -701,24 +765,33 @@ export const encodeSubset = (subset: Subset): Promise<Uint8Array> =>
  */
 export const sfntFontBBox = (bytes: Uint8Array): number[] => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
   if (bytes.length < 12) throw new Error('Font program has no sfnt directory');
   const numTables = view.getUint16(4);
+
   if (12 + 16 * numTables > bytes.length) {
     throw new Error('Font program sfnt directory is truncated');
   }
+
   for (let i = 0; i < numTables; i++) {
     const record = 12 + 16 * i;
     const tag = String.fromCharCode(...bytes.subarray(record, record + 4));
+
     if (tag !== 'head') continue;
     const offset = view.getUint32(record + 8);
+
     if (view.getUint32(record + 12) < 54 || offset + 54 > bytes.length) {
       throw new Error('Font program head table is truncated');
     }
+
     const unitsPerEm = view.getUint16(offset + 18);
+
     if (unitsPerEm === 0) throw new Error('Font program head has unitsPerEm 0');
     const scale = 1000 / unitsPerEm;
+
     return [36, 38, 40, 42].map((at) => view.getInt16(offset + at) * scale);
   }
+
   throw new Error('Font program has no head table');
 };
 
@@ -739,10 +812,12 @@ export const compressWidths = (
   let prevId = Number.NaN;
 
   let idx = 0;
+
   while (idx < entries.length) {
     const [id, width] = entries[idx]!;
 
     let end = idx;
+
     while (
       end + 1 < entries.length &&
       entries[end + 1]![0] === entries[end]![0] + 1 &&
@@ -763,6 +838,7 @@ export const compressWidths = (
       section = [];
       widths.push(id, section);
     }
+
     section.push(width);
     prevId = id;
     idx++;
@@ -794,16 +870,21 @@ const validClusters = (
   if (clusters === undefined || clusters.length !== count) return undefined;
   let up = true;
   let down = true;
+
   for (let idx = 0; idx < count; idx++) {
     const value = clusters[idx]!;
+
     if (!Number.isInteger(value) || value < 0 || value >= Math.max(length, 1)) {
       return undefined;
     }
+
     if (idx > 0) {
       if (value < clusters[idx - 1]!) up = false;
+
       if (value > clusters[idx - 1]!) down = false;
     }
   }
+
   return up || down ? clusters : undefined;
 };
 
@@ -819,19 +900,25 @@ const clusterGroups = (
   length: number,
 ): ClusterGroup[] => {
   if (count === 0) return [];
+
   if (clusters === undefined) {
     return [{ start: 0, end: count, from: 0, to: length }];
   }
+
   const values = [...new Set(clusters)].sort((a, b) => a - b);
   const next = new Map<number, number>();
+
   for (let idx = 0; idx < values.length; idx++) {
     next.set(values[idx]!, values[idx + 1] ?? length);
   }
+
   const smallest = values[0]!;
   const groups: ClusterGroup[] = [];
+
   for (let start = 0; start < count; ) {
     const value = clusters[start]!;
     let end = start + 1;
+
     while (end < count && clusters[end] === value) end++;
     groups.push({
       start,
@@ -841,5 +928,6 @@ const clusterGroups = (
     });
     start = end;
   }
+
   return groups;
 };

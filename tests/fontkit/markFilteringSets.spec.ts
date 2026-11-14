@@ -4,6 +4,7 @@ import GSUBProcessor from '../../src/fontkit/opentype/GSUBProcessor.js';
 
 const cov = (...glyphs: number[]) => ({ version: 1, glyphs });
 const base = (id: number) => ({ id, features: { test: true }, isMark: false, isBase: true });
+
 const mark = (id: number, markAttachmentType = 0) => ({
   id,
   features: { test: true },
@@ -17,11 +18,13 @@ const processor = (lookups: any[], gdef: any = { markGlyphSetsDef: { coverage: [
   const p = Object.create(GSUBProcessor.prototype);
   p.table = { lookupList: { get: (i: number) => lookups[i] } };
   p.font = { GDEF: gdef };
+
   return p;
 };
 
 // Substitutes 99 for the base when the base is followed by mark 10.
 const single = { lookupType: 1, flags: {}, subTables: [{ version: 2, coverage: cov(1), substitute: { get: () => 99 } }] };
+
 const context = (flags: any, markFilteringSet?: number) => ({
   lookupType: 5,
   flags,
@@ -38,6 +41,7 @@ const context = (flags: any, markFilteringSet?: number) => ({
 const run = (lookup: any, glyphs: any[], gdef?: any) => {
   const p = gdef === undefined ? processor([single]) : processor([single], gdef);
   p.applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
+
   return glyphs.map((g) => g.id);
 };
 

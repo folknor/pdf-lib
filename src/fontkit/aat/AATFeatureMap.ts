@@ -489,8 +489,10 @@ for (let i = 1; i <= 99; i++) {
 
 // create inverse mapping
 const AATMapping: Record<number, Record<number, string>> = {};
+
 for (const ot in OTMapping) {
   const aat = OTMapping[ot]!;
+
   if (AATMapping[aat[0]] == null) {
     AATMapping[aat[0]] = {};
   }
@@ -506,8 +508,10 @@ export function mapOTToAAT(
   inputFeatures: Record<string, boolean | number>,
 ): MorxFeatures {
   const res: MorxFeatures = {};
+
   for (const k in inputFeatures) {
     let r: [number, number] | undefined;
+
     if ((r = OTMapping[k])) {
       if (res[r[0]] == null) {
         res[r[0]] = {};
@@ -526,9 +530,11 @@ function mapFeatureStrings(
   f: [string | number, string | number],
 ): [number | undefined, number | boolean | undefined] {
   const [type, setting] = f;
+
   const typeCode = Number.isNaN(type as number)
     ? features[type as string]?.code
     : (type as number);
+
   const settingCode = Number.isNaN(setting as number)
     ? features[type as string]?.[setting as string]
     : (setting as number);
@@ -544,10 +550,12 @@ export function mapAATToOT(
   inputFeatures: [number, number][] | Record<string, Record<string, boolean>>,
 ): string[] {
   const res: Record<string, boolean> = {};
+
   if (Array.isArray(inputFeatures)) {
     for (let k = 0; k < inputFeatures.length; k++) {
       let r: string | undefined;
       const f = mapFeatureStrings(inputFeatures[k]!);
+
       if ((r = AATMapping[f[0] as number]?.[f[1] as number])) {
         res[r] = true;
       }
@@ -555,9 +563,11 @@ export function mapAATToOT(
   } else if (typeof inputFeatures === 'object') {
     for (const type in inputFeatures) {
       const feat = inputFeatures[type];
+
       for (const setting in feat) {
         let r: string | undefined;
         const f = mapFeatureStrings([type, setting]);
+
         if (
           feat[setting] &&
           (r = AATMapping[f[0] as number]?.[f[1] as number])

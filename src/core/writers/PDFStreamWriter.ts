@@ -94,9 +94,11 @@ class PDFStreamWriter extends PDFWriter {
     const header = this.context.header;
 
     let size = this.snapshot.pdfSize;
+
     if (!incremental) {
       size += header.sizeInBytes() + 1;
     }
+
     size += 1;
 
     const xrefStream = PDFCrossRefStream.create(
@@ -109,14 +111,17 @@ class PDFStreamWriter extends PDFWriter {
     const objectStreamRefs: PDFRef[] = [];
 
     const indirectObjects = this.context.enumerateIndirectObjects();
+
     for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
       const indirectObject = indirectObjects[idx]!;
       const [ref, object] = indirectObject;
+
       // The body is chosen here and only here; serializeToBuffer writes
       // exactly this list at the offsets recorded below.
       if (!this.shouldSave(incremental, ref.objectNumber, object)) {
         continue;
       }
+
       if (!incremental && this.shouldSkipCopiedObjectStream(object)) {
         continue;
       }
@@ -135,33 +140,41 @@ class PDFStreamWriter extends PDFWriter {
 
       if (shouldNotCompress) {
         if (this.shouldCompress) this.compress(object);
+
         const written: [PDFRef, PDFObject] = [
           ref,
           security ? security.encryptIndirectObject(ref, object) : object,
         ];
+
         uncompressedObjects.push(written);
         xrefStream.addUncompressedEntry(ref, size);
         size += this.computeIndirectObjectSize(written);
+
         if (this.shouldWaitForTick(1)) await waitForTick();
       } else {
         let chunk = last(compressedObjects);
         let objectStreamRef = last(objectStreamRefs);
+
         if (!chunk || chunk.length % this.objectsPerStream === 0) {
           chunk = [];
           compressedObjects.push(chunk);
           objectStreamRef = allocateRef();
           objectStreamRefs.push(objectStreamRef);
         }
+
         xrefStream.addCompressedEntry(ref, objectStreamRef!, chunk.length);
         chunk.push(indirectObject);
       }
     }
 
     const inUse = uncompressedObjects.map(([ref]) => ref);
+
     for (const chunk of compressedObjects) {
       for (const [ref] of chunk) inUse.push(ref);
     }
+
     const free = freeEntries(this.context, this.snapshot, inUse);
+
     for (const { ref, nextFreeObjectNumber } of free) {
       xrefStream.addDeletedEntry(ref, nextFreeObjectNumber);
     }
@@ -199,12 +212,14 @@ class PDFStreamWriter extends PDFWriter {
       PDFName.of('Size'),
       PDFNumber.of(xrefStreamRef.objectNumber + 1),
     );
+
     if (this.snapshot.prevStartXRef) {
       xrefStream.dict.set(
         PDFName.of('Prev'),
         PDFNumber.of(this.snapshot.prevStartXRef),
       );
     }
+
     xrefStream.addUncompressedEntry(xrefStreamRef, size);
     const xrefOffset = size;
     this.xrefOffset = xrefOffset;

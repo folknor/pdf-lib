@@ -58,6 +58,7 @@ type InheritedAttributes = {
   viewBox: Box;
   blendMode: BlendMode | undefined;
 };
+
 type SVGAttributes = {
   rotate?: Degrees;
   scale?: number;
@@ -144,6 +145,7 @@ type TransformationName =
   | 'skewX'
   | 'skewY'
   | 'matrix';
+
 export const transformationToMatrix = (
   name: TransformationName,
   args: number[],
@@ -154,6 +156,7 @@ export const transformationToMatrix = (
     case 'scaleY': {
       // [sx 0 0 sy 0 0]
       const [sx, sy = sx] = args as [number, number?];
+
       return [
         name === 'scaleY' ? 1 : sx,
         0,
@@ -163,11 +166,13 @@ export const transformationToMatrix = (
         0,
       ];
     }
+
     case 'translate':
     case 'translateX':
     case 'translateY': {
       // [1 0 0 1 tx ty]
       const [tx, ty = tx] = args as [number, number?];
+
       // -ty is necessary because the pdf's y axis is inverted
       return [
         1,
@@ -178,6 +183,7 @@ export const transformationToMatrix = (
         name === 'translateX' ? 0 : -(ty ?? tx),
       ];
     }
+
     case 'rotate': {
       // [cos(a) sin(a) -sin(a) cos(a) 0 0]
       const [a, x = 0, y = 0] = args as [number, number?, number?];
@@ -185,6 +191,7 @@ export const transformationToMatrix = (
       const t2 = transformationToMatrix('translate', [-x, -y]);
       // -args[0] -> the '-' operator is necessary because the pdf rotation system is inverted
       const aRadians = degreesToRadians(-a!);
+
       const r: TransformationMatrix = [
         Math.cos(aRadians),
         Math.sin(aRadians),
@@ -193,9 +200,11 @@ export const transformationToMatrix = (
         0,
         0,
       ];
+
       // rotation around a point is the combination of: translate * rotate * (-translate)
       return combineMatrix(combineMatrix(t1, r), t2);
     }
+
     case 'skewY':
     case 'skewX': {
       // [1 tan(a) 0 1 0 0]
@@ -205,8 +214,10 @@ export const transformationToMatrix = (
       const skew = Math.tan(a);
       const skewX = name === 'skewX' ? skew : 0;
       const skewY = name === 'skewY' ? skew : 0;
+
       return [1, skewY, skewX, 1, 0, 0];
     }
+
     case 'matrix': {
       const [a, b, c, d, e, f] = args as [
         number,
@@ -216,10 +227,13 @@ export const transformationToMatrix = (
         number,
         number,
       ];
+
       const r = transformationToMatrix('scale', [1, -1]);
       const m: TransformationMatrix = [a, b, c, d, e, f];
+
       return combineMatrix(combineMatrix(r, m), r);
     }
+
     default:
       return identityMatrix;
   }
@@ -268,15 +282,21 @@ const runnersToPage = (
       fonts: { [fontName: string]: PDFFont },
     ) => {
       const family = style.fontFamily;
+
       if (!family) return;
+
       const isBold =
         style.fontWeight === 'bold' || Number(style.fontWeight) >= 700;
+
       const isItalic = style.fontStyle === 'italic';
+
       const getFont = (bold: boolean, italic: boolean, fontFamily: string) =>
         fonts[fontFamily + (bold ? '_bold' : '') + (italic ? '_italic' : '')];
+
       const key = Object.keys(fonts).find((fontFamily) =>
         fontFamily.startsWith(family),
       );
+
       return (
         getFont(isBold, isItalic, family) ||
         getFont(isBold, false, family) ||
@@ -288,6 +308,7 @@ const runnersToPage = (
 
     const font =
       options.fonts && getBestFont(element.svgAttributes, options.fonts);
+
     const textWidth = (font || page.getFont()[0]).widthOfTextAtSize(
       text,
       fontSize,
@@ -298,13 +319,16 @@ const runnersToPage = (
     );
 
     const textHeight = (font || page.getFont()[0]).heightAtSize(fontSize);
+
     const overLineHeight = (font || page.getFont()[0]).heightAtSize(fontSize, {
       descender: false,
     });
+
     const offsetX =
       anchor === 'middle' ? textWidth / 2 : anchor === 'end' ? textWidth : 0;
 
     let offsetY = 0;
+
     switch (dominantBaseline) {
       case 'middle':
       case 'central':
@@ -334,6 +358,7 @@ const runnersToPage = (
         offsetY = 0; // Default to alphabetic if not specified
         break;
     }
+
     const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
     page.drawText(text, {
       x: -offsetX,
@@ -387,6 +412,7 @@ const runnersToPage = (
   },
   path(element) {
     if (!element.svgAttributes.d) return;
+
     // nothing to paint (fill="none" and no stroke); drawSvgPath would
     // otherwise fall back to a black border
     if (!element.svgAttributes.fill && !element.svgAttributes.stroke) return;
@@ -428,6 +454,7 @@ const runnersToPage = (
   },
   image(element) {
     const { src } = element.svgAttributes;
+
     if (!(src && options.images?.[src])) return;
     const img = options.images![src];
     const blendMode = element.svgAttributes.blendMode ?? options.blendMode;
@@ -439,6 +466,7 @@ const runnersToPage = (
       element.svgAttributes.height ?? img.height,
       element.svgAttributes.preserveAspectRatio,
     );
+
     page.drawImage(img, {
       x,
       y: -y - height,
@@ -545,7 +573,9 @@ const styleOrAttribute = (
   def?: string,
 ): string => {
   const value = style[attribute] || attributes[attribute];
+
   if (!value && typeof def !== 'undefined') return def;
+
   return value as string;
 };
 
@@ -553,10 +583,12 @@ const parseStyles = (style: string): SVGStyle => {
   const cssRegex = /([^:\s]+)*\s*:\s*([^;]+)/g;
   const css: SVGStyle = {};
   let match = cssRegex.exec(style);
+
   while (match !== null) {
     css[match[1]!] = match[2]!;
     match = cssRegex.exec(style);
   }
+
   return css;
 };
 
@@ -587,10 +619,13 @@ const resolvePaint = (
   if (isNoPaint(value)) {
     return { color: undefined, alpha: undefined, currentColor: false };
   }
+
   const parsed = isCurrentColor(value) ? undefined : parseColor(value ?? '');
+
   if (parsed) {
     return { color: parsed.rgb, alpha: parsed.alpha, currentColor: false };
   }
+
   if (isCurrentColor(value) || inheritedIsCurrentColor) {
     return {
       color: currentColor?.rgb,
@@ -598,6 +633,7 @@ const resolvePaint = (
       currentColor: true,
     };
   }
+
   return { color: inheritedColor, alpha: undefined, currentColor: false };
 };
 
@@ -606,12 +642,16 @@ const parseColor = (
   inherited?: { rgb: Color; alpha: string | undefined },
 ): { rgb: Color; alpha: string | undefined } | undefined => {
   if (!color || color.length === 0) return;
+
   if (['none', 'transparent'].includes(color)) return;
+
   // `unset`/`inherit` on inherited properties mean "take the parent's value";
   // callers fall back to the inherited value when this returns undefined
   if (['unset', 'inherit'].includes(color.trim())) return;
+
   if (color === 'currentColor') return inherited || parseColor('#000000');
   const parsedColor = colorString(color);
+
   return {
     rgb: parsedColor.rgb,
     alpha: parsedColor.alpha ? `${parsedColor.alpha}` : undefined,
@@ -636,42 +676,51 @@ const parseAttributes = (
   const heightRaw = styleOrAttribute(attributes, style, 'height', '');
   // CSS `color` (with alpha); undefined means transparent
   const colorStr = styleOrAttribute(attributes, style, 'color');
+
   const currentColor: ColorWithAlpha | undefined = isNoPaint(colorStr)
     ? undefined
     : isCurrentColor(colorStr)
       ? inherited.color
       : (parseColor(colorStr) ?? inherited.color);
+
   const fillStr = styleOrAttribute(attributes, style, 'fill');
+
   const fill = resolvePaint(
     fillStr,
     inherited.fill,
     inherited.fillCurrentColor,
     currentColor,
   );
+
   const fillOpacityRaw = styleOrAttribute(attributes, style, 'fill-opacity');
   const opacityRaw = styleOrAttribute(attributes, style, 'opacity');
   const strokeStr = styleOrAttribute(attributes, style, 'stroke');
+
   const stroke = resolvePaint(
     strokeStr,
     inherited.stroke,
     inherited.strokeCurrentColor,
     currentColor,
   );
+
   const strokeOpacityRaw = styleOrAttribute(
     attributes,
     style,
     'stroke-opacity',
   );
+
   const strokeLineCapRaw = styleOrAttribute(
     attributes,
     style,
     'stroke-linecap',
   );
+
   const strokeLineJoinRaw = styleOrAttribute(
     attributes,
     style,
     'stroke-linejoin',
   );
+
   const fillRuleRaw = styleOrAttribute(attributes, style, 'fill-rule');
   const strokeWidthRaw = styleOrAttribute(attributes, style, 'stroke-width');
   const fontFamilyRaw = styleOrAttribute(attributes, style, 'font-family');
@@ -690,10 +739,12 @@ const parseAttributes = (
   const y2 = parseFloatValue(attributes['y2'], inherited.height);
   const cx = parseFloatValue(attributes['cx'], inherited.width);
   const cy = parseFloatValue(attributes['cy'], inherited.height);
+
   const rx = parseFloatValue(
     attributes['rx'] || attributes['r'],
     inherited.width,
   );
+
   const ry = parseFloatValue(
     attributes['ry'] || attributes['r'],
     inherited.height,
@@ -701,8 +752,10 @@ const parseAttributes = (
 
   const spacingValue = (name: string, fallback: number | undefined) => {
     const value = styleOrAttribute(attributes, style, name);
+
     return value === 'normal' ? 0 : (parseFloatValue(value) ?? fallback);
   };
+
   const newInherited: InheritedAttributes = {
     fontFamily: fontFamilyRaw || inherited.fontFamily,
     fontStyle: fontStyleRaw || inherited.fontStyle,
@@ -762,6 +815,7 @@ const parseAttributes = (
   };
 
   let transformList = attributes['transform'] || '';
+
   // Handle transformations set as direct attributes
   for (const name of [
     'translate',
@@ -784,17 +838,22 @@ const parseAttributes = (
   if (x || y) {
     transformList = `${transformList}translate(${x || 0} ${y || 0}) `;
   }
+
   let newMatrix = matrix;
+
   // Apply the transformations
   if (transformList) {
     const regexTransform = /(\w+)\((.+?)\)/g;
     let parsed = regexTransform.exec(transformList);
+
     while (parsed !== null) {
       const [, name, rawArgs] = parsed;
+
       const args = (rawArgs || '')
         .split(/\s*,\s*|\s+/)
         .filter((value) => value.length > 0)
         .map((value) => parseFloat(value));
+
       newMatrix = combineTransformation(
         newMatrix,
         name as TransformationName,
@@ -811,18 +870,22 @@ const parseAttributes = (
     svgAttributes.cx = cx;
     svgAttributes.cy = cy;
   }
+
   if (attributes['rx'] || attributes['ry'] || attributes['r']) {
     svgAttributes.rx = rx;
     svgAttributes.ry = ry;
   }
+
   if (attributes['x1'] || attributes['y1']) {
     svgAttributes.x1 = x1;
     svgAttributes.y1 = y1;
   }
+
   if (attributes['x2'] || attributes['y2']) {
     svgAttributes.x2 = x2;
     svgAttributes.y2 = y2;
   }
+
   if (attributes['width'] || attributes['height']) {
     svgAttributes.width = width ?? inherited.width;
     svgAttributes.height = height ?? inherited.height;
@@ -836,6 +899,7 @@ const parseAttributes = (
   if (newInherited.fontFamily) {
     // Handle complex fontFamily like `"Linux Libertine O", serif`
     const inner = newInherited.fontFamily.match(/^"(.*?)"|^'(.*?)'/);
+
     if (inner) newInherited.fontFamily = inner[1] || inner[2];
   }
 
@@ -861,14 +925,19 @@ const getFittingRectangle = (
   if (preserveAspectRatio === 'none') {
     return { x: 0, y: 0, width: targetWidth, height: targetHeight };
   }
+
   const originalRatio = originalWidth / originalHeight;
   const targetRatio = targetWidth / targetHeight;
+
   const width =
     targetRatio > originalRatio ? originalRatio * targetHeight : targetWidth;
+
   const height =
     targetRatio >= originalRatio ? targetHeight : targetWidth / originalRatio;
+
   const dx = targetWidth - width;
   const dy = targetHeight - height;
+
   const [x, y] = (() => {
     switch (preserveAspectRatio) {
       case 'xMinYMin':
@@ -892,6 +961,7 @@ const getFittingRectangle = (
         return [dx / 2, dy / 2];
     }
   })();
+
   return { x, y, width, height };
 };
 
@@ -909,9 +979,11 @@ const getAspectRatioTransformation = (
 } => {
   const [preserveAspectRatio, meetOrSlice = 'meet'] =
     preserveAspectRatioProp.split(' ');
+
   const scaleX = targetWidth / originalWidth;
   const scaleY = targetHeight / originalHeight;
   const boxScale = combineTransformation(matrix, 'scale', [scaleX, scaleY]);
+
   if (preserveAspectRatio === 'none') {
     return {
       clipBox: boxScale,
@@ -924,8 +996,10 @@ const getAspectRatioTransformation = (
       ? Math.max(scaleX, scaleY)
       : // since 'meet' is the default value, any value other than 'slice' should be handled as 'meet'
         Math.min(scaleX, scaleY);
+
   const dx = targetWidth - originalWidth * scale;
   const dy = targetHeight - originalHeight * scale;
+
   const [x, y] = (() => {
     switch (preserveAspectRatio) {
       case 'xMinYMin':
@@ -991,14 +1065,18 @@ const parseHTMLNode = (
       node.attributes['d'] = `M${node.attributes['points'] ?? ''}${close}`;
       delete node.attributes['points'];
     }
+
     const attributes = parseAttributes(node, inherited, matrix);
+
     const svgAttributes = {
       ...attributes.inherited,
       ...attributes.svgAttributes,
       matrix: attributes.matrix,
       clipSpaces,
     };
+
     Object.assign(node, { svgAttributes });
+
     return [node as SVGElement];
   }
 };
@@ -1013,19 +1091,23 @@ const parseSvgNode = (
   if (!node.attributes['width']) {
     node.setAttribute('width', `${inherited.viewBox.width}`);
   }
+
   if (!node.attributes['height']) {
     node.setAttribute('height', `${inherited.viewBox.height}`);
   }
+
   // At this point the attributes are guaranteed to be set
   const nodeWidth = node.attributes['width']!;
   const nodeHeight = node.attributes['height']!;
   const attributes = parseAttributes(node, inherited, matrix);
   const result: SVGElement[] = [];
+
   const viewBox = node.attributes['viewBox']
     ? parseViewBox(node.attributes['viewBox'])!
     : nodeWidth && nodeHeight
       ? parseViewBox(`0 0 ${nodeWidth} ${nodeHeight}`)!
       : inherited.viewBox;
+
   const x = parseFloat(node.attributes['x']!) || 0;
   const y = parseFloat(node.attributes['y']!) || 0;
 
@@ -1080,8 +1162,10 @@ const parseSvgNode = (
       newMatrix,
       [...clipSpaces, baseClipSpace],
     );
+
     result.push(...parsedNodes);
   }
+
   return result;
 };
 
@@ -1093,6 +1177,7 @@ const parseGroupNode = (
 ): SVGElement[] => {
   const attributes = parseAttributes(node, inherited, matrix);
   const result: SVGElement[] = [];
+
   for (const child of node.childNodes) {
     result.push(
       ...parseHTMLNode(
@@ -1103,14 +1188,18 @@ const parseGroupNode = (
       ),
     );
   }
+
   return result;
 };
 
 const parseFloatValue = (value?: string, reference = 1) => {
   if (!value) return;
   const v = parseFloat(value);
+
   if (Number.isNaN(v)) return;
+
   if (value.endsWith('%')) return (v * reference) / 100;
+
   return v;
 };
 
@@ -1147,11 +1236,13 @@ const parseBlendMode = (blendMode?: string): BlendMode | undefined => {
 
 const parseViewBox = (viewBox?: string): Box | undefined => {
   if (!viewBox) return;
+
   const [xViewBox = 0, yViewBox = 0, widthViewBox = 1, heightViewBox = 1] = (
     viewBox || ''
   )
     .split(' ')
     .map((val) => parseFloatValue(val));
+
   return {
     x: xViewBox,
     y: yViewBox,
@@ -1167,9 +1258,13 @@ const parse = (
   matrix: TransformationMatrix,
 ): SVGElement[] => {
   const htmlElement = parseHtml(svg).firstChild as HTMLElement;
+
   if (width) htmlElement.setAttribute('width', `${width}`);
+
   if (height) htmlElement.setAttribute('height', `${height}`);
+
   if (fontSize) htmlElement.setAttribute('font-size', `${fontSize}`);
+
   // TODO: what should be the default viewBox?
   return parseHTMLNode(
     htmlElement,
@@ -1209,11 +1304,13 @@ export const drawSvg = (
 ) => {
   const pdfSvg = typeof svg === 'string' ? new PDFSvg(svg) : svg;
   const size = page.getSize();
+
   // Markup with no <svg> element (empty included) is a caller error, not
   // something to draw nothing for.
   const svgNode = pdfSvg.svg
     ? parseHtml(pdfSvg.svg).querySelector('svg')
     : null;
+
   if (!svgNode) {
     throw new Error(`This is not an svg: ${pdfSvg.svg}`);
   }
@@ -1226,6 +1323,7 @@ export const drawSvg = (
 
   const width =
     options.width !== undefined ? options.width : parseFloat(widthRaw);
+
   const height =
     options.height !== undefined ? options.height : parseFloat(heightRaw);
 
@@ -1240,9 +1338,11 @@ export const drawSvg = (
   if (options.width || options.height) {
     if (width !== undefined)
       style['width'] = width + (Number.isNaN(width) ? '' : 'px');
+
     if (height !== undefined) {
       style['height'] = height + (Number.isNaN(height) ? '' : 'px');
     }
+
     svgNode.setAttribute(
       'style',
       Object.entries(style) // tslint:disable-line
@@ -1263,6 +1363,7 @@ export const drawSvg = (
   const elements = parse(svgNode.outerHTML, options, size, baseTransformation);
 
   const runners = runnersToPage(page, { ...options, images: pdfSvg.images });
+
   for (const elt of elements) {
     runners[elt.tagName]?.(elt);
   }

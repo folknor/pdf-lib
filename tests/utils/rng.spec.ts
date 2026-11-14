@@ -38,6 +38,7 @@ describe('getRandomBytes', () => {
       configurable: true,
       value: undefined,
     });
+
     try {
       expect(() => getRandomBytes(16)).toThrow('Web Crypto API is unavailable');
     } finally {

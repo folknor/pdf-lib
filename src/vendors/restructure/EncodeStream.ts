@@ -5,27 +5,34 @@
  */
 
 const textEncoder = new TextEncoder();
+
 const isBigEndian =
   new Uint8Array(new Uint16Array([0x1234]).buffer)[0] === 0x12;
 
 function stringToUtf16(string: string, swap: boolean): Uint8Array {
   const buf = new Uint16Array(string.length);
+
   for (let i = 0; i < string.length; i++) {
     let code = string.charCodeAt(i);
+
     if (swap) {
       code = (code >> 8) | ((code & 0xff) << 8);
     }
+
     buf[i] = code;
   }
+
   return new Uint8Array(buf.buffer);
 }
 
 function stringToAscii(string: string): Uint8Array {
   const buf = new Uint8Array(string.length);
+
   for (let i = 0; i < string.length; i++) {
     // Match node.js behavior - encoding allows 8-bit rather than 7-bit.
     buf[i] = string.charCodeAt(i);
   }
+
   return buf;
 }
 
@@ -51,6 +58,7 @@ export class EncodeStream {
 
   writeString(string: string, encoding = 'ascii'): void {
     let buf: Uint8Array;
+
     switch (encoding) {
       case 'utf16le':
       case 'utf16-le':

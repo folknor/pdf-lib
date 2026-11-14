@@ -17,6 +17,7 @@ class FileBuilder {
   add(part: string): number {
     const at = this.text.length;
     this.text += part;
+
     return at;
   }
 
@@ -49,6 +50,7 @@ const xrefStream = (
   extra = '',
 ): string => {
   let data = '';
+
   for (const [t, f2, f3] of rows) {
     data += String.fromCharCode(
       t,
@@ -60,6 +62,7 @@ const xrefStream = (
       f3 & 0xff,
     );
   }
+
   return `${num} 0 obj\n<< /Type /XRef /Size ${size} /W [1 4 2] /Length ${data.length}${extra} >>\nstream\n${data}\nendstream\nendobj\n`;
 };
 
@@ -71,16 +74,20 @@ const objectStream = (
 ): string => {
   let header = '';
   let body = '';
+
   for (const [n, source] of members) {
     header += `${n} ${body.length} `;
     body += `${source} `;
   }
+
   const data = header + body;
+
   return `${num} 0 obj\n<< /Type /ObjStm /N ${members.length} /First ${header.length} /Length ${data.length}${extra} >>\nstream\n${data}\nendstream\nendobj\n`;
 };
 
 const catalog = (num: number) =>
   `${num} 0 obj\n<< /Type /Catalog /Pages ${num + 1} 0 R >>\nendobj\n`;
+
 const pages = (num: number) =>
   `${num} 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n`;
 
@@ -100,28 +107,35 @@ describe('loading through the cross-reference chain', () => {
     const o1 = f.add(catalog(1));
     const o2 = f.add(pages(2));
     const o3 = f.add('3 0 obj\n(old)\nendobj\n');
+
     const x1 = f.add(
       table(
         [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o3, 0, 'n')]]],
         '/Size 4 /Root 1 0 R',
       ),
     );
+
     f.add(`startxref\n${x1}\n%%EOF\n`);
+
     const x2 = f.add(
       table(
         [[0, [entry(3, 65535, 'f')]], [3, [entry(0, 1, 'f')]]],
         `/Size 4 /Root 1 0 R /Prev ${x1}`,
       ),
     );
+
     f.add(`startxref\n${x2}\n%%EOF\n`);
     const n3 = f.add('3 1 obj\n(new)\nendobj\n');
+
     const x3 = f.add(
       table(
         [[0, [entry(0, 65535, 'f')]], [3, [entry(n3, 1, 'n')]]],
         `/Size 4 /Root 1 0 R /Prev ${x2}`,
       ),
     );
+
     f.add(`startxref\n${x3}\n%%EOF\n`);
+
     return f.bytes();
   };
 
@@ -141,6 +155,7 @@ describe('loading through the cross-reference chain', () => {
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     const snapshot = doc.takeSnapshot();
     doc.context.assign(PDFRef.of(3, 1), PDFString.of('changed'));
     const increment = await doc.saveIncremental(snapshot);
@@ -156,18 +171,21 @@ describe('loading through the cross-reference chain', () => {
     const o1 = f.add(catalog(1));
     const o2 = f.add(pages(2));
     const o3 = f.add('3 0 obj\n(gone)\nendobj\n');
+
     const x1 = f.add(
       table(
         [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o3, 0, 'n')]]],
         '/Size 4 /Root 1 0 R',
       ),
     );
+
     const x2 = f.add(
       table(
         [[0, [entry(3, 65535, 'f')]], [3, [entry(0, 1, 'f')]]],
         `/Size 4 /Root 1 0 R /Prev ${x1}`,
       ),
     );
+
     f.add(`startxref\n${x2}\n%%EOF\n`);
     const context = await parse(f.bytes());
     expect(context.lookup(PDFRef.of(3))).toBeUndefined();
@@ -261,12 +279,14 @@ describe('loading through the cross-reference chain', () => {
     const data = 'a\nendstream\nb';
     const o3 = f.add(`3 0 obj\n<< /Length 4 0 R >>\nstream\n${data}\nendstream\nendobj\n`);
     const o4 = f.add(`4 0 obj\n${data.length}\nendobj\n`);
+
     const x = f.add(
       table(
         [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o3, 0, 'n'), entry(o4, 0, 'n')]]],
         '/Size 5 /Root 1 0 R',
       ),
     );
+
     f.add(`startxref\n${x}\n%%EOF\n`);
     const context = await parse(f.bytes());
     const stream = context.lookup(PDFRef.of(3), PDFRawStream);
@@ -298,19 +318,23 @@ describe('loading through the cross-reference chain', () => {
     const o1 = f.add(catalog(1));
     const o2 = f.add(pages(2));
     const o3 = f.add('3 0 obj\n<< /Title (first) >>\nendobj\n');
+
     const x1 = f.add(
       table(
         [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o3, 0, 'n')]]],
         '/Size 4 /Root 1 0 R /Info 3 0 R',
       ),
     );
+
     const o4 = f.add('4 0 obj\n<< /Title (second) >>\nendobj\n');
+
     const x2 = f.add(
       table(
         [[0, [entry(0, 65535, 'f')]], [4, [entry(o4, 0, 'n')]]],
         `/Size 5 /Info 4 0 R /Prev ${x1}`,
       ),
     );
+
     f.add(`startxref\n${x2}\n%%EOF\n`);
     const context = await parse(f.bytes());
     expect(context.trailerInfo.Info).toBe(PDFRef.of(4));
@@ -371,15 +395,18 @@ describe('loading through the cross-reference chain', () => {
         const o2 = f.add(pages(2));
         f.add('3 0 obj\n(real)\nendobj\n');
         const data = 'endstream\nendobj\n3 0 obj\n(fake)\nendobj\n';
+
         if (variant === 'string') {
           f.add('garbage (3 0 obj\n(fake)\nendobj)\n');
         } else {
           const prefix = variant === 'invalid body' ? '4 0 obj\nBROKEN ' :
             variant === 'jibberish' ? 'garbage ' : '4 0 obj\n';
+
           const payload = variant === 'fallback' ? '3 0 obj\n(fake)\nendobj\n' : data;
           const length = variant === 'fallback' ? '99 0 R' : '5 0 R';
           f.add(`${prefix}<< /Length ${length} >>\nstream\n${payload}\n${variant === 'missing marker' ? 'damaged ' : ''}endstream\nendobj\n`);
         }
+
         const o5 = variant === 'compressed' ? 0 : f.add(`5 0 obj\n${data.length}\nendobj\n`);
         const o6 = variant === 'compressed' ? f.add(objectStream(6, [[5, String(data.length)]])) : 0;
         const x = f.offset;
@@ -401,6 +428,7 @@ describe('loading through the cross-reference chain', () => {
       const o1 = f.add(catalog(1));
       const o2 = f.add(pages(2));
       f.add('3 0 obj\n(three)\nendobj\n');
+
       const x = f.add(
         table(
           // Object 3's entry names generation 2, which no body has.
@@ -408,6 +436,7 @@ describe('loading through the cross-reference chain', () => {
           '/Size 4 /Root 1 0 R',
         ),
       );
+
       f.add(`startxref\n${x}\n%%EOF\n`);
       const context = await parse(f.bytes());
       expect(context.lookup(PDFRef.of(3))).toBeUndefined();
@@ -423,6 +452,7 @@ describe('loading through the cross-reference chain', () => {
       // A later stream whose data holds a header of 4 0, which is no body.
       const data = '4 0 obj\n(inside)\nendobj\n';
       f.add(`5 0 obj\n<< /Length ${data.length} >>\nstream\n${data}\nendstream\nendobj\n`);
+
       const x = f.add(
         table(
           [[0, [
@@ -436,6 +466,7 @@ describe('loading through the cross-reference chain', () => {
           '/Size 5 /Root 1 0 R',
         ),
       );
+
       f.add(`startxref\n${x}\n%%EOF\n`);
       const context = await parse(f.bytes());
       expect(context.lookup(PDFRef.of(4))).toEqual(PDFString.of('four'));
@@ -493,6 +524,7 @@ describe('loading through the cross-reference chain', () => {
       );
       f.add(`startxref\n${xs}\n%%EOF\n`);
       const context = await parse(f.bytes());
+
       for (const num of [5, 7, 8]) {
         expect(context.lookup(PDFRef.of(num))).toBeUndefined();
       }
@@ -527,12 +559,14 @@ describe('loading through the cross-reference chain', () => {
       const f = new FileBuilder();
       const o1 = f.add(catalog(1));
       const o2 = f.add(pages(2));
+
       const x = f.add(
         table(
           [[0, [entry(0, 65535, 'f'), entry(o1, 0, 'n'), entry(o2, 0, 'n'), entry(o2, 0, 'n')]]],
           '/Size 4 /Root 1 0 R /Encrypt 3 0 R',
         ),
       );
+
       f.add(`startxref\n${x}\n%%EOF\n`);
       await expect(parse(f.bytes())).rejects.toThrow(UnreadableEncryptionError);
     });

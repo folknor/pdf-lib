@@ -113,8 +113,10 @@ export default class OTProcessor {
   ): string | null {
     let changed = false;
     let entry;
+
     if (!this.script || script !== this.scriptTag) {
       entry = this.findScript(script ?? DEFAULT_SCRIPTS);
+
       if (!entry) {
         entry = this.findScript(DEFAULT_SCRIPTS);
       }
@@ -160,11 +162,14 @@ export default class OTProcessor {
     // Build a feature lookup table
     if (changed) {
       this.features = {};
+
       if (this.language) {
         for (const featureIndex of this.language.featureIndexes) {
           const record = this.table.featureList[featureIndex];
+
           const substituteFeature =
             this.substituteFeatureForVariations(featureIndex);
+
           this.features[record.tag] = substituteFeature || record.feature;
         }
       }
@@ -181,18 +186,22 @@ export default class OTProcessor {
    */
   lookupsForFeatures(userFeatures: string[] = []): LookupApplication[] {
     const byIndex = new Map<number, LookupApplication>();
+
     for (const tag of userFeatures) {
       const feature = this.features[tag];
+
       if (!feature) {
         continue;
       }
 
       for (const lookupIndex of feature.lookupListIndexes) {
         const entry = byIndex.get(lookupIndex);
+
         if (entry) {
           if (!entry.features.includes(tag)) entry.features.push(tag);
           continue;
         }
+
         byIndex.set(lookupIndex, {
           features: [tag],
           index: lookupIndex,
@@ -218,7 +227,9 @@ export default class OTProcessor {
       this.table.featureVariations.featureVariationRecords[
         this.variationsIndex
       ];
+
     const substitutions = record.featureTableSubstitution.substitutions;
+
     for (const substitution of substitutions) {
       if (substitution.featureIndex === featureIndex) {
         return substitution.alternateFeatureTable;
@@ -230,13 +241,16 @@ export default class OTProcessor {
 
   findVariationsIndex(coords: number[]): number {
     const variations = this.table.featureVariations;
+
     if (!variations) {
       return -1;
     }
 
     const records = variations.featureVariationRecords;
+
     for (let i = 0; i < records.length; i++) {
       const conditions = records[i].conditionSet.conditionTable;
+
       if (this.variationConditionsMatch(conditions, coords)) {
         return i;
       }
@@ -249,6 +263,7 @@ export default class OTProcessor {
     return conditions.every((condition) => {
       const coord =
         condition.axisIndex < coords.length ? coords[condition.axisIndex]! : 0;
+
       return (
         condition.filterRangeMinValue <= coord! &&
         coord! <= condition.filterRangeMaxValue
@@ -283,11 +298,13 @@ export default class OTProcessor {
    */
   currentFeatureValue(glyph: GlyphInfo): number {
     let value = 0;
+
     for (const tag of this.currentFeatures) {
       if (tag in glyph.features) {
         value = Math.max(value, this.featureValues[tag] ?? 1);
       }
     }
+
     return value;
   }
 
@@ -324,13 +341,16 @@ export default class OTProcessor {
         const frame = { positions: [index], end: index + 1 };
         this.sequences = [frame];
         let applied = false;
+
         for (const table of lookup.subTables) {
           if (this.applyLookup(lookup.lookupType, table)) {
             applied = true;
             break;
           }
         }
+
         this.sequences = [];
+
         if (applied && dir === 1) {
           this.glyphIterator.reset(options, frame.end - 1);
         }
@@ -347,8 +367,10 @@ export default class OTProcessor {
   replaceGlyph(index: number, replacement: GlyphInfo[]): void {
     this.glyphs.splice(index, 1, ...replacement);
     const delta = replacement.length - 1;
+
     for (const sequence of this.sequences ?? []) {
       const positions: number[] = [];
+
       for (const position of sequence.positions) {
         if (position < index) {
           positions.push(position);
@@ -360,7 +382,9 @@ export default class OTProcessor {
           positions.push(position + delta);
         }
       }
+
       sequence.positions = positions;
+
       if (sequence.end > index) {
         sequence.end += delta;
       }
@@ -389,11 +413,14 @@ export default class OTProcessor {
    */
   iteratorOptions(lookup: any): GlyphIteratorOptions {
     const flags = lookup.flags ?? {};
+
     if (!flags.flags?.useMarkFilteringSet) {
       return flags;
     }
+
     const coverage =
       this.font?.GDEF?.markGlyphSetsDef?.coverage?.[lookup.markFilteringSet];
+
     return {
       ...flags,
       markFilter: coverage
@@ -425,24 +452,29 @@ export default class OTProcessor {
     const options = this.glyphIterator.options;
     const glyphIndex = this.glyphIterator.index;
     this.sequences ??= [];
+
     const sequence: TrackedSequence = {
       positions: input,
       end: input.length ? input[input.length - 1]! + 1 : glyphIndex + 1,
     };
+
     this.sequences.push(sequence);
 
     for (const lookupRecord of lookupRecords) {
       const position = sequence.positions[lookupRecord.sequenceIndex];
+
       if (position == null) {
         continue;
       }
 
       const lookup = this.table.lookupList.get(lookupRecord.lookupListIndex);
+
       // A reverse lookup is not applied when reached from a contextual rule,
       // matching HarfBuzz; the rest of the record list still runs.
       if (this.isReverseLookup(lookup)) {
         continue;
       }
+
       this.glyphIterator.reset(this.iteratorOptions(lookup), position);
 
       // Apply lookup subtables until one matches
@@ -458,6 +490,7 @@ export default class OTProcessor {
     // nested rules leave it to the rule that reached them.
     this.consumedTo(sequence.end);
     this.glyphIterator.reset(options, glyphIndex);
+
     return true;
   }
 
@@ -503,6 +536,7 @@ export default class OTProcessor {
     }
 
     this.glyphIterator.index = pos;
+
     return matched.length < sequence.length ? false : matched;
   }
 
@@ -546,6 +580,7 @@ export default class OTProcessor {
       case 1: {
         // Class array
         const i = glyph - classDef.startGlyph;
+
         if (i >= 0 && i < classDef.classValueArray.length) {
           return classDef.classValueArray[i];
         }
@@ -580,20 +615,24 @@ export default class OTProcessor {
 
   applyContext(table: any): boolean {
     let index: number, set: any;
+
     switch (table.version) {
       case 1:
         index = this.coverageIndex(table.coverage);
+
         if (index === -1) {
           return false;
         }
 
         set = table.ruleSets[index];
+
         if (!set) {
           return false;
         }
 
         for (const rule of set) {
           const rest = this.sequenceMatches(1, rule.input);
+
           if (rest) {
             return this.applyLookupList(rule.lookupRecords, [
               this.glyphIterator.index,
@@ -611,6 +650,7 @@ export default class OTProcessor {
 
         index = this.getClassID(this.glyphIterator.cur!.id, table.classDef);
         set = table.classSet[index];
+
         if (!set) {
           return false;
         }
@@ -621,6 +661,7 @@ export default class OTProcessor {
             rule.classes,
             table.classDef,
           );
+
           if (rest) {
             return this.applyLookupList(rule.lookupRecords, [
               this.glyphIterator.index,
@@ -633,6 +674,7 @@ export default class OTProcessor {
 
       case 3: {
         const input = this.coverageSequenceMatches(0, table.coverages);
+
         if (input) {
           return this.applyLookupList(table.lookupRecords, input);
         }
@@ -646,14 +688,17 @@ export default class OTProcessor {
 
   applyChainingContext(table: any): boolean {
     let index: number;
+
     switch (table.version) {
       case 1: {
         index = this.coverageIndex(table.coverage);
+
         if (index === -1) {
           return false;
         }
 
         const set = table.chainRuleSets[index];
+
         if (!set) {
           return false;
         }
@@ -667,7 +712,9 @@ export default class OTProcessor {
           ) {
             continue;
           }
+
           const rest = this.sequenceMatches(1, rule.input);
+
           if (
             rest &&
             this.sequenceMatches(1 + rule.input.length, rule.lookahead)
@@ -692,6 +739,7 @@ export default class OTProcessor {
           table.inputClassDef,
         );
         const rules = table.chainClassSet[index];
+
         if (!rules) {
           return false;
         }
@@ -706,11 +754,13 @@ export default class OTProcessor {
           ) {
             continue;
           }
+
           const rest = this.classSequenceMatches(
             1,
             rule.input,
             table.inputClassDef,
           );
+
           if (
             rest &&
             this.classSequenceMatches(
@@ -738,7 +788,9 @@ export default class OTProcessor {
         ) {
           break;
         }
+
         const input = this.coverageSequenceMatches(0, table.inputCoverage);
+
         if (
           input &&
           this.coverageSequenceMatches(

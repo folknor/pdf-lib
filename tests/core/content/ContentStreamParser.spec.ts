@@ -8,6 +8,7 @@ describe('parseContentStream', () => {
     const { operations, complete } = parse(
       '/F#2320 -1.5 Tf [(a\\)b) -20 <414> ] TJ << /K true /N null >> BDC',
     );
+
     expect(complete).toBe(true);
     expect(operations.map((o) => o.operator)).toEqual(['Tf', 'TJ', 'BDC']);
     expect(operations[0]!.operands).toEqual([
@@ -21,9 +22,11 @@ describe('parseContentStream', () => {
         { type: 'string', bytes: new Uint8Array([0x41, 0x40]), hex: true },
       ],
     ]);
+
     const dict = operations[2]!.operands[0] as {
       entries: Map<PDFName, unknown>;
     };
+
     expect(dict.entries.get(PDFName.of('K'))).toBe(true);
     expect(dict.entries.get(PDFName.of('N'))).toBe(null);
   });
@@ -50,6 +53,7 @@ describe('parseContentStream', () => {
     const { complete } = parse(
       'BI /W 1 /H 1 /BPC 8 /CS /G /F /A85 ID z!!~> EI',
     );
+
     expect(complete).toBe(true);
   });
 
@@ -57,6 +61,7 @@ describe('parseContentStream', () => {
     const { operations, complete } = parse(
       'BI /W 2 /H 2 /BPC 8 /CS /RGB ID EI EI EI xyz EI Q',
     );
+
     expect(complete).toBe(true);
     expect(operations.map((o) => o.operator)).toEqual(['BI', 'Q']);
     expect(new TextDecoder().decode(operations[0]!.inlineImage!.data)).toBe(

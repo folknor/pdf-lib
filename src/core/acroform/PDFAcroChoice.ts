@@ -22,13 +22,16 @@ class PDFAcroChoice extends PDFAcroTerminal {
     if (values.length === 0) {
       this.dict.delete(PDFName.of('V'));
     }
+
     if (values.length === 1) {
       this.dict.set(PDFName.of('V'), values[0]!);
     }
+
     if (values.length > 1) {
       if (!this.hasFlag(AcroChoiceFlags.MultiSelect)) {
         throw new MultiSelectValueError();
       }
+
       this.dict.set(PDFName.of('V'), this.dict.context.obj(values));
     }
 
@@ -37,12 +40,15 @@ class PDFAcroChoice extends PDFAcroTerminal {
 
   valuesAreValid(values: (PDFString | PDFHexString)[]): boolean {
     const options = this.getOptions();
+
     for (let idx = 0, len = values.length; idx < len; idx++) {
       const val = values[idx]!.decodeText();
+
       if (!options.find((o) => val === (o.display || o.value).decodeText())) {
         return false;
       }
     }
+
     return true;
   }
 
@@ -50,12 +56,14 @@ class PDFAcroChoice extends PDFAcroTerminal {
     if (values.length > 1) {
       const indices = new Array<number>(values.length);
       const options = this.getOptions();
+
       for (let idx = 0, len = values.length; idx < len; idx++) {
         const val = values[idx]!.decodeText();
         indices[idx] = options.findIndex(
           (o) => val === (o.display || o.value).decodeText(),
         );
       }
+
       // /I must be in ascending numeric order (the default sort is lexical)
       this.dict.set(
         PDFName.of('I'),
@@ -76,6 +84,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
 
       for (let idx = 0, len = v.size(); idx < len; idx++) {
         const value = v.lookup(idx);
+
         if (value instanceof PDFString || value instanceof PDFHexString) {
           values.push(value);
         }
@@ -103,10 +112,12 @@ class PDFAcroChoice extends PDFAcroTerminal {
     }[],
   ) {
     const newOpt = new Array<PDFArray>(options.length);
+
     for (let idx = 0, len = options.length; idx < len; idx++) {
       const { value, display } = options[idx]!;
       newOpt[idx] = this.dict.context.obj([value, display || value]);
     }
+
     this.dict.set(PDFName.of('Opt'), this.dict.context.obj(newOpt));
   }
 

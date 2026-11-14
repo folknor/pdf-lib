@@ -29,15 +29,19 @@ const MAX_FONT_SIZE = 500;
 const findFontSize = (fits: (size: number) => boolean) => {
   if (!fits(MIN_FONT_SIZE)) {
     let size = MIN_FONT_SIZE - 1;
+
     while (size > 0) {
       if (fits(size)) return size;
       size /= 2;
     }
+
     throw new Error('Cannot fit text into the supplied bounds');
   }
+
   for (let size = MIN_FONT_SIZE + 1; size <= MAX_FONT_SIZE; size++) {
     if (!fits(size)) return size - 1;
   }
+
   return MAX_FONT_SIZE;
 };
 
@@ -50,8 +54,10 @@ const computeFontSize = (
   if (!(bounds.width > 0) || !(bounds.height > 0)) {
     throw new Error('Cannot auto size text into nonpositive bounds');
   }
+
   return findFontSize((size) => {
     const lines = measureLines(size);
+
     return (
       lines.every((line) =>
         inclusiveWidth ? line.width <= bounds.width : line.width < bounds.width,
@@ -122,16 +128,19 @@ const splitOutLines = (
   const breaks: number[] = [];
   let scanned = 0;
   let exhausted = false;
+
   // Ensure breaks[idx] exists if possible; returns false when there is none.
   const hasBreak = (idx: number): boolean => {
     while (breaks.length <= idx && !exhausted) {
       let i = scanned;
+
       while (
         i < input.length &&
         !(/\s/.test(input[i]!) && (i === 0 || !/\s/.test(input[i - 1]!)))
       ) {
         i++;
       }
+
       if (i < input.length) {
         breaks.push(i);
         scanned = i + 1;
@@ -140,12 +149,15 @@ const splitOutLines = (
         exhausted = true;
       }
     }
+
     return idx < breaks.length;
   };
 
   const widths = new Map<number, number>();
+
   const widthUpTo = (end: number) => {
     let width = widths.get(end);
+
     if (width === undefined) {
       width = font.widthOfTextAtSize(
         input.substring(0, end),
@@ -154,6 +166,7 @@ const splitOutLines = (
       );
       widths.set(end, width);
     }
+
     return width;
   };
 
@@ -161,6 +174,7 @@ const splitOutLines = (
     hasBreak(idx) && widthUpTo(breaks[idx]!) < maxWidth;
 
   let found = -1;
+
   while (fits(found + 1)) found++;
 
   if (found >= 0) {
@@ -168,10 +182,13 @@ const splitOutLines = (
     const line = input.substring(0, lastBreakPoint);
     // Skip past whitespace to find the start of the next word
     let remainderStart = lastBreakPoint;
+
     while (remainderStart < input.length && /\s/.test(input[remainderStart]!)) {
       remainderStart++;
     }
+
     const remainder = input.substring(remainderStart) || undefined;
+
     return { line, width: widthUpTo(lastBreakPoint), remainder };
   }
 
@@ -190,8 +207,10 @@ const wrapLines = (
   spacing?: TextSpacing,
 ) => {
   const wrapped: { line: string; width: number }[] = [];
+
   for (const paragraph of lines) {
     let prevRemainder: string | undefined = paragraph;
+
     while (prevRemainder !== undefined) {
       const { line, width, remainder } = splitOutLines(
         prevRemainder,
@@ -200,12 +219,14 @@ const wrapLines = (
         fontSize,
         spacing,
       );
+
       wrapped.push({ line, width });
       // Only trim lines that we had to split ourselves. So we won't trim lines
       // that the user provided themselves with whitespace.
       prevRemainder = remainder?.trim();
     }
   }
+
   return wrapped;
 };
 
@@ -220,11 +241,13 @@ export const layoutMultilineText = (
       (size) => wrapLines(lines, bounds.width, font, size, spacing),
       (size, count) => {
         const height = font.heightAtSize(size);
+
         return (height + height * 0.2) * count;
       },
       bounds,
     );
   }
+
   const height = font.heightAtSize(fontSize);
   const lineHeight = height + height * 0.2;
 
@@ -236,6 +259,7 @@ export const layoutMultilineText = (
   let maxY = bounds.y + bounds.height;
 
   let y = bounds.y + bounds.height;
+
   for (const { line, width } of wrapLines(
     lines,
     bounds.width,
@@ -244,6 +268,7 @@ export const layoutMultilineText = (
     spacing,
   )) {
     const raw = font.encodeText(line);
+
     const encoded = spacing
       ? raw.withSpacing(
           spacing.characterSpacing ?? 0,
@@ -265,8 +290,11 @@ export const layoutMultilineText = (
     y -= lineHeight;
 
     if (x < minX) minX = x;
+
     if (y < minY) minY = y;
+
     if (x + width > maxX) maxX = x + width;
+
     if (y + height > maxY) maxY = y + height;
 
     textLines.push({ text: line, encoded, width, height, x, y });
@@ -337,10 +365,12 @@ export const layoutCombedText = (
   let maxY = bounds.y + bounds.height;
 
   let cellOffset = 0;
+
   while (cellOffset < cellCount) {
     const char = clusters[cellOffset] ?? '';
 
     const raw = font.encodeText(char);
+
     const encoded = spacing
       ? raw.withSpacing(
           spacing.characterSpacing ?? 0,
@@ -348,14 +378,18 @@ export const layoutCombedText = (
           fontSize,
         )
       : raw;
+
     const width = font.widthOfTextAtSize(char, fontSize, spacing);
 
     const cellCenter = bounds.x + (cellWidth * cellOffset + cellWidth / 2);
     const x = cellCenter - width / 2;
 
     if (x < minX) minX = x;
+
     if (y < minY) minY = y;
+
     if (x + width > maxX) maxX = x + width;
+
     if (y + height > maxY) maxY = y + height;
 
     cells.push({ text: line, encoded, width, height, x, y });
@@ -404,6 +438,7 @@ export const layoutSinglelineText = (
   }
 
   const raw = font.encodeText(line);
+
   const encoded = spacing
     ? raw.withSpacing(
         spacing.characterSpacing ?? 0,
@@ -411,6 +446,7 @@ export const layoutSinglelineText = (
         fontSize,
       )
     : raw;
+
   const width = font.widthOfTextAtSize(line, fontSize, spacing);
   const height = font.heightAtSize(fontSize, { descender: false });
 

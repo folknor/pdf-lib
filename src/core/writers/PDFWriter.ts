@@ -60,21 +60,26 @@ export const freeEntries = (
   inUse: readonly PDFRef[],
 ): FreeEntry[] => {
   const written = new Set<number>();
+
   for (const ref of inUse) {
     if (ref.objectNumber === 0) {
       throw new Error(
         'Cannot write object number 0: it is the head of the free list.',
       );
     }
+
     if (written.has(ref.objectNumber)) {
       throw new Error(
         `Cannot write object number ${ref.objectNumber} twice: the document holds more than one generation of it.`,
       );
     }
+
     written.add(ref.objectNumber);
   }
+
   let inherited: Map<number, XRefDisposition> | undefined;
   const { originalBytes } = context.pdfFileDetails;
+
   if (!(snapshot instanceof DefaultDocumentSnapshot) && originalBytes) {
     try {
       inherited = PDFXRefChainReader.read(
@@ -85,21 +90,28 @@ export const freeEntries = (
     } catch (e) {
       if (!(e instanceof XRefChainError)) throw e;
     }
+
     if (inherited) assertInheritedFreeEntriesRespected(inherited, inUse);
   }
+
   const generations = new Map<number, number>();
+
   for (const [num, entry] of inherited ?? []) {
     if (entry.kind === 'free' && !written.has(num)) {
       generations.set(num, entry.generation);
     }
   }
+
   const live = new Set<number>();
+
   for (const [ref] of context.enumerateIndirectObjects()) {
     live.add(ref.objectNumber);
   }
+
   for (const ref of snapshot.deletedRefs()) {
     if (live.has(ref.objectNumber) || written.has(ref.objectNumber)) continue;
     const entry = inherited?.get(ref.objectNumber);
+
     const generation =
       entry?.kind === 'free'
         ? entry.generation
@@ -111,9 +123,12 @@ export const freeEntries = (
                 : ref.generationNumber) + 1,
             65535,
           );
+
     generations.set(ref.objectNumber, generation);
   }
+
   const freed = [...generations].sort(([a], [b]) => a - b);
+
   return freed.map(([num, generation], idx) => ({
     ref: PDFRef.of(num, generation),
     nextFreeObjectNumber: freed[idx + 1]?.[0] ?? 0,
@@ -144,12 +159,15 @@ const assertInheritedFreeEntriesRespected = (
 ): void => {
   for (const ref of inUse) {
     const entry = entries.get(ref.objectNumber);
+
     if (entry?.kind !== 'free') continue;
+
     if (entry.generation === 65535) {
       throw new Error(
         `Cannot write object ${ref.objectNumber} ${ref.generationNumber} R: the file froze number ${ref.objectNumber} (free at generation 65535), which is never reused. Register a new object instead.`,
       );
     }
+
     if (entry.generation !== ref.generationNumber) {
       throw new Error(
         `Cannot write object ${ref.objectNumber} ${ref.generationNumber} R: the file lists number ${ref.objectNumber} free, to be reused with generation ${entry.generation}.`,
@@ -182,11 +200,13 @@ export const savableBaseline = (
   context: PDFContext,
 ): BaselineEncryption | undefined => {
   const baseline = context.baselineEncryption;
+
   if (baseline === 'keyless') {
     throw new Error(
       'An encrypted file loaded without its password cannot be saved or encrypted; load it with the `password` option.',
     );
   }
+
   return baseline;
 };
 
@@ -212,6 +232,7 @@ export const writeEncryption = (
 ): WriteEncryption => {
   const { trailerInfo } = context;
   const baseline = savableBaseline(context);
+
   if (!incremental) {
     return {
       encryptor:
@@ -226,11 +247,13 @@ export const writeEncryption = (
       ID: trailerInfo.ID,
     };
   }
+
   if (context.security) {
     throw new Error(
       'An incremental update cannot change the encryption of a file; save it with a full rewrite after encrypt().',
     );
   }
+
   if (!baseline) {
     return {
       encryptor: undefined,
@@ -238,7 +261,9 @@ export const writeEncryption = (
       ID: trailerInfo.ID,
     };
   }
+
   baseline.assertUntouchedBy(context, snapshot);
+
   return { encryptor: baseline, Encrypt: baseline.encryptRef, ID: baseline.id };
 };
 
@@ -314,16 +339,20 @@ class PDFWriter {
     const existing = this.context.lookup(this.encryption.ID);
     const first = existing instanceof PDFArray ? existing.lookup(0) : undefined;
     let kept: PDFString | PDFHexString;
+
     if (first instanceof PDFString || first instanceof PDFHexString) {
       kept = first;
     } else {
       let generated = firstFileIDs.get(this.context);
+
       if (!generated) {
         generated = PDFHexString.fromBytes(generateFileID());
         firstFileIDs.set(this.context, generated);
       }
+
       kept = generated;
     }
+
     this.encryption.ID = this.context.obj([
       kept,
       PDFHexString.fromBytes(generateFileID()),
@@ -356,6 +385,7 @@ class PDFWriter {
     object: PDFObject,
   ): boolean {
     let should = true;
+
     if (incremental) {
       should = this.snapshot.shouldSave(objNum);
     } else {
@@ -364,14 +394,17 @@ class PDFWriter {
         object.dict.lookup(PDFName.of('Type')) === PDFName.of('XRef')
       );
     }
+
     if (!should && this._largestSkippedObjectNum < objNum) {
       this._largestSkippedObjectNum = objNum;
     }
+
     return should;
   }
 
   async serializeToBuffer(): Promise<Uint8Array<ArrayBuffer>> {
     const incremental = !(this.snapshot instanceof DefaultDocumentSnapshot);
+
     const { size, header, indirectObjects, xref, trailerDict, trailer } =
       await this.computeBufferSize(incremental);
 
@@ -382,6 +415,7 @@ class PDFWriter {
       offset += header.copyBytesInto(buffer, offset);
       buffer[offset++] = CharCodes.Newline;
     }
+
     buffer[offset++] = CharCodes.Newline;
 
     // computeBufferSize chose the body and gave each object its xref offset;
@@ -417,6 +451,7 @@ class PDFWriter {
 
       const n =
         object instanceof PDFObjectStream ? object.getObjectsCount() : 1;
+
       if (this.shouldWaitForTick(n)) await waitForTick();
     }
 
@@ -442,6 +477,7 @@ class PDFWriter {
   ]): number {
     const refSize = ref.sizeInBytes() + 3; // 'R' -> 'obj\n'
     const objectSize = object.sizeInBytes() + 9; // '\nendobj\n\n'
+
     return refSize + objectSize;
   }
 
@@ -461,6 +497,7 @@ class PDFWriter {
       this._largestSkippedObjectNum === this.context.largestObjectNumber
         ? 0
         : 1);
+
     return this.context.obj({
       Size: size,
       Root: this.context.trailerInfo.Root,
@@ -487,9 +524,11 @@ class PDFWriter {
     const header = this.context.header;
 
     let size = this.snapshot.pdfSize;
+
     if (!incremental) {
       size += header.sizeInBytes() + 1;
     }
+
     size += 1;
 
     const xref = PDFCrossRefSection.create();
@@ -498,24 +537,31 @@ class PDFWriter {
 
     for (const [ref, object] of this.context.enumerateIndirectObjects()) {
       if (!this.shouldSave(incremental, ref.objectNumber, object)) continue;
+
       // See shouldSkipCopiedObjectStream. Incremental snapshots already
       // exclude these containers.
       if (!incremental && this.shouldSkipCopiedObjectStream(object)) continue;
+
       if (this.shouldCompress) this.compress(object);
+
       const written: [PDFRef, PDFObject] = [
         ref,
         security ? security.encryptIndirectObject(ref, object) : object,
       ];
+
       indirectObjects.push(written);
       xref.addEntry(ref, size);
       size += this.computeIndirectObjectSize(written);
+
       if (this.shouldWaitForTick(1)) await waitForTick();
     }
+
     const free = freeEntries(
       this.context,
       this.snapshot,
       indirectObjects.map(([ref]) => ref),
     );
+
     for (const { ref, nextFreeObjectNumber } of free) {
       xref.addDeletedEntry(ref, nextFreeObjectNumber);
     }
@@ -534,6 +580,7 @@ class PDFWriter {
     const trailerDict = PDFTrailerDict.of(
       this.createTrailerDict(this.snapshot.prevStartXRef, incremental),
     );
+
     size += trailerDict.sizeInBytes() + 2; // '\n\n'
 
     const trailer = PDFTrailer.forLastCrossRefSectionOffset(xrefOffset);
@@ -560,36 +607,44 @@ class PDFWriter {
   private fillInheritedGaps(xref: PDFCrossRefSection): void {
     const { originalBytes } = this.context.pdfFileDetails;
     const { prevStartXRef } = this.snapshot;
+
     if (!originalBytes || prevStartXRef === undefined) {
       throw new Error(
         'fillXrefGaps in an incremental save needs the bytes and startxref of the file it extends',
       );
     }
+
     const inherited = PDFXRefChainReader.read(
       originalBytes,
       prevStartXRef,
       this.context.maxDecodedStreamSize,
     );
+
     if (inherited.size - 1 > this.context.largestObjectNumber) {
       throw new Error(
         `fillXrefGaps: the file's /Size ${inherited.size} exceeds the numbers this document reserves`,
       );
     }
+
     xref.fillGaps((objectNumber) => {
       if (objectNumber === 0) return PDFCrossRefSection.freeGap(0);
       const entry = inherited.entries.get(objectNumber);
+
       if (!entry) return PDFCrossRefSection.freeGap(objectNumber);
+
       if (entry.kind === 'compressed') {
         throw new Error(
           `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} is inherited from an object stream, which a table cannot list. Save without fillXrefGaps, or with useObjectStreams.`,
         );
       }
+
       if (entry.kind === 'null') {
         // Listing it free would make the number reusable; in use, resolvable.
         throw new Error(
           `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} has an xref-stream entry of an undefined type (a null reference), which a table cannot list. Save without fillXrefGaps.`,
         );
       }
+
       return {
         ref: PDFRef.of(objectNumber, entry.generation),
         offset: entry.kind === 'inUse' ? entry.offset : 0,
@@ -600,12 +655,14 @@ class PDFWriter {
 
   protected compress(object: PDFObject): void {
     if (!(object instanceof PDFRawStream)) return;
+
     // The document's XMP stays unfiltered: PDF/A-1 requires it (ISO 19005-1
     // 6.7.2), and XMP is meant to be readable by tools that do not parse PDF.
     if (isCatalogMetadata(this.context, object)) return;
 
     // Skip if already has a Filter (already compressed)
     const filter = object.dict.get(PDFName.of('Filter'));
+
     if (filter) return;
 
     const contents = object.getContents();
@@ -642,6 +699,7 @@ class PDFWriter {
 
   protected shouldWaitForTick = (n: number) => {
     this.parsedObjects += n;
+
     return this.parsedObjects % this.objectsPerTick === 0;
   };
 }

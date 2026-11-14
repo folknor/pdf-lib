@@ -17,12 +17,14 @@ const fileWithOversizedNumber = async () => {
   const bytes = await doc.save({ useObjectStreams: false });
   const text = asText(bytes);
   expect(text).toContain(`/${MARK}`);
+
   return asBytes(text.replace(`/${MARK}`, BIG));
 };
 
 /** One char per byte, both ways (TextDecoder 'latin1' is windows-1252). */
 const asText = (bytes: Uint8Array) =>
   Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+
 const asBytes = (text: string) =>
   Uint8Array.from(text, (c) => c.charCodeAt(0));
 
@@ -34,9 +36,11 @@ describe('warning handler', () => {
   it('receives load warnings once each, and the console gets none', async () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const warnings: PDFWarning[] = [];
+
     const doc = await PDFDocument.load(await fileWithOversizedNumber(), {
       onWarning: (w) => warnings.push(w),
     });
+
     expect(warnings).toEqual([
       {
         code: 'number-too-large',

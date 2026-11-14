@@ -8,6 +8,7 @@ type StageFunction = (
   glyphs: GlyphInfo[],
   plan: ShapingPlan,
 ) => void;
+
 type Stage = string[] | StageFunction;
 
 interface FeatureSpec {
@@ -55,9 +56,11 @@ export default class ShapingPlan {
   _addFeatures(features: string[], global: boolean): void {
     const stageIndex = this.stages.length - 1;
     const stage = this.stages[stageIndex];
+
     if (!stage || typeof stage === 'function') {
       return;
     }
+
     for (const feature of features) {
       if (this.allFeatures[feature] == null) {
         stage.push(feature);
@@ -119,16 +122,20 @@ export default class ShapingPlan {
     } else if (typeof features === 'object') {
       for (const tag in features) {
         const value = features[tag];
+
         if (typeof value === 'number') {
           this.featureValues[tag] = value;
         }
+
         if (value) {
           this.add(tag);
         } else if (this.allFeatures[tag] != null) {
           const stage = this.stages[this.allFeatures[tag]!];
+
           if (stage && Array.isArray(stage)) {
             stage.splice(stage.indexOf(tag), 1);
           }
+
           delete this.allFeatures[tag];
           delete this.globalFeatures[tag];
         }

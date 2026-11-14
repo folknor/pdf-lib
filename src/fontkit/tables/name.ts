@@ -97,6 +97,7 @@ const NAMES: (string | null)[] = [
 NameTable.process = function (this: Record<string, unknown>) {
   const self = this as unknown as NameTableData;
   const records: Record<string, any> = {};
+
   for (const record of self.records as NameRecordData[]) {
     // find out what language this is for
     let language = LANGUAGES[record.platformID]?.[record.languageID];
@@ -118,11 +119,13 @@ NameTable.process = function (this: Record<string, unknown>) {
       record.nameID >= 256
         ? 'fontFeatures'
         : NAMES[record.nameID] || record.nameID;
+
     if (records[key] == null) {
       records[key] = {};
     }
 
     let obj = records[key];
+
     if (record.nameID >= 256) {
       obj = obj[record.nameID] || (obj[record.nameID] = {});
     }
@@ -140,12 +143,15 @@ NameTable.process = function (this: Record<string, unknown>) {
 
 NameTable.preEncode = function (this: Record<string, unknown>) {
   const self = this as unknown as NameTableData;
+
   if (Array.isArray(self.records)) return;
   self.version = 0;
 
   const records: NameRecordData[] = [];
+
   for (const key in self.records) {
     const val = self.records[key];
+
     if (key === 'fontFeatures') continue;
 
     records.push({

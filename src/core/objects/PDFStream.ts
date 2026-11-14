@@ -50,6 +50,7 @@ class PDFStream extends PDFObject {
 
   override sizeInBytes(): number {
     this.updateDict();
+
     return this.dict.sizeInBytes() + this.getContentsSize() + 18;
   }
 
@@ -59,6 +60,7 @@ class PDFStream extends PDFObject {
     streamString += '\nstream\n';
     streamString += this.getContentsString();
     streamString += '\nendstream';
+
     return streamString;
   }
 
@@ -78,6 +80,7 @@ class PDFStream extends PDFObject {
     buffer[offset++] = CharCodes.Newline;
 
     const contents = this.getContents();
+
     for (let idx = 0, len = contents.length; idx < len; idx++) {
       buffer[offset++] = contents[idx]!;
     }

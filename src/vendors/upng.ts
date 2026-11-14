@@ -48,12 +48,16 @@ const _bin = {
     ((buff[p + 1]! << 16) | (buff[p + 2]! << 8) | buff[p + 3]!),
   readASCII: (buff: Uint8Array, p: number, l: number): string => {
     let s = '';
+
     for (let i = 0; i < l; i++) s += String.fromCharCode(buff[p + i]!);
+
     return s;
   },
   readBytes: (buff: Uint8Array, p: number, l: number): number[] => {
     const arr: number[] = [];
+
     for (let i = 0; i < l; i++) arr.push(buff[p + i]!);
+
     return arr;
   },
 };
@@ -85,6 +89,7 @@ function decodeImage(
   if (ctype === 6) {
     // RGB + alpha
     const qarea = area << 2;
+
     if (depth === 8)
       for (let i = 0; i < qarea; i += 4) {
         bf[i] = data[i]!;
@@ -92,10 +97,12 @@ function decodeImage(
         bf[i + 2] = data[i + 2]!;
         bf[i + 3] = data[i + 3]!;
       }
+
     if (depth === 16) for (let i = 0; i < qarea; i++) bf[i] = data[i << 1]!;
   } else if (ctype === 2) {
     // RGB
     const ts = out.tabs.tRNS as number[] | undefined;
+
     if (ts == null) {
       if (depth === 8)
         for (let i = 0; i < area; i++) {
@@ -106,6 +113,7 @@ function decodeImage(
             (data[ti + 1]! << 8) |
             data[ti]!;
         }
+
       if (depth === 16)
         for (let i = 0; i < area; i++) {
           const ti = i * 6;
@@ -119,6 +127,7 @@ function decodeImage(
       const tr = ts[0]!;
       const tg = ts[1]!;
       const tb = ts[2]!;
+
       if (depth === 8)
         for (let i = 0; i < area; i++) {
           const qi = i << 2;
@@ -128,9 +137,11 @@ function decodeImage(
             (data[ti + 2]! << 16) |
             (data[ti + 1]! << 8) |
             data[ti]!;
+
           if (data[ti] === tr && data[ti + 1] === tg && data[ti + 2] === tb)
             bf[qi + 3] = 0;
         }
+
       if (depth === 16)
         for (let i = 0; i < area; i++) {
           const qi = i << 2;
@@ -140,6 +151,7 @@ function decodeImage(
             (data[ti + 4]! << 16) |
             (data[ti + 2]! << 8) |
             data[ti]!;
+
           if (
             rs(data, ti) === tr &&
             rs(data, ti + 2) === tg &&
@@ -158,6 +170,7 @@ function decodeImage(
       for (let y = 0; y < h; y++) {
         const s0 = y * bpl;
         const t0 = y * w;
+
         for (let i = 0; i < w; i++) {
           const qi = (t0 + i) << 2;
           const j = (data[s0 + (i >> 3)]! >> (7 - ((i & 7) << 0))) & 1;
@@ -168,10 +181,12 @@ function decodeImage(
           bf[qi + 3] = j < tl ? ap![j]! : 255;
         }
       }
+
     if (depth === 2)
       for (let y = 0; y < h; y++) {
         const s0 = y * bpl;
         const t0 = y * w;
+
         for (let i = 0; i < w; i++) {
           const qi = (t0 + i) << 2;
           const j = (data[s0 + (i >> 2)]! >> (6 - ((i & 3) << 1))) & 3;
@@ -182,10 +197,12 @@ function decodeImage(
           bf[qi + 3] = j < tl ? ap![j]! : 255;
         }
       }
+
     if (depth === 4)
       for (let y = 0; y < h; y++) {
         const s0 = y * bpl;
         const t0 = y * w;
+
         for (let i = 0; i < w; i++) {
           const qi = (t0 + i) << 2;
           const j = (data[s0 + (i >> 1)]! >> (4 - ((i & 1) << 2))) & 15;
@@ -196,6 +213,7 @@ function decodeImage(
           bf[qi + 3] = j < tl ? ap![j]! : 255;
         }
       }
+
     if (depth === 8)
       for (let i = 0; i < area; i++) {
         const qi = i << 2;
@@ -218,6 +236,7 @@ function decodeImage(
         bf[qi + 2] = gr;
         bf[qi + 3] = data[di + 1]!;
       }
+
     if (depth === 16)
       for (let i = 0; i < area; i++) {
         const qi = i << 2;
@@ -231,9 +250,11 @@ function decodeImage(
   } else if (ctype === 0) {
     // gray
     const tr = out.tabs.tRNS != null ? (out.tabs.tRNS as number) : -1;
+
     for (let y = 0; y < h; y++) {
       const off = y * bpl;
       const to = y * w;
+
       if (depth === 1)
         for (let x = 0; x < w; x++) {
           const gr = 255 * ((data[off + (x >>> 3)]! >>> (7 - (x & 7))) & 1);
@@ -244,6 +265,7 @@ function decodeImage(
         for (let x = 0; x < w; x++) {
           const gr =
             85 * ((data[off + (x >>> 2)]! >>> (6 - ((x & 3) << 1))) & 3);
+
           const al = gr === tr * 85 ? 0 : 255;
           bf32[to + x] = (al << 24) | (gr << 16) | (gr << 8) | gr;
         }
@@ -251,6 +273,7 @@ function decodeImage(
         for (let x = 0; x < w; x++) {
           const gr =
             17 * ((data[off + (x >>> 1)]! >>> (4 - ((x & 1) << 2))) & 15);
+
           const al = gr === tr * 17 ? 0 : 255;
           bf32[to + x] = (al << 24) | (gr << 16) | (gr << 8) | gr;
         }
@@ -268,6 +291,7 @@ function decodeImage(
         }
     }
   }
+
   return bf;
 }
 
@@ -294,13 +318,17 @@ function _filteredSize(out: PNGImage): number {
   const bpp = _getBPP(out);
   const w = out.width;
   const h = out.height;
+
   if (out.interlace === 0) return h * (1 + Math.ceil((w * bpp) / 8));
   let size = 0;
+
   for (let pass = 0; pass < 7; pass++) {
     const sw = passExtent(w, starting_col[pass]!, col_increment[pass]!);
     const sh = passExtent(h, starting_row[pass]!, row_increment[pass]!);
+
     if (sw !== 0 && sh !== 0) size += sh * (1 + Math.ceil((sw * bpp) / 8));
   }
+
   return size;
 }
 
@@ -318,6 +346,7 @@ export function decode(
   const bin = _bin;
   const rUs = bin.readUshort;
   const rUi = bin.readUint;
+
   const out: PNGImage = {
     width: 0,
     height: 0,
@@ -328,10 +357,12 @@ export function decode(
     tabs: {},
     numFrames: 1,
   };
+
   let sawIHDR = false;
   const idat: Uint8Array[] = [];
 
   const mgck = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
   for (let i = 0; i < 8; i++)
     if (data[i] !== mgck[i]) throw new Error('The input is not a PNG file!');
 
@@ -341,6 +372,7 @@ export function decode(
     offset += 4;
     const type = bin.readASCII(data, offset, 4);
     offset += 4;
+
     if (offset + len > data.length) throw new Error('Truncated PNG chunk');
 
     if (type === 'IHDR') {
@@ -370,27 +402,33 @@ export function decode(
     } else if (type === 'IEND') {
       break;
     }
+
     offset += len;
     offset += 4; // CRC
   }
 
   if (!sawIHDR) throw new Error('PNG has no IHDR chunk');
+
   // An animated PNG is rejected by the caller; do not inflate anything.
   if (out.numFrames > 1) return out;
 
   const filtered = _filteredSize(out);
   const rgba = out.width * out.height * 4;
   const largest = Math.max(filtered, rgba);
+
   if (largest > maxDecodedSize)
     throw new DecodedStreamTooLargeError(largest, maxDecodedSize);
 
   let dd: Uint8Array;
+
   if (idat.length === 1) dd = idat[0]!;
   else {
     let total = 0;
+
     for (const c of idat) total += c.length;
     dd = new Uint8Array(total);
     let pos = 0;
+
     for (const c of idat) {
       dd.set(c, pos);
       pos += c.length;
@@ -398,6 +436,7 @@ export function decode(
   }
 
   out.data = _decompress(out, dd, filtered);
+
   return out;
 }
 
@@ -412,6 +451,7 @@ function _decompress(
   // ends decoding with what was written so far. Short output leaves zeros.
   const result = new Uint8Array(filtered);
   const raw = out.tabs.CgBI ? dd : dd.subarray(2, Math.max(2, dd.length - 4)); // zlib header, adler32
+
   try {
     inflateSync(raw, { out: result });
   } catch (e) {
@@ -420,6 +460,7 @@ function _decompress(
 
   if (out.interlace === 0)
     return _filterZero(result, out, 0, out.width, out.height);
+
   return _readInterlace(result, out);
 }
 
@@ -433,26 +474,32 @@ function _readInterlace(data: Uint8Array, out: PNGImage): Uint8Array {
   let di = 0;
 
   let pass = 0;
+
   while (pass < 7) {
     const ri = row_increment[pass]!;
     const ci = col_increment[pass]!;
     let sw = 0;
     let sh = 0;
     let cr = starting_row[pass]!;
+
     while (cr < h) {
       cr += ri;
       sh++;
     }
+
     let cc = starting_col[pass]!;
+
     while (cc < w) {
       cc += ci;
       sw++;
     }
+
     const bpll = Math.ceil((sw * bpp) / 8);
     _filterZero(data, out, di, sw, sh);
 
     let y = 0;
     let row = starting_row[pass]!;
+
     while (row < h) {
       let col = starting_col[pass]!;
       let cdi = (di + y * bpll) << 3;
@@ -463,34 +510,43 @@ function _readInterlace(data: Uint8Array, out: PNGImage): Uint8Array {
           const idx1 = row * bpl + (col >> 3);
           img[idx1] = (img[idx1] ?? 0) | (val << (7 - ((col & 7) << 0)));
         }
+
         if (bpp === 2) {
           const val = (data[cdi >> 3]! >> (6 - (cdi & 7))) & 3;
           const idx2 = row * bpl + (col >> 2);
           img[idx2] = (img[idx2] ?? 0) | (val << (6 - ((col & 3) << 1)));
         }
+
         if (bpp === 4) {
           const val = (data[cdi >> 3]! >> (4 - (cdi & 7))) & 15;
           const idx4 = row * bpl + (col >> 1);
           img[idx4] = (img[idx4] ?? 0) | (val << (4 - ((col & 1) << 2)));
         }
+
         if (bpp >= 8) {
           const ii = row * bpl + col * cbpp;
+
           for (let j = 0; j < cbpp; j++) img[ii + j] = data[(cdi >> 3) + j]!;
         }
+
         cdi += bpp;
         col += ci;
       }
+
       y++;
       row += ri;
     }
+
     if (sw * sh !== 0) di += sh * (1 + bpll);
     pass = pass + 1;
   }
+
   return img;
 }
 
 function _getBPP(out: PNGImage): number {
   const noc = [1, null, 3, 1, 2, null, 4][out.ctype]!;
+
   return noc * out.depth;
 }
 
@@ -508,6 +564,7 @@ function _filterZero(
   let x = 0;
 
   if (type > 1) data[off] = [0, 0, 1][type - 2]!;
+
   if (type === 3)
     for (x = bpp; x < bpl; x++)
       data[x + 1] = (data[x + 1]! + (data[x + 1 - bpp]! >>> 1)) & 255;
@@ -521,18 +578,21 @@ function _filterZero(
     if (type === 0) for (; x < bpl; x++) data[i + x] = data[di + x]!;
     else if (type === 1) {
       for (; x < bpp; x++) data[i + x] = data[di + x]!;
+
       for (; x < bpl; x++) data[i + x] = data[di + x]! + data[i + x - bpp]!;
     } else if (type === 2) {
       for (; x < bpl; x++) data[i + x] = data[di + x]! + data[i + x - bpl]!;
     } else if (type === 3) {
       for (; x < bpp; x++)
         data[i + x] = data[di + x]! + (data[i + x - bpl]! >>> 1);
+
       for (; x < bpl; x++)
         data[i + x] =
           data[di + x]! + ((data[i + x - bpl]! + data[i + x - bpp]!) >>> 1);
     } else {
       for (; x < bpp; x++)
         data[i + x] = data[di + x]! + _paeth(0, data[i + x - bpl]!, 0);
+
       for (; x < bpl; x++)
         data[i + x] =
           data[di + x]! +
@@ -543,6 +603,7 @@ function _filterZero(
           );
     }
   }
+
   return data;
 }
 
@@ -551,8 +612,10 @@ function _paeth(a: number, b: number, c: number): number {
   const pa = p - a;
   const pb = p - b;
   const pc = p - c;
+
   if (pa * pa <= pb * pb && pa * pa <= pc * pc) return a;
   else if (pb * pb <= pc * pc) return b;
+
   return c;
 }
 
@@ -570,6 +633,7 @@ function _IHDR(data: Uint8Array, offset: number, out: PNGImage): void {
   const filter = data[offset]!;
   offset++;
   out.interlace = data[offset]!;
+
   if (
     out.width === 0 ||
     out.height === 0 ||
@@ -585,4 +649,5 @@ function _IHDR(data: Uint8Array, offset: number, out: PNGImage): void {
 
 // Default export for compatibility
 const UPNG = { decode, toRGBA8 };
+
 export default UPNG;

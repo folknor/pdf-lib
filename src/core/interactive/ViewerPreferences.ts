@@ -16,6 +16,7 @@ const asEnum = <T extends string | number, U extends { [key: string]: T }>(
   enumType: U,
 ): U[keyof U] | undefined => {
   if (rawValue === undefined) return;
+
   return enumType[rawValue];
 };
 
@@ -83,6 +84,7 @@ type BoolViewerPrefKey =
   | 'CenterWindow'
   | 'DisplayDocTitle'
   | 'PickTrayByPDFSize';
+
 type NameViewerPrefKey =
   | 'NonFullScreenPageMode'
   | 'Direction'
@@ -105,6 +107,7 @@ class ViewerPreferences {
   /** @ignore */
   static create = (context: PDFContext) => {
     const dict = context.obj({});
+
     return new ViewerPreferences(dict);
   };
 
@@ -115,13 +118,17 @@ class ViewerPreferences {
 
   protected lookupBool(key: BoolViewerPrefKey): PDFBool | undefined {
     const returnObj = this.dict.lookup(PDFName.of(key));
+
     if (returnObj instanceof PDFBool) return returnObj;
+
     return;
   }
 
   protected lookupName(key: NameViewerPrefKey): PDFName | undefined {
     const returnObj = this.dict.lookup(PDFName.of(key));
+
     if (returnObj instanceof PDFName) return returnObj;
+
     return;
   }
 
@@ -183,14 +190,18 @@ class ViewerPreferences {
   /** @ignore */
   PrintPageRange(): PDFArray | undefined {
     const PrintPageRange = this.dict.lookup(PDFName.of('PrintPageRange'));
+
     if (PrintPageRange instanceof PDFArray) return PrintPageRange;
+
     return;
   }
 
   /** @ignore */
   NumCopies(): PDFNumber | undefined {
     const NumCopies = this.dict.lookup(PDFName.of('NumCopies'));
+
     if (NumCopies instanceof PDFNumber) return NumCopies;
+
     return;
   }
 
@@ -258,6 +269,7 @@ class ViewerPreferences {
    */
   getNonFullScreenPageMode(): NonFullScreenPageMode {
     const mode = this.NonFullScreenPageMode()?.decodeText();
+
     return asEnum(mode, NonFullScreenPageMode) ?? NonFullScreenPageMode.UseNone;
   }
 
@@ -267,6 +279,7 @@ class ViewerPreferences {
    */
   getReadingDirection(): ReadingDirection {
     const direction = this.Direction()?.decodeText();
+
     return asEnum(direction, ReadingDirection) ?? ReadingDirection.L2R;
   }
 
@@ -277,6 +290,7 @@ class ViewerPreferences {
    */
   getPrintScaling(): PrintScaling {
     const scaling = this.PrintScaling()?.decodeText();
+
     return asEnum(scaling, PrintScaling) ?? PrintScaling.AppDefault;
   }
 
@@ -287,6 +301,7 @@ class ViewerPreferences {
    */
   getDuplex(): Duplex | undefined {
     const duplex = this.Duplex()?.decodeText();
+
     return asEnum(duplex, Duplex);
   }
 
@@ -319,9 +334,11 @@ class ViewerPreferences {
    */
   getPrintPageRange(): PageRange[] {
     const rng = this.PrintPageRange();
+
     if (!rng) return [];
 
     const pageRanges: PageRange[] = [];
+
     for (let i = 0; i < rng.size(); i += 2) {
       // Despite the spec clearly stating that "The first page of the PDF file
       // shall be donoted by 1", several test PDFs (spec 1.7) created in
@@ -552,6 +569,7 @@ class ViewerPreferences {
     if (!Array.isArray(printPageRange)) printPageRange = [printPageRange];
 
     const flatRange: number[] = [];
+
     for (let idx = 0, len = printPageRange.length; idx < len; idx++) {
       flatRange.push(printPageRange[idx]!.start);
       flatRange.push(printPageRange[idx]!.end);

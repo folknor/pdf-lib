@@ -53,11 +53,13 @@ export default class AATStateMachine {
         classCode = END_OF_TEXT_CLASS;
       } else {
         glyph = glyphs[index]!;
+
         if (glyph.id === 0xffff) {
           // deleted glyph
           classCode = DELETED_GLYPH_CLASS;
         } else {
           classCode = this.lookupTable.lookup(glyph.id);
+
           if (classCode == null) {
             classCode = OUT_OF_BOUNDS_CLASS;
           }
@@ -77,6 +79,7 @@ export default class AATStateMachine {
       }
 
       currentState = entry.newState;
+
       if (shouldAdvance) {
         index += dir;
       }

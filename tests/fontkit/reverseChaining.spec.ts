@@ -26,11 +26,13 @@ const reverse = (
 const processor = (Class: any, lookups: any[] = []) => {
   const p = Object.create(Class.prototype);
   p.table = { lookupList: { get: (i: number) => lookups[i] } };
+
   return p;
 };
 
 const run = (lookup: any, glyphs: any[], lookups: any[] = []) => {
   processor(GSUBProcessor, lookups).applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
+
   return glyphs.map((g) => g.id);
 };
 
@@ -63,10 +65,12 @@ describe('GSUB reverse chaining', () => {
 
   it('is not applied from a contextual rule, but later records still run', () => {
     const single = { lookupType: 1, flags: {}, subTables: [{ version: 2, coverage: cov(1), substitute: { get: () => 7 } }] };
+
     const lookups = [
       { lookupType: 8, flags: {}, subTables: [reverse([1], [4])] },
       single,
     ];
+
     const context = {
       lookupType: 5,
       flags: {},
@@ -81,6 +85,7 @@ describe('GSUB reverse chaining', () => {
         },
       ],
     };
+
     expect(run(context, [glyph(1)], lookups)).toEqual([7]);
   });
 
@@ -90,6 +95,7 @@ describe('GSUB reverse chaining', () => {
       flags: { flags: { ignoreMarks: true } },
       subTables: [{ version: 2, coverage: cov(1), substitute: { get: () => 7 } }],
     };
+
     expect(run(single, [glyph(1, { isMark: true }), glyph(1)])).toEqual([1, 7]);
   });
 
@@ -102,6 +108,7 @@ describe('GSUB reverse chaining', () => {
     const font: any = fontkit.create(
       fs.readFileSync('./assets/fonts/noto_sans_coptic/NotoSansCoptic-Regular.ttf'),
     );
+
     const glyphs = font.layout('Ⲁ̅ⲁ̅').glyphs;
     expect(glyphs.map((g: any) => g.name)).toEqual([
       'uni2C80',

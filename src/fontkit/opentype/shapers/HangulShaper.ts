@@ -39,6 +39,7 @@ export default class HangulShaper extends DefaultShaper {
   static override assignFeatures(plan: ShapingPlan, glyphs: GlyphInfo[]): void {
     let state = 0;
     let i = 0;
+
     while (i < glyphs.length) {
       let action: number;
       const glyph = glyphs[i]!;
@@ -55,6 +56,7 @@ export default class HangulShaper extends DefaultShaper {
           if (!plan.font.hasGlyphForCodePoint(code)) {
             i = decompose(glyphs, i, plan.font);
           }
+
           break;
 
         case COMPOSE:
@@ -93,20 +95,27 @@ const DOTTED_CIRCLE = 0x25cc;
 
 const isL = (code: number): boolean =>
   (0x1100 <= code && code <= 0x115f) || (0xa960 <= code && code <= 0xa97c);
+
 const isV = (code: number): boolean =>
   (0x1160 <= code && code <= 0x11a7) || (0xd7b0 <= code && code <= 0xd7c6);
+
 const isT = (code: number): boolean =>
   (0x11a8 <= code && code <= 0x11ff) || (0xd7cb <= code && code <= 0xd7fb);
+
 const isTone = (code: number): boolean => 0x302e <= code && code <= 0x302f;
+
 const isLVT = (code: number): boolean =>
   HANGUL_BASE <= code && code <= HANGUL_END;
+
 // Bounded below too: without isLVT, code points under U+AC00 whose offset
 // happens to be divisible by T_COUNT (H, comma, d, ...) passed as syllables
 // and were "composed" with a following trailing jamo into another letter.
 const isLV = (code: number): boolean =>
   isLVT(code) && (code - HANGUL_BASE) % T_COUNT === 0;
+
 const isCombiningL = (code: number): boolean => L_BASE <= code && code <= L_END;
 const isCombiningV = (code: number): boolean => V_BASE <= code && code <= V_END;
+
 const isCombiningT = (code: number): boolean =>
   T_BASE + 1 <= code && code <= T_END;
 
@@ -124,21 +133,27 @@ function getType(code: number): number {
   if (isL(code)) {
     return L;
   }
+
   if (isV(code)) {
     return V;
   }
+
   if (isT(code)) {
     return T;
   }
+
   if (isLV(code)) {
     return LV;
   }
+
   if (isLVT(code)) {
     return LVT;
   }
+
   if (isTone(code)) {
     return M;
   }
+
   return X;
 }
 
@@ -248,6 +263,7 @@ function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
   }
 
   glyphs.splice(i, 1, ...insert);
+
   return i + insert.length - 1;
 }
 
@@ -264,6 +280,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
   let ljmo: GlyphInfo | undefined;
   let vjmo: GlyphInfo | undefined;
   let tjmo: GlyphInfo | undefined;
+
   if (prevType === LV && type === T) {
     // <LV,T>
     lv = prev;
@@ -290,6 +307,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
   }
 
   const t = tjmo?.codePoints[0] || T_BASE;
+
   if (lv != null && (t === T_BASE || isCombiningT(t))) {
     const s = lv + (t - T_BASE);
 
@@ -303,6 +321,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
         del,
         getGlyph(font, s, glyph.features, composed(parts, [s])),
       );
+
       return i - del + 1;
     }
   }
@@ -311,9 +330,11 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
   if (ljmo) {
     ljmo.features['ljmo'] = true;
   }
+
   if (vjmo) {
     vjmo.features['vjmo'] = true;
   }
+
   if (tjmo) {
     tjmo.features['tjmo'] = true;
   }
@@ -323,6 +344,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
     // Either the T was non-combining, or the LVT glyph wasn't supported.
     // Decompose the glyph again and apply OT features.
     decompose(glyphs, i - 1, font);
+
     return i + 1;
   }
 

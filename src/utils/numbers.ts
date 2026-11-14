@@ -11,19 +11,23 @@ export const numberToString = (num: number) => {
 
   if (Math.abs(num) < 1.0) {
     const e = parseInt(num.toString().split('e-')[1]!, 10);
+
     if (e) {
       // Numbers with very large negative exponents produce absurdly long
       // strings (e.g. Number.MIN_VALUE with e=324 → 331 chars) that
       // corrupt PDF output for many readers. Clamp to zero.
       if (e > 100) return num < 0 ? '-0' : '0';
       const negative = num < 0;
+
       if (negative) num *= -1;
       num *= 10 ** (e - 1);
       numStr = `0.${new Array(e).join('0')}${num.toString().substring(2)}`;
+
       if (negative) numStr = `-${numStr}`;
     }
   } else {
     let e = parseInt(num.toString().split('+')[1]!, 10);
+
     if (e > 20) {
       e -= 20;
       num /= 10 ** e;
@@ -50,8 +54,10 @@ export const sizeInBytes = (n: number) => Math.ceil(n.toString(2).length / 8);
  */
 export const bytesFor = (n: number) => {
   const bytes = new Uint8Array(sizeInBytes(n));
+
   for (let i = 1; i <= bytes.length; i++) {
     bytes[i - 1] = n >> ((bytes.length - i) * 8);
   }
+
   return bytes;
 };

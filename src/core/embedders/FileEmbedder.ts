@@ -41,6 +41,7 @@ interface FixedOptions {
 }
 
 const timestamp = (date: Date | undefined) => date?.getTime();
+
 const toDate = (time: number | undefined) =>
   time === undefined ? undefined : new Date(time);
 
@@ -77,15 +78,21 @@ class FileEmbedder {
   get options(): EmbeddedFileOptions {
     const f = this.fixed;
     const options: EmbeddedFileOptions = {};
+
     if (f.mimeType !== undefined) options.mimeType = f.mimeType;
+
     if (f.description !== undefined) options.description = f.description;
     const creationDate = toDate(f.creationDate);
+
     if (creationDate) options.creationDate = creationDate;
     const modificationDate = toDate(f.modificationDate);
+
     if (modificationDate) options.modificationDate = modificationDate;
+
     if (f.afRelationship !== undefined) {
       options.afRelationship = f.afRelationship;
     }
+
     return options;
   }
 
@@ -111,6 +118,7 @@ class FileEmbedder {
           : undefined,
       },
     });
+
     const embeddedFileStreamRef = context.register(embeddedFileStream);
 
     const fileSpecDict = context.obj({
@@ -124,6 +132,7 @@ class FileEmbedder {
 
     if (ref) {
       context.assign(ref, fileSpecDict);
+
       return ref;
     } else {
       return context.register(fileSpecDict);

@@ -17,6 +17,7 @@ const encryptedBytes = async (algorithm: (typeof algorithms)[number]) => {
   const page = pdfDoc.addPage([300, 200]);
   page.node.set(PDFName.of('Note'), PDFString.of('original note'));
   pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'o', algorithm });
+
   return pdfDoc.save({ useObjectStreams: false });
 };
 
@@ -44,17 +45,22 @@ describe('decrypted literal strings', () => {
         ignoreEncryption: true,
         updateMetadata: false,
       });
+
       // Bypass the keyless-save check to author a ciphertext fixture.
       ciphertextDoc.context.baselineEncryption = undefined;
+
       const info = ciphertextDoc.context.lookup(
         ciphertextDoc.context.trailerInfo.Info,
         PDFDict,
       );
+
       const ciphertext = info.lookup(PDFName.of('Title'), PDFHexString).asBytes();
+
       const literal = Array.from(
         ciphertext,
         (byte) => `\\${byte.toString(8).padStart(3, '0')}`,
       ).join('');
+
       info.set(PDFName.of('Title'), PDFString.of(literal));
       const literalInput = await ciphertextDoc.save({ useObjectStreams: false });
 
@@ -62,15 +68,19 @@ describe('decrypted literal strings', () => {
         password: 'user',
         updateMetadata: false,
       });
+
       const assertPlaintext = (doc: PDFDocument) => {
         const title = doc.context
           .lookup(doc.context.trailerInfo.Info, PDFDict)
           .lookup(PDFName.of('Title'), PDFString, PDFHexString);
+
         expect(title.asBytes()).toEqual(expectedBytes);
         expect(title.decodeText()).toBe(plaintext);
         expect(doc.getTitle()).toBe(plaintext);
       };
+
       assertPlaintext(loaded);
+
       for (const useObjectStreams of [false, true]) {
         const saved = await loaded.save({ useObjectStreams });
         const reopened = await PDFDocument.load(saved, { updateMetadata: false });
@@ -85,11 +95,13 @@ describe('incremental saves of encrypted files', () => {
     for (const useObjectStreams of [false, true]) {
       it(`encrypts the increment under the file's ${algorithm} handler (object streams ${useObjectStreams})`, async () => {
         const original = await encryptedBytes(algorithm);
+
         const doc = await PDFDocument.load(original, {
           password: 'user',
           forIncrementalUpdate: true,
           updateMetadata: false,
         });
+
         doc.getPage(0).node.set(PDFName.of('Added'), PDFString.of('added note'));
         doc.getPage(0).drawText('drawn text');
 
@@ -105,6 +117,7 @@ describe('incremental saves of encrypted files', () => {
           password: 'user',
           updateMetadata: false,
         });
+
         expect(noteOf(reopened, 'Note')).toBe('original note');
         expect(noteOf(reopened, 'Added')).toBe('added note');
       });
@@ -113,11 +126,13 @@ describe('incremental saves of encrypted files', () => {
 
   it('keeps the file /ID across the increment', async () => {
     const original = await encryptedBytes('RC4-128');
+
     const doc = await PDFDocument.load(original, {
       password: 'user',
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     const id = latin1(original).match(/\/ID \[[^\]]*\]/)![0];
     const updated = await doc.save({ useObjectStreams: false });
     expect(latin1(updated.subarray(original.length))).toContain(id);
@@ -125,10 +140,12 @@ describe('incremental saves of encrypted files', () => {
 
   it('rewrites on save() after encrypt() and refuses increments', async () => {
     const original = fs.readFileSync('./assets/pdfs/normal.pdf');
+
     const doc = await PDFDocument.load(original, {
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     doc.encrypt({ userPassword: 'user' });
 
     await expect(doc.commit()).rejects.toThrow(/cannot change the encryption/);
@@ -147,11 +164,13 @@ describe('incremental saves of encrypted files', () => {
 
   it('refuses increments onto a file loaded encrypted without a password', async () => {
     const original = await encryptedBytes('AES-256');
+
     const doc = await PDFDocument.load(original, {
       ignoreEncryption: true,
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     await expect(doc.commit()).rejects.toThrow(/without its password/);
     await expect(doc.save()).rejects.toThrow(/without its password/);
     await expect(doc.save({ rewrite: true })).rejects.toThrow(
@@ -178,11 +197,13 @@ describe('incremental saves of encrypted files', () => {
 
   it('refuses an increment that rewrites the encryption dictionary', async () => {
     const original = await encryptedBytes('AES-128');
+
     const doc = await PDFDocument.load(original, {
       password: 'user',
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     const encryptRef = latin1(original).match(/\/Encrypt (\d+) 0 R/)!;
     doc.context.snapshot!.markRefForSave(PDFRef.of(Number(encryptRef[1])));
     await expect(doc.commit()).rejects.toThrow(/encryption dictionary/);

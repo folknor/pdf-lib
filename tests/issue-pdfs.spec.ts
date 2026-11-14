@@ -11,10 +11,13 @@ import { PDFDocument } from '../src/index';
 describe('Issue PDF files (truncated)', () => {
   it('loads QWHyicZLjE (truncated in xref, recoverable)', async () => {
     const filename = 'QWHyicZLjE_InvoicePaper_1715478056267.pdf';
+
     if (!fs.existsSync(filename)) {
       console.log('Skipping - file not found:', filename);
+
       return;
     }
+
     const bytes = fs.readFileSync(filename);
     // Truncated in xref section but still loadable
     const doc = await PDFDocument.load(bytes);
@@ -23,10 +26,13 @@ describe('Issue PDF files (truncated)', () => {
 
   it('rejects y0j2NRDLuw (truncated mid-object) with clear error', async () => {
     const filename = 'y0j2NRDLuw_InvoicePaper_1715784300908.pdf';
+
     if (!fs.existsSync(filename)) {
       console.log('Skipping - file not found:', filename);
+
       return;
     }
+
     const bytes = fs.readFileSync(filename);
     // Truncated mid-object - correctly rejected with helpful message
     await expect(PDFDocument.load(bytes)).rejects.toThrow(

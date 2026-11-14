@@ -5,4 +5,5 @@
  */
 
 export * from './fontkit/index.js';
+
 export { default } from './fontkit/index.js';

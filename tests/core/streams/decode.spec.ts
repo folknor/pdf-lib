@@ -15,12 +15,15 @@ import {
 // Helper: encode text content as ASCII hex (e.g. "AB" -> "4142>")
 const asciiHexEncode = (data: Uint8Array): Uint8Array => {
   const hexChars: number[] = [];
+
   for (const byte of data) {
     const hex = byte.toString(16).padStart(2, '0').toUpperCase();
     hexChars.push(hex.charCodeAt(0), hex.charCodeAt(1));
   }
+
   // Append EOD marker '>'
   hexChars.push(0x3e);
+
   return Uint8Array.from(hexChars);
 };
 
@@ -30,6 +33,7 @@ const ascii85Encode = (data: Uint8Array): Uint8Array => {
 
   // Process 4-byte groups
   let i = 0;
+
   while (i + 4 <= data.length) {
     const b0 = data[i]!;
     const b1 = data[i + 1]!;
@@ -53,25 +57,31 @@ const ascii85Encode = (data: Uint8Array): Uint8Array => {
       const c0 = (value % 85) + 33;
       result.push(c0, c1, c2, c3, c4);
     }
+
     i += 4;
   }
 
   // Handle remaining bytes (1-3)
   const remaining = data.length - i;
+
   if (remaining > 0) {
     // Pad with zeros to make 4 bytes
     const padded = new Uint8Array(4);
+
     for (let j = 0; j < remaining; j++) {
       padded[j] = data[i + j]!;
     }
+
     let value =
       ((padded[0]! << 24) | (padded[1]! << 16) | (padded[2]! << 8) | padded[3]!) >>> 0;
 
     const chars: number[] = [];
+
     for (let k = 4; k >= 0; k--) {
       chars[k] = (value % 85) + 33;
       value = Math.floor(value / 85);
     }
+
     // Output remaining+1 characters
     for (let j = 0; j < remaining + 1; j++) {
       result.push(chars[j]!);
@@ -80,6 +90,7 @@ const ascii85Encode = (data: Uint8Array): Uint8Array => {
 
   // Append EOD marker '~>'
   result.push(0x7e, 0x3e); // '~>'
+
   return Uint8Array.from(result);
 };
 
@@ -94,9 +105,11 @@ describe('decodePDFRawStream', () => {
     filterName?: string,
   ): PDFRawStream => {
     const dict = PDFDict.withContext(context);
+
     if (filterName) {
       dict.set(PDFName.of('Filter'), PDFName.of(filterName));
     }
+
     return PDFRawStream.of(dict, contents);
   };
 
@@ -109,10 +122,13 @@ describe('decodePDFRawStream', () => {
   ): PDFRawStream => {
     const dict = PDFDict.withContext(context);
     const filterArray = PDFArray.withContext(context);
+
     for (const name of filterNames) {
       filterArray.push(PDFName.of(name));
     }
+
     dict.set(PDFName.of('Filter'), filterArray);
+
     return PDFRawStream.of(dict, contents);
   };
 
@@ -133,6 +149,7 @@ describe('decodePDFRawStream', () => {
         zlibSync(new Uint8Array(128 * 1024)),
         'FlateDecode',
       );
+
       expect(decodePDFRawStream(rawStream).decode().length).toBe(128 * 1024);
     });
   });
@@ -184,9 +201,11 @@ describe('decodePDFRawStream', () => {
 
     it('decodes a larger flate-compressed payload', () => {
       const original = new Uint8Array(1000);
+
       for (let i = 0; i < 1000; i++) {
         original[i] = i % 256;
       }
+
       const compressed = zlibSync(original);
       const rawStream = createRawStream(compressed, 'FlateDecode');
 
@@ -460,6 +479,7 @@ describe('decodePDFRawStream', () => {
         ctx.obj({ Filter: filter, DecodeParms: parms } as never) as PDFDict,
         zlibSync(Uint8Array.from(rows)),
       );
+
     const decode = (stream: PDFRawStream, strict = false) =>
       Array.from(decodePDFRawStream(stream, { strict }).decode());
 
@@ -514,11 +534,13 @@ describe('decodePDFRawStream', () => {
 
     it('applies each predictor at its own stage of a filter chain', () => {
       const hex = [...'4142>'].map((c) => c.charCodeAt(0));
+
       const stream = predicted(
         [0, ...hex],
         [{ Predictor: 12, Columns: 5 }, null],
         ['FlateDecode', 'ASCIIHexDecode'],
       );
+
       expect(decode(stream)).toEqual([0x41, 0x42]);
     });
 
@@ -532,6 +554,7 @@ describe('decodePDFRawStream', () => {
     it('refuses /DecodeParms it would have to guess at', () => {
       const parms = { Predictor: 12, Columns: 2 };
       const two = ['FlateDecode', 'ASCIIHexDecode'];
+
       for (const stream of [
         predicted([0, 1, 2], parms, two),
         predicted([0, 1, 2], [parms], two),
@@ -549,12 +572,14 @@ describe('decodePDFRawStream', () => {
       ctx.maxDecodedStreamSize = 64 * 1024;
       const wide = predicted([0], { Predictor: 12, Columns: 1 << 20 }, 'FlateDecode', ctx);
       expect(() => decode(wide)).toThrow(InvalidDecodeParmsError);
+
       const bomb = predicted(
         Array.from(new Uint8Array(1 << 20)),
         { Predictor: 12, Columns: 1 },
         'FlateDecode',
         ctx,
       );
+
       expect(() => decode(bomb)).toThrow(DecodedStreamTooLargeError);
     });
   });

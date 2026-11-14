@@ -101,9 +101,11 @@ export default class PDFTextField extends PDFField {
    */
   getText(): string | undefined {
     const value = this.acroField.getValue();
+
     if (!value && this.isRichFormatted()) {
       throw new RichTextFieldReadError(this.getName());
     }
+
     return value?.decodeText();
   }
 
@@ -150,6 +152,7 @@ export default class PDFTextField extends PDFField {
     assertOrUndefined(text, 'text', ['string']);
 
     const maxLength = this.getMaxLength();
+
     if (maxLength !== undefined && text && text.length > maxLength) {
       throw new ExceededMaxLengthError(text.length, maxLength, this.getName());
     }
@@ -264,9 +267,11 @@ export default class PDFTextField extends PDFField {
       this.acroField.removeMaxLength();
     } else {
       const text = this.getText();
+
       if (text && text.length > maxLength) {
         throw new InvalidMaxLengthError(text.length, maxLength, this.getName());
       }
+
       this.acroField.setMaxLength(maxLength);
     }
   }
@@ -309,13 +314,16 @@ export default class PDFTextField extends PDFField {
           : ImageAlignment.Left;
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const streamRef = this.createImageAppearanceStream(
         widget,
         image,
         alignment,
       );
+
       this.updateWidgetAppearances(widget, { normal: streamRef });
     }
 
@@ -668,6 +676,7 @@ export default class PDFTextField extends PDFField {
    */
   enableCombing() {
     this.doc.getForm().prepareForMutation();
+
     if (this.getMaxLength() === undefined) {
       this.doc.context.warn({
         code: 'comb-without-max-length',
@@ -783,8 +792,11 @@ export default class PDFTextField extends PDFField {
     if (!options) options = {};
 
     if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+
     if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+
     if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+
     if (!('borderWidth' in options)) options.borderWidth = 1;
 
     // Create a widget for this text field
@@ -801,6 +813,7 @@ export default class PDFTextField extends PDFField {
       ...(options.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
+
     const widgetRef = this.doc.context.register(widget.dict);
 
     // Add widget to this field
@@ -827,10 +840,13 @@ export default class PDFTextField extends PDFField {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const hasAppearances =
         widget.getAppearances()?.normal instanceof PDFStream;
+
       if (!hasAppearances) return true;
     }
 
@@ -877,10 +893,12 @@ export default class PDFTextField extends PDFField {
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       this.updateWidgetAppearance(widget, font, provider);
     }
+
     this.markAsClean();
   }
 

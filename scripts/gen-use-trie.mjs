@@ -136,6 +136,7 @@ const TIBETAN_UISC_OVERRIDE = {
   0x0f86: 'Tone_Mark',
   0x0f87: 'Tone_Mark',
 };
+
 // Not taken from the Tibetan block, deliberately:
 // - U+0F7F RNAM BCAD -> Consonant_Dead (independent cluster): a following
 //   U+0F35, U+0F37 or U+0FC6 (Syllable_Modifier, FM) would then start a
@@ -186,17 +187,21 @@ const UIPC_OVERRIDE = {
 function check(pattern, value) {
   if (typeof pattern === 'object' && pattern.not) {
     if (Array.isArray(pattern.not)) return pattern.not.indexOf(value) === -1;
+
     return value !== pattern.not;
   }
+
   return value === pattern;
 }
 
 function matches(pattern, code) {
   if (typeof pattern === 'number') pattern = { U: pattern };
   else if (typeof pattern === 'string') pattern = { UISC: pattern };
+
   for (const key in pattern) {
     if (!check(pattern[key], code[key])) return false;
   }
+
   return true;
 }
 
@@ -206,11 +211,13 @@ const getUIPC = (c) => UIPC_OVERRIDE[c.code] || c.indicPositionalCategory;
 function getPositionalCategory(c, USE) {
   const UIPC = getUIPC(c);
   const pos = USE_POSITIONS[USE];
+
   if (pos) {
     for (const key in pos) {
       if (pos[key].indexOf(UIPC) !== -1) return USE + key;
     }
   }
+
   return USE;
 }
 
@@ -222,6 +229,7 @@ function getCategory(c) {
       }
     }
   }
+
   return null;
 }
 
@@ -230,16 +238,20 @@ function parseUcd(ucdDir) {
   const cps = [];
   const lines = readFileSync(join(ucdDir, 'UnicodeData.txt'), 'ascii').split('\n');
   let rangeStart = -1;
+
   for (const line of lines) {
     if (!line) continue;
     const parts = line.split(';');
     const code = parseInt(parts[0], 16);
+
     let decomposition = parts[5]
       ? parts[5].split(' ').filter(Boolean).map((x) => parseInt(x, 16))
       : [];
+
     if (decomposition.length && Number.isNaN(decomposition[0])) {
       decomposition = decomposition.slice(1); // compatibility tag
     }
+
     const mk = (cp) => ({
       code: cp,
       category: parts[2],
@@ -247,6 +259,7 @@ function parseUcd(ucdDir) {
       indicSyllabicCategory: null,
       indicPositionalCategory: null,
     });
+
     if (rangeStart >= 0) {
       for (let cp = rangeStart; cp <= code; cp++) cps[cp] = mk(cp);
       rangeStart = -1;
@@ -256,26 +269,33 @@ function parseUcd(ucdDir) {
       cps[code] = mk(code);
     }
   }
+
   const readProp = (file, field) => {
     for (const line of readFileSync(join(ucdDir, file), 'ascii').split('\n')) {
       if (!line || line[0] === '#') continue;
       const parts = line.replace(/\s*#.*$/, '').split(/\s*;\s*/);
       const m = /([a-z0-9]+)\.\.([a-z0-9]+)/i.exec(parts[0]);
+
       const [s, e] = m
         ? [parseInt(m[1], 16), parseInt(m[2], 16)]
         : [parseInt(parts[0], 16), parseInt(parts[0], 16)];
+
       if (Number.isNaN(s)) continue;
+
       for (let cp = s; cp <= e; cp++) if (cps[cp]) cps[cp][field] = parts[1];
     }
   };
+
   readProp('IndicPositionalCategory.txt', 'indicPositionalCategory');
   readProp('IndicSyllabicCategory.txt', 'indicSyllabicCategory');
+
   return cps;
 }
 
 export function readUseJson() {
   const src = readFileSync(join(root, 'src/fontkit/opentype/shapers/use.ts'), 'utf8');
   const m = /'([A-Za-z0-9+/=]+)'/.exec(src);
+
   return JSON.parse(
     Buffer.from(unzlibSync(Buffer.from(m[1], 'base64'))).toString('latin1'),
   );
@@ -291,29 +311,39 @@ export function buildUseTrie(ucdDir) {
   const decompositions = {};
   const UnicodeTrieBuilder = require('unicode-trie/builder');
   const builder = new UnicodeTrieBuilder();
+
   const decompose = (code) => {
     const out = [];
+
     for (const c of cps[code].decomposition) {
       const sub = decompose(c);
       out.push(...(sub.length > 0 ? sub : [c]));
     }
+
     return out;
   };
+
   for (let i = 0; i < cps.length; i++) {
     const c = cps[i];
+
     if (!c) continue;
     const category = String(getCategory(c));
+
     if (!(category in symbols)) {
       symbols[category] = order.length;
       order.push(category);
     }
+
     const idx = useCats.indexOf(category);
+
     if (idx < 0) throw new Error(`category ${category} (U+${i.toString(16)}) not in use.ts`);
     builder.set(c.code, idx);
+
     if (c.indicSyllabicCategory === 'Vowel_Dependent' && c.decomposition.length > 0) {
       decompositions[c.code] = decompose(c.code);
     }
   }
+
   return { trie: builder.freeze(), categories: order, decompositions };
 }
 
@@ -322,10 +352,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { trie, categories, decompositions } = buildUseTrie(dir);
   const use = readUseJson();
   console.log('categories match use.ts order:', JSON.stringify(categories) === JSON.stringify(use.categories));
+
   if (JSON.stringify(categories) !== JSON.stringify(use.categories)) {
     console.log(' generated:', JSON.stringify(categories));
     console.log(' use.ts:   ', JSON.stringify(use.categories));
   }
+
   console.log(
     'decompositions match use.ts:',
     JSON.stringify(decompositions) === JSON.stringify(use.decompositions),
@@ -335,6 +367,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const show = [0x41, 0x0915, 0x0f40, 0x0f71, 0x0f90, 0x1780, 0x17b6, 0x17c6, 0x17d2, 0x1b05, 0x1b34, 0x1b6b, 0xa984, 0xa9c0, 0x11003, 0x11046];
   console.log(show.map((cp) => `U+${cp.toString(16)}=${use.categories[trie.get(cp)]}`).join(' '));
   console.log({ highStart: trie.highStart.toString(16), dataLength: trie.data.length });
+
   if (process.argv.includes('--write')) writeUseTrie(trie);
 }
 
@@ -347,19 +380,23 @@ function writeUseTrie(trie) {
   const view = new DataView(bytes.buffer);
   view.setUint32(0, trie.highStart >>> 0, true);
   view.setUint32(4, trie.errorValue >>> 0, true);
+
   for (let i = 0; i < trie.data.length; i++) view.setUint32(8 + i * 4, trie.data[i], true);
   const b64 = Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
 
   const raw = unzlibSync(Buffer.from(b64, 'base64'));
   const rv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const data = new Uint32Array((raw.length - 8) / 4);
+
   for (let i = 0; i < data.length; i++) data[i] = rv.getUint32(8 + i * 4, true);
   const UnicodeTrie = require('unicode-trie');
+
   const decoded = new UnicodeTrie({
     data,
     highStart: rv.getUint32(0, true),
     errorValue: rv.getUint32(4, true),
   });
+
   for (let cp = 0; cp <= 0x10ffff; cp++) {
     if (decoded.get(cp) !== trie.get(cp)) {
       throw new Error(`re-decoded blob differs at U+${cp.toString(16)}`);

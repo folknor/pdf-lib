@@ -51,16 +51,21 @@ class PDFObjectStreamParser extends PDFObjectParser {
    */
   readMember(index: number, objectNumber: number): PDFObject {
     const table = this.memberTable();
+
     const fail = (why: string) =>
       new ObjectStreamMemberError(
         `object ${objectNumber} at index ${index} of an object stream: ${why}`,
       );
+
     let at = index;
+
     if (table[at]?.objectNumber !== objectNumber) {
       const found: number[] = [];
+
       for (let idx = 0; idx < table.length; idx++) {
         if (table[idx]!.objectNumber === objectNumber) found.push(idx);
       }
+
       if (found.length !== 1) {
         throw fail(
           found.length === 0
@@ -68,26 +73,35 @@ class PDFObjectStreamParser extends PDFObjectParser {
             : 'the stream lists it more than once',
         );
       }
+
       at = found[0]!;
     }
+
     const member = table[at]!;
     const start = this.firstOffset + member.offset;
+
     const end =
       at + 1 < table.length
         ? this.firstOffset + table[at + 1]!.offset
         : this.dataLength;
+
     if (start > end || end > this.dataLength) throw fail('bad extent');
+
     const parser = PDFObjectParser.forBytes(
       this.bytes.slice(start, end),
       this.context,
     );
+
     let object: PDFObject;
+
     try {
       object = parser.parseObject();
     } catch (e) {
       throw fail(e instanceof Error ? e.message : String(e));
     }
+
     if (!parser.atEnd()) throw fail('trailing data');
+
     return object;
   }
 
@@ -101,10 +115,13 @@ class PDFObjectStreamParser extends PDFObjectParser {
   memberTable(): { objectNumber: number; offset: number }[] {
     if (this.table) return this.table;
     const safe = (n: number) => Number.isSafeInteger(n) && n >= 0;
+
     if (!safe(this.firstOffset) || !safe(this.objectCount)) {
       throw new ObjectStreamMemberError('bad /First or /N');
     }
+
     let table: { objectNumber: number; offset: number }[];
+
     try {
       table = this.parseOffsetsAndObjectNumbers();
     } catch (e) {
@@ -112,17 +129,23 @@ class PDFObjectStreamParser extends PDFObjectParser {
         `unreadable offset table: ${e instanceof Error ? e.message : String(e)}`,
       );
     }
+
     let previous = 0;
+
     for (const { objectNumber, offset } of table) {
       if (!safe(objectNumber) || !safe(offset) || offset < previous) {
         throw new ObjectStreamMemberError('bad offset table');
       }
+
       previous = offset;
     }
+
     if (this.bytes.offset() > this.firstOffset) {
       throw new ObjectStreamMemberError('the offset table overruns /First');
     }
+
     this.table = table;
+
     return table;
   }
 
@@ -133,9 +156,11 @@ class PDFObjectStreamParser extends PDFObjectParser {
     if (this.alreadyParsed) {
       throw new ReparseError('PDFObjectStreamParser', 'parseIntoContext');
     }
+
     this.alreadyParsed = true;
 
     const offsetsAndObjectNumbers = this.parseOffsetsAndObjectNumbers();
+
     for (let idx = 0, len = offsetsAndObjectNumbers.length; idx < len; idx++) {
       const { objectNumber, offset } = offsetsAndObjectNumbers[idx]!;
       this.bytes.moveTo(this.firstOffset + offset);
@@ -143,6 +168,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
       const object = this.parseObject(ref);
       this.context.assign(ref, object);
       onAssign(ref);
+
       if (this.shouldWaitForTick()) await waitForTick();
     }
   }
@@ -153,6 +179,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
   }[] {
     const offsetsAndObjectNumbers: { objectNumber: number; offset: number }[] =
       [];
+
     for (let idx = 0, len = this.objectCount; idx < len; idx++) {
       this.skipWhitespaceAndComments();
       const objectNumber = this.parseRawInt();
@@ -162,6 +189,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
       offsetsAndObjectNumbers.push({ objectNumber, offset });
     }
+
     return offsetsAndObjectNumbers;
   }
 }

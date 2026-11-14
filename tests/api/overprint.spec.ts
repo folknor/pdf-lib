@@ -17,7 +17,9 @@ const birdPng = fs.readFileSync('assets/images/greyscale_bird.png');
 const graphicsStates = (page: PDFPage): PDFDict[] => {
   const resources = page.node.Resources();
   const dict = resources?.lookupMaybe(PDFName.of('ExtGState'), PDFDict);
+
   if (!dict) return [];
+
   return dict.values().map((v) => page.doc.context.lookup(v, PDFDict));
 };
 
@@ -26,11 +28,15 @@ const overprintOf = (page: PDFPage) => {
   const states = graphicsStates(page);
   expect(states).toHaveLength(1);
   const state = states[0]!;
+
   const flag = (key: string) => {
     const v = state.get(PDFName.of(key));
+
     return v === undefined ? undefined : v === PDFBool.True;
   };
+
   const opm = state.get(PDFName.of('OPM'));
+
   return {
     OP: flag('OP'),
     op: flag('op'),
@@ -41,10 +47,13 @@ const overprintOf = (page: PDFPage) => {
 const contentOf = (page: PDFPage): string => {
   const contents = page.node.Contents() as PDFArray;
   let text = '';
+
   for (let i = 0; i < contents.size(); i++) {
     const stream = contents.lookup(i);
+
     if (stream instanceof PDFContentStream) text += stream.getContentsString();
   }
+
   return text;
 };
 
@@ -66,6 +75,7 @@ describe('Overprint options', () => {
 
   it('maps shape fill to op and border to OP', async () => {
     const doc = await PDFDocument.create();
+
     const draws: ((p: PDFPage) => void)[] = [
       (p) => p.drawRectangle({ overprint: true, borderOverprint: false }),
       (p) => p.drawSquare({ overprint: true }),
@@ -73,11 +83,13 @@ describe('Overprint options', () => {
       (p) => p.drawCircle({ overprint: true }),
       (p) => p.drawSvgPath('M 0 0 L 10 10', { overprint: true }),
     ];
+
     for (const draw of draws) {
       const page = doc.addPage();
       draw(page);
       expect(overprintOf(page)).toEqual({ OP: false, op: true, OPM: 1 });
     }
+
     const page = doc.addPage();
     page.drawRectangle({ borderOverprint: true });
     expect(overprintOf(page)).toEqual({ OP: true, op: false, OPM: 1 });

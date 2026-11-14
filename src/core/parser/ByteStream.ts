@@ -35,12 +35,14 @@ class ByteStream {
 
   next(): number {
     const byte = this.bytes[this.idx++]!;
+
     if (byte === CharCodes.Newline) {
       this.line += 1;
       this.column = 0;
     } else {
       this.column += 1;
     }
+
     return byte;
   }
 
@@ -48,6 +50,7 @@ class ByteStream {
     if (this.peek() !== expected) {
       throw new NextByteAssertionError(this.position(), expected, this.peek());
     }
+
     return this.next();
   }
 
@@ -87,6 +90,7 @@ class ByteStream {
    */
   slice(start: number, end: number): Uint8Array {
     const view = this.bytes.subarray(start, end);
+
     return this.copySlices ? new Uint8Array(view) : view;
   }
 

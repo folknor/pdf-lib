@@ -14,7 +14,9 @@ class PDFAcroComboBox extends PDFAcroChoice {
       Ff: AcroChoiceFlags.Combo,
       Kids: [],
     });
+
     const ref = context.register(dict);
+
     return new PDFAcroComboBox(dict, ref);
   };
 }

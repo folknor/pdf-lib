@@ -72,6 +72,7 @@ export default class PDFEmbeddedPage implements Embeddable {
    */
   scale(factor: number) {
     assertIs(factor, 'factor', ['number']);
+
     return { width: this.width * factor, height: this.height * factor };
   }
 

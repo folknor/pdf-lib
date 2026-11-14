@@ -4,6 +4,7 @@ const attachXFA = (doc: PDFDocument) => {
   const ref = doc.context.register(doc.context.stream('<xfa/>'));
   doc.getForm().acroForm.dict.set(PDFName.of('XFA'), ref);
   doc.catalog.set(PDFName.of('NeedsRendering'), doc.context.obj(true));
+
   return ref;
 };
 
@@ -36,6 +37,7 @@ describe('lazy XFA removal', () => {
       field.addToPage(page);
       const dropdown = form.createDropdown('choice');
       const packet = attachXFA(doc);
+
       switch (operation) {
         case 'value': field.setText('new'); break;
         case 'flag': field.enableReadOnly(); break;
@@ -53,6 +55,7 @@ describe('lazy XFA removal', () => {
           break;
         }
       }
+
       expect(form.hasXFA()).toBe(false);
       expect(doc.context.lookup(packet)).toBeUndefined();
       expect(doc.catalog.has(PDFName.of('NeedsRendering'))).toBe(false);
@@ -99,15 +102,18 @@ describe('form object collection', () => {
     const appearanceRef = appearance instanceof PDFRef ? appearance : doc.context.getObjectRef(appearance)!;
     const obsolete = doc.context.register(doc.context.stream('obsolete'));
     widget.dict.set(PDFName.of('Unused'), obsolete);
+
     if (shared) doc.catalog.set(PDFName.of('Outside'), doc.context.obj({ Obj: widgetRef, Field: field.ref }));
     form.removeField(field);
     expect(form.getFields()).toHaveLength(0);
     expect(page.node.Annots()!.size()).toBe(0);
     expect(other.node.Annots()!.size()).toBe(0);
     expect(form.acroForm.dict.lookup(PDFName.of('CO'), PDFArray).size()).toBe(0);
+
     for (const ref of [widgetRef, field.ref, parent.ref, obsolete, appearanceRef]) {
       expect(doc.context.lookup(ref) !== undefined, `ref ${ref}`).toBe(shared);
     }
+
     await doc.save();
   });
 
@@ -126,6 +132,7 @@ describe('form object collection', () => {
     other.node.addAnnot(ref);
     const unused = doc.context.register(doc.context.obj({ Private: 'unused' }));
     widget.dict.set(PDFName.of('Unused'), unused);
+
     if (shared) doc.catalog.set(PDFName.of('OBJR'), doc.context.obj({ Obj: ref }));
     form.flatten({ updateFieldAppearances: false });
     expect(page.node.Annots()!.size()).toBe(0);

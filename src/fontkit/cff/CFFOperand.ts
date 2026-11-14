@@ -1,4 +1,5 @@
 const FLOAT_EOF = 0xf;
+
 const FLOAT_LOOKUP: (string | null)[] = [
   '0',
   '1',
@@ -53,19 +54,24 @@ export default class CFFOperand {
 
     if (value === 30) {
       let str = '';
+
       while (true) {
         const b = stream.readUInt8();
 
         const n1 = b >> 4;
+
         if (n1 === FLOAT_EOF) {
           break;
         }
+
         str += FLOAT_LOOKUP[n1];
 
         const n2 = b & 15;
+
         if (n2 === FLOAT_EOF) {
           break;
         }
+
         str += FLOAT_LOOKUP[n2];
       }
 
@@ -81,11 +87,13 @@ export default class CFFOperand {
     if (typeof value !== 'number' && value.forceLarge) {
       value = 32768;
     }
+
     const numValue = typeof value === 'number' ? value : Number(value);
 
     if ((numValue | 0) !== numValue) {
       // floating point
       const str = `${numValue}`;
+
       return 1 + Math.ceil((str.length + 1) / 2);
     } else if (-107 <= numValue && numValue <= 107) {
       return 1;
@@ -115,17 +123,20 @@ export default class CFFOperand {
 
       const str = `${val}`;
       let lastN2 = FLOAT_EOF;
+
       for (let i = 0; i < str.length; i += 2) {
         const c1 = str[i]!;
         const n1 = FLOAT_ENCODE_LOOKUP[c1] ?? +c1;
 
         let n2;
+
         if (i === str.length - 1) {
           n2 = FLOAT_EOF;
         } else {
           const c2 = str[i + 1]!;
           n2 = FLOAT_ENCODE_LOOKUP[c2] ?? +c2;
         }
+
         lastN2 = n2;
 
         stream.writeUInt8((n1 << 4) | (n2 & 15));

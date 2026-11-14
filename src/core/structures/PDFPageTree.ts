@@ -15,7 +15,9 @@ class PDFPageTree extends PDFDict {
     dict.set(PDFName.of('Type'), PDFName.of('Pages'));
     dict.set(PDFName.of('Kids'), context.obj([]));
     dict.set(PDFName.of('Count'), context.obj(0));
+
     if (parent) dict.set(PDFName.of('Parent'), parent);
+
     return new PDFPageTree(dict, context);
   };
 
@@ -62,10 +64,12 @@ class PDFPageTree extends PDFDict {
     }
 
     let leafsRemainingUntilTarget = targetIndex;
+
     for (let idx = 0, len = Kids.size(); idx < len; idx++) {
       if (leafsRemainingUntilTarget === 0) {
         // Insert page and return
         this.insertLeafKid(idx, leafRef);
+
         return;
       }
 
@@ -93,6 +97,7 @@ class PDFPageTree extends PDFDict {
     if (leafsRemainingUntilTarget === 0) {
       // Insert page at the end and return
       this.insertLeafKid(Kids.size(), leafRef);
+
       return;
     }
 
@@ -117,6 +122,7 @@ class PDFPageTree extends PDFDict {
     }
 
     let leafsRemainingUntilTarget = targetIndex;
+
     for (let idx = 0, len = Kids.size(); idx < len; idx++) {
       const kidRef = Kids.get(idx) as PDFRef;
       const kid = this.context.lookup(kidRef);
@@ -125,7 +131,9 @@ class PDFPageTree extends PDFDict {
         if (kid.Count().asNumber() > leafsRemainingUntilTarget) {
           // Dig in
           kid.removeLeafNode(leafsRemainingUntilTarget, prune);
+
           if (prune && kid.Kids().size() === 0) Kids.remove(idx);
+
           return;
         } else {
           // Move on
@@ -137,6 +145,7 @@ class PDFPageTree extends PDFDict {
         if (leafsRemainingUntilTarget === 0) {
           // Remove page and return
           this.removeKid(idx);
+
           return;
         } else {
           // Move on
@@ -152,15 +161,18 @@ class PDFPageTree extends PDFDict {
   ascend(visitor: (node: PDFPageTree) => any): void {
     visitor(this);
     const Parent = this.Parent();
+
     if (Parent) Parent.ascend(visitor);
   }
 
   /** Performs a Post-Order traversal of this page tree */
   traverse(visitor: (node: TreeNode, ref: PDFRef) => any): void {
     const Kids = this.Kids();
+
     for (let idx = 0, len = Kids.size(); idx < len; idx++) {
       const kidRef = Kids.get(idx) as PDFRef;
       const kid = this.context.lookup(kidRef) as TreeNode;
+
       if (kid instanceof PDFPageTree) kid.traverse(visitor);
       visitor(kid, kidRef);
     }
@@ -181,6 +193,7 @@ class PDFPageTree extends PDFDict {
     const Kids = this.Kids();
 
     const kid = Kids.lookup(kidIdx);
+
     if (kid instanceof PDFPageLeaf) {
       this.ascend((node) => {
         const newCount = node.Count().asNumber() - 1;

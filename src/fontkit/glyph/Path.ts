@@ -64,6 +64,7 @@ export default class Path {
   toSVG(): string {
     const cmds = this.commands.map((c) => {
       const args = c.args.map((arg) => Math.round(arg * 100) / 100);
+
       return `${SVG_COMMANDS[c.command]}${args.join(' ')}`;
     });
 
@@ -79,6 +80,7 @@ export default class Path {
   get cbox(): BBox {
     if (!this._cbox) {
       const cbox = new BBox();
+
       for (const command of this.commands) {
         for (let i = 0; i < command.args.length; i += 2) {
           cbox.addPoint(command.args[i] ?? 0, command.args[i + 1] ?? 0);
@@ -109,6 +111,7 @@ export default class Path {
     }
 
     const bbox = new BBox();
+
     let cx = 0,
       cy = 0;
 
@@ -132,6 +135,7 @@ export default class Path {
             cp2y: number,
             p3x: number,
             p3y: number;
+
           if (cmd.command === 'quadraticCurveTo') {
             // http://fontforge.org/bezier.html
             const qp1x = cmd.args[0] ?? 0;
@@ -179,6 +183,7 @@ export default class Path {
               }
 
               const t = -c / b;
+
               if (0 < t && t < 1) {
                 if (i === 0) {
                   bbox.addPoint(f(t, i), bbox.maxY);
@@ -191,11 +196,13 @@ export default class Path {
             }
 
             const b2ac = b ** 2 - 4 * c * a;
+
             if (b2ac < 0) {
               continue;
             }
 
             const t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
+
             if (0 < t1 && t1 < 1) {
               if (i === 0) {
                 bbox.addPoint(f(t1, i), bbox.maxY);
@@ -205,6 +212,7 @@ export default class Path {
             }
 
             const t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
+
             if (0 < t2 && t2 < 1) {
               if (i === 0) {
                 bbox.addPoint(f(t2, i), bbox.maxY);
@@ -232,6 +240,7 @@ export default class Path {
 
     for (const c of this.commands) {
       const args: number[] = [];
+
       for (let i = 0; i < c.args.length; i += 2) {
         const [x, y] = fn(c.args[i] ?? 0, c.args[i + 1] ?? 0);
         args.push(x, y);
@@ -257,6 +266,7 @@ export default class Path {
     return this.mapPoints((x, y) => {
       const tx = m0 * x + m2 * y + m4;
       const ty = m1 * x + m3 * y + m5;
+
       return [tx, ty];
     });
   }
@@ -274,6 +284,7 @@ export default class Path {
   rotate(angle: number): Path {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
+
     return this.transform(cos, sin, -sin, cos, 0, 0);
   }
 

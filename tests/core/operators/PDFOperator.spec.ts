@@ -29,6 +29,7 @@ describe('PDFOperator', () => {
       PDFNumber.of(25),
       PDFNumber.of(50),
     ]);
+
     const clone = original.clone();
     expect(clone).not.toBe(original);
     expect(String(clone)).toBe(String(original));
@@ -43,6 +44,7 @@ describe('PDFOperator', () => {
       PDFNumber.of(25.43),
       PDFNumber.of(-50),
     ]);
+
     expect(String(op)).toBe('25.43 -50 Td');
   });
 
@@ -55,6 +57,7 @@ describe('PDFOperator', () => {
       PDFNumber.of(25.43),
       PDFNumber.of(-50),
     ]);
+
     expect(op.sizeInBytes()).toBe(12);
   });
 
@@ -70,6 +73,7 @@ describe('PDFOperator', () => {
       PDFNumber.of(25.43),
       PDFNumber.of(-50),
     ]);
+
     const buffer = new Uint8Array(op.sizeInBytes() + 3).fill(toCharCode(' '));
     expect(op.copyBytesInto(buffer, 2)).toBe(12);
     expect(buffer).toEqual(typedArrayFor('  25.43 -50 Td '));

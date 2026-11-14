@@ -111,7 +111,9 @@ export interface SecurityOptions {
 }
 
 type Algorithm = 1 | 2 | 4 | 5;
+
 type Revision = 2 | 3 | 4 | 6;
+
 type KeyBits = 40 | 128 | 256;
 
 /**
@@ -198,9 +200,11 @@ class PDFSecurity {
   */
   private initialize(options: SecurityOptions) {
     const algorithm = options.algorithm ?? 'AES-256';
+
     const profile = Object.hasOwn(ALGORITHM_PROFILES, algorithm)
       ? ALGORITHM_PROFILES[algorithm]
       : undefined;
+
     if (!profile) {
       throw new Error(`Unknown encryption algorithm '${String(algorithm)}'.`);
     }
@@ -228,6 +232,7 @@ class PDFSecurity {
 
     const { v, r } = profile;
     this.keyBits = profile.keyBits;
+
     const permissions =
       r === 2
         ? getPermissionsR2(options.permissions)
@@ -256,6 +261,7 @@ class PDFSecurity {
     );
 
     let userPasswordEntry;
+
     if (r === 2) {
       userPasswordEntry = getUserPasswordR2(this.encryptionKey);
     } else {
@@ -263,9 +269,11 @@ class PDFSecurity {
     }
 
     encryption.V = v;
+
     if (v >= 2) {
       encryption.Length = this.keyBits;
     }
+
     if (v === 4) {
       encryption.CF = {
         StdCF: {
@@ -299,13 +307,17 @@ class PDFSecurity {
     const userPassword = prepareR6PasswordForWriting(
       options.userPassword ?? '',
     );
+
     let ownerPassword = userPassword;
+
     if (options.ownerPassword !== undefined) {
       ownerPassword = prepareR6PasswordForWriting(options.ownerPassword);
+
       if (ownerPassword.length === 0) {
         throw new Error('The owner password is empty after preparation.');
       }
     }
+
     if (ownerPassword.length === 0) {
       throw new Error('The user password is empty after preparation.');
     }
@@ -315,11 +327,13 @@ class PDFSecurity {
 
     const userValidationSalt = getRandomBytes(8);
     const userKeySalt = getRandomBytes(8);
+
     const userPasswordEntry = mergeUint8Arrays([
       r6Hash(userPassword, userValidationSalt, EMPTY_BYTES),
       userValidationSalt,
       userKeySalt,
     ]);
+
     const userEncryptionKeyEntry = aesCbcEncrypt(
       r6Hash(userPassword, userKeySalt, EMPTY_BYTES),
       ZERO_IV,
@@ -328,11 +342,13 @@ class PDFSecurity {
 
     const ownerValidationSalt = getRandomBytes(8);
     const ownerKeySalt = getRandomBytes(8);
+
     const ownerPasswordEntry = mergeUint8Arrays([
       r6Hash(ownerPassword, ownerValidationSalt, userPasswordEntry),
       ownerValidationSalt,
       ownerKeySalt,
     ]);
+
     const ownerEncryptionKeyEntry = aesCbcEncrypt(
       r6Hash(ownerPassword, ownerKeySalt, userPasswordEntry),
       ZERO_IV,
@@ -340,6 +356,7 @@ class PDFSecurity {
     );
 
     const permissions = getPermissionsR3(options.permissions);
+
     const permissionsEntry = getEncryptedPermissions(
       permissions,
       this.encryptionKey,
@@ -371,11 +388,15 @@ class PDFSecurity {
 
   getEncryptFn(obj: number, gen: number): EncryptFn {
     const v = this.encryption.V;
+
     if (v === 5) return objectEncryptFn('AESV3', this.encryptionKey, obj, gen);
+
     if (v === 4) return objectEncryptFn('AESV2', this.encryptionKey, obj, gen);
+
     if (v === 1 || v === 2) {
       return objectEncryptFn('V2', this.encryptionKey, obj, gen);
     }
+
     throw new Error(`Unsupported algorithm '${v}'.`);
   }
 
@@ -395,6 +416,7 @@ class PDFSecurity {
   encryptIndirectObject(ref: PDFRef, object: PDFObject): PDFObject {
     if (ref === this.context.trailerInfo.Encrypt) return object;
     const encryptFn = this.getEncryptFn(ref.objectNumber, ref.generationNumber);
+
     return encryptObject(object, encryptFn, () => encryptFn);
   }
 
@@ -438,6 +460,7 @@ class EncryptedStream extends PDFStream {
 /** A /Sig or /DocTimeStamp dict, or an untyped one carrying /ByteRange. */
 export const isSignatureDict = (dict: PDFDict): boolean => {
   const type = dict.get(PDFName.of('Type'));
+
   return (
     type === PDFName.of('Sig') ||
     type === PDFName.of('DocTimeStamp') ||
@@ -452,13 +475,16 @@ const encryptDictEntries = (
 ): Map<PDFName, PDFObject> => {
   const keepContents = isSignatureDict(dict);
   const map = new Map<PDFName, PDFObject>();
+
   for (const [key, value] of dict.entries()) {
     const keep =
       keepContents &&
       key === PDFName.of('Contents') &&
       (value instanceof PDFString || value instanceof PDFHexString);
+
     map.set(key, keep ? value : encryptStrings(value, encryptFn));
   }
+
   return map;
 };
 
@@ -471,20 +497,27 @@ const encryptStrings = (object: PDFObject, encryptFn: EncryptFn): PDFObject => {
   if (object instanceof PDFString || object instanceof PDFHexString) {
     return PDFHexString.fromBytes(encryptFn(object.asBytes()));
   }
+
   if (object instanceof PDFArray) {
     const items = object.asArray();
     const encrypted = items.map((item) => encryptStrings(item, encryptFn));
+
     if (encrypted.every((item, idx) => item === items[idx])) return object;
+
     return PDFArray.fromArrayWithContext(encrypted, object.context);
   }
+
   if (object instanceof PDFDict) {
     const map = encryptDictEntries(object, encryptFn);
     let changed = false;
+
     for (const [key, value] of map) {
       if (object.get(key) !== value) changed = true;
     }
+
     return changed ? PDFDict.fromMapWithContext(map, object.context) : object;
   }
+
   return object;
 };
 
@@ -507,8 +540,10 @@ const encryptObject = (
     const map = encryptDictEntries(object.dict, stringFn);
     map.set(PDFName.Length, PDFNumber.of(contents.length));
     const dict = PDFDict.fromMapWithContext(map, object.dict.context);
+
     return new EncryptedStream(dict, contents);
   }
+
   return encryptStrings(object, stringFn);
 };
 
@@ -523,7 +558,9 @@ const objectEncryptFn = (
   gen: number,
 ): EncryptFn => {
   if (method === 'None') return (buffer) => buffer;
+
   if (method === 'AESV3') return aesEncryptFn(key);
+
   const digest = mergeUint8Arrays([
     key,
     new Uint8Array([
@@ -534,10 +571,13 @@ const objectEncryptFn = (
       (gen >> 8) & 0xff,
     ]),
   ]);
+
   if (method === 'AESV2') {
     return aesEncryptFn(md5(mergeUint8Arrays([digest, AESV2_SALT])));
   }
+
   const objectKey = md5(digest).subarray(0, Math.min(16, key.length + 5));
+
   return (buffer) => rc4(objectKey, buffer);
 };
 
@@ -629,14 +669,18 @@ export class BaselineEncryption implements ObjectEncryptor {
         'An encrypted file with a direct /Encrypt dictionary cannot be updated incrementally.',
       );
     }
+
     const guardedRefs = this.guardedRefs;
     const guarded = new Set(guardedRefs.map((ref) => ref.objectNumber));
+
     let touched = guardedRefs.some((ref) =>
       snapshot.shouldSave(ref.objectNumber),
     );
+
     for (const ref of snapshot.deletedRefs()) {
       if (guarded.has(ref.objectNumber)) touched = true;
     }
+
     if (touched) {
       throw new Error(
         'An incremental update cannot change or delete the encryption dictionary of the file it extends.',
@@ -646,12 +690,17 @@ export class BaselineEncryption implements ObjectEncryptor {
     const deleted = new Set(
       snapshot.deletedRefs().map((ref) => ref.objectNumber),
     );
+
     const roles = computeStreamRoles(context);
+
     for (const [ref, object] of context.enumerateIndirectObjects()) {
       if (!(object instanceof PDFStream)) continue;
+
       if (snapshot.shouldSave(ref.objectNumber)) continue;
       const plan = this.plans.get(ref.objectNumber);
+
       if (!plan) continue;
+
       if (plan.dependencies) {
         if (
           plan.dependencies.some(
@@ -662,12 +711,16 @@ export class BaselineEncryption implements ObjectEncryptor {
         ) {
           snapshot.markRefForSave(ref);
         }
+
         continue;
       }
+
       const type = object.dict.get(PDFName.Type);
+
       if (type === PDFName.of('XRef')) {
         continue;
       }
+
       const name = selectStreamCrypt(
         this.factory,
         roles,
@@ -675,12 +728,14 @@ export class BaselineEncryption implements ObjectEncryptor {
         object.dict,
         undefined,
       );
+
       if (this.factory.methodOf(name) !== plan.method) {
         // Loaded bodies have already been decrypted using the old plan.
         // Re-emit under the new role instead of reinterpreting old ciphertext.
         snapshot.markRefForSave(ref);
       }
     }
+
     this.roles = roles;
     this.emitted = new Map();
   }
@@ -703,12 +758,15 @@ export class BaselineEncryption implements ObjectEncryptor {
         this.plans.delete(objectNumber);
       }
     }
+
     for (const [objectNumber, plan] of this.emitted) {
       if (plan) this.plans.set(objectNumber, plan);
     }
+
     for (const ref of snapshot.deletedRefs()) {
       this.plans.delete(ref.objectNumber);
     }
+
     this.emitted = new Map();
   }
 
@@ -716,20 +774,25 @@ export class BaselineEncryption implements ObjectEncryptor {
     if (ref === this.encryptRef) return object;
     const { objectNumber: obj, generationNumber: gen } = ref;
     const { factory } = this;
+
     const fnFor = (method: CryptMethod) =>
       objectEncryptFn(method, factory.encryptionKey, obj, gen);
+
     const stringFn = fnFor(factory.methodOf(factory.strf ?? Identity));
     this.emitted.set(obj, null);
+
     return encryptObject(object, stringFn, (dict) => {
       if (namesCryptFilter(dict)) {
         throw new Error(
           `Object ${obj} ${gen} R names its own /Crypt filter, which incremental updates of encrypted files do not support.`,
         );
       }
+
       this.roles ??= computeStreamRoles(dict.context);
       const name = selectStreamCrypt(factory, this.roles, ref, dict, undefined);
       const method = factory.methodOf(name);
       this.emitted.set(obj, { method });
+
       return method === 'None' ? undefined : fnFor(method);
     });
   }
@@ -740,7 +803,9 @@ const Identity = PDFName.of('Identity');
 /** Whether `dict`'s filter chain names /Crypt, directly or indirectly. */
 const namesCryptFilter = (dict: PDFDict): boolean => {
   const filter = dict.lookup(PDFName.of('Filter'));
+
   if (filter === PDFName.of('Crypt')) return true;
+
   return (
     filter instanceof PDFArray &&
     filter
@@ -752,6 +817,7 @@ const namesCryptFilter = (dict: PDFDict): boolean => {
 /** `root` and every indirect object reachable from it in `context`. */
 const reachableRefs = (context: PDFContext, root: PDFRef): PDFRef[] => {
   const seen = new Set<PDFRef>();
+
   const visit = (object: PDFObject | undefined) => {
     if (object instanceof PDFRef) {
       if (seen.has(object)) return;
@@ -763,7 +829,9 @@ const reachableRefs = (context: PDFContext, root: PDFRef): PDFRef[] => {
       for (const item of object.asArray()) visit(item);
     }
   };
+
   visit(root);
+
   return [...seen];
 };
 
@@ -783,6 +851,7 @@ const aesEncryptFn =
   (key: Uint8Array): EncryptFn =>
   (buffer) => {
     const iv = getRandomBytes(16);
+
     return mergeUint8Arrays([iv, aesCbcEncrypt(key, iv, pkcs7Pad(buffer))]);
   };
 
@@ -797,18 +866,23 @@ const aesEncryptFn =
  */
 const getPermissionsR2 = (permissions: UserPermissions = {}) => {
   let flags = 0xffffffc0 >> 0;
+
   if (permissions.printing) {
     flags |= 0b000000000100;
   }
+
   if (permissions.modifying) {
     flags |= 0b000000001000;
   }
+
   if (permissions.copying) {
     flags |= 0b000000010000;
   }
+
   if (permissions.annotating) {
     flags |= 0b000000100000;
   }
+
   return flags;
 };
 
@@ -823,30 +897,39 @@ const getPermissionsR2 = (permissions: UserPermissions = {}) => {
  */
 const getPermissionsR3 = (permissions: UserPermissions = {}) => {
   let flags = 0xfffff0c0 >> 0;
+
   if (permissions.printing === 'lowResolution' || permissions.printing) {
     flags |= 0b000000000100;
   }
+
   if (permissions.printing === 'highResolution') {
     flags |= 0b100000000100;
   }
+
   if (permissions.modifying) {
     flags |= 0b000000001000;
   }
+
   if (permissions.copying) {
     flags |= 0b000000010000;
   }
+
   if (permissions.annotating) {
     flags |= 0b000000100000;
   }
+
   if (permissions.fillingForms) {
     flags |= 0b000100000000;
   }
+
   if (permissions.contentAccessibility) {
     flags |= 0b001000000000;
   }
+
   if (permissions.documentAssembly) {
     flags |= 0b010000000000;
   }
+
   return flags;
 };
 
@@ -859,10 +942,12 @@ const getUserPasswordR3R4 = (
 ) => {
   let cipher = md5(mergeUint8Arrays([processPasswordR2R3R4(), documentId]));
   const key = new Uint8Array(encryptionKey.length);
+
   for (let i = 0; i < 20; i++) {
     for (let j = 0; j < key.length; j++) key[j] = encryptionKey[j]! ^ i;
     cipher = rc4(key, cipher);
   }
+
   // Padded to 32 bytes with arbitrary data
   return mergeUint8Arrays([cipher, new Uint8Array(16)]);
 };
@@ -875,6 +960,7 @@ const getOwnerPasswordR2R3R4 = (
 ): Uint8Array => {
   let digest: Uint8Array = paddedOwnerPassword;
   let round = r >= 3 ? 51 : 1;
+
   for (let i = 0; i < round; i++) {
     digest = md5(digest);
   }
@@ -882,10 +968,12 @@ const getOwnerPasswordR2R3R4 = (
   const key = new Uint8Array(keyBits / 8);
   let cipher = paddedUserPassword;
   round = r >= 3 ? 20 : 1;
+
   for (let i = 0; i < round; i++) {
     for (let j = 0; j < key.length; j++) key[j] = digest[j]! ^ i;
     cipher = rc4(key, cipher);
   }
+
   return cipher;
 };
 
@@ -903,10 +991,13 @@ const getEncryptionKeyR2R3R4 = (
     lsbFirstBytes(permissions),
     documentId,
   ]);
+
   const round = r >= 3 ? 51 : 1;
+
   for (let i = 0; i < round; i++) {
     key = md5(key).subarray(0, keyBits / 8);
   }
+
   return key;
 };
 
@@ -944,18 +1035,23 @@ const processPasswordR2R3R4 = (password = '') => {
   const out = new Uint8Array(32);
   const length = password.length;
   let index = 0;
+
   while (index < length && index < 32) {
     const code = password.charCodeAt(index);
+
     if (code > 0xff) {
       throw new Error('Password contains one or more invalid characters.');
     }
+
     out[index] = code;
     index++;
   }
+
   while (index < 32) {
     out[index] = PASSWORD_PADDING[index - length]!;
     index++;
   }
+
   return out;
 };
 
@@ -973,6 +1069,7 @@ const aesCbcEncrypt = (
 ): Uint8Array => {
   const cipher =
     key.length === 32 ? new AES256Cipher(key) : new AES128Cipher(key);
+
   return cipher.encrypt(data, iv);
 };
 
@@ -981,6 +1078,7 @@ const pkcs7Pad = (data: Uint8Array): Uint8Array => {
   const padded = new Uint8Array(data.length + padding);
   padded.set(data);
   padded.fill(padding, data.length);
+
   return padded;
 };
 
@@ -1031,20 +1129,26 @@ const planVersionDeclaration = (
 ): (() => void) => {
   const headerText = context.header.getVersionString();
   const header = parsePDFVersion(headerText);
+
   if (!header) {
     throw new Error(
       `Cannot encrypt: unrecognised PDF header version '${headerText}'.`,
     );
   }
+
   const catalogVersion = getCatalogVersion(context);
+
   if (catalogVersion === 'malformed') {
     throw new Error('Cannot encrypt: the catalog /Version is malformed.');
   }
+
   const declared = catalogVersion ? maxVersion(header, catalogVersion) : header;
   const raiseHeader = compareVersions(header, profile.minVersion) < 0;
+
   const raiseCatalog =
     catalogVersion !== undefined &&
     compareVersions(catalogVersion, profile.minVersion) < 0;
+
   const effective = maxVersion(declared, profile.minVersion);
 
   const declareExtension =
@@ -1054,30 +1158,36 @@ const planVersionDeclaration = (
 
   return () => {
     const [major, minor] = profile.minVersion;
+
     if (raiseHeader) context.header = PDFHeader.forVersion(major, minor);
+
     if (raiseCatalog) {
       getCatalog(context)!.set(
         PDFName.of('Version'),
         PDFName.of(versionString(profile.minVersion)),
       );
     }
+
     declareExtension();
   };
 };
 
 const planAdobeExtension = (context: PDFContext): (() => void) => {
   const catalog = getCatalog(context);
+
   if (!catalog) {
     throw new Error(
       'Cannot encrypt with AES-256: there is no catalog to declare Adobe extension level 8 in.',
     );
   }
+
   const extensionsKey = PDFName.of('Extensions');
   const adbeKey = PDFName.of('ADBE');
   const levelKey = PDFName.of('ExtensionLevel');
   const level8 = () => PDFNumber.of(AES256_EXTENSION_LEVEL);
 
   const extensions = catalog.lookup(extensionsKey);
+
   if (extensions === undefined) {
     return () =>
       catalog.set(
@@ -1085,25 +1195,33 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
         context.obj({ ADBE: adobeExtension(context) }),
       );
   }
+
   if (!(extensions instanceof PDFDict)) {
     throw new Error('Cannot encrypt: the catalog /Extensions is malformed.');
   }
 
   const adbe = extensions.lookup(adbeKey);
+
   if (adbe === undefined) {
     return () => extensions.set(adbeKey, adobeExtension(context));
   }
+
   if (!(adbe instanceof PDFDict)) {
     throw new Error('Cannot encrypt: the /ADBE extension entry is malformed.');
   }
+
   const base = adbe.lookup(PDFName.of('BaseVersion'));
+
   if (!(base instanceof PDFName && base.decodeText() === '1.7')) {
     throw new Error(
       'Cannot encrypt with AES-256: the document declares an Adobe extension to a base version other than 1.7.',
     );
   }
+
   const level = adbe.lookup(levelKey);
+
   if (level === undefined) return () => adbe.set(levelKey, level8());
+
   if (
     !(level instanceof PDFNumber) ||
     !Number.isInteger(level.asNumber()) ||
@@ -1113,7 +1231,9 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
       'Cannot encrypt: the /ADBE /ExtensionLevel is not a positive integer.',
     );
   }
+
   if (level.asNumber() >= AES256_EXTENSION_LEVEL) return () => {};
+
   return () => adbe.set(levelKey, level8());
 };
 

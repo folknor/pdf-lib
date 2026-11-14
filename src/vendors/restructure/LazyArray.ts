@@ -62,9 +62,11 @@ class LazyArrayValue<T> {
 
   toArray(): T[] {
     const result: T[] = [];
+
     for (let i = 0; i < this.length; i++) {
       result.push(this.get(i)!);
     }
+
     return result;
   }
 }
@@ -72,6 +74,7 @@ class LazyArrayValue<T> {
 export class LazyArray<T = unknown> extends ArrayT<T> {
   override decode(stream: DecodeStream, parent?: unknown): T[] {
     const { pos } = stream;
+
     const length = utils.resolveLength(
       this.length,
       stream,
@@ -79,6 +82,7 @@ export class LazyArray<T = unknown> extends ArrayT<T> {
     );
 
     let ctx: unknown = parent;
+
     if (this.length instanceof NumberT) {
       ctx = {
         parent,
@@ -91,6 +95,7 @@ export class LazyArray<T = unknown> extends ArrayT<T> {
     const res = new LazyArrayValue(this.type, length, stream, ctx);
 
     stream.pos += length * this.type.size(null, ctx);
+
     // Return LazyArrayValue cast as T[] - consumers handle both types
     return res as unknown as T[];
   }

@@ -24,6 +24,7 @@ export class Reserved extends Base<undefined> {
 
   decode(stream: DecodeStream, parent?: unknown): undefined {
     stream.pos += this.size(null, parent);
+
     return;
   }
 
@@ -33,6 +34,7 @@ export class Reserved extends Base<undefined> {
       null,
       parent as Record<string, unknown> | null,
     );
+
     return this.type.size() * count;
   }
 

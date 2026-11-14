@@ -67,6 +67,7 @@ export const vector = (A: Point, B: Point): Coordinates =>
  */
 export const orientation = ({ x, y }: Coordinates): number => {
   const alpha = Math.acos(x / Math.sqrt(x * x + y * y));
+
   return y > 0 ? alpha : -alpha;
 };
 
@@ -75,17 +76,20 @@ export const orientation = ({ x, y }: Coordinates): number => {
  */
 export const unitVector = (u: Coordinates): Coordinates => {
   const l = norm(u);
+
   return l > 0 ? times(u, 1 / l) : u;
 };
 
 /** Returns the angle from u to v in radian */
 export const angle = (u: Coordinates, v: Coordinates, previousAngle = 0) => {
   let sweep = orientation(v) - orientation(u);
+
   // If the angle has the same sign as the arc orientation, we return the angle as is
   // Otherwise, we need to correct the value, adding or removing 2π
   while (Math.abs(previousAngle - sweep) > Math.PI) {
     sweep += Math.sign(previousAngle - sweep) * 2 * Math.PI;
   }
+
   return sweep;
 };
 
@@ -104,5 +108,6 @@ export const rotate = (vect: Coordinates, teta: number): Coordinates => {
   const { x, y } = vect;
   const nx = x * Math.cos(teta) - y * Math.sin(teta);
   const ny = y * Math.cos(teta) + x * Math.sin(teta);
+
   return { x: nx, y: ny };
 };

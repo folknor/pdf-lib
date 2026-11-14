@@ -12,6 +12,7 @@ export default class CFFSubset extends Subset {
     super(font);
 
     this.cff = this.font['CFF '];
+
     if (!this.cff) {
       throw new Error('Not a CFF Font');
     }
@@ -44,8 +45,10 @@ export default class CFFSubset extends Subset {
 
   subsetSubrs(subrs: any[], used: Record<number, boolean>): Uint8Array[] {
     const res = [];
+
     for (let i = 0; i < subrs.length; i++) {
       const subr = subrs[i];
+
       if (used[i]) {
         this.cff.stream.pos = subr.offset;
         res.push(this.cff.stream.readBuffer(subr.length));
@@ -67,8 +70,10 @@ export default class CFFSubset extends Subset {
     const used_fds: Record<number, boolean> = {};
     const used_subrs: Record<number, boolean>[] = [];
     const fd_select: Record<number, number> = {};
+
     for (const gid of this.glyphs) {
       const fd = this.cff.fdForGlyph(gid) as number | null;
+
       if (fd == null) {
         continue;
       }
@@ -84,6 +89,7 @@ export default class CFFSubset extends Subset {
 
       const glyph = this.outlineGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
+
       for (const subr in glyph._usedSubrs) {
         used_subrs[fd_select[fd]!]![subr as unknown as number] = true;
       }
@@ -92,6 +98,7 @@ export default class CFFSubset extends Subset {
     for (let i = 0; i < topDict.FDArray.length; i++) {
       const dict = topDict.FDArray[i];
       delete dict.FontName;
+
       if (dict.Private?.Subrs) {
         dict.Private = Object.assign({}, dict.Private);
         dict.Private.Subrs = this.subsetSubrs(
@@ -106,6 +113,7 @@ export default class CFFSubset extends Subset {
 
   createCIDFontdict(topDict: any): any {
     const used_subrs: Record<number, boolean> = {};
+
     for (const gid of this.glyphs) {
       const glyph = this.outlineGlyph(gid);
       void glyph.path; // this causes the glyph to be parsed
@@ -116,6 +124,7 @@ export default class CFFSubset extends Subset {
     }
 
     const privateDict = Object.assign({}, this.cff.topDict.Private);
+
     if (this.cff.topDict.Private?.Subrs) {
       privateDict.Subrs = this.subsetSubrs(
         this.cff.topDict.Private.Subrs,
@@ -124,6 +133,7 @@ export default class CFFSubset extends Subset {
     }
 
     topDict.FDArray = [{ Private: privateDict }];
+
     return (topDict.FDSelect = {
       version: 3,
       nRanges: 1,
@@ -142,6 +152,7 @@ export default class CFFSubset extends Subset {
     }
 
     this.strings.push(string);
+
     return standardStrings.length + this.strings.length - 1;
   }
 

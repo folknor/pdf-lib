@@ -7,9 +7,11 @@ const pdfBase64Bytes = fs.readFileSync('tests/utils/data/simple.pdf.base64');
 // Jest stalls when comparing large arrays, so we'll use this instead
 const arraysAreEqual = (a: Uint8Array, b: Uint8Array) => {
   if (a.length !== b.length) return false;
+
   for (let idx = 0, len = a.length; idx < len; idx++) {
     if (a[idx] !== b[idx]) return false;
   }
+
   return true;
 };
 

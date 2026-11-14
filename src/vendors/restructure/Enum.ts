@@ -21,6 +21,7 @@ export class Enum<T extends string = string> extends Base<T | number> {
 
   decode(stream: DecodeStream): T | number {
     const index = this.type.decode(stream);
+
     return this.options[index] ?? index;
   }
 
@@ -30,6 +31,7 @@ export class Enum<T extends string = string> extends Base<T | number> {
 
   encode(stream: EncodeStream, val: T | number): void {
     const index = this.options.indexOf(val as T);
+
     if (index === -1) {
       throw new Error(`Unknown option in enum: ${val}`);
     }

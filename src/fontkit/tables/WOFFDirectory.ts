@@ -27,6 +27,7 @@ const WOFFDirectory = new r.Struct({
 
 WOFFDirectory.process = function (this: Record<string, unknown>) {
   const processedTables: Record<string, unknown> = {};
+
   for (const table of this['tables'] as any[]) {
     processedTables[table.tag] = table;
   }

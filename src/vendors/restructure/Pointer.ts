@@ -51,6 +51,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
     super();
     this.offsetType = offsetType;
     this.type = type === 'void' ? null : type;
+
     const opts: Omit<Required<PointerOptions>, 'relativeTo'> & {
       relativeTo?: (ctx: unknown) => number;
     } = {
@@ -59,10 +60,12 @@ export class Pointer<T = unknown> extends Base<T | null> {
       nullValue: options.nullValue ?? 0,
       lazy: options.lazy ?? false,
     };
+
     if (options.relativeTo) {
       opts.relativeTo = options.relativeTo;
       this.relativeToGetter = options.relativeTo;
     }
+
     this.options = opts;
   }
 
@@ -80,6 +83,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
 
     const context = ctx as DecodeContext;
     let relative: number;
+
     switch (this.options.type) {
       case 'local':
         relative = context._startOffset;
@@ -92,9 +96,11 @@ export class Pointer<T = unknown> extends Base<T | null> {
         break;
       default: {
         let c: DecodeContext | undefined = context;
+
         while (c?.parent) {
           c = c.parent;
         }
+
         relative = c?._startOffset || 0;
       }
     }
@@ -107,6 +113,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
 
     if (this.type != null) {
       let val: T | null = null;
+
       const decodeValue = (): T => {
         if (val != null) {
           return val;
@@ -116,6 +123,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
         stream.pos = ptr;
         val = this.type!.decode(stream, context);
         stream.pos = pos;
+
         return val;
       };
 
@@ -157,6 +165,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
       if (!(val instanceof VoidPointer)) {
         throw new Error('Must be a VoidPointer');
       }
+
       type = val.type;
       value = val.value;
     }
@@ -178,6 +187,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
 
     if (val == null) {
       this.offsetType.encode(stream, this.options.nullValue);
+
       return;
     }
 
@@ -197,6 +207,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
         break;
       default:
         relative = 0;
+
         while (encodeCtx?.parent) {
           encodeCtx = encodeCtx.parent;
         }
@@ -215,6 +226,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
       if (!(val instanceof VoidPointer)) {
         throw new Error('Must be a VoidPointer');
       }
+
       type = val.type;
       value = val.value;
     }

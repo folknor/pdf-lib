@@ -534,6 +534,7 @@ export const STRINGPREP_TABLES: Record<
     [1048576, 1114109],
   ],
 };
+
 export const CASE_FOLDING_B2: Record<number, readonly number[]> = {
   '65': [97],
   '66': [98],
@@ -1907,6 +1908,7 @@ export const CASE_FOLDING_B2: Record<number, readonly number[]> = {
   '120744': [969],
   '120763': [963],
 };
+
 export const COMBINING_CLASS: Record<number, number> = {
   '768': 230,
   '769': 230,
@@ -2236,6 +2238,7 @@ export const COMBINING_CLASS: Record<number, number> = {
   '119212': 230,
   '119213': 230,
 };
+
 export const DECOMPOSITION: Record<number, readonly number[]> = {
   '160': [32],
   '168': [32, 776],
@@ -7384,6 +7387,7 @@ export const DECOMPOSITION: Record<number, readonly number[]> = {
   '195100': [40763],
   '195101': [173568],
 };
+
 export const COMPOSITION: Record<string, number> = {
   '65,768': 192,
   '65,769': 193,

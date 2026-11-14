@@ -37,6 +37,7 @@ const getRefs = (pdfDoc: PDFDocument) =>
 const getApRefs = (widget: PDFWidgetAnnotation) => {
   const onValue = widget.getOnValue() ?? PDFName.of('Yes');
   const aps = widget.getAppearances();
+
   return [
     (aps?.normal as PDFDict).get(onValue),
     (aps?.rollover as PDFDict | undefined)?.get(onValue),
@@ -50,6 +51,7 @@ const getApRefs = (widget: PDFWidgetAnnotation) => {
 const flatten = <T>(arr: T[][]): T[] => arr.flat();
 
 const fancyFieldsPdfBytes = fs.readFileSync('assets/pdfs/fancy_fields.pdf');
+
 // const sampleFormPdfBytes = fs.readFileSync('assets/pdfs/sample_form.pdf');
 // const combedPdfBytes = fs.readFileSync('assets/pdfs/with_combed_fields.pdf');
 // const dodPdfBytes = fs.readFileSync('assets/pdfs/dod_character.pdf');
@@ -63,8 +65,10 @@ describe('PDFForm', () => {
     const ignoredWarnings = [
       'Removing XFA form data as pdf-lib does not support reading or writing XFA',
     ];
+
     console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
+
       if (!isIgnored) origConsoleWarn(...args);
     });
   });
@@ -391,6 +395,7 @@ describe('PDFForm', () => {
     const textApRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
     );
+
     const textWidgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -401,14 +406,17 @@ describe('PDFForm', () => {
         AP: { N: textApRef },
       }),
     );
+
     page.node.addAnnot(textWidgetRef);
 
     const onApRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
     );
+
     const offApRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
     );
+
     const checkWidgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -421,6 +429,7 @@ describe('PDFForm', () => {
         AP: { N: { Yes: onApRef, Off: offApRef } },
       }),
     );
+
     page.node.addAnnot(checkWidgetRef);
 
     expect(form.getFields()).toHaveLength(0);
@@ -434,9 +443,11 @@ describe('PDFForm', () => {
     // Appearance streams stay alive and are referenced from page XObjects
     expect(context.lookup(textApRef)).toBeTruthy();
     expect(context.lookup(onApRef)).toBeTruthy();
+
     const xObjects = page.node
       .Resources()!
       .lookup(PDFName.of('XObject'), PDFDict);
+
     const xObjectValues = xObjects.values();
     expect(xObjectValues).toContain(textApRef);
     expect(xObjectValues).toContain(onApRef);
@@ -458,6 +469,7 @@ describe('PDFForm', () => {
         Rect: [50, 700, 150, 720],
       }),
     );
+
     page.node.addAnnot(widgetRef);
 
     form.flatten();
@@ -490,9 +502,11 @@ describe('PDFForm', () => {
 
     const malformedRef = orphan('Malformed', 123);
     const danglingRef = orphan('Dangling', { N: PDFRef.of(999) });
+
     const notAStreamRef = orphan('NotAStream', {
       N: context.register(context.obj([1, 2])),
     });
+
     for (const ref of [malformedRef, danglingRef, notAStreamRef]) {
       page.node.addAnnot(ref);
     }
@@ -501,6 +515,7 @@ describe('PDFForm', () => {
 
     const annots = page.node.Annots()!;
     expect(annots.size()).toBe(3);
+
     for (const ref of [malformedRef, danglingRef, notAStreamRef]) {
       expect(context.lookup(ref)).toBeInstanceOf(PDFDict);
     }
@@ -516,12 +531,15 @@ describe('PDFForm', () => {
     const grandParentRef = context.register(
       context.obj({ FT: 'Tx', T: 'GrandParent' }),
     );
+
     const parentRef = context.register(
       context.obj({ T: 'Parent', Parent: grandParentRef }),
     );
+
     const apRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
     );
+
     const widgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -531,12 +549,14 @@ describe('PDFForm', () => {
         AP: { N: apRef },
       }),
     );
+
     page.node.addAnnot(widgetRef);
 
     // A /Parent cycle without /FT anywhere must not hang and is not a field.
     const cycleARef = context.nextRef();
     const cycleBRef = context.register(context.obj({ Parent: cycleARef }));
     context.assign(cycleARef, context.obj({ Parent: cycleBRef }));
+
     const cycleWidgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -546,6 +566,7 @@ describe('PDFForm', () => {
         AP: { N: apRef },
       }),
     );
+
     page.node.addAnnot(cycleWidgetRef);
 
     form.flatten();
@@ -554,9 +575,11 @@ describe('PDFForm', () => {
     expect(annots.size()).toBe(1);
     expect(annots.get(0)).toBe(cycleWidgetRef);
     expect(context.lookup(widgetRef)).toBe(undefined);
+
     const xObjects = page.node
       .Resources()!
       .lookup(PDFName.of('XObject'), PDFDict);
+
     expect(xObjects.values()).toContain(apRef);
   });
 
@@ -570,9 +593,11 @@ describe('PDFForm', () => {
     // main pass converts and removes only the child), plus a page widget
     // pointing at the non-terminal but not listed in its /Kids.
     const parentRef = context.nextRef();
+
     const childRef = context.register(
       context.obj({ T: PDFString.of('child'), Parent: parentRef }),
     );
+
     context.assign(
       parentRef,
       context.obj({ FT: 'Tx', T: PDFString.of('parent'), Kids: [childRef] }),
@@ -582,6 +607,7 @@ describe('PDFForm', () => {
     const apRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 100, 20]) }),
     );
+
     const widgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -591,6 +617,7 @@ describe('PDFForm', () => {
         AP: { N: apRef },
       }),
     );
+
     page.node.addAnnot(widgetRef);
 
     form.flatten({ updateFieldAppearances: false });
@@ -622,6 +649,7 @@ describe('PDFForm', () => {
           Rect: [0, 0, 10, 10],
         }),
       );
+
       page.node.addAnnot(strayRef);
 
       // Unregistered parent field with an exclusively owned appearance,
@@ -629,7 +657,9 @@ describe('PDFForm', () => {
       const apRef = context.register(
         context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
       );
+
       const parentRef = context.nextRef();
+
       const orphanRef = context.register(
         context.obj({
           Type: 'Annot',
@@ -639,6 +669,7 @@ describe('PDFForm', () => {
           AP: { N: apRef },
         }),
       );
+
       context.assign(
         parentRef,
         context.obj({ FT: 'Tx', T: PDFString.of('gone'), Kids: [orphanRef] }),
@@ -651,10 +682,12 @@ describe('PDFForm', () => {
       const sharedApRef = context.register(
         context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
       );
+
       form.acroForm.dict.set(
         PDFName.of('DR'),
         context.obj({ XObject: { Shared: sharedApRef } }),
       );
+
       const bareRef = context.register(
         context.obj({
           Type: 'Annot',
@@ -663,12 +696,14 @@ describe('PDFForm', () => {
           AP: { N: sharedApRef },
         }),
       );
+
       page2.node.addAnnot(bareRef);
 
       // A non-widget annotation stays.
       const linkRef = context.register(
         context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [0, 0, 1, 1] }),
       );
+
       page2.node.addAnnot(linkRef);
 
       const contentsBefore = page.node.Contents();
@@ -676,9 +711,11 @@ describe('PDFForm', () => {
 
       expect(page.node.Annots()!.asArray()).toEqual([liveWidgetRef]);
       expect(page2.node.Annots()!.asArray()).toEqual([linkRef]);
+
       for (const ref of [strayRef, orphanRef, parentRef, apRef, bareRef]) {
         expect(context.lookup(ref)).toBe(undefined);
       }
+
       expect(context.lookup(sharedApRef)).toBeInstanceOf(PDFStream);
       expect(context.lookup(live.ref)).toBeInstanceOf(PDFDict);
       expect(page.node.Contents()).toBe(contentsBefore);
@@ -695,6 +732,7 @@ describe('PDFForm', () => {
       const apRef = context.register(
         context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
       );
+
       const annotsRef = context.register(
         context.obj([
           context.obj({
@@ -705,6 +743,7 @@ describe('PDFForm', () => {
           }),
         ]),
       );
+
       page.node.set(PDFName.of('Annots'), annotsRef);
 
       expect(form.removeOrphanWidgets()).toBe(1);
@@ -745,12 +784,15 @@ describe('PDFForm', () => {
     const parentRef = context.register(
       context.obj({ FT: 'Btn', T: PDFString.of('OrphanCheck'), V: 'Yes' }),
     );
+
     const onApRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
     );
+
     const offApRef = context.register(
       context.formXObject([], { BBox: context.obj([0, 0, 20, 20]) }),
     );
+
     const widgetRef = context.register(
       context.obj({
         Type: 'Annot',
@@ -760,15 +802,18 @@ describe('PDFForm', () => {
         AP: { N: { Yes: onApRef, Off: offApRef } },
       }),
     );
+
     page.node.addAnnot(widgetRef);
 
     form.flatten();
 
     expect(context.lookup(widgetRef)).toBe(undefined);
+
     const xObjectValues = page.node
       .Resources()!
       .lookup(PDFName.of('XObject'), PDFDict)
       .values();
+
     expect(xObjectValues).toContain(onApRef);
     expect(xObjectValues).not.toContain(offApRef);
   });
@@ -784,9 +829,11 @@ describe('PDFForm', () => {
 
     // Acrobat writes /AP /N streams with no /Type or /Subtype
     const content = 'BT /Helv 12 Tf 2 4 Td (test) Tj ET';
+
     const apRef = context.register(
       context.stream(content, { BBox: [0, 0, 200, 20] }),
     );
+
     tf.acroField
       .getWidgets()[0]!
       .dict.set(PDFName.of('AP'), context.obj({ N: apRef }));
@@ -798,9 +845,11 @@ describe('PDFForm', () => {
     expect(ap.dict.get(PDFName.of('Subtype'))).toBe(PDFName.of('Form'));
     // The original appearance is reused, not regenerated
     expect(new TextDecoder('latin1').decode(ap.getContents())).toBe(content);
+
     const xObjects = page.node
       .Resources()!
       .lookup(PDFName.of('XObject'), PDFDict);
+
     expect(xObjects.values()).toContain(apRef);
   });
 
@@ -820,6 +869,7 @@ describe('PDFForm', () => {
     const dupRef = pdfDoc.context.register(
       pdfDoc.context.obj({ FT: 'Tx', T: PDFString.of('a') }),
     );
+
     form.acroForm.addField(dupRef);
     const expected = form.getFields().find((f) => f.getName() === 'a')!;
     expect(form.getFieldMaybe('a')?.ref).toBe(expected.ref);
@@ -828,6 +878,7 @@ describe('PDFForm', () => {
     // Only the matching field is converted.
     const textSpy = vi.spyOn(PDFTextField, 'of');
     const checkSpy = vi.spyOn(PDFCheckBox, 'of');
+
     try {
       form.getFieldMaybe('group.c');
       expect(textSpy).toHaveBeenCalledTimes(1);
@@ -1035,6 +1086,7 @@ describe('PDFForm', () => {
       const sigField = fields.find((f) => f instanceof PDFSignature);
 
       expect(sigField).toBeInstanceOf(PDFSignature);
+
       if (sigField) {
         const sig = form.getSignature(sigField.getName());
         expect(sig).toBeInstanceOf(PDFSignature);
@@ -1700,6 +1752,7 @@ describe('PDFForm', () => {
       const xobjectDict = page.node
         .normalizedEntries()
         .Resources.lookup(PDFName.of('XObject'), PDFDict);
+
       expect(xobjectDict).toBeDefined();
       // Should have at least one XObject (the flattened appearance)
       expect(xobjectDict.entries().length).toBeGreaterThan(0);
@@ -1776,11 +1829,13 @@ describe('PDFForm', () => {
 
     const xfaDoc = (xfa: (ctx: PDFDocument['context']) => any) => {
       const doc = PDFDocument.create();
+
       return doc.then((pdfDoc) => {
         const ctx = pdfDoc.context;
         const acroForm = pdfDoc.catalog.getOrCreateAcroForm();
         acroForm.dict.set(PDFName.of('XFA'), xfa(ctx));
         pdfDoc.catalog.set(PDFName.of('NeedsRendering'), ctx.obj(true));
+
         return { pdfDoc, ctx, form: PDFForm.of(acroForm, pdfDoc) };
       });
     };
@@ -1788,11 +1843,14 @@ describe('PDFForm', () => {
     it('deleteXFA() deletes a direct packet array and NeedsRendering', async () => {
       let template: PDFRef;
       let datasets: PDFRef;
+
       const { pdfDoc, ctx, form } = await xfaDoc((ctx) => {
         template = ctx.register(ctx.stream('<template/>'));
         datasets = ctx.register(ctx.stream('<datasets/>'));
+
         return ctx.obj(['template', template, 'datasets', datasets]);
       });
+
       form.acroForm.dict.set(PDFName.of('NeedAppearances'), ctx.obj(true));
       form.deleteXFA();
       expect(form.hasXFA()).toBe(false);
@@ -1805,20 +1863,26 @@ describe('PDFForm', () => {
     it('deleteXFA() deletes an indirect array and a single stream', async () => {
       let packet: PDFRef;
       let array: PDFRef;
+
       const a = await xfaDoc((ctx) => {
         packet = ctx.register(ctx.stream('<xdp/>'));
         array = ctx.register(ctx.obj(['xdp', packet]));
+
         return array;
       });
+
       a.form.deleteXFA();
       expect(a.ctx.lookup(array!)).toBeUndefined();
       expect(a.ctx.lookup(packet!)).toBeUndefined();
 
       let stream: PDFRef;
+
       const b = await xfaDoc((ctx) => {
         stream = ctx.register(ctx.stream('<xdp/>'));
+
         return stream;
       });
+
       b.form.deleteXFA();
       expect(b.ctx.lookup(stream!)).toBeUndefined();
     });
@@ -1826,11 +1890,14 @@ describe('PDFForm', () => {
     it('deleteXFA() keeps packets something else refers to', async () => {
       let shared: PDFRef;
       let own: PDFRef;
+
       const { pdfDoc, ctx, form } = await xfaDoc((ctx) => {
         shared = ctx.register(ctx.stream('<datasets/>'));
         own = ctx.register(ctx.stream('<template/>'));
+
         return ctx.obj(['template', own, 'datasets', shared]);
       });
+
       pdfDoc.catalog.set(PDFName.of('Keep'), shared!);
       form.deleteXFA();
       expect(ctx.lookup(own!)).toBeUndefined();
@@ -2097,6 +2164,7 @@ describe('PDFForm', () => {
       const checkboxes = form
         .getFields()
         .filter((f) => f instanceof PDFCheckBox);
+
       expect(checkboxes.length).toBe(4);
 
       for (const cb of checkboxes) {
@@ -2110,6 +2178,7 @@ describe('PDFForm', () => {
       const remainingCheckboxes = remainingFields.filter(
         (f) => f instanceof PDFCheckBox,
       );
+
       expect(remainingCheckboxes.length).toBe(0);
 
       // Text fields still exist

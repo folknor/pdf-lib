@@ -45,6 +45,7 @@ class PDFArray extends PDFObject {
 
   indexOf(object: PDFObject): number | undefined {
     const index = this.array.indexOf(object);
+
     return index === -1 ? undefined : index;
   }
 
@@ -141,27 +142,34 @@ class PDFArray extends PDFObject {
 
   override clone(context?: PDFContext): PDFArray {
     const clone = PDFArray.withContext(context || this.context);
+
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       clone.push(this.array[idx]!);
     }
+
     return clone;
   }
 
   override toString(): string {
     let arrayString = '[ ';
+
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       arrayString += this.get(idx).toString();
       arrayString += ' ';
     }
+
     arrayString += ']';
+
     return arrayString;
   }
 
   override sizeInBytes(): number {
     let size = 3;
+
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       size += this.get(idx).sizeInBytes() + 1;
     }
+
     return size;
   }
 
@@ -170,10 +178,12 @@ class PDFArray extends PDFObject {
 
     buffer[offset++] = CharCodes.LeftSquareBracket;
     buffer[offset++] = CharCodes.Space;
+
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       offset += this.get(idx).copyBytesInto(buffer, offset);
       buffer[offset++] = CharCodes.Space;
     }
+
     buffer[offset++] = CharCodes.RightSquareBracket;
 
     return offset - initialOffset;
@@ -182,6 +192,7 @@ class PDFArray extends PDFObject {
   scalePDFNumbers(x: number, y: number): void {
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       const el = this.lookup(idx);
+
       if (el instanceof PDFNumber) {
         const factor = idx % 2 === 0 ? x : y;
         this.set(idx, PDFNumber.of(el.asNumber() * factor));
@@ -192,6 +203,7 @@ class PDFArray extends PDFObject {
   translatePDFNumbers(x: number, y: number): void {
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       const el = this.lookup(idx);
+
       if (el instanceof PDFNumber) {
         const offset = idx % 2 === 0 ? x : y;
         this.set(idx, PDFNumber.of(el.asNumber() + offset));

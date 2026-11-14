@@ -107,18 +107,22 @@ export type IKernPair = [string, string, number];
 export class Font {
   static load = (fontName: IFontNames): Font => {
     const cachedFont = fontCache[fontName as FontNames];
+
     if (cachedFont) return cachedFont;
 
     const compressed = compressedJsonForFontName[fontName];
+
     if (!compressed) {
       throw new Error(`Unknown font: ${fontName}`);
     }
+
     const json = decompressJson(compressed);
     const font = Object.assign(new Font(), JSON.parse(json) as Partial<Font>);
 
     font.CharWidths = font.CharMetrics.reduce(
       (acc, metric) => {
         acc[metric.N] = metric.WX;
+
         return acc;
       },
       {} as Record<string, number>,
@@ -127,6 +131,7 @@ export class Font {
       (acc, [name1, name2, width]) => {
         if (!acc[name1]) acc[name1] = {};
         acc[name1]![name2] = width;
+
         return acc;
       },
       {} as Record<string, Record<string, number>>,

@@ -43,6 +43,7 @@ const pdfa3File = {
 const newDoc = async () => {
   const doc = await PDFDocument.create({ updateMetadata: false });
   doc.addPage([100, 100]);
+
   return doc;
 };
 
@@ -97,9 +98,11 @@ describe('embedFacturX', () => {
     const again = await roundTrip(loaded);
     const names = again.getAttachments().map((a) => a.name);
     expect(names.sort()).toEqual(['factur-x.xml', 'other.bin']);
+
     const invoiceFile = again
       .getAttachments()
       .find((a) => a.name === 'factur-x.xml')!;
+
     expect(new TextDecoder().decode(invoiceFile.data)).toBe(BASIC_WL);
     expect(invoiceFile.afRelationship).toBe('Data');
     expect(again.catalog.lookup(PDFName.of('AF'), PDFArray).size()).toBe(2);
@@ -115,10 +118,12 @@ describe('embedFacturX', () => {
   it('also replaces an invoice under another key and an /AF-only one', async () => {
     const doc = await newDoc();
     const ctx = doc.context;
+
     const spec = (name: string) =>
       ctx.register(
         ctx.obj({ Type: 'Filespec', F: PDFHexString.fromText(name) }),
       );
+
     const aliased = spec('factur-x.xml');
     const afOnly = spec('factur-x.xml');
     doc.catalog.set(
@@ -131,10 +136,12 @@ describe('embedFacturX', () => {
     );
     doc.catalog.set(PDFName.of('AF'), ctx.obj([aliased, afOnly]));
     doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Source });
+
     const names = doc.catalog
       .lookup(PDFName.of('Names'), PDFDict)
       .lookup(PDFName.of('EmbeddedFiles'), PDFDict)
       .lookup(PDFName.of('Names'), PDFArray);
+
     expect(names.size()).toBe(2);
     const af = doc.catalog.lookup(PDFName.of('AF'), PDFArray);
     expect(af.size()).toBe(1);
@@ -160,23 +167,29 @@ describe('embedFacturX', () => {
       names.set(PDFName.of('EmbeddedFiles'), ctx.register(ef));
       loaded.catalog.set(PDFName.of('Names'), ctx.register(names));
       loaded.catalog.set(PDFName.of('AF'), ctx.register(ctx.obj([oldRef])));
+
       if (shared) {
         const annotation = ctx.register(ctx.obj({
           Type: 'Annot', Subtype: 'FileAttachment', Rect: [0, 0, 10, 10], FS: oldRef,
         }));
+
         loaded.getPages()[0]!.node.set(PDFName.of('Annots'), ctx.obj([annotation]));
       }
+
       loaded.embedFacturX(BASIC_WL);
       expect(ctx.lookup(oldRef) !== undefined).toBe(shared);
       expect(ctx.lookup(oldStream) !== undefined).toBe(shared);
       const saved = await roundTrip(loaded);
+
       const embeddedContents = saved.context.enumerateIndirectObjects()
         .map(([, object]) => object)
         .filter((object): object is PDFRawStream => object instanceof PDFRawStream &&
           object.dict.get(PDFName.of('Type')) === PDFName.of('EmbeddedFile'))
         .map((stream) => new TextDecoder().decode(decodePDFRawStream(stream).decode()));
+
       expect(embeddedContents.includes(EN16931)).toBe(shared);
       expect(embeddedContents).toContain(BASIC_WL);
+
       if (shared) {
         const annotation = saved.getPages()[0]!.node.lookup(PDFName.of('Annots'), PDFArray).lookup(0, PDFDict);
         const spec = annotation.lookup(PDFName.of('FS'), PDFDict);
@@ -191,18 +204,22 @@ describe('embedFacturX', () => {
     async (replace) => {
       const doc = await newDoc();
       await doc.attach(new Uint8Array([1]), 'a.bin', pdfa3File);
+
       if (replace) doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Data });
       await doc.attach(new Uint8Array([2]), 'z.bin', pdfa3File);
       await doc.flush();
       const ctx = doc.context;
       const names = doc.catalog.lookup(PDFName.of('Names'), PDFDict);
       const entries = readNameTree(names.lookup(PDFName.of('EmbeddedFiles'), PDFDict));
+
       const leaf = (items: typeof entries) => {
         const array = ctx.register(ctx.obj(items.flatMap(({ key, value }) => [key, value])));
         const limits = ctx.register(ctx.obj([items[0]!.key, items[items.length - 1]!.key]));
         const dict = ctx.obj({ Names: array, Limits: limits });
+
         return { dict, ref: ctx.register(dict), array, limits };
       };
+
       const left = leaf(entries.slice(0, -1));
       const right = leaf(entries.slice(-1));
       const kids = ctx.register(ctx.obj([left.ref, right.ref]));
@@ -212,26 +229,33 @@ describe('embedFacturX', () => {
       const namesRef = ctx.register(names);
       doc.catalog.set(PDFName.of('Names'), namesRef);
       const oldInvoice = entries.find(({ key }) => key.decodeText() === 'factur-x.xml')?.value;
+
       const oldStream = oldInvoice && ctx.lookup(oldInvoice, PDFDict)
         .lookup(PDFName.of('EF'), PDFDict).get(PDFName.of('F'));
+
       const before = [names, root, left.dict, right.dict].map((obj) => obj.toString());
 
       doc.embedFacturX(BASIC_WL);
 
       const updated = doc.catalog.lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+
       checkNameTree(updated);
       expect(updated.has(PDFName.of('Kids'))).toBe(true);
       expect(updated.lookup(PDFName.of('Kids'), PDFArray).get(1)).toBe(right.ref);
       expect([names, root, left.dict, right.dict].map((obj) => obj.toString())).toEqual(before);
+
       for (const ref of [namesRef, rootRef, kids, left.ref, left.array, left.limits]) {
         expect(ctx.lookup(ref)).toBeUndefined();
       }
+
       expect(ctx.lookup(right.ref)).toBe(right.dict);
+
       if (oldInvoice) {
         expect(ctx.lookup(oldInvoice)).toBeUndefined();
         expect(ctx.lookup(oldStream)).toBeUndefined();
       }
+
       const saved = await roundTrip(doc);
       expect(saved.getAttachments().map((a) => a.name).sort()).toEqual([
         'a.bin', 'factur-x.xml', 'z.bin',
@@ -247,27 +271,37 @@ describe('embedFacturX', () => {
     async (invalid) => {
       const doc = await newDoc();
       const ctx = doc.context;
+
       const spec = (name: string) => ctx.register(ctx.obj({
         Type: 'Filespec', F: PDFHexString.fromText(name),
       }));
+
       const key = (name: string) => PDFHexString.fromText(name);
+
       const first = ctx.register(ctx.obj({
         Names: [key('factur-x.xml'), spec('factur-x.xml')],
         Limits: [key('factur-x.xml'), key('factur-x.xml')],
       }));
+
       const lastKey = invalid === 'duplicate' ? 'factur-x.xml' : 'z.bin';
+
       const lastSpec = invalid === 'non-filespec' ? ctx.register(ctx.obj(42))
         : spec(invalid === 'xrechnung' ? 'xrechnung.xml' : 'z.bin', pdfa3File);
+
       const last = ctx.register(ctx.obj({
         Names: [key(lastKey), lastSpec],
         Limits: invalid === 'limits' ? [key(lastKey)] : [key(lastKey), key(lastKey)],
       }));
+
       doc.catalog.set(PDFName.of('Names'), ctx.register(ctx.obj({
         EmbeddedFiles: ctx.register(ctx.obj({ Kids: [first, last] })),
       })));
+
       if (invalid === 'AF') doc.catalog.set(PDFName.of('AF'), ctx.obj(42));
+
       const snapshot = () => ctx.enumerateIndirectObjects()
         .map(([ref, obj]) => [ref.toString(), obj.toString()]);
+
       const before = snapshot();
       const largest = ctx.largestObjectNumber;
       expect(() => doc.embedFacturX(BASIC_WL)).toThrow();
@@ -294,9 +328,11 @@ describe('embedFacturX', () => {
         },
       ],
     });
+
     const stream = doc.context.lookup(
       doc.catalog.get(PDFName.of('Metadata')),
     ) as PDFRawStream;
+
     stream.updateContents(p.serialize());
     doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Alternative });
     expect(doc.getPDFADeclaration()).toEqual({ part: '3', conformance: 'U' });
@@ -337,9 +373,11 @@ describe('embedFacturX', () => {
     ).toThrow(/only UTF-8/);
     const utf16 = new Uint8Array([0xff, 0xfe, 0x3c, 0x00]);
     expect(() => doc.embedFacturX(utf16)).toThrow(/not valid UTF-8/);
+
     const twoBoms = new TextEncoder().encode(
       String.fromCharCode(0xfeff, 0xfeff) + EN16931,
     );
+
     expect(() =>
       doc.embedFacturX(twoBoms, { afRelationship: AFRelationship.Data }),
     ).toThrow();
@@ -380,9 +418,11 @@ describe('embedFacturX', () => {
       '1.0',
       'zf',
     );
+
     const stream = legacy.context.lookup(
       legacy.catalog.get(PDFName.of('Metadata')),
     ) as PDFRawStream;
+
     stream.updateContents(p.serialize());
     expect(() =>
       legacy.embedFacturX(EN16931, { afRelationship: AFRelationship.Data }),
@@ -400,6 +440,7 @@ describe('embedFacturX', () => {
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     base.embedFacturX(EN16931, { afRelationship: AFRelationship.Alternative });
     const bytes = await base.commit();
     const loaded = await PDFDocument.load(bytes, { updateMetadata: false });

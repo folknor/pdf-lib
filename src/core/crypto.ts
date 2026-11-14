@@ -41,21 +41,25 @@ class ARCFourCipher {
     for (let i = 0; i < 256; ++i) {
       s[i] = i;
     }
+
     for (let i = 0, j = 0; i < 256; ++i) {
       const tmp = s[i]!;
       j = (j + tmp + key[i % keyLength]!) & 0xff;
       s[i] = s[j]!;
       s[j] = tmp;
     }
+
     this.s = s;
   }
 
   encryptBlock(data: Uint8Array) {
     let a = this.a,
       b = this.b;
+
     const s = this.s;
     const n = data.length;
     const output = new Uint8Array(n);
+
     for (let i = 0; i < n; ++i) {
       a = (a + 1) & 0xff;
       const tmp = s[a]!;
@@ -65,8 +69,10 @@ class ARCFourCipher {
       s[b] = tmp;
       output[i] = data[i]! ^ s[(tmp + tmp2) & 0xff]!;
     }
+
     this.a = a;
     this.b = b;
+
     return output;
   }
 
@@ -106,18 +112,23 @@ const calculateMD5 = (function calculateMD5Closure() {
       h1 = -271733879,
       h2 = -1732584194,
       h3 = 271733878;
+
     // pre-processing
     const paddedLength = (length + 72) & ~63; // data + 9 extra bytes
     const padded = new Uint8Array(paddedLength);
     let i, j;
+
     for (i = 0; i < length; ++i) {
       padded[i] = data[offset++]!;
     }
+
     padded[i++] = 0x80;
     const n = paddedLength - 8;
+
     while (i < n) {
       padded[i++] = 0;
     }
+
     padded[i++] = (length << 3) & 0xff;
     padded[i++] = (length >> 5) & 0xff;
     padded[i++] = (length >> 13) & 0xff;
@@ -127,6 +138,7 @@ const calculateMD5 = (function calculateMD5Closure() {
     padded[i++] = 0;
     padded[i++] = 0;
     const w = new Int32Array(16);
+
     for (i = 0; i < paddedLength; ) {
       for (j = 0; j < 16; ++j, i += 4) {
         w[j] =
@@ -135,12 +147,14 @@ const calculateMD5 = (function calculateMD5Closure() {
           (padded[i + 2]! << 16) |
           (padded[i + 3]! << 24);
       }
+
       let a = h0,
         b = h1,
         c = h2,
         d = h3,
         f,
         g;
+
       for (j = 0; j < 64; ++j) {
         if (j < 16) {
           f = (b & c) | (~b & d);
@@ -155,19 +169,23 @@ const calculateMD5 = (function calculateMD5Closure() {
           f = c ^ (b | ~d);
           g = (7 * j) & 15;
         }
+
         const tmp = d,
           rotateArg = (a + f + k[j]! + w[g]!) | 0,
           rotate = r[j]!;
+
         d = c;
         c = b;
         b = (b + ((rotateArg << rotate) | (rotateArg >>> (32 - rotate)))) | 0;
         a = tmp;
       }
+
       h0 = (h0 + a) | 0;
       h1 = (h1 + b) | 0;
       h2 = (h2 + c) | 0;
       h3 = (h3 + d) | 0;
     }
+
     // prettier-ignore
     return new Uint8Array([
       h0 & 0xff,
@@ -238,6 +256,7 @@ class Word64 {
 
   rotateRight(places: number) {
     let low, high;
+
     if (places & 32) {
       high = this.low;
       low = this.high;
@@ -245,6 +264,7 @@ class Word64 {
       low = this.low;
       high = this.high;
     }
+
     places &= 31;
     this.low = (low >>> places) | (high << (32 - places));
     this.high = (high >>> places) | (low << (32 - places));
@@ -258,9 +278,11 @@ class Word64 {
   add(word: Word64) {
     const lowAdd = (this.low >>> 0) + (word.low >>> 0);
     let highAdd = (this.high >>> 0) + (word.high >>> 0);
+
     if (lowAdd > 0xffffffff) {
       highAdd += 1;
     }
+
     this.low = lowAdd | 0;
     this.high = highAdd | 0;
   }
@@ -335,18 +357,23 @@ const calculateSHA256 = (function calculateSHA256Closure() {
       h5 = 0x9b05688c,
       h6 = 0x1f83d9ab,
       h7 = 0x5be0cd19;
+
     // pre-processing
     const paddedLength = Math.ceil((length + 9) / 64) * 64;
     const padded = new Uint8Array(paddedLength);
     let i, j;
+
     for (i = 0; i < length; ++i) {
       padded[i] = data[offset++]!;
     }
+
     padded[i++] = 0x80;
     const n = paddedLength - 8;
+
     while (i < n) {
       padded[i++] = 0;
     }
+
     padded[i++] = 0;
     padded[i++] = 0;
     padded[i++] = 0;
@@ -356,6 +383,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
     padded[i++] = (length >> 5) & 0xff;
     padded[i++] = (length << 3) & 0xff;
     const w = new Uint32Array(64);
+
     // for each 512 bit block
     for (i = 0; i < paddedLength; ) {
       for (j = 0; j < 16; ++j) {
@@ -375,6 +403,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
             w[j - 16]!) |
           0;
       }
+
       let a = h0,
         b = h1,
         c = h2,
@@ -385,6 +414,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
         h = h7,
         t1,
         t2;
+
       for (j = 0; j < 64; ++j) {
         t1 = h + sigmaPrime(e) + ch(e, f, g) + k[j]! + w[j]!;
         t2 = sigma(a) + maj(a, b, c);
@@ -397,6 +427,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
         b = a;
         a = (t1 + t2) | 0;
       }
+
       h0 = (h0 + a) | 0;
       h1 = (h1 + b) | 0;
       h2 = (h2 + c) | 0;
@@ -406,6 +437,7 @@ const calculateSHA256 = (function calculateSHA256Closure() {
       h6 = (h6 + g) | 0;
       h7 = (h7 + h) | 0;
     }
+
     // prettier-ignore
     return new Uint8Array([
       (h0 >> 24) & 0xff,
@@ -603,6 +635,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
   ) {
     // initial hash values
     let h0, h1, h2, h3, h4, h5, h6, h7;
+
     if (!mode384) {
       h0 = new Word64(0x6a09e667, 0xf3bcc908);
       h1 = new Word64(0xbb67ae85, 0x84caa73b);
@@ -629,14 +662,18 @@ const calculateSHA512 = (function calculateSHA512Closure() {
     const paddedLength = Math.ceil((length + 17) / 128) * 128;
     const padded = new Uint8Array(paddedLength);
     let i, j;
+
     for (i = 0; i < length; ++i) {
       padded[i] = data[offset++]!;
     }
+
     padded[i++] = 0x80;
     const n = paddedLength - 16;
+
     while (i < n) {
       padded[i++] = 0;
     }
+
     padded[i++] = 0;
     padded[i++] = 0;
     padded[i++] = 0;
@@ -655,21 +692,28 @@ const calculateSHA512 = (function calculateSHA512Closure() {
     padded[i++] = (length << 3) & 0xff;
 
     const w = new Array(80);
+
     for (i = 0; i < 80; i++) {
       w[i] = new Word64(0, 0);
     }
+
     let a = new Word64(0, 0),
       b = new Word64(0, 0),
       c = new Word64(0, 0);
+
     let d = new Word64(0, 0),
       e = new Word64(0, 0),
       f = new Word64(0, 0);
+
     let g = new Word64(0, 0),
       h = new Word64(0, 0);
+
     const t1 = new Word64(0, 0),
       t2 = new Word64(0, 0);
+
     const tmp1 = new Word64(0, 0),
       tmp2 = new Word64(0, 0);
+
     let tmp3;
 
     // for each 1024 bit block
@@ -687,6 +731,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
           padded[i + 7]!;
         i += 8;
       }
+
       for (j = 16; j < 80; ++j) {
         tmp3 = w[j]!;
         littleSigmaPrime(tmp3, w[j - 2]!, tmp2);
@@ -704,6 +749,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
       f.assign(h5);
       g.assign(h6);
       h.assign(h7);
+
       for (j = 0; j < 80; ++j) {
         t1.assign(h);
         sigmaPrime(tmp1, e, tmp2);
@@ -730,6 +776,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
         tmp3.add(t2);
         a = tmp3;
       }
+
       h0.add(a);
       h1.add(b);
       h2.add(c);
@@ -741,6 +788,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
     }
 
     let result;
+
     if (!mode384) {
       result = new Uint8Array(64);
       h0.copyTo(result, 0);
@@ -760,6 +808,7 @@ const calculateSHA512 = (function calculateSHA512Closure() {
       h4.copyTo(result, 32);
       h5.copyTo(result, 40);
     }
+
     return result;
   }
 
@@ -895,6 +944,7 @@ class AESBaseCipher {
     ]);
 
     this._mixCol = new Uint8Array(256);
+
     for (let i = 0; i < 256; i++) {
       if (i < 128) {
         this._mixCol[i] = i << 1;
@@ -920,6 +970,7 @@ class AESBaseCipher {
     for (let j = 0, k = this._keySize; j < 16; ++j, ++k) {
       state[j]! ^= key[k]!;
     }
+
     for (let i = this._cyclesOfRepetition - 1; i >= 1; --i) {
       // InvShiftRows
       t = state[13]!;
@@ -940,14 +991,17 @@ class AESBaseCipher {
       state[11] = t;
       state[7] = u;
       state[3] = v;
+
       // InvSubBytes
       for (let j = 0; j < 16; ++j) {
         state[j] = this._inv_s[state[j]!]!;
       }
+
       // AddRoundKey
       for (let j = 0, k = i * 16; j < 16; ++j, ++k) {
         state[j]! ^= key[k]!;
       }
+
       // InvMixColumns
       for (let j = 0; j < 16; j += 4) {
         const s0 = this._mix[state[j]!]!;
@@ -968,6 +1022,7 @@ class AESBaseCipher {
         state[j + 3] = t & 0xff;
       }
     }
+
     // InvShiftRows
     t = state[13]!;
     state[13] = state[9]!;
@@ -987,12 +1042,14 @@ class AESBaseCipher {
     state[11] = t;
     state[7] = u;
     state[3] = v;
+
     for (let j = 0; j < 16; ++j) {
       // InvSubBytes
       state[j] = this._inv_s[state[j]!]!;
       // AddRoundKey
       state[j]! ^= key[j]!;
     }
+
     return state;
   }
 
@@ -1013,6 +1070,7 @@ class AESBaseCipher {
       for (let j = 0; j < 16; ++j) {
         state[j] = s[state[j]!]!;
       }
+
       // ShiftRows
       v = state[1]!;
       state[1] = state[5]!;
@@ -1032,6 +1090,7 @@ class AESBaseCipher {
       state[7] = v;
       state[11] = u;
       state[15] = t;
+
       // MixColumns
       for (let j = 0; j < 16; j += 4) {
         const s0 = state[j + 0]!;
@@ -1044,6 +1103,7 @@ class AESBaseCipher {
         state[j + 2]! ^= t ^ this._mixCol[s2 ^ s3]!;
         state[j + 3]! ^= t ^ this._mixCol[s3 ^ s0]!;
       }
+
       // AddRoundKey
       for (let j = 0, k = i * 16; j < 16; ++j, ++k) {
         state[j]! ^= key[k]!;
@@ -1054,6 +1114,7 @@ class AESBaseCipher {
     for (let j = 0; j < 16; ++j) {
       state[j] = s[state[j]!]!;
     }
+
     // ShiftRows
     v = state[1]!;
     state[1] = state[5]!;
@@ -1073,50 +1134,63 @@ class AESBaseCipher {
     state[7] = v;
     state[11] = u;
     state[15] = t;
+
     // AddRoundKey
     for (let j = 0, k = this._keySize; j < 16; ++j, ++k) {
       state[j]! ^= key[k]!;
     }
+
     return state;
   }
 
   _decryptBlock2(data: Uint8Array, finalize: boolean) {
     const sourceLength = data.length;
+
     let buffer = this.buffer,
       bufferLength = this.bufferPosition;
+
     const result: Uint8Array[] = [];
     let iv = this.iv;
 
     for (let i = 0; i < sourceLength; ++i) {
       buffer[bufferLength] = data[i]!;
       ++bufferLength;
+
       if (bufferLength < 16) {
         continue;
       }
+
       // buffer is full, decrypting
       const plain = this._decrypt(buffer, this._key);
+
       // xor-ing the IV vector to get plain text
       for (let j = 0; j < 16; ++j) {
         plain[j]! ^= iv[j]!;
       }
+
       iv = buffer;
       result.push(plain);
       buffer = new Uint8Array(16);
       bufferLength = 0;
     }
+
     // saving incomplete buffer
     this.buffer = buffer;
     this.bufferLength = bufferLength;
     this.iv = iv;
+
     if (result.length === 0) {
       return new Uint8Array(0);
     }
+
     // combining plain text blocks into one
     let outputLength = 16 * result.length;
+
     if (finalize) {
       // undo a padding that is described in RFC 2898
       const lastBlock = result[result.length - 1]!;
       let psLen = lastBlock[15]!;
+
       if (psLen <= 16) {
         for (let i = 15, ii = 16 - psLen; i >= ii; --i) {
           if (lastBlock[i] !== psLen) {
@@ -1125,14 +1199,18 @@ class AESBaseCipher {
             break;
           }
         }
+
         outputLength -= psLen;
         result[result.length - 1] = lastBlock.subarray(0, 16 - psLen);
       }
     }
+
     const output = new Uint8Array(outputLength);
+
     for (let i = 0, j = 0, ii = result.length; i < ii; ++i, j += 16) {
       output.set(result[i]!, j);
     }
+
     return output;
   }
 
@@ -1144,6 +1222,7 @@ class AESBaseCipher {
     const sourceLength = data.length;
     const buffer = this.buffer;
     let bufferLength = this.bufferPosition;
+
     // If an IV is not supplied, wait for IV values. They are at the start
     // of the stream.
     if (iv) {
@@ -1156,33 +1235,42 @@ class AESBaseCipher {
       ) {
         buffer[bufferLength] = data[i]!;
       }
+
       if (bufferLength < 16) {
         // Need more data.
         this.bufferLength = bufferLength;
+
         return new Uint8Array(0);
       }
+
       this.iv = buffer;
       data = data.subarray(16);
     }
+
     this.buffer = new Uint8Array(16);
     this.bufferLength = 0;
     // starting decryption
     this.decryptBlock = this._decryptBlock2;
+
     return this.decryptBlock(data, finalize);
   }
 
   encrypt(data: Uint8Array, iv: Uint8Array) {
     const sourceLength = data.length;
+
     let buffer = this.buffer,
       bufferLength = this.bufferPosition;
+
     const result: Uint8Array[] = [];
 
     if (!iv) {
       iv = new Uint8Array(16);
     }
+
     for (let i = 0; i < sourceLength; ++i) {
       buffer[bufferLength] = data[i]!;
       ++bufferLength;
+
       if (bufferLength < 16) {
         continue;
       }
@@ -1198,19 +1286,24 @@ class AESBaseCipher {
       buffer = new Uint8Array(16);
       bufferLength = 0;
     }
+
     // saving incomplete buffer
     this.buffer = buffer;
     this.bufferLength = bufferLength;
     this.iv = iv;
+
     if (result.length === 0) {
       return new Uint8Array(0);
     }
+
     // combining plain text blocks into one
     const outputLength = 16 * result.length;
     const output = new Uint8Array(outputLength);
+
     for (let i = 0, j = 0, ii = result.length; i < ii; ++i, j += 16) {
       output.set(result[i]!, j);
     }
+
     return output;
   }
 }
@@ -1273,6 +1366,7 @@ class AES128Cipher extends AESBaseCipher {
       t4 = s[t4]!;
       // Rcon
       t1 ^= rcon[i]!;
+
       for (let n = 0; n < 4; ++n) {
         result[j] = t1 ^= result[j - 16]!;
         j++;
@@ -1284,6 +1378,7 @@ class AES128Cipher extends AESBaseCipher {
         j++;
       }
     }
+
     return result;
   }
 }
@@ -1306,10 +1401,12 @@ class AES256Cipher extends AESBaseCipher {
     result.set(cipherKey);
 
     let r = 1;
+
     let t1 = 0,
       t2 = 0,
       t3 = 0,
       t4 = 0;
+
     for (let j = 32; j < b; ) {
       if (j % 32 === 16) {
         t1 = s[t1]!;
@@ -1329,6 +1426,7 @@ class AES256Cipher extends AESBaseCipher {
         t4 = s[t4]!;
         // Rcon
         t1 ^= r;
+
         if ((r <<= 1) >= 256) {
           r = (r ^ 0x1b) & 0xff;
         }
@@ -1345,6 +1443,7 @@ class AES256Cipher extends AESBaseCipher {
         j++;
       }
     }
+
     return result;
   }
 }
@@ -1361,6 +1460,7 @@ class PDF17 {
     hashData.set(ownerValidationSalt, password.length);
     hashData.set(userBytes, password.length + ownerValidationSalt.length);
     const result = calculateSHA256(hashData, 0, hashData.length);
+
     return isArrayEqual(result, ownerPassword);
   }
 
@@ -1373,6 +1473,7 @@ class PDF17 {
     hashData.set(password, 0);
     hashData.set(userValidationSalt, password.length);
     const result = calculateSHA256(hashData, 0, hashData.length);
+
     return isArrayEqual(result, userPassword);
   }
 
@@ -1388,6 +1489,7 @@ class PDF17 {
     hashData.set(userBytes, password.length + ownerKeySalt.length);
     const key = calculateSHA256(hashData, 0, hashData.length);
     const cipher = new AES256Cipher(key);
+
     return cipher.decryptBlock(ownerEncryption, false, new Uint8Array(16));
   }
 
@@ -1402,6 +1504,7 @@ class PDF17 {
     // `key` is the decryption key for the UE string.
     const key = calculateSHA256(hashData, 0, hashData.length);
     const cipher = new AES256Cipher(key);
+
     return cipher.decryptBlock(userEncryption, false, new Uint8Array(16));
   }
 }
@@ -1416,9 +1519,11 @@ class PDF20 {
     let k = calculateSHA256(input, 0, input.length).subarray(0, 32);
     let e: Uint8Array = new Uint8Array([0]);
     let i = 0;
+
     while (i < 64 || e[e.length - 1]! > i - 32) {
       const combinedLength = password.length + k.length + userBytes.length,
         combinedArray = new Uint8Array(combinedLength);
+
       let writeOffset = 0;
       combinedArray.set(password, writeOffset);
       writeOffset += password.length;
@@ -1427,9 +1532,11 @@ class PDF20 {
       combinedArray.set(userBytes, writeOffset);
 
       const k1 = new Uint8Array(combinedLength * 64);
+
       for (let j = 0, pos = 0; j < 64; j++, pos += combinedLength) {
         k1.set(combinedArray, pos);
       }
+
       // AES128 CBC NO PADDING with first 16 bytes of k as the key
       // and the second 16 as the iv.
       const cipher = new AES128Cipher(k.subarray(0, 16));
@@ -1441,6 +1548,7 @@ class PDF20 {
       // the powers of 256 are === 1 modulo 3 and finally the number modulo 3
       // is equal to the remainder modulo 3 of the sum of the e_n.
       const remainder = e.slice(0, 16).reduce((a, b) => a + b, 0) % 3;
+
       if (remainder === 0) {
         k = calculateSHA256(e, 0, e.length);
       } else if (remainder === 1) {
@@ -1448,8 +1556,10 @@ class PDF20 {
       } else if (remainder === 2) {
         k = calculateSHA512(e, 0, e.length);
       }
+
       i++;
     }
+
     return k.subarray(0, 32);
   }
 
@@ -1468,6 +1578,7 @@ class PDF20 {
     hashData.set(ownerValidationSalt, password.length);
     hashData.set(userBytes, password.length + ownerValidationSalt.length);
     const result = this.calculatePDF20Hash(password, hashData, userBytes);
+
     return isArrayEqual(result, ownerPassword);
   }
 
@@ -1479,11 +1590,13 @@ class PDF20 {
     const hashData = new Uint8Array(password.length + 8);
     hashData.set(password, 0);
     hashData.set(userValidationSalt, password.length);
+
     const result = this.calculatePDF20Hash(
       password,
       hashData,
       new Uint8Array(),
     );
+
     return isArrayEqual(result, userPassword);
   }
 
@@ -1499,6 +1612,7 @@ class PDF20 {
     hashData.set(userBytes, password.length + ownerKeySalt.length);
     const key = this.calculatePDF20Hash(password, hashData, userBytes);
     const cipher = new AES256Cipher(key);
+
     return cipher.decryptBlock(ownerEncryption, false, new Uint8Array(16));
   }
 
@@ -1513,6 +1627,7 @@ class PDF20 {
     // `key` is the decryption key for the UE string.
     const key = this.calculatePDF20Hash(password, hashData, new Uint8Array());
     const cipher = new AES256Cipher(key);
+
     return cipher.decryptBlock(userEncryption, false, new Uint8Array(16));
   }
 }
@@ -1521,6 +1636,7 @@ type Cipher = ARCFourCipher | NullCipher | AES128Cipher | AES256Cipher;
 
 /** A crypt filter method (ISO 32000-2 Table 25 /CFM) this library implements. */
 export type CryptMethod = 'None' | 'V2' | 'AESV2' | 'AESV3';
+
 class CipherTransform {
   private StringCipherConstructor: () => Cipher;
   private StreamCipherConstructor: () => Cipher;
@@ -1535,6 +1651,7 @@ class CipherTransform {
 
   createStream(stream: StreamType, length: number) {
     const cipher = this.StreamCipherConstructor();
+
     return new DecryptStream(
       stream,
       (data, finalize) => cipher.decryptBlock(data as Uint8Array, finalize),
@@ -1546,21 +1663,25 @@ class CipherTransform {
     const cipher = this.StringCipherConstructor();
     let data = stringAsByteArray(s);
     data = cipher.decryptBlock(data, true);
+
     return arrayAsString(data);
   }
 
   decryptBytes(d: Uint8Array) {
     const cipher = this.StringCipherConstructor();
+
     return cipher.decryptBlock(d, true);
   }
 
   decryptStreamBytes(d: Uint8Array) {
     const cipher = this.StreamCipherConstructor();
+
     return cipher.decryptBlock(d, true);
   }
 
   encryptString(s: string) {
     const cipher = this.StringCipherConstructor();
+
     if (cipher instanceof AESBaseCipher) {
       // Append some chars equal to "16 - (M mod 16)"
       // where M is the string length (see section 7.6.2 in PDF specification)
@@ -1574,6 +1695,7 @@ class CipherTransform {
 
       // Generate an initialization vector
       const iv = new Uint8Array(16);
+
       if (typeof crypto !== 'undefined') {
         crypto.getRandomValues(iv);
       } else {
@@ -1594,6 +1716,7 @@ class CipherTransform {
 
     let data = stringAsByteArray(s);
     data = cipher.encrypt(data);
+
     return arrayAsString(data);
   }
 }
@@ -1618,24 +1741,32 @@ const permsInconsistency = (
   if (!(perms instanceof PDFString || perms instanceof PDFHexString)) {
     return 'is missing or not a string';
   }
+
   const bytes = perms.asBytes();
+
   if (bytes.length !== 16) return `has ${bytes.length} bytes, not 16`;
+
   const clear = new AES256Cipher(key).decryptBlock(
     bytes,
     false,
     new Uint8Array(16),
   );
+
   if (clear[9] !== 0x61 || clear[10] !== 0x64 || clear[11] !== 0x62) {
     return 'does not decrypt to the adb marker under the file key';
   }
+
   const permissions =
     clear[0]! | (clear[1]! << 8) | (clear[2]! << 16) | (clear[3]! << 24);
+
   if (permissions !== (p | 0)) {
     return `holds permissions ${permissions}, but /P is ${p}`;
   }
+
   if (clear[8] !== (encryptMetadata ? 0x54 : 0x46)) {
     return `disagrees with /EncryptMetadata ${encryptMetadata}`;
   }
+
   return undefined;
 };
 
@@ -1661,22 +1792,28 @@ class CipherTransformFactory {
 
   constructor(dict: PDFDict, fileIdBytes: Uint8Array, password?: string) {
     const filter = dict.get(PDFName.of('Filter')) as PDFName;
+
     if (filter.asString() !== '/Standard') {
       throw new Error('unknown encryption method');
     }
+
     this.filterName = filter.asString();
     this.dict = dict;
     const algorithm = (dict.get(PDFName.of('V')) as PDFNumber).asNumber();
+
     if (
       !Number.isInteger(algorithm) ||
       (algorithm !== 1 && algorithm !== 2 && algorithm !== 4 && algorithm !== 5)
     ) {
       throw new Error('unsupported encryption algorithm');
     }
+
     this.algorithm = algorithm;
+
     let keyLength = (
       dict.get(PDFName.of('Length')) as PDFNumber | undefined
     )?.asNumber();
+
     if (!keyLength) {
       // Spec asks to rely on encryption dictionary's Length entry, however
       // some PDFs don't have it. Trying to recover.
@@ -1687,14 +1824,18 @@ class CipherTransformFactory {
         // Trying to find default handler -- it usually has Length.
         const cfDict = dict.lookup(PDFName.of('CF')) as PDFDict;
         const streamCryptoName = dict.lookup(PDFName.of('StmF')) as PDFName;
+
         if (cfDict instanceof PDFDict && streamCryptoName instanceof PDFName) {
           cfDict.suppressEncryption = true;
           const handlerDict = cfDict.lookup(streamCryptoName) as PDFDict;
           let keyLen: PDFNumber | null = null;
+
           if (handlerDict) {
             keyLen = handlerDict.lookup(PDFName.of('Length')) as PDFNumber;
           }
+
           keyLength = keyLen?.asNumber() || 128;
+
           if (keyLength < 40) {
             // Sometimes it's incorrect value of bits, generators specify
             // bytes.
@@ -1703,6 +1844,7 @@ class CipherTransformFactory {
         }
       }
     }
+
     if (
       keyLength === undefined ||
       !Number.isInteger(keyLength) ||
@@ -1719,11 +1861,13 @@ class CipherTransformFactory {
     const userPassword = uPdfStr.subarray(0, 32);
     const flags = (dict.get(PDFName.of('P')) as PDFNumber).asNumber();
     const revision = (dict.get(PDFName.of('R')) as PDFNumber).asNumber();
+
     // meaningful when V is 4 or 5
     const encryptMetadata =
       (algorithm === 4 || algorithm === 5) &&
       (dict.get(PDFName.of('EncryptMetadata')) as PDFBool)?.asBoolean() !==
         false;
+
     this.encryptMetadata = encryptMetadata;
 
     // R5/R6 try SASLprep mapping and NFKC before raw UTF-8 (see
@@ -1731,10 +1875,12 @@ class CipherTransformFactory {
     // produced by older writers, including earlier versions of this library.
     let passwordBytes: Uint8Array | undefined;
     let fallbackPasswordBytes: Uint8Array[] = [];
+
     if (password) {
       if (revision === 5 || revision === 6) {
         [passwordBytes, ...fallbackPasswordBytes] =
           r6PasswordCandidates(password);
+
         if (revision === 5) {
           fallbackPasswordBytes.push(stringAsByteArray(password));
         }
@@ -1744,6 +1890,7 @@ class CipherTransformFactory {
     }
 
     let encryptionKey;
+
     if (algorithm !== 5) {
       encryptionKey = this.prepareKeyData(
         fileIdBytes,
@@ -1765,9 +1912,11 @@ class CipherTransformFactory {
       const ownerEncryption = (
         dict.get(PDFName.of('OE')) as PDFString
       ).asBytes();
+
       const userEncryption = (
         dict.get(PDFName.of('UE')) as PDFString
       ).asBytes();
+
       const keyFor = (bytes: Uint8Array | undefined) =>
         this.createEncryptionKey20(
           revision,
@@ -1782,12 +1931,15 @@ class CipherTransformFactory {
           ownerEncryption,
           userEncryption,
         );
+
       encryptionKey = keyFor(passwordBytes);
+
       for (const fallback of fallbackPasswordBytes) {
         if (encryptionKey) break;
         encryptionKey = keyFor(fallback);
       }
     }
+
     if (!(encryptionKey || password)) {
       throw new Error('NEEDS PASSWORD');
     } else if (!encryptionKey && password && algorithm !== 5) {
@@ -1798,6 +1950,7 @@ class CipherTransformFactory {
         revision,
         keyLength,
       );
+
       encryptionKey = this.prepareKeyData(
         fileIdBytes,
         decodedPassword,
@@ -1823,6 +1976,7 @@ class CipherTransformFactory {
         flags,
         encryptMetadata,
       );
+
       if (problem) {
         // Reported by PDFDocument.load through the loaded document's
         // warning handler, after the warnings of the parse.
@@ -1835,6 +1989,7 @@ class CipherTransformFactory {
 
     if (algorithm >= 4) {
       const cf = dict.lookup(PDFName.of('CF')) as PDFDict;
+
       if (cf instanceof PDFDict) {
         // The 'CF' dictionary itself should not be encrypted, and by setting
         // `suppressEncryption` we can prevent an infinite loop inside of
@@ -1842,6 +1997,7 @@ class CipherTransformFactory {
         // objects (fixes issue7665.pdf).
         cf.suppressEncryption = true;
       }
+
       this.cf = cf;
       this.stmf =
         (dict.lookup(PDFName.of('StmF')) as PDFName) || this.identityName;
@@ -1870,6 +2026,7 @@ class CipherTransformFactory {
         ),
       );
     }
+
     // algorithms 1 and 2
     const key = this.buildObjectKey(
       num,
@@ -1877,9 +2034,11 @@ class CipherTransformFactory {
       this.encryptionKey,
       /* isAes = */ false,
     );
+
     const cipherConstructor = function buildCipherCipherConstructor() {
       return new ARCFourCipher(key);
     };
+
     return new CipherTransform(cipherConstructor, cipherConstructor);
   }
 
@@ -1890,17 +2049,22 @@ class CipherTransformFactory {
    */
   methodOf(name: PDFName): CryptMethod {
     if (this.algorithm < 4) return 'V2';
+
     if (name === this.identityName) return 'None';
     const cryptFilter = this.cf?.lookup(name);
+
     const cfm =
       cryptFilter instanceof PDFDict
         ? cryptFilter.lookup(PDFName.of('CFM'))
         : undefined;
+
     if (!(cfm instanceof PDFName) || cfm === PDFName.of('None')) return 'None';
     const method = cfm.decodeText();
+
     if (method === 'V2' || method === 'AESV2' || method === 'AESV3') {
       return method;
     }
+
     throw new Error(`Unknown crypt filter method /${method}.`);
   }
 
@@ -1917,6 +2081,7 @@ class CipherTransformFactory {
     if (this.algorithm < 4) {
       return this.createCipherTransform(num, gen).decryptStreamBytes(bytes);
     }
+
     return this.buildCipherConstructor(
       this.cf,
       name,
@@ -1945,7 +2110,9 @@ class CipherTransformFactory {
     } else {
       password = new Uint8Array();
     }
+
     let pdfAlgorithm;
+
     if (revision === 6) {
       pdfAlgorithm = new PDF20();
     } else {
@@ -1988,43 +2155,55 @@ class CipherTransformFactory {
   ) {
     const hashDataSize = 40 + ownerPassword.length + fileId.length;
     const hashData = new Uint8Array(hashDataSize);
+
     let i = 0,
       j,
       n;
+
     if (password) {
       n = Math.min(32, password.length);
+
       for (; i < n; ++i) {
         hashData[i] = password[i]!;
       }
     }
+
     j = 0;
+
     while (i < 32) {
       hashData[i++] = this.defaultPasswordBytes[j++]!;
     }
+
     // as now the padded password in the hashData[0..i]
     for (j = 0, n = ownerPassword.length; j < n; ++j) {
       hashData[i++] = ownerPassword[j]!;
     }
+
     hashData[i++] = flags & 0xff;
     hashData[i++] = (flags >> 8) & 0xff;
     hashData[i++] = (flags >> 16) & 0xff;
     hashData[i++] = (flags >>> 24) & 0xff;
+
     for (j = 0, n = fileId.length; j < n; ++j) {
       hashData[i++] = fileId[j]!;
     }
+
     if (revision >= 4 && !encryptMetadata) {
       hashData[i++] = 0xff;
       hashData[i++] = 0xff;
       hashData[i++] = 0xff;
       hashData[i++] = 0xff;
     }
+
     let hash = calculateMD5(hashData, 0, i);
     const keyLengthInBytes = keyLength >> 3;
+
     if (revision >= 3) {
       for (j = 0; j < 50; ++j) {
         hash = calculateMD5(hash, 0, keyLengthInBytes);
       }
     }
+
     const encryptionKey = hash.subarray(0, keyLengthInBytes);
     let cipher, checkData;
 
@@ -2032,20 +2211,25 @@ class CipherTransformFactory {
       for (i = 0; i < 32; ++i) {
         hashData[i] = this.defaultPasswordBytes[i]!;
       }
+
       for (j = 0, n = fileId.length; j < n; ++j) {
         hashData[i++] = fileId[j]!;
       }
+
       cipher = new ARCFourCipher(encryptionKey);
       checkData = cipher.encryptBlock(calculateMD5(hashData, 0, i));
       n = encryptionKey.length;
       const derivedKey = new Uint8Array(n);
+
       for (j = 1; j <= 19; ++j) {
         for (let k = 0; k < n; ++k) {
           derivedKey[k] = encryptionKey[k]! ^ j;
         }
+
         cipher = new ARCFourCipher(derivedKey);
         checkData = cipher.encryptBlock(checkData);
       }
+
       for (j = 0, n = checkData.length; j < n; ++j) {
         if (userPassword[j] !== checkData[j]) {
           return null;
@@ -2054,12 +2238,14 @@ class CipherTransformFactory {
     } else {
       cipher = new ARCFourCipher(encryptionKey);
       checkData = cipher.encryptBlock(this.defaultPasswordBytes);
+
       for (j = 0, n = checkData.length; j < n; ++j) {
         if (userPassword[j] !== checkData[j]) {
           return null;
         }
       }
     }
+
     return encryptionKey;
   }
 
@@ -2072,15 +2258,20 @@ class CipherTransformFactory {
     const hashData = new Uint8Array(32);
     let i = 0;
     const n = Math.min(32, password.length);
+
     for (; i < n; ++i) {
       hashData[i] = password[i]!;
     }
+
     let j = 0;
+
     while (i < 32) {
       hashData[i++] = this.defaultPasswordBytes[j++]!;
     }
+
     let hash = calculateMD5(hashData, 0, i);
     const keyLengthInBytes = keyLength >> 3;
+
     if (revision >= 3) {
       for (j = 0; j < 50; ++j) {
         hash = calculateMD5(hash, 0, hash.length);
@@ -2088,13 +2279,16 @@ class CipherTransformFactory {
     }
 
     let cipher, userPassword;
+
     if (revision >= 3) {
       userPassword = ownerPassword;
       const derivedKey = new Uint8Array(keyLengthInBytes);
+
       for (j = 19; j >= 0; j--) {
         for (let k = 0; k < keyLengthInBytes; ++k) {
           derivedKey[k] = hash[k]! ^ j;
         }
+
         cipher = new ARCFourCipher(derivedKey);
         userPassword = cipher.encryptBlock(userPassword);
       }
@@ -2102,6 +2296,7 @@ class CipherTransformFactory {
       cipher = new ARCFourCipher(hash.subarray(0, keyLengthInBytes));
       userPassword = cipher.encryptBlock(ownerPassword);
     }
+
     return userPassword;
   }
 
@@ -2114,21 +2309,26 @@ class CipherTransformFactory {
     const key = new Uint8Array(encryptionKey.length + 9);
     const n = encryptionKey.length;
     let i;
+
     for (i = 0; i < n; ++i) {
       key[i] = encryptionKey[i]!;
     }
+
     key[i++] = num & 0xff;
     key[i++] = (num >> 8) & 0xff;
     key[i++] = (num >> 16) & 0xff;
     key[i++] = gen & 0xff;
     key[i++] = (gen >> 8) & 0xff;
+
     if (isAes) {
       key[i++] = 0x73;
       key[i++] = 0x41;
       key[i++] = 0x6c;
       key[i++] = 0x54;
     }
+
     const hash = calculateMD5(key, 0, i);
+
     return hash.subarray(0, Math.min(encryptionKey.length + 5, 16));
   }
 
@@ -2142,35 +2342,43 @@ class CipherTransformFactory {
     if (!(name instanceof PDFName)) {
       throw new Error('Invalid crypt filter name.');
     }
+
     // /Identity is predefined and needs no /CF entry (ISO 32000-2 7.6.6).
     if (name === this.identityName) {
       return () => new NullCipher();
     }
+
     const cryptFilter = cf?.lookup(name) as PDFDict | undefined;
     let cfm;
+
     if (cryptFilter !== null && cryptFilter !== undefined) {
       cfm = cryptFilter.lookup(PDFName.of('CFM')) as PDFName;
     }
+
     if (!cfm || cfm.asString() === '/None') {
       return function cipherTransformFactoryBuildCipherConstructorNone() {
         return new NullCipher();
       };
     }
+
     if (cfm.asString() === '/V2') {
       return () =>
         new ARCFourCipher(
           this.buildObjectKey(num, gen, key, /* isAes = */ false),
         );
     }
+
     if (cfm.asString() === '/AESV2') {
       return () =>
         new AES128Cipher(
           this.buildObjectKey(num, gen, key, /* isAes = */ true),
         );
     }
+
     if (cfm.asString() === '/AESV3') {
       return () => new AES256Cipher(key);
     }
+
     throw new Error('Unknown crypto method');
   }
 }

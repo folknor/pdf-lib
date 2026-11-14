@@ -26,6 +26,7 @@ const variationGlyph = (
   char: string,
 ) => {
   const font = open(file).getVariation(settings);
+
   return { font, glyph: font.glyphsForString(char)[0] };
 };
 
@@ -69,6 +70,7 @@ describe('TrueType variations', () => {
     shiftPhantoms(font);
     const glyph = font.glyphsForString('彌')[0];
     const unvaried = open('TestGVAROne.ttf').getGlyph(glyph.id);
+
     for (let i = 0; i < 3; i++) glyph._getContours();
     expect(glyph._getMetrics().advanceWidth).toBe(unvaried.advanceWidth + 50);
   });
@@ -98,6 +100,7 @@ describe('TrueType variations', () => {
   // points; the left origin is xMin - lsb, the top one yMax + tsb.
   const origins = (glyph: any) => {
     const { leftBearing, topBearing } = glyph._getMetrics();
+
     return {
       left: glyph.cbox.minX - leftBearing,
       top: glyph.cbox.maxY + topBearing,
@@ -106,6 +109,7 @@ describe('TrueType variations', () => {
 
   it('measures varied bearings from the varied outline', () => {
     const moved: string[] = [];
+
     for (const [file, settings, char] of [
       ['TestGVAROne.ttf', { wght: 300 }, '彌'],
       ['TestGVARFour.ttf', { wght: 150 }, 'O'],
@@ -113,12 +117,14 @@ describe('TrueType variations', () => {
     ] as const) {
       const { glyph } = variationGlyph(file, settings, char);
       const unvaried = open(file).getGlyph(glyph.id);
+
       if (glyph.cbox.minX !== unvaried.cbox.minX) moved.push(file);
       // The varied outline is placed relative to its left origin; the
       // fixtures may move the top one.
       expect(origins(glyph).left).toBe(0);
       expect(origins(glyph).top).toBe(glyph._decode().phantomPoints[2].y);
     }
+
     // Only an outline whose extents moved tells the two measures apart.
     expect(moved).toContain('TestGVARFour.ttf');
   });
@@ -134,6 +140,7 @@ describe('TrueType variations', () => {
       transform(gid, points);
       points[points.length - 4].x += 20;
     };
+
     const glyph = font.glyphsForString('彌')[0];
     expect(origins(glyph).left).toBe(0);
     expect(glyph.cbox.minX).toBe(plain.cbox.minX - 20);
@@ -189,6 +196,7 @@ describe('subsetting a variation instance', () => {
       transform(gid, points);
       points[points.length - 4].x += 20;
     };
+
     const subset = font.createSubset();
     const id = subset.includeGlyph(font.glyphsForString('彌')[0].id);
     const reopened: any = fontkit.create(subset.encode());
@@ -220,6 +228,7 @@ describe('WOFF and WOFF2 variations', () => {
             settings,
             char,
           );
+
           expect(font.type).toBe(type);
           expect(glyph.path.toSVG()).toBe(ttfSvg);
           expect(Math.round(glyph.advanceWidth)).toBe(ttfAdvance);
@@ -233,14 +242,17 @@ describe('WOFF and WOFF2 variations', () => {
     it(`leaves the ${ext} source font and sibling instances independent`, () => {
       const font = open(`TestGVAROne.${ext}`);
       const original = font.glyphsForString('彌')[0].path.toSVG();
+
       const light = font
         .getVariation({ wght: 0 })
         .glyphsForString('彌')[0]
         .path.toSVG();
+
       const bold = font
         .getVariation({ wght: 1000 })
         .glyphsForString('彌')[0]
         .path.toSVG();
+
       expect(light).not.toBe(bold);
       expect(
         font.getVariation({ wght: 0 }).glyphsForString('彌')[0].path.toSVG(),
@@ -253,12 +265,14 @@ describe('WOFF and WOFF2 variations', () => {
     const ttf = open('TestGVAROne.ttf');
     const woff2 = open('TestGVAROne.woff2');
     let compared = 0;
+
     for (let id = 0; id < ttf.numGlyphs; id++) {
       compared++;
       expect(woff2.getGlyph(id)._getCBox(true)).toEqual(
         ttf.getGlyph(id)._getCBox(true),
       );
     }
+
     expect(compared).toBeGreaterThan(0);
   });
 });

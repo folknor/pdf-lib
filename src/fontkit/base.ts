@@ -21,11 +21,14 @@ export function create(
 ): any {
   for (let i = 0; i < formats.length; i++) {
     const format = formats[i]!;
+
     if (format.probe(buffer)) {
       const font = new format(new DecodeStream(buffer), options);
+
       if (postscriptName) {
         // Collections (TTC, DFont): select the face by PostScript name.
         if ('fonts' in font) return font.getFont(postscriptName);
+
         // Variable fonts: select a named instance if one matches.
         if (
           font.directory?.tables?.fvar &&
@@ -45,6 +48,7 @@ export function create(
 }
 
 export let defaultLanguage: string = 'en';
+
 export function setDefaultLanguage(lang: string = 'en'): void {
   defaultLanguage = lang;
 }

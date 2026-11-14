@@ -40,7 +40,9 @@ export default class COLRGlyph extends Glyph {
   override _getMetrics(): GlyphMetrics {
     if (this._metrics) return this._metrics;
     const base = this._font._getBaseGlyph(this.id);
+
     if (!base) return super._getMetrics();
+
     // A copy: the base may be the font's cached glyph, whose object must not
     // be shared with (or mutated through) the wrapper.
     return (this._metrics = { ...base._getMetrics() });
@@ -49,6 +51,7 @@ export default class COLRGlyph extends Glyph {
   // CFF glyph names come from the charset, not post.
   override _getName(): string | null | undefined {
     const base = this._font._getBaseGlyph(this.id);
+
     return base ? base._getName() : super._getName();
   }
 
@@ -72,6 +75,7 @@ export default class COLRGlyph extends Glyph {
   get layers(): COLRLayer[] | null {
     const cpal = this._font.CPAL;
     const colr = this._font.COLR;
+
     if (!colr?.baseGlyphRecord) {
       return null;
     }
@@ -98,6 +102,7 @@ export default class COLRGlyph extends Glyph {
     // default to normal glyph from glyf or CFF
     if (baseLayer == null) {
       const g = this._font._getBaseGlyph(this.id);
+
       const color = {
         red: 0,
         green: 0,
@@ -110,14 +115,17 @@ export default class COLRGlyph extends Glyph {
 
     // otherwise, return an array of all the layers
     const layers = [];
+
     for (
       let i = baseLayer.firstLayerIndex;
       i < baseLayer.firstLayerIndex + baseLayer.numLayers;
       i++
     ) {
       const rec = colr.layerRecords[i];
+
       if (!rec) continue;
       let color: COLRColor | null = null;
+
       if (rec.paletteIndex !== FOREGROUND_PALETTE_INDEX) {
         // Palette indices are relative to the palette's first colour record;
         // layers use the default palette (0).
@@ -125,10 +133,12 @@ export default class COLRGlyph extends Glyph {
           cpal?.colorRecords?.[
             (cpal.colorRecordIndices?.[0] ?? 0) + rec.paletteIndex
           ] ?? null;
+
         // A record outside the colour array is malformed; skip the layer
         // rather than paint it in the foreground colour.
         if (!color) continue;
       }
+
       const g = this._font._getBaseGlyph(rec.gid);
       layers.push(new COLRLayer(g, color));
     }
@@ -138,10 +148,12 @@ export default class COLRGlyph extends Glyph {
 
   override render(ctx: any, size: number): void {
     const layers = this.layers;
+
     if (!layers) {
       // COLR v1 paint graphs are not supported; draw the plain outline, as
       // v0 does for glyphs without a base glyph record.
       this._font._getBaseGlyph(this.id)?.render(ctx, size);
+
       return;
     }
 
@@ -150,6 +162,7 @@ export default class COLRGlyph extends Glyph {
       // Each layer restores the caller's state, so a foreground layer after a
       // palette layer draws in the caller's colour, not the previous layer's.
       ctx.save();
+
       try {
         if (color) {
           ctx.fillColor(
@@ -157,6 +170,7 @@ export default class COLRGlyph extends Glyph {
             (color.alpha / 255) * 100,
           );
         }
+
         glyph.render(ctx, size);
       } finally {
         ctx.restore();

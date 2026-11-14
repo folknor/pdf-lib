@@ -17,37 +17,49 @@ class AppearanceCharacteristics {
 
   R(): PDFNumber | undefined {
     const R = this.dict.lookup(PDFName.of('R'));
+
     if (R instanceof PDFNumber) return R;
+
     return;
   }
 
   BC(): PDFArray | undefined {
     const BC = this.dict.lookup(PDFName.of('BC'));
+
     if (BC instanceof PDFArray) return BC;
+
     return;
   }
 
   BG(): PDFArray | undefined {
     const BG = this.dict.lookup(PDFName.of('BG'));
+
     if (BG instanceof PDFArray) return BG;
+
     return;
   }
 
   CA(): PDFHexString | PDFString | undefined {
     const CA = this.dict.lookup(PDFName.of('CA'));
+
     if (CA instanceof PDFHexString || CA instanceof PDFString) return CA;
+
     return;
   }
 
   RC(): PDFHexString | PDFString | undefined {
     const RC = this.dict.lookup(PDFName.of('RC'));
+
     if (RC instanceof PDFHexString || RC instanceof PDFString) return RC;
+
     return;
   }
 
   AC(): PDFHexString | PDFString | undefined {
     const AC = this.dict.lookup(PDFName.of('AC'));
+
     if (AC instanceof PDFHexString || AC instanceof PDFString) return AC;
+
     return;
   }
 
@@ -61,8 +73,10 @@ class AppearanceCharacteristics {
     if (!BC) return;
 
     const components: number[] = [];
+
     for (let idx = 0, len = BC?.size(); idx < len; idx++) {
       const component = BC.get(idx);
+
       if (component instanceof PDFNumber) components.push(component.asNumber());
     }
 
@@ -75,8 +89,10 @@ class AppearanceCharacteristics {
     if (!BG) return;
 
     const components: number[] = [];
+
     for (let idx = 0, len = BG?.size(); idx < len; idx++) {
       const component = BG.get(idx);
+
       if (component instanceof PDFNumber) components.push(component.asNumber());
     }
 

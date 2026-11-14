@@ -13,9 +13,13 @@ import WOFFFont from './WOFFFont.js';
 
 // Register font formats
 registerFormat(TTFFont as unknown as FontFormat);
+
 registerFormat(WOFFFont as unknown as FontFormat);
+
 registerFormat(WOFF2Font as unknown as FontFormat);
+
 registerFormat(TrueTypeCollection as unknown as FontFormat);
+
 registerFormat(DFont as unknown as FontFormat);
 
 // Named exports
@@ -35,4 +39,5 @@ const fontkit: Fontkit = {
   defaultLanguage,
   setDefaultLanguage,
 };
+
 export default fontkit;

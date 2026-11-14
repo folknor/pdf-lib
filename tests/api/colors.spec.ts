@@ -207,6 +207,7 @@ describe('colors', () => {
       const color = componentsToColor([128, 64, 32], 1 / 255);
       expect(color).toBeDefined();
       expect(color!.type).toBe(ColorTypes.RGB);
+
       if (color!.type === ColorTypes.RGB) {
         expect(color.red).toBeCloseTo(128 / 255);
         expect(color.green).toBeCloseTo(64 / 255);
@@ -218,6 +219,7 @@ describe('colors', () => {
       const color = componentsToColor([200], 1 / 255);
       expect(color).toBeDefined();
       expect(color!.type).toBe(ColorTypes.Grayscale);
+
       if (color!.type === ColorTypes.Grayscale) {
         expect(color.gray).toBeCloseTo(200 / 255);
       }
@@ -227,6 +229,7 @@ describe('colors', () => {
       const color = componentsToColor([100, 150, 200, 50], 1 / 255);
       expect(color).toBeDefined();
       expect(color!.type).toBe(ColorTypes.CMYK);
+
       if (color!.type === ColorTypes.CMYK) {
         expect(color.cyan).toBeCloseTo(100 / 255);
         expect(color.magenta).toBeCloseTo(150 / 255);
@@ -306,6 +309,7 @@ describe('colors', () => {
       const result = colorString('green');
       // CSS "green" is rgb(0, 128, 0) => unitObject: r=0, g=128/255, b=0
       expect(result.rgb.type).toBe(ColorTypes.RGB);
+
       if (result.rgb.type === ColorTypes.RGB) {
         expect(result.rgb.red).toBeCloseTo(0);
         expect(result.rgb.green).toBeCloseTo(128 / 255);

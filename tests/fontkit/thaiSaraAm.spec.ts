@@ -49,6 +49,7 @@ describe('SARA AM decomposition', () => {
     const font: any = fontkit.create(
       fs.readFileSync('./assets/fonts/noto_sans_thai/NotoSansThai[wdth,wght].ttf'),
     );
+
     const names = (s: string) => font.layout(s).glyphs.map((g: any) => g.name);
     expect(names('น้ำ')).toEqual(['uni0E19', 'uni0E4D', 'uni0E49.small', 'uni0E32']);
     expect(names('ป้ำ')).toEqual([

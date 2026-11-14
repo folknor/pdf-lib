@@ -11,16 +11,20 @@ import {
 
 const ocg = (doc: PDFDocument, name?: string, hex = false): PDFRef => {
   const dict: Record<string, unknown> = { Type: 'OCG' };
+
   if (name !== undefined) {
     dict.Name = hex ? PDFHexString.fromText(name) : PDFString.of(name);
   }
+
   return doc.context.register(doc.context.obj(dict as any));
 };
 
 const install = (doc: PDFDocument, groups: PDFRef[], d?: object) => {
   const props = doc.context.obj({ OCGs: groups } as any) as PDFDict;
+
   if (d) props.set(PDFName.of('D'), doc.context.obj(d as any));
   doc.catalog.set(PDFName.of('OCProperties'), props);
+
   return props;
 };
 
@@ -38,6 +42,7 @@ describe('optional content groups', () => {
     page.node.set(PDFName.Resources, source.context.obj({ Properties: { A: a, B: b } }));
     const destination = await PDFDocument.create();
     const pages = await destination.copyPages(source, [0, 0]);
+
     for (const copy of pages) destination.addPage(copy);
     expect(state(destination)).toEqual([['same', true], ['same', false]]);
     const groups = destination.getOptionalContentGroups();
@@ -134,9 +139,11 @@ describe('optional content groups', () => {
     const [ga, gb] = doc.getOptionalContentGroups();
     ga!.setOnByDefault(false);
     gb!.setOnByDefault(true);
+
     const d = doc.catalog
       .lookup(PDFName.of('OCProperties'), PDFDict)
       .lookup(PDFName.of('D'), PDFDict);
+
     expect(d.lookup(PDFName.of('ON'), PDFArray).asArray()).toEqual([stray, b]);
     expect(d.lookup(PDFName.of('OFF'), PDFArray).asArray()).toEqual([a]);
     const reloaded = await PDFDocument.load(await doc.save());

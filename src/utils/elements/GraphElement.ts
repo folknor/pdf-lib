@@ -9,6 +9,7 @@ export default abstract class GraphElement {
 
   distance(P: Point) {
     const H = this.orthoProjection(P);
+
     return distance(H, P);
   }
 }

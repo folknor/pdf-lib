@@ -71,6 +71,7 @@ describe('PDFHexString', () => {
     it('ignores line breaks in encryption dictionary-style hex strings', () => {
       const clean =
         '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF';
+
       const withLineBreak = `${clean.slice(0, 16)}\r${clean.slice(16)}`;
 
       expect(PDFHexString.of(withLineBreak).asBytes()).toEqual(

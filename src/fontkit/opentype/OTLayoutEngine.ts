@@ -48,6 +48,7 @@ export default class OTLayoutEngine {
 
     // Select a script based on what is available in GSUB/GPOS.
     let script: string | null = null;
+
     if (this.GPOSProcessor) {
       script = this.GPOSProcessor.selectScript(
         glyphRun.script,
@@ -128,11 +129,14 @@ export default class OTLayoutEngine {
     // Record which glyphs are marks and what GPOS attached them to, so text
     // drawn with extra spacing can keep them at their anchors.
     const rtl = glyphRun.direction === 'rtl';
+
     if (this.glyphInfos && glyphRun.positions) {
       const last = this.glyphInfos.length - 1;
+
       for (let i = 0; i <= last; i++) {
         const info = this.glyphInfos[i]!;
         const position = glyphRun.positions[i];
+
         if (!position) continue;
         position.isMark = info.isMark;
         const base = info.markAttachment;
@@ -155,6 +159,7 @@ export default class OTLayoutEngine {
 
   zeroMarkAdvances(positions: GlyphPosition[]): void {
     if (!this.glyphInfos) return;
+
     for (let i = 0; i < this.glyphInfos.length; i++) {
       if (this.glyphInfos[i]!.isMark) {
         positions[i]!.xAdvance = 0;

@@ -78,6 +78,7 @@ export default class PDFFont implements Embeddable {
    */
   encodeText(text: string): EncodedText {
     assertIs(text, 'text', ['string']);
+
     return this.embedder.encodeText(text);
   }
 
@@ -104,11 +105,13 @@ export default class PDFFont implements Embeddable {
     assertIs(text, 'text', ['string']);
     assertIs(size, 'size', ['number']);
     const { horizontalScaling = 100, ...spacing } = textState;
+
     const width = this.embedder.widthOfTextAtSize(
       mergeLines(cleanText(text)),
       size,
       spacing,
     );
+
     return horizontalScaling === 100
       ? width
       : (width * horizontalScaling) / 100;
@@ -130,6 +133,7 @@ export default class PDFFont implements Embeddable {
   heightAtSize(size: number, options?: { descender?: boolean }): number {
     assertIs(size, 'size', ['number']);
     assertOrUndefined(options?.descender, 'options.descender', ['boolean']);
+
     return this.embedder.heightOfFontAtSize(size, {
       descender: options?.descender ?? true,
     });
@@ -145,6 +149,7 @@ export default class PDFFont implements Embeddable {
    */
   sizeAtHeight(height: number): number {
     assertIs(height, 'height', ['number']);
+
     return this.embedder.sizeOfFontAtHeight(height);
   }
 

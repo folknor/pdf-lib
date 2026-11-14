@@ -99,6 +99,7 @@ export class PageEmbeddingMismatchedContextError extends Error {
   constructor() {
     const msg =
       'Found mismatched contexts while embedding pages. All pages in the array passed to `PDFDocument.embedPages()` must be from the same document.';
+
     super(msg);
   }
 }
@@ -179,6 +180,7 @@ export class NumberParsingError extends Error {
     const msg =
       'Failed to parse number ' +
       `(line:${pos.line} col:${pos.column} offset=${pos.offset}): "${value}"`;
+
     super(msg);
   }
 }
@@ -188,6 +190,7 @@ export class PDFParsingError extends Error {
     const msg =
       'Failed to parse PDF document ' +
       `(line:${pos.line} col:${pos.column} offset=${pos.offset}): ${details}`;
+
     super(msg);
   }
 }
@@ -211,6 +214,7 @@ export class PDFInvalidObjectParsingError extends PDFParsingError {
     const msg = details
       ? `Failed to parse PDF object (${details})`
       : 'Failed to parse invalid PDF object';
+
     super(pos, msg);
   }
 }
@@ -226,6 +230,7 @@ export class UnbalancedParenthesisError extends PDFParsingError {
   constructor(pos: Position) {
     const msg =
       'Failed to parse PDF literal string due to unbalanced parenthesis';
+
     super(pos, msg);
   }
 }

@@ -96,6 +96,7 @@ export const strokingColorOperators = (color: ColorOperand): PDFOperator[] =>
 
 const maybeFill = (color: ColorOperand | undefined) =>
   color ? fillingColorOperators(color) : [];
+
 const maybeStroke = (color: ColorOperand | undefined) =>
   color ? strokingColorOperators(color) : [];
 
@@ -132,6 +133,7 @@ const clipSpace = ({ topLeft, topRight, bottomRight, bottomLeft }: Space) => [
   clip(),
   endPath(),
 ];
+
 const clipSpaces = (spaces: Space[]) => spaces.flatMap(clipSpace);
 
 /**
@@ -148,7 +150,9 @@ const textRiseFor = (
   if (textRise !== undefined) {
     return { rise: textRise, operator: setTextRise(textRise) };
   }
+
   const needed = lines.some((line) => line.hasVerticalOffsets());
+
   return { rise: 0, operator: needed ? setTextRise(0) : undefined };
 };
 
@@ -160,6 +164,7 @@ export const drawText = (
     [line],
     options.textRise,
   );
+
   return [
     pushGraphicsState(),
     options.graphicsState && setGraphicsState(options.graphicsState),
@@ -194,6 +199,7 @@ export const drawLinesOfText = (
   options: DrawLinesOfTextOptions,
 ): PDFOperator[] => {
   const { rise, operator: riseOperator } = textRiseFor(lines, options.textRise);
+
   const operators = [
     pushGraphicsState(),
     options.graphicsState && setGraphicsState(options.graphicsState),
@@ -226,6 +232,7 @@ export const drawLinesOfText = (
   }
 
   operators.push(endText(), popGraphicsState());
+
   return operators;
 };
 
@@ -372,12 +379,14 @@ export const drawRectangle = (options: {
       transformationToMatrix('rotate', [-toDegrees(rotate)]),
     );
   }
+
   if (xSkew) {
     fullMatrix = combineMatrix(
       fullMatrix,
       transformationToMatrix('skewX', [toDegrees(xSkew)]),
     );
   }
+
   if (ySkew) {
     fullMatrix = combineMatrix(
       fullMatrix,
@@ -439,6 +448,7 @@ export const drawEllipse = (options: {
     options.matrix || identityMatrix,
     transformationToMatrix('translate', [x, -y]),
   );
+
   if (options.rotate) {
     fullMatrix = combineMatrix(
       fullMatrix,
@@ -476,6 +486,7 @@ export const drawSvgPath = (
   },
 ) => {
   const drawingOperator = getDrawingOperator(options);
+
   if (!drawingOperator) {
     // no-op when there is no fill and no border color/width.
     return [];
@@ -725,11 +736,13 @@ export const drawTextLines = (
     lines.map((line) => line.encoded),
     undefined,
   );
+
   const operators = [
     beginText(),
     setFillingColor(options.color),
     setFontAndSize(options.font, options.size),
   ];
+
   if (riseOperator) operators.push(riseOperator);
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
@@ -793,9 +806,11 @@ export const drawTextField = (options: {
 
   // For underline style, only draw the bottom border
   let background: PDFOperator[];
+
   if (borderStyle === 'U') {
     // Underline style: fill background + draw only bottom line
     const bgOps: PDFOperator[] = [];
+
     if (options.color) {
       bgOps.push(
         ...drawRectangle({
@@ -812,6 +827,7 @@ export const drawTextField = (options: {
         }),
       );
     }
+
     if (options.borderColor && borderWidth > 0) {
       bgOps.push(
         ...drawLine({
@@ -828,6 +844,7 @@ export const drawTextField = (options: {
         }),
       );
     }
+
     background = bgOps;
   } else if (borderStyle === 'B' || borderStyle === 'I') {
     // Beveled or Inset: draw 3D-style border
@@ -906,6 +923,7 @@ const drawBeveledRectangle = (options: {
 }): PDFOperator[] => {
   const { x, y, width, height, borderWidth, color, borderColor, inset } =
     options;
+
   const ops: PDFOperator[] = [];
 
   // Background fill
@@ -1046,6 +1064,7 @@ export const drawOptionList = (options: {
   });
 
   const highlights: PDFOperator[] = [];
+
   for (let idx = 0, len = options.selectedLines.length; idx < len; idx++) {
     const line = options.textLines[options.selectedLines[idx]!]!;
     highlights.push(
@@ -1109,5 +1128,6 @@ const getDrawingOperator = ({
   } else if (borderColor && borderWidth !== 0) {
     return stroke;
   }
+
   return;
 };

@@ -526,6 +526,7 @@ export interface OpenTypeFeatures {
   vrtr?: FeatureValue;
   zero?: FeatureValue;
 }
+
 /**
  * A map of Apple Advanced Typography (AAT) as decribed by Apple's TrueType
  * Reference manual:

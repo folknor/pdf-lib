@@ -52,6 +52,7 @@ export class PropertyDescriptor implements PropertyDescriptor {
       (this as Record<string, unknown>)[key] =
         opts[key as keyof PropertyDescriptor];
     }
+
     // Object.defineProperty doesn't allow both accessor (get/set) and data (value/writable) properties
     // Remove value if get is defined to avoid conflict
     if (this.get !== undefined) {

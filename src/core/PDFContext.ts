@@ -88,10 +88,12 @@ class PDFContext {
    */
   warnAt(source: Uint8Array, offset: number, warning: PDFWarning): void {
     let seen = this.warnedOffsets.get(source);
+
     if (!seen) {
       seen = new Set();
       this.warnedOffsets.set(source, seen);
     }
+
     if (seen.has(offset)) return;
     seen.add(offset);
     this.warn(warning);
@@ -109,6 +111,7 @@ class PDFContext {
     const pending = this.buffered ?? [];
     this.buffered = undefined;
     this.onWarning = handler;
+
     for (const warning of pending) handler(warning);
   }
 
@@ -192,9 +195,11 @@ class PDFContext {
 
   assign(ref: PDFRef, object: PDFObject): void {
     this.indirectObjects.set(ref, object);
+
     if (ref.objectNumber > this.largestObjectNumber) {
       this.largestObjectNumber = ref.objectNumber;
     }
+
     // Under a snapshot every assignment is a change to write, and it voids
     // any deletion recorded for the number.
     if (this.snapshot) this.snapshot.markRefAssigned(ref);
@@ -204,13 +209,16 @@ class PDFContext {
     this.largestObjectNumber += 1;
     this.needsReordering = true; // New objects added, will need sorting
     const ref = PDFRef.of(this.largestObjectNumber);
+
     if (this.snapshot) this.snapshot.markRefForSave(ref);
+
     return ref;
   }
 
   register(object: PDFObject): PDFRef {
     const ref = this.nextRef();
     this.assign(ref, object);
+
     return ref;
   }
 
@@ -218,7 +226,9 @@ class PDFContext {
     // Only a removal is a deletion: deleting a ref the context does not hold
     // (another generation, a number never loaded) frees nothing.
     const removed = this.indirectObjects.delete(ref);
+
     if (removed && this.snapshot) this.snapshot.markDeletedRef(ref);
+
     return removed;
   }
 
@@ -252,12 +262,14 @@ class PDFContext {
 
     for (let idx = 0, len = types.length; idx < len; idx++) {
       const type = types[idx];
+
       if (type === PDFNull) {
         if (result === PDFNull) return result;
       } else {
         if (result instanceof type) return result;
       }
     }
+
     throw new UnexpectedObjectTypeError(types, result);
   }
 
@@ -285,6 +297,7 @@ class PDFContext {
 
     for (let idx = 0, len = types.length; idx < len; idx++) {
       const type = types[idx];
+
       if (type === PDFNull) {
         if (result === PDFNull) return result;
       } else {
@@ -297,13 +310,16 @@ class PDFContext {
 
   getRef(pdfObject: PDFObject | PDFRef): PDFRef | undefined {
     if (pdfObject instanceof PDFRef) return pdfObject;
+
     return this.getObjectRef(pdfObject);
   }
 
   getObjectRef(pdfObject: PDFObject): PDFRef | undefined {
     const entries = Array.from(this.indirectObjects.entries());
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [ref, object] = entries[idx]!;
+
       if (object === pdfObject) {
         return ref;
       }
@@ -314,11 +330,13 @@ class PDFContext {
 
   enumerateIndirectObjects(): [PDFRef, PDFObject][] {
     const entries = Array.from(this.indirectObjects.entries());
+
     // Only sort when new objects have been added (fixes #951 - corrupted PDFs)
     // Preserving insertion order is critical for PDFs with incremental updates
     if (this.needsReordering) {
       return entries.sort(byAscendingObjectNumber);
     }
+
     return entries;
   }
 
@@ -344,18 +362,23 @@ class PDFContext {
       return PDFHexString.fromBytes(literal);
     } else if (Array.isArray(literal)) {
       const array = PDFArray.withContext(this);
+
       for (let idx = 0, len = literal.length; idx < len; idx++) {
         array.push(this.obj(literal[idx as number]));
       }
+
       return array;
     } else {
       const dict = PDFDict.withContext(this);
       const keys = Object.keys(literal);
+
       for (let idx = 0, len = keys.length; idx < len; idx++) {
         const key = keys[idx]!;
         const value = (literal as LiteralObject)[key] as any;
+
         if (value !== undefined) dict.set(PDFName.of(key), this.obj(value));
       }
+
       return dict;
     }
   }
@@ -390,18 +413,22 @@ class PDFContext {
     }: LiteralConfig = {},
   ): Literal | PDFObject {
     const cfg = { deep, literalRef, literalStreamDict, literalString };
+
     if (obj instanceof PDFArray) {
       const lit = obj.asArray();
+
       return deep ? lit.map((value) => this.getLiteral(value, cfg)) : lit;
     } else if (obj instanceof PDFBool) {
       return obj.asBoolean();
     } else if (obj instanceof PDFDict) {
       const lit: LiteralObject = {};
       const entries = obj.entries();
+
       for (let idx = 0, len = entries.length; idx < len; idx++) {
         const [name, value] = entries[idx]!;
         lit[this.getLiteral(name)] = deep ? this.getLiteral(value, cfg) : value;
       }
+
       return lit;
     } else if (obj instanceof PDFName) {
       return obj.decodeText();
@@ -419,6 +446,7 @@ class PDFContext {
     ) {
       return obj.asString();
     }
+
     return obj;
   }
 
@@ -469,10 +497,12 @@ class PDFContext {
     if (this.pushGraphicsStateContentStreamRef) {
       return this.pushGraphicsStateContentStreamRef;
     }
+
     const dict = this.obj({});
     const op = PDFOperator.of(Ops.PushGraphicsState);
     const stream = PDFContentStream.of(dict, [op]);
     this.pushGraphicsStateContentStreamRef = this.register(stream);
+
     return this.pushGraphicsStateContentStreamRef;
   }
 
@@ -486,10 +516,12 @@ class PDFContext {
     if (this.popGraphicsStateContentStreamRef) {
       return this.popGraphicsStateContentStreamRef;
     }
+
     const dict = this.obj({});
     const op = PDFOperator.of(Ops.PopGraphicsState);
     const stream = PDFContentStream.of(dict, [op]);
     this.popGraphicsStateContentStreamRef = this.register(stream);
+
     return this.popGraphicsStateContentStreamRef;
   }
 
@@ -508,12 +540,15 @@ class PDFContext {
     if (!this.snapshot) return;
 
     const ref = this.getObjectRef(obj);
+
     if (ref) {
       this.snapshot.markRefForSave(ref);
+
       return;
     }
 
     const containingRef = this.findContainingIndirectObject(obj);
+
     if (containingRef) {
       this.snapshot.markRefForSave(containingRef);
     }
@@ -530,12 +565,15 @@ class PDFContext {
    */
   private findContainingIndirectObject(target: PDFObject): PDFRef | undefined {
     const entries = Array.from(this.indirectObjects.entries());
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [ref, object] = entries[idx]!;
+
       if (this.objectContains(object, target)) {
         return ref;
       }
     }
+
     return;
   }
 
@@ -544,6 +582,7 @@ class PDFContext {
 
     if (container instanceof PDFDict) {
       const values = container.values();
+
       for (let i = 0, len = values.length; i < len; i++) {
         if (this.objectContains(values[i]!, target)) return true;
       }

@@ -24,6 +24,7 @@ class JavaScriptEmbedder {
 
     if (ref) {
       context.assign(ref, jsActionDict);
+
       return ref;
     } else {
       return context.register(jsActionDict);

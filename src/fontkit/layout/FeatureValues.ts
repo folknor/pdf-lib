@@ -22,18 +22,23 @@ export function normalizeFeatures(
   features: string[] | Record<string, unknown>,
 ): FeatureRequest {
   const res: FeatureRequest = {};
+
   if (Array.isArray(features)) {
     for (const tag of features) {
       res[tag] = true;
     }
+
     return res;
   }
+
   for (const tag in features) {
     const value = features[tag];
+
     if (value === undefined) {
       // An optional property left unset is no request at all.
       continue;
     }
+
     if (!value) {
       res[tag] = false;
     } else if (
@@ -46,5 +51,6 @@ export function normalizeFeatures(
       res[tag] = true;
     }
   }
+
   return res;
 }

@@ -23,6 +23,7 @@ export default class Point extends GraphElement {
     if (!(element instanceof Point)) return false;
     const A = this.toCoords();
     const B = element.toCoords();
+
     return isEqual(A.x, B.x) && isEqual(A.y, B.y);
   }
 
@@ -32,6 +33,7 @@ export default class Point extends GraphElement {
 
   plus(vect: Coordinates) {
     const P = new Point(plus(this.toCoords(), vect));
+
     return P;
   }
 }

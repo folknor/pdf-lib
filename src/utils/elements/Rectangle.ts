@@ -15,6 +15,7 @@ export default class Rectangle extends GraphElement {
   getSize() {
     const start = this.start.toCoords();
     const end = this.end.toCoords();
+
     return {
       width: Math.abs(start.x - end.x),
       height: Math.abs(start.y - end.y),
@@ -24,6 +25,7 @@ export default class Rectangle extends GraphElement {
   getCoords() {
     const start = this.start.toCoords();
     const end = this.end.toCoords();
+
     return {
       x: Math.min(start.x, end.x),
       y: Math.max(start.y, end.y),
@@ -32,17 +34,20 @@ export default class Rectangle extends GraphElement {
 
   getStart() {
     const start = new Point(this.getCoords());
+
     return start;
   }
 
   getEnd() {
     const { width, height } = this.getSize();
     const end = new Point(this.getStart()).plus({ x: width, y: -height });
+
     return end;
   }
 
   center() {
     const center = new Segment(this.getStart(), this.getEnd()).middle();
+
     return center;
   }
 
@@ -60,6 +65,7 @@ export default class Rectangle extends GraphElement {
     const { x: Px, y: Py } = P.toCoords();
     const Hx = Px < x ? x : Math.min(Px, end.x);
     const Hy = Py > y ? y : Math.max(Py, end.y);
+
     return new Point({ x: Hx, y: Hy });
   }
 }

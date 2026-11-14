@@ -103,6 +103,7 @@ const OS2 = new r.VersionedStruct(r.uint16, {
 });
 
 const versions = OS2.versions;
+
 versions[3] = versions[4] = versions[2]!;
 
 export default OS2;

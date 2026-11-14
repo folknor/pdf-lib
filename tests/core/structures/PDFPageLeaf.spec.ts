@@ -180,6 +180,7 @@ describe('PDFPageLeaf', () => {
       Font: { Foo: PDFRef.of(2100) },
       XObject: { Foo: PDFRef.of(9000) },
     });
+
     const resourcesRef = context.register(resources);
 
     const mediaBox = context.obj([]);
@@ -239,6 +240,7 @@ describe('PDFPageLeaf', () => {
     const sharedResources = context.obj({
       Font: { F1: PDFRef.of(100) },
     });
+
     const sharedResourcesRef = context.register(sharedResources);
 
     const parent = PDFPageTree.withContext(context);
@@ -276,12 +278,14 @@ describe('PDFPageLeaf', () => {
     const context = PDFContext.create();
     const parentRef = context.register(PDFPageTree.withContext(context));
     const existing = PDFRef.of(100);
+
     const resources = context.obj({
       Font: { Existing: existing },
       XObject: { Existing: existing },
       ExtGState: { Existing: existing },
       ColorSpace: { Existing: existing },
     });
+
     const resourcesRef = context.register(resources);
     const page1 = PDFPageLeaf.withContextAndParent(context, parentRef);
     const page2 = PDFPageLeaf.withContextAndParent(context, parentRef);
@@ -297,6 +301,7 @@ describe('PDFPageLeaf', () => {
 
     expect(page2.get(PDFName.Resources)).toBe(resourcesRef);
     expect(resources.toString()).toBe(original);
+
     for (const category of [
       PDFName.Font,
       PDFName.XObject,
@@ -309,6 +314,7 @@ describe('PDFPageLeaf', () => {
       expect(local.get(PDFName.of('Existing'))).toBe(existing);
       expect(local.has(category === PDFName.ColorSpace ? colorKey : added)).toBe(true);
     }
+
     page2.setFontDictionary(PDFName.of('Other'), PDFRef.of(204));
     expect(page1.normalizedEntries().Font.has(PDFName.of('Other'))).toBe(false);
     expect(resources.toString()).toBe(original);

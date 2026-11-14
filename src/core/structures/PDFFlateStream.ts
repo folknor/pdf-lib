@@ -20,6 +20,7 @@ class PDFFlateStream extends PDFStream {
 
   computeContents = (): Uint8Array => {
     const unencodedContents = this.getUnencodedContents();
+
     return this.encode ? zlibSync(unencodedContents) : unencodedContents;
   };
 

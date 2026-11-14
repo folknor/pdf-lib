@@ -25,6 +25,7 @@ class CFFFont {
 
   decode(): this {
     const top = CFFTop.decode(this.stream);
+
     for (const key in top) {
       const val = top[key];
       this[key] = val;
@@ -39,6 +40,7 @@ class CFFFont {
     }
 
     this.isCIDFont = this.topDict['ROS'] != null;
+
     return this;
   }
 
@@ -72,6 +74,7 @@ class CFFFont {
 
   getCharString(glyph: number): Uint8Array {
     this.stream.pos = this.topDict['CharStrings'][glyph].offset;
+
     return this.stream.readBuffer(this.topDict['CharStrings'][glyph].length);
   }
 
@@ -87,6 +90,7 @@ class CFFFont {
     }
 
     const { charset } = this.topDict;
+
     if (Array.isArray(charset)) {
       return charset[gid];
     }
@@ -105,10 +109,12 @@ class CFFFont {
       case 2:
         for (let i = 0; i < charset.ranges.length; i++) {
           const range = charset.ranges[i];
+
           if (range.offset <= gid && gid <= range.offset + range.nLeft) {
             return this.string(range.first + (gid - range.offset));
           }
         }
+
         break;
     }
 
@@ -141,10 +147,12 @@ class CFFFont {
             return ranges[mid].fd;
           }
         }
+
         throw new Error(
           `Unknown FDSelect version: ${this.topDict['FDSelect'].version}`,
         );
       }
+
       default:
         throw new Error(
           `Unknown FDSelect version: ${this.topDict['FDSelect'].version}`,
@@ -155,6 +163,7 @@ class CFFFont {
   privateDictForGlyph(gid: number): Record<string, any> | null {
     if (this.topDict['FDSelect']) {
       const fd = this.fdForGlyph(gid);
+
       if (fd !== null && this.topDict['FDArray'][fd]) {
         return this.topDict['FDArray'][fd].Private;
       }

@@ -11,6 +11,7 @@ class PDFAcroNonTerminal extends PDFAcroField {
   static create = (context: PDFContext) => {
     const dict = context.obj({});
     const ref = context.register(dict);
+
     return new PDFAcroNonTerminal(dict, ref);
   };
 

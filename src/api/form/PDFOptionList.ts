@@ -85,6 +85,7 @@ export default class PDFOptionList extends PDFField {
     const rawOptions = this.acroField.getOptions();
 
     const options = new Array<string>(rawOptions.length);
+
     for (let idx = 0, len = options.length; idx < len; idx++) {
       const { display, value } = rawOptions[idx]!;
       options[idx] = (display ?? value).decodeText();
@@ -109,6 +110,7 @@ export default class PDFOptionList extends PDFField {
     const values = this.acroField.getValues();
 
     const selected = new Array<string>(values.length);
+
     for (let idx = 0, len = values.length; idx < len; idx++) {
       selected[idx] = values[idx]!.decodeText();
     }
@@ -153,9 +155,11 @@ export default class PDFOptionList extends PDFField {
 
     this.markAsDirty();
     const optionObjects = new Array<{ value: PDFHexString }>(options.length);
+
     for (let idx = 0, len = options.length; idx < len; idx++) {
       optionObjects[idx] = { value: PDFHexString.fromText(options[idx]!) };
     }
+
     this.acroField.setOptions(optionObjects);
   }
 
@@ -187,6 +191,7 @@ export default class PDFOptionList extends PDFField {
     }[] = this.acroField.getOptions();
 
     const newOptions = new Array<{ value: PDFHexString }>(optionsArr.length);
+
     for (let idx = 0, len = optionsArr.length; idx < len; idx++) {
       newOptions[idx] = { value: PDFHexString.fromText(optionsArr[idx]!) };
     }
@@ -228,6 +233,7 @@ export default class PDFOptionList extends PDFField {
     }
 
     const values = new Array<PDFHexString>(optionsArr.length);
+
     for (let idx = 0, len = optionsArr.length; idx < len; idx++) {
       values[idx] = PDFHexString.fromText(optionsArr[idx]!);
     }
@@ -463,8 +469,11 @@ export default class PDFOptionList extends PDFField {
     if (!options) options = {};
 
     if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+
     if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+
     if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+
     if (!('borderWidth' in options)) options.borderWidth = 1;
 
     // Create a widget for this option list
@@ -481,6 +490,7 @@ export default class PDFOptionList extends PDFField {
       ...(options.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
+
     const widgetRef = this.doc.context.register(widget.dict);
 
     // Add widget to this field
@@ -507,10 +517,13 @@ export default class PDFOptionList extends PDFField {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const hasAppearances =
         widget.getAppearances()?.normal instanceof PDFStream;
+
       if (!hasAppearances) return true;
     }
 
@@ -557,10 +570,12 @@ export default class PDFOptionList extends PDFField {
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       this.updateWidgetAppearance(widget, font, provider);
     }
+
     this.markAsClean();
   }
 

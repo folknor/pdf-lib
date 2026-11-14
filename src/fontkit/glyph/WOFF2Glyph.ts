@@ -11,14 +11,17 @@ export default class WOFF2Glyph extends TTFGlyph {
     // Glyphs are decoded in advance (WOFF2Font._transformGlyfTable) and shared
     // by every instance of the font, so vary a copy, never the cached one.
     const decoded: DecodedGlyph = this._font._transformedGlyphs[this.id];
+
     if (!this._font._variationProcessor) {
       return decoded;
     }
 
     const glyph: DecodedGlyph = { ...decoded };
+
     if (decoded.points) {
       glyph.points = decoded.points.map((point) => point.copy());
     }
+
     if (decoded.components) {
       glyph.components = decoded.components.map((component) =>
         Object.assign(
@@ -27,7 +30,9 @@ export default class WOFF2Glyph extends TTFGlyph {
         ),
       );
     }
+
     this._applyVariation(glyph);
+
     return glyph;
   }
 
@@ -35,6 +40,7 @@ export default class WOFF2Glyph extends TTFGlyph {
   // not have.
   override _getGlyfBox(): BBox {
     const { xMin, yMin, xMax, yMax } = this._font._transformedGlyphs[this.id];
+
     return Object.freeze(new BBox(xMin, yMin, xMax, yMax));
   }
 }

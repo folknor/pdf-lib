@@ -38,11 +38,16 @@ class PDFAnnotation {
     if (options.contents !== undefined) {
       annotation.setContents(options.contents);
     }
+
     if (options.name !== undefined) annotation.setIdentifier(options.name);
     annotation.setPage(page, context);
+
     if (options.flags !== undefined) annotation.setFlags(options.flags);
+
     if (options.color !== undefined) annotation.setColor(options.color);
+
     if (options.border !== undefined) annotation.setBorder(options.border);
+
     if (options.modificationDate !== undefined) {
       annotation.setModificationDate(options.modificationDate);
     }
@@ -86,6 +91,7 @@ class PDFAnnotation {
    */
   P(): PDFRef | undefined {
     const ref = this.dict.get(PDFName.of('P'));
+
     return ref instanceof PDFRef ? ref : undefined;
   }
 
@@ -111,6 +117,7 @@ class PDFAnnotation {
    */
   F(): PDFNumber | undefined {
     const numberOrRef = this.dict.lookup(PDFName.of('F'));
+
     return this.dict.context.lookupMaybe(numberOrRef, PDFNumber);
   }
 
@@ -169,37 +176,47 @@ class PDFAnnotation {
    */
   getSubtype(): AnnotationTypes | undefined {
     const subtypePdfName = this.Subtype();
+
     if (subtypePdfName instanceof PDFName) {
       return subtypePdfName.toString() as AnnotationTypes;
     }
+
     return;
   }
 
   getRectangle(): { x: number; y: number; width: number; height: number } {
     const Rect = this.Rect();
+
     return Rect?.asRectangle() ?? { x: 0, y: 0, width: 0, height: 0 };
   }
 
   getAppearanceState(): PDFName | undefined {
     const AS = this.dict.lookup(PDFName.of('AS'));
+
     if (AS instanceof PDFName) return AS;
+
     return;
   }
 
   ensureAP(): PDFDict {
     let AP = this.AP();
+
     if (!AP) {
       AP = this.dict.context.obj({});
       this.dict.set(PDFName.of('AP'), AP);
     }
+
     return AP;
   }
 
   getNormalAppearance(): PDFRef | PDFDict | undefined {
     const AP = this.AP();
+
     if (!AP) return;
     const N = AP.get(PDFName.of('N'));
+
     if (N instanceof PDFRef || N instanceof PDFDict) return N;
+
     return;
   }
 
@@ -240,17 +257,21 @@ class PDFAnnotation {
 
   hasFlag(flag: number): boolean {
     const flags = this.getFlags();
+
     return (flags & flag) !== 0;
   }
 
   getParentPage(): PDFPageLeaf | undefined {
     const pageRef = this.P();
+
     if (!pageRef) return;
 
     const page = this.dict.context.lookup(pageRef);
+
     if (page instanceof PDFPageLeaf) {
       return page;
     }
+
     return;
   }
 
@@ -313,11 +334,13 @@ class PDFAnnotation {
   setPage(page: PDFPageLeaf, context: PDFContext) {
     // Set the page reference by getting the PDFRef for the PDFPageLeaf
     const pageRef = context.getObjectRef(page);
+
     if (!pageRef) {
       throw new Error(
         'Could not find PDFRef for the provided PDFPageLeaf. The page must be registered in the PDF context.',
       );
     }
+
     this.dict.set(PDFName.of('P'), pageRef);
   }
 

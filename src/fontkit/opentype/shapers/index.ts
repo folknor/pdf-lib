@@ -115,6 +115,7 @@ export function choose(script: string | string[]): ShaperClass {
 
   for (const s of script) {
     const shaper = SHAPERS[s];
+
     if (shaper) {
       return shaper;
     }

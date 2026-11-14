@@ -55,12 +55,15 @@ class PDFDict extends PDFObject {
     preservePDFNull = false,
   ): PDFObject | undefined {
     const value = this.dict.get(key);
+
     if (value === PDFNull && !preservePDFNull) return;
+
     return value;
   }
 
   has(key: PDFName): boolean {
     const value = this.dict.get(key);
+
     return value !== undefined && value !== PDFNull;
   }
 
@@ -156,6 +159,7 @@ class PDFDict extends PDFObject {
 
   delete(key: PDFName): boolean {
     this.registerChange();
+
     return this.dict.delete(key);
   }
 
@@ -167,40 +171,49 @@ class PDFDict extends PDFObject {
   uniqueKey(tag = ''): PDFName {
     const existingKeys = this.keys();
     let key = PDFName.of(this.context.addRandomSuffix(tag, 10));
+
     while (existingKeys.includes(key)) {
       key = PDFName.of(this.context.addRandomSuffix(tag, 10));
     }
+
     return key;
   }
 
   override clone(context?: PDFContext): PDFDict {
     const clone = PDFDict.withContext(context || this.context);
     const entries = this.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       clone.set(key, value);
     }
+
     return clone;
   }
 
   override toString(): string {
     let dictString = '<<\n';
     const entries = this.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       dictString += `${key.toString()} ${value.toString()}\n`;
     }
+
     dictString += '>>';
+
     return dictString;
   }
 
   override sizeInBytes(): number {
     let size = 5;
     const entries = this.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       size += key.sizeInBytes() + value.sizeInBytes() + 2;
     }
+
     return size;
   }
 
@@ -212,6 +225,7 @@ class PDFDict extends PDFObject {
     buffer[offset++] = CharCodes.Newline;
 
     const entries = this.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       offset += key.copyBytesInto(buffer, offset);

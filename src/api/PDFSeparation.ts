@@ -27,9 +27,11 @@ const noInk = (color: Color): number[] =>
  */
 export const colorantName = (name: string): PDFName => {
   if (name.length === 0) throw new Error('A colourant name cannot be empty');
+
   if (name.includes('\0')) {
     throw new Error('A colourant name cannot contain NUL');
   }
+
   if (
     /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(
       name,
@@ -37,9 +39,12 @@ export const colorantName = (name: string): PDFName => {
   ) {
     throw new Error('A colourant name cannot contain an unpaired surrogate');
   }
+
   let bytes = '';
+
   for (const byte of utf8Encode(name, false))
     bytes += String.fromCharCode(byte);
+
   return PDFName.fromDecoded(bytes);
 };
 
@@ -72,6 +77,7 @@ export default class PDFSeparation {
   private constructor(doc: PDFDocument, name: string, alternate: Color) {
     const space = alternateSpace(alternate);
     const components = colorToComponents(alternate);
+
     for (const c of components) {
       if (!(Number.isFinite(c) && c >= 0 && c <= 1)) {
         throw new Error(
@@ -79,6 +85,7 @@ export default class PDFSeparation {
         );
       }
     }
+
     const pdfName = colorantName(name);
 
     this.name = name;
@@ -87,6 +94,7 @@ export default class PDFSeparation {
     this.alternateComponents = Object.freeze([...components]);
 
     const { context } = doc;
+
     const tintTransform = context.obj({
       FunctionType: 2,
       Domain: [0, 1],
@@ -94,6 +102,7 @@ export default class PDFSeparation {
       C1: [...components],
       N: 1,
     });
+
     this.ref = context.register(
       context.obj([
         PDFName.of('Separation'),
@@ -107,6 +116,7 @@ export default class PDFSeparation {
   /** Whether `alternate` is the colour this space was made with. */
   hasAlternate(alternate: Color): boolean {
     const components = colorToComponents(alternate);
+
     return (
       alternateSpace(alternate) === this.alternateSpace &&
       components.length === this.alternateComponents.length &&

@@ -37,12 +37,14 @@ class Ascii85Stream extends DecodeStream {
     const stream = this.stream;
 
     let c = stream.getByte();
+
     while (isSpace(c)) {
       c = stream.getByte();
     }
 
     if (c === EOF || c === TILDA_CHAR) {
       this.eof = true;
+
       return;
     }
 
@@ -53,15 +55,19 @@ class Ascii85Stream extends DecodeStream {
     // special code for z
     if (c === Z_LOWER_CHAR) {
       buffer = this.ensureBuffer(bufferLength + 4);
+
       for (i = 0; i < 4; ++i) {
         buffer[bufferLength + i] = 0;
       }
+
       this.bufferLength += 4;
     } else {
       const input = this.input;
       input[0] = c;
+
       for (i = 1; i < 5; ++i) {
         c = stream.getByte();
+
         while (isSpace(c)) {
           c = stream.getByte();
         }
@@ -72,6 +78,7 @@ class Ascii85Stream extends DecodeStream {
           break;
         }
       }
+
       buffer = this.ensureBuffer(bufferLength + i - 1);
       this.bufferLength += i - 1;
 
@@ -80,9 +87,12 @@ class Ascii85Stream extends DecodeStream {
         for (; i < 5; ++i) {
           input[i] = 0x21 + 84;
         }
+
         this.eof = true;
       }
+
       let t = 0;
+
       for (i = 0; i < 5; ++i) {
         t = t * 85 + (input[i]! - 0x21);
       }

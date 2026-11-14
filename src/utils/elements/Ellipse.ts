@@ -32,26 +32,31 @@ export default class Ellipse extends GraphElement {
 
   center(): Point {
     const center = this.axis().middle();
+
     return center;
   }
 
   axis(): Segment {
     const axis = new Segment(this.A, this.B);
+
     return axis;
   }
 
   a(): number {
     const axis = this.axis();
+
     return Math.max(axis.length() / 2, axis.distance(this.C));
   }
 
   b(): number {
     const axis = this.axis();
+
     return Math.min(axis.length() / 2, axis.distance(this.C));
   }
 
   rotation(): number {
     const axis = this.axis();
+
     return axis.length() / 2 > axis.distance(this.C)
       ? orientation(axis.dirVect())
       : orientation(orthogonal(axis.dirVect()));
@@ -69,6 +74,7 @@ export default class Ellipse extends GraphElement {
     const eltA = element.a();
     const eltB = element.b();
     const eltRotation = element.rotation();
+
     // If the main axis is the same on both ellipse
     if (eltA < eltB === a < b) {
       // The rotation is equivalent module PI as the element is symetrical
@@ -99,6 +105,7 @@ export default class Ellipse extends GraphElement {
     const { x, y } = P.toCoords();
     const { x: cx, y: cy } = this.center().toCoords();
     const teta = this.rotation();
+
     return isEqual(
       (((x - cx) * Math.cos(teta) + (y - cy) * Math.sin(teta)) / this.a()) **
         2 +
@@ -115,8 +122,10 @@ export default class Ellipse extends GraphElement {
     const CP = vector(C, P);
     const teta = angle(axis.dirVect(), vector(C, P));
     const ray = this.polarRay(teta);
+
     if (distance(P, this.center()) < ray) return P;
     const vect = times(unitVector(CP), ray);
+
     return new Point(this.center().plus(vect).toCoords());
   }
 
@@ -124,6 +133,7 @@ export default class Ellipse extends GraphElement {
     const a = this.a();
     const b = this.b();
     const excentricity = Math.sqrt(Math.abs(a * a - b * b)) / Math.max(a, b);
+
     return Math.min(a, b) / Math.sqrt(1 - (excentricity * Math.cos(teta)) ** 2);
   }
 }

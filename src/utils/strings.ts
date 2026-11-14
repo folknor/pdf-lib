@@ -13,15 +13,18 @@ export const charFromHexCode = (hex: string) => charFromCode(parseInt(hex, 16));
 
 export const padStart = (value: string, length: number, padChar: string) => {
   let padding = '';
+
   for (let idx = 0, len = length - value.length; idx < len; idx++) {
     padding += padChar;
   }
+
   return padding + value;
 };
 
 export const stringAsByteArray = (str: string): Uint8Array => {
   const buffer = new Uint8Array(str.length);
   copyStringIntoBuffer(str, buffer, 0);
+
   return buffer;
 };
 
@@ -31,9 +34,11 @@ export const copyStringIntoBuffer = (
   offset: number,
 ): number => {
   const length = str.length;
+
   for (let idx = 0; idx < length; idx++) {
     buffer[offset++] = str.charCodeAt(idx);
   }
+
   return length;
 };
 
@@ -74,6 +79,7 @@ export const charAtIndex = (text: string, index: number): [string, number] => {
   let cuSecond: number;
   const nextIndex = index + 1;
   let length = 1;
+
   if (
     // Check if it's the start of a surrogate pair.
     cuFirst >= 0xd800 &&
@@ -81,8 +87,10 @@ export const charAtIndex = (text: string, index: number): [string, number] => {
     text.length > nextIndex // there is a next code unit
   ) {
     cuSecond = text.charCodeAt(nextIndex);
+
     if (cuSecond >= 0xdc00 && cuSecond <= 0xdfff) length = 2; // low surrogate
   }
+
   return [text.slice(index, index + length), length];
 };
 
@@ -102,15 +110,19 @@ const buildWordBreakRegex = (wordBreaks: string[]) => {
   const newlineCharUnion = escapedNewlineChars.join('|');
 
   const escapedRules: string[] = ['$'];
+
   for (let idx = 0, len = wordBreaks.length; idx < len; idx++) {
     const wordBreak = wordBreaks[idx]!;
+
     if (isNewlineChar(wordBreak)) {
       throw new TypeError(`\`wordBreak\` must not include ${newlineCharUnion}`);
     }
+
     escapedRules.push(wordBreak === '' ? '.' : escapeRegExp(wordBreak));
   }
 
   const breakRules = escapedRules.join('|');
+
   return new RegExp(`(${newlineCharUnion})|((.*?)(${breakRules}))`, 'gm');
 };
 
@@ -135,6 +147,7 @@ export const breakTextIntoLines = (
 
   for (let idx = 0, len = words.length; idx < len; idx++) {
     const word = words[idx]!;
+
     if (isNewlineChar(word)) {
       lines.push(currLine);
       currLine = '';
@@ -143,9 +156,11 @@ export const breakTextIntoLines = (
         lines.push(currLine);
         currLine = '';
       }
+
       currLine += word;
     }
   }
+
   if (currLine !== '') lines.push(currLine);
 
   return lines;
@@ -178,6 +193,7 @@ export const parseDate = (dateStr: string): Date | undefined => {
     offsetSign === 'Z'
       ? 'Z'
       : `${offsetSign}${offsetHours.padStart(2, '0')}:${offsetMins}`;
+
   const date = new Date(
     `${year}-${month}-${day}T${hours}:${mins}:${secs}${tzOffset}`,
   );
@@ -188,11 +204,14 @@ export const parseDate = (dateStr: string): Date | undefined => {
 export const findLastMatch = (value: string, regex: RegExp) => {
   let position = 0;
   let lastMatch: RegExpMatchArray | undefined;
+
   while (position < value.length) {
     const match = value.substring(position).match(regex);
+
     if (!match) return { match: lastMatch, pos: position };
     lastMatch = match;
     position += (match.index ?? 0) + match[0].length;
   }
+
   return { match: lastMatch, pos: position };
 };

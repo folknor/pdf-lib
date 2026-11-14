@@ -4,6 +4,7 @@ import { FileEmbedder, PDFContext, PDFDict, PDFRef } from '../../../src/index';
 const catRidingUnicornJpg = fs.readFileSync(
   'assets/images/cat_riding_unicorn.jpg',
 );
+
 const usConstitutionPdf = fs.readFileSync('assets/pdfs/us_constitution.pdf');
 
 describe('FileEmbedder', () => {
@@ -14,6 +15,7 @@ describe('FileEmbedder', () => {
 
   it('can embed files into PDFContexts without a predefined ref', async () => {
     const context = PDFContext.create();
+
     const embedder = FileEmbedder.for(
       catRidingUnicornJpg,
       'cat_riding_unicorn.jpg',
@@ -34,6 +36,7 @@ describe('FileEmbedder', () => {
   it('can embed files into PDFContexts with a predefined ref', async () => {
     const context = PDFContext.create();
     const predefinedRef = PDFRef.of(9999);
+
     const embedder = FileEmbedder.for(
       usConstitutionPdf,
       'us_constitution.pdf',

@@ -21,13 +21,21 @@ const makeFontFlags = (options: FontFlagOptions) => {
   };
 
   if (options.fixedPitch) flipBit(1);
+
   if (options.serif) flipBit(2);
+
   if (options.symbolic) flipBit(3);
+
   if (options.script) flipBit(4);
+
   if (options.nonsymbolic) flipBit(6);
+
   if (options.italic) flipBit(7);
+
   if (options.allCap) flipBit(17);
+
   if (options.smallCap) flipBit(18);
+
   if (options.forceBold) flipBit(19);
 
   return flags;
@@ -39,6 +47,7 @@ export const deriveFontFlags = (font: Font): number => {
   // whatever the declared types say.
   const { post, head } = font as Partial<Pick<Font, 'post' | 'head'>>;
   const familyClass = font['OS/2']?.sFamilyClass ?? 0;
+
   const flags = makeFontFlags({
     fixedPitch: !!post?.isFixedPitch,
     serif: 1 <= familyClass && familyClass <= 7,
@@ -46,5 +55,6 @@ export const deriveFontFlags = (font: Font): number => {
     script: familyClass === 10,
     italic: !!head?.macStyle?.italic,
   });
+
   return flags;
 };

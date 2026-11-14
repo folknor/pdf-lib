@@ -49,6 +49,7 @@ export default class Arc extends GraphElement {
       this.destination(),
       this.lastSweep,
     );
+
     return this.lastSweep;
   }
 
@@ -62,6 +63,7 @@ export default class Arc extends GraphElement {
     const o = this.origin();
     const eDest = element.destination();
     const eO = element.origin();
+
     return (
       this.getCircle().isEqual(element.getCircle()) &&
       ((dest.isEqual(eDest) && o.isEqual(eO)) ||
@@ -71,6 +73,7 @@ export default class Arc extends GraphElement {
 
   getCircle() {
     const circle = new Circle(this.center(), this.ray());
+
     return circle;
   }
 
@@ -80,9 +83,11 @@ export default class Arc extends GraphElement {
 
   middle() {
     const halfSweep = this.sweep() / 2;
+
     const mid = this.center().plus(
       rotate(vector(this.center(), this.origin()), halfSweep),
     );
+
     return mid;
   }
 
@@ -97,16 +102,19 @@ export default class Arc extends GraphElement {
 
   orthoProjection(P: Point) {
     const H = this.getCircle().orthoProjection(P);
+
     if (this.includes(H)) return H;
     else {
       const origin = this.origin().toCoords();
       const destination = this.destination().toCoords();
+
       // Returns the closest between origin and destination
       const coords =
         distanceCoords(H.toCoords(), origin) <
         distanceCoords(H.toCoords(), destination)
           ? origin
           : destination;
+
       return new Point(coords);
     }
   }

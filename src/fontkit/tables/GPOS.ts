@@ -54,6 +54,7 @@ class ValueRecord {
 
   buildStruct(parent: any): r.Struct | undefined {
     let struct = parent;
+
     while (!struct[this.key] && struct.parent) {
       struct = struct.parent;
     }
@@ -64,6 +65,7 @@ class ValueRecord {
     fields['rel'] = () => struct._startOffset;
 
     const format = struct[this.key];
+
     for (const key in format) {
       if (format[key]) {
         fields[key] = types[key];
@@ -80,6 +82,7 @@ class ValueRecord {
   decode(stream: any, parent: any): any {
     const res = this.buildStruct(parent)!.decode(stream, parent);
     delete res['rel'];
+
     return res;
   }
 }
@@ -136,13 +139,16 @@ const BaseRecord = new r.Array(
   new r.Pointer(r.uint16, Anchor),
   (t: any) => t.parent.classCount,
 );
+
 const BaseArray = new r.Array(BaseRecord, r.uint16);
 
 const ComponentRecord = new r.Array(
   new r.Pointer(r.uint16, Anchor),
   (t: any) => t.parent.parent.classCount,
 );
+
 const LigatureAttach = new r.Array(ComponentRecord, r.uint16);
+
 const LigatureArray = new r.Array(
   new r.Pointer(r.uint16, LigatureAttach),
   r.uint16,

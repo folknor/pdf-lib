@@ -13,6 +13,7 @@ export function cacheValue<T>(obj: object, key: string, value: T): T {
     writable: false,
     configurable: true,
   });
+
   return value;
 }
 
@@ -35,14 +36,18 @@ export function memoize<T, K>(
   compute: () => T,
 ): T {
   let cache = obj[cacheKey] as Map<K, T> | undefined;
+
   if (!cache) {
     cache = new Map<K, T>();
     obj[cacheKey] = cache;
   }
+
   if (cache.has(argKey)) {
     return cache.get(argKey)!;
   }
+
   const result = compute();
   cache.set(argKey, result);
+
   return result;
 }

@@ -74,9 +74,11 @@ export default class TTFGlyphEncoder {
     const yPoints: number[] = [];
     const flags: number[] = [];
     let same = 0;
+
     let lastX = 0,
       lastY = 0,
       lastFlag = 0;
+
     let pointCount = 0;
     // The glyf header bbox spans every encoded point, off-curve included.
     let xMin = Infinity;
@@ -86,7 +88,9 @@ export default class TTFGlyphEncoder {
 
     for (let i = 0; i < path.commands.length; i++) {
       const c = path.commands[i];
+
       if (!c) continue;
+
       if (c.command === 'bezierCurveTo') {
         throw new Error('glyf cannot hold cubic curves; convert them first');
       }
@@ -106,11 +110,13 @@ export default class TTFGlyphEncoder {
         // or its rounding (it is then at least as close as writing it).
         if (c.command === 'quadraticCurveTo' && j === 2) {
           const next = path.commands[i + 1];
+
           if (next && next.command === 'quadraticCurveTo') {
             const rawX = c.args[j] ?? 0;
             const rawY = c.args[j + 1] ?? 0;
             const midX2 = lastX + Math.round(next.args[0] ?? 0);
             const midY2 = lastY + Math.round(next.args[1] ?? 0);
+
             if (
               (2 * rawX === midX2 || 2 * x === midX2) &&
               (2 * rawY === midY2 || 2 * y === midY2)
@@ -124,6 +130,7 @@ export default class TTFGlyphEncoder {
         checkInt16(y, 'y coordinate');
         checkInt16(x - lastX, 'x delta');
         checkInt16(y - lastY, 'y delta');
+
         if (pointCount === 0 && overlapping) flag |= OVERLAP_SIMPLE;
 
         // All points except control points are on curve.
@@ -150,9 +157,11 @@ export default class TTFGlyphEncoder {
 
         if (flag === lastFlag && same < 255) {
           const lastFlagIdx = flags.length - 1;
+
           if (flags[lastFlagIdx] !== undefined) {
             flags[lastFlagIdx] |= REPEAT;
           }
+
           same++;
         } else {
           if (same > 0) {
@@ -166,9 +175,13 @@ export default class TTFGlyphEncoder {
 
         lastX = x;
         lastY = y;
+
         if (x < xMin) xMin = x;
+
         if (y < yMin) yMin = y;
+
         if (x > xMax) xMax = x;
+
         if (y > yMax) yMax = y;
         pointCount++;
       }
@@ -187,6 +200,7 @@ export default class TTFGlyphEncoder {
 
     // Close the path if the last command didn't already
     const lastCmd = path.commands[path.commands.length - 1];
+
     if (
       path.commands.length > 1 &&
       lastCmd &&
@@ -203,6 +217,7 @@ export default class TTFGlyphEncoder {
     }
 
     if (pointCount === 0) xMin = yMin = xMax = yMax = 0;
+
     const glyf = {
       numberOfContours: endPtsOfContours.length,
       xMin,
@@ -246,6 +261,7 @@ export default class TTFGlyphEncoder {
     } else {
       if (-255 <= diff && diff <= 255) {
         flag |= shortFlag;
+
         if (diff < 0) {
           diff = -diff;
         } else {

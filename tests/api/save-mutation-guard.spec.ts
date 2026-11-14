@@ -7,6 +7,7 @@ const savingError = /while a save is in progress/;
 function deferred() {
   let resolve!: () => void;
   const promise = new Promise<void>((done) => { resolve = done; });
+
   return { promise, resolve };
 }
 
@@ -15,24 +16,31 @@ describe('save mutation guard', () => {
     'guards mutations throughout %s and releases after success',
     async (method) => {
       const source = await PDFDocument.create();
+
       const doc = await PDFDocument.load(await source.save(), {
         forIncrementalUpdate: true,
       });
+
       await doc.attach(new Uint8Array([1]), 'pending.txt');
       const entered = deferred();
       const release = deferred();
       const original = FileEmbedder.prototype.embedIntoContext;
+
       const embed = vi.spyOn(FileEmbedder.prototype, 'embedIntoContext')
         .mockImplementationOnce(async function (...args) {
           entered.resolve();
           await release.promise;
+
           return original.apply(this, args);
         });
+
       try {
         const snapshot = doc.takeSnapshot();
+
         const saving = method === 'saveIncremental'
           ? doc.saveIncremental(snapshot)
           : doc[method]();
+
         await entered.promise;
         expect(() => doc.detach('pending.txt')).toThrow(savingError);
         expect(() => doc.embedFacturX('<invoice/>')).toThrow(savingError);
@@ -56,8 +64,10 @@ describe('save mutation guard', () => {
   it('releases the guard after an embed fails', async () => {
     const doc = await PDFDocument.create();
     await doc.attach(new Uint8Array([1]), 'pending.txt');
+
     const embed = vi.spyOn(FileEmbedder.prototype, 'embedIntoContext')
       .mockRejectedValueOnce(new Error('embed failed'));
+
     try {
       await expect(doc.save()).rejects.toThrow('embed failed');
       doc.detach('pending.txt');
@@ -74,9 +84,11 @@ describe('save mutation guard', () => {
     const first = { embed: vi.fn(async () => { entered.resolve(); await release.promise; }) };
     const second = { embed: vi.fn(async () => {}) };
     const pending = [first, second];
+
     const internal = doc as unknown as {
       embedAll(items: { embed(): Promise<void> }[]): Promise<void>;
     };
+
     const embedding = internal.embedAll(pending);
     await entered.promise;
     pending.splice(0, 1);

@@ -9,13 +9,17 @@ const build = (parts: (string | Uint8Array)[]) => {
   const offsets: number[] = [];
   const chunks: Buffer[] = [];
   let at = 0;
+
   for (const part of parts) {
     offsets.push(at);
+
     const chunk =
       typeof part === 'string' ? Buffer.from(part, 'latin1') : Buffer.from(part);
+
     chunks.push(chunk);
     at += chunk.length;
   }
+
   return { bytes: new Uint8Array(Buffer.concat(chunks)), offsets };
 };
 
@@ -30,8 +34,10 @@ const xrefStream = (
   extra = '',
 ) => {
   const data: number[] = [];
+
   for (const [t, f2, f3] of rows) data.push(t, f2 >> 8, f2 & 0xff, f3);
   const body = Buffer.from(data);
+
   return Buffer.concat([
     Buffer.from(
       `${num} 0 obj\n<< /Type /XRef /Size ${index[0]! + index[1]!} /W [1 2 1] /Index [${index.join(' ')}] /Length ${body.length}${extra} >>\nstream\n`,
@@ -66,6 +72,7 @@ describe('PDFXRefChainReader', () => {
         [1, 40, 0],
       ]),
     ]);
+
     const xref = PDFXRefChainReader.read(bytes, 9);
     expect(xref.entries.get(1)).toEqual({ kind: 'inUse', offset: 9, generation: 0 });
     expect(xref.entries.get(2)).toEqual({ kind: 'compressed', container: 3, index: 0 });
@@ -74,11 +81,13 @@ describe('PDFXRefChainReader', () => {
   it('reads a hybrid section as table, then /XRefStm, then /Prev', () => {
     const older = `xref\n0 4\n${entry(0, 65535, 'f')}${entry(1, 0, 'n')}${entry(2, 0, 'n')}${entry(3, 0, 'n')}trailer\n<< /Size 4 >>\n`;
     const base = build(['%PDF-1.5\n', older]);
+
     const stm = xrefStream(9, [1, 3], [
       [1, 11, 0],
       [2, 9, 0],
       [1, 33, 0],
     ]);
+
     const withStm = build([base.bytes, stm]);
     const table = `xref\n0 3\n${entry(0, 65535, 'f')}${entry(10, 0, 'n')}${entry(0, 0, 'f')}trailer\n<< /Size 10 /XRefStm ${withStm.offsets[1]} /Prev ${base.offsets[1]} >>\n`;
     const file = build([withStm.bytes, table]);
@@ -126,9 +135,11 @@ describe('PDFXRefChainReader', () => {
         9,
       ),
     ).toThrow(/Index/);
+
     // A generation above 65535, a fractional /Size, two entries for one number.
     const tableOf = (body: string, size: string) =>
       build(['%PDF-1.4\n', `xref\n${body}trailer\n<< /Size ${size} >>\n`]).bytes;
+
     expect(() =>
       PDFXRefChainReader.read(tableOf(`0 2\n${entry(0, 65535, 'f')}${entry(9, 100000, 'n')}`, '2'), 9),
     ).toThrow(/generation/);
@@ -147,6 +158,7 @@ describe('PDFXRefChainReader', () => {
     // Rows [0 0 255] and [1 0 9 0] under /W [1 2 1]; the second row with the
     // Up filter, so each byte is stored as its difference from the row above.
     const body = zlibSync(new Uint8Array([0, 0, 0, 0, 255, 2, 1, 0, 9, 1]));
+
     const { bytes } = build([
       '%PDF-1.5\n',
       Buffer.concat([
@@ -158,6 +170,7 @@ describe('PDFXRefChainReader', () => {
         Buffer.from('\nendstream\nendobj\n', 'latin1'),
       ]),
     ]);
+
     expect(PDFXRefChainReader.read(bytes, 9).entries.get(1)).toEqual({
       kind: 'inUse',
       offset: 9,
@@ -169,6 +182,7 @@ describe('PDFXRefChainReader', () => {
     // Predictor rows wider than the entries: the second row is cut short
     // after the bytes the entries need, which a lenient decode would accept.
     const body = zlibSync(new Uint8Array([0, 0, 0, 0, 255, 0, 0, 1, 0, 9, 0]));
+
     const { bytes } = build([
       '%PDF-1.5\n',
       Buffer.concat([
@@ -180,11 +194,13 @@ describe('PDFXRefChainReader', () => {
         Buffer.from('\nendstream\nendobj\n', 'latin1'),
       ]),
     ]);
+
     expect(() => PDFXRefChainReader.read(bytes, 9)).toThrow(/mid-row/);
   });
 
   it('ignores /DecodeParms on an unfiltered stream', () => {
     const body = Buffer.from([0, 0, 0, 255, 1, 0, 9, 0]);
+
     const { bytes } = build([
       '%PDF-1.5\n',
       Buffer.concat([
@@ -196,6 +212,7 @@ describe('PDFXRefChainReader', () => {
         Buffer.from('\nendstream\nendobj\n', 'latin1'),
       ]),
     ]);
+
     expect(PDFXRefChainReader.read(bytes, 9).entries.get(1)).toEqual({
       kind: 'inUse',
       offset: 9,
@@ -217,6 +234,7 @@ describe('PDFXRefChainReader', () => {
 
   it('decodes offsets wider than 31 bits', () => {
     const body = Buffer.from([0, 0, 0, 0, 0, 255, 255, 1, 0x80, 0, 0, 0, 0, 0]);
+
     const { bytes } = build([
       '%PDF-1.5\n',
       Buffer.concat([
@@ -225,6 +243,7 @@ describe('PDFXRefChainReader', () => {
         Buffer.from('\nendstream\nendobj\n', 'latin1'),
       ]),
     ]);
+
     expect(PDFXRefChainReader.read(bytes, 9).entries.get(1)).toEqual({
       kind: 'inUse',
       offset: 2147483648,

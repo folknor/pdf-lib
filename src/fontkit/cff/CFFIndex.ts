@@ -30,6 +30,7 @@ export default class CFFIndex {
 
     const offSize = stream.readUInt8();
     let offsetType;
+
     if (offSize === 1) {
       offsetType = r.uint8;
     } else if (offSize === 2) {
@@ -46,6 +47,7 @@ export default class CFFIndex {
     const startPos = stream.pos + (count + 1) * offSize - 1;
 
     let start = offsetType.decode(stream);
+
     for (let i = 0; i < count; i++) {
       const end = offsetType.decode(stream);
 
@@ -67,11 +69,13 @@ export default class CFFIndex {
     }
 
     stream.pos = startPos + start;
+
     return ret;
   }
 
   size(arr: any[], parent: any): number {
     let size = 2;
+
     if (arr.length === 0) {
       return size;
     }
@@ -80,12 +84,14 @@ export default class CFFIndex {
 
     // find maximum offset to detminine offset type
     let offset = 1;
+
     for (let i = 0; i < arr.length; i++) {
       const item = arr[i];
       offset += type.size(item, parent);
     }
 
     let offsetType;
+
     if (offset <= 0xff) {
       offsetType = r.uint8;
     } else if (offset <= 0xffff) {
@@ -106,6 +112,7 @@ export default class CFFIndex {
 
   encode(stream: any, arr: any[], parent: any): void {
     stream.writeUInt16BE(arr.length);
+
     if (arr.length === 0) {
       return;
     }
@@ -115,6 +122,7 @@ export default class CFFIndex {
     // find maximum offset to detminine offset type
     const sizes: number[] = [];
     let offset = 1;
+
     for (const item of arr) {
       const s = type.size(item, parent);
       sizes.push(s);
@@ -122,6 +130,7 @@ export default class CFFIndex {
     }
 
     let offsetType;
+
     if (offset <= 0xff) {
       offsetType = r.uint8;
     } else if (offset <= 0xffff) {

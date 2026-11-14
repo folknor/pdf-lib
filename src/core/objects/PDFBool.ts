@@ -38,6 +38,7 @@ class PDFBool extends PDFObject {
       buffer[offset++] = CharCodes.r;
       buffer[offset++] = CharCodes.u;
       buffer[offset++] = CharCodes.e;
+
       return 4;
     } else {
       buffer[offset++] = CharCodes.f;
@@ -45,6 +46,7 @@ class PDFBool extends PDFObject {
       buffer[offset++] = CharCodes.l;
       buffer[offset++] = CharCodes.s;
       buffer[offset++] = CharCodes.e;
+
       return 5;
     }
   }

@@ -11,20 +11,27 @@ const entry = (offset: number, gen: number, type: 'n' | 'f') =>
  */
 const fileWithFreeEntries = (): Uint8Array => {
   let text = '%PDF-1.7\n';
+
   const add = (part: string) => {
     const at = text.length;
     text += part;
+
     return at;
   };
+
   const o1 = add('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
   const o2 = add('2 0 obj\n<< /Type /Pages /Kids [5 0 R] /Count 1 >>\nendobj\n');
+
   const o5 = add(
     '5 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>\nendobj\n',
   );
+
   const x = add(
     `xref\n0 6\n${entry(3, 65535, 'f')}${entry(o1, 0, 'n')}${entry(o2, 0, 'n')}${entry(4, 65535, 'f')}${entry(0, 1, 'f')}${entry(o5, 0, 'n')}trailer\n<< /Size 6 /Root 1 0 R >>\n`,
   );
+
   add(`startxref\n${x}\n%%EOF\n`);
+
   return new Uint8Array(Buffer.from(text, 'latin1'));
 };
 

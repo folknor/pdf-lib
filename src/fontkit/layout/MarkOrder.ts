@@ -83,9 +83,13 @@ const isArabicMark = (cp: number) =>
  */
 export function isArabicRun(cps: number[], start: number, end: number) {
   let base = start - 1;
+
   while (base >= 0 && isMark(cps[base]!)) base--;
+
   if (base >= 0 && getScript(cps[base]!) === 'Arabic') return true;
+
   for (let i = start; i < end; i++) if (isArabicMark(cps[i]!)) return true;
+
   return false;
 }
 
@@ -107,13 +111,16 @@ const MODIFIER_COMBINING_MARKS = new Set([
 export function arabicKeys(cps: number[]): number[] {
   const classes = cps.map(combiningClass);
   const promoted = new Array<boolean>(cps.length).fill(false);
+
   for (const cls of [220, 230]) {
     for (let i = 0; i < cps.length; i++) {
       if (classes[i] !== cls) continue;
+
       if (!MODIFIER_COMBINING_MARKS.has(cps[i]!)) break;
       promoted[i] = true;
     }
   }
+
   return classes.map((cls, i) =>
     promoted[i] ? (cls === 220 ? -3 : -2) : cls === 33 ? -1 : cls,
   );

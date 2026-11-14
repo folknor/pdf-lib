@@ -77,6 +77,7 @@ class PDFObjectParser extends BaseParser {
   /** Whether only whitespace and comments remain. */
   atEnd(): boolean {
     this.skipWhitespaceAndComments();
+
     return this.bytes.done();
   }
 
@@ -85,7 +86,9 @@ class PDFObjectParser extends BaseParser {
     this.skipWhitespaceAndComments();
 
     if (this.matchKeyword(Keywords.true)) return PDFBool.True;
+
     if (this.matchKeyword(Keywords.false)) return PDFBool.False;
+
     if (this.matchKeyword(Keywords.null)) return PDFNull;
 
     const byte = this.bytes.peek();
@@ -96,10 +99,15 @@ class PDFObjectParser extends BaseParser {
     ) {
       return this.parseDictOrStream(ref);
     }
+
     if (byte === CharCodes.LessThan) return this.parseHexString(ref);
+
     if (byte === CharCodes.LeftParen) return this.parseString(ref);
+
     if (byte === CharCodes.ForwardSlash) return this.parseName();
+
     if (byte === CharCodes.LeftSquareBracket) return this.parseArray(ref);
+
     if (IsNumeric[byte]) return this.parseNumberOrRef();
 
     throw new PDFObjectParsingError(this.bytes.position(), byte);
@@ -110,16 +118,20 @@ class PDFObjectParser extends BaseParser {
     this.skipWhitespaceAndComments();
 
     const lookaheadStart = this.bytes.offset();
+
     if (IsDigit[this.bytes.peek()]) {
       const secondNum = this.parseRawNumber();
       this.skipWhitespaceAndComments();
+
       if (this.bytes.peek() === CharCodes.R) {
         this.bytes.assertNext(CharCodes.R);
+
         return PDFRef.of(firstNum, secondNum);
       }
     }
 
     this.bytes.moveTo(lookaheadStart);
+
     return PDFNumber.of(firstNum);
   }
 
@@ -127,9 +139,11 @@ class PDFObjectParser extends BaseParser {
     let value = '';
 
     this.bytes.assertNext(CharCodes.LessThan);
+
     while (!this.bytes.done() && this.bytes.peek() !== CharCodes.GreaterThan) {
       value += charFromCode(this.bytes.next());
     }
+
     this.bytes.assertNext(CharCodes.GreaterThan);
 
     if (this.cryptoFactory && ref) {
@@ -137,6 +151,7 @@ class PDFObjectParser extends BaseParser {
         ref.objectNumber,
         ref.generationNumber,
       );
+
       const arr = transformer.decryptBytes(PDFHexString.of(value).asBytes());
       value = arr.reduce(
         (str: string, byte: number) => str + byte.toString(16).padStart(2, '0'),
@@ -159,6 +174,7 @@ class PDFObjectParser extends BaseParser {
       // Check for unescaped parenthesis
       if (!isEscaped) {
         if (byte === CharCodes.LeftParen) nestingLvl += 1;
+
         if (byte === CharCodes.RightParen) nestingLvl -= 1;
       }
 
@@ -178,12 +194,15 @@ class PDFObjectParser extends BaseParser {
             ref.objectNumber,
             ref.generationNumber,
           );
+
           const decrypted = transformer.decryptBytes(
             PDFString.of(actualValue).asBytes(),
           );
+
           // Decrypted bytes are data, not literal-string escape syntax.
           return PDFHexString.fromBytes(decrypted);
         }
+
         // Remove the outer parens so they aren't part of the contents
         return PDFString.of(actualValue);
       }
@@ -198,8 +217,10 @@ class PDFObjectParser extends BaseParser {
     this.bytes.assertNext(CharCodes.ForwardSlash);
 
     let name = '';
+
     while (!this.bytes.done()) {
       const byte = this.bytes.peek();
+
       if (IsWhitespace[byte] || IsDelimiter[byte]) break;
       name += charFromCode(byte);
       this.bytes.next();
@@ -213,12 +234,15 @@ class PDFObjectParser extends BaseParser {
     this.skipWhitespaceAndComments();
 
     const pdfArray = PDFArray.withContext(this.context);
+
     while (this.bytes.peek() !== CharCodes.RightSquareBracket) {
       const element = this.parseObject(ref);
       pdfArray.push(element);
       this.skipWhitespaceAndComments();
     }
+
     this.bytes.assertNext(CharCodes.RightSquareBracket);
+
     return pdfArray;
   }
 
@@ -236,6 +260,7 @@ class PDFObjectParser extends BaseParser {
       this.bytes.peekAhead(1) !== CharCodes.GreaterThan
     ) {
       const key = this.parseName();
+
       if (key === PDFName.of('Contents')) contentsPos = this.bytes.position();
       const value = this.parseObject(ref);
       dict.set(key, value);
@@ -256,6 +281,7 @@ class PDFObjectParser extends BaseParser {
       Type === PDFName.of('Sig') ||
       Type === PDFName.of('DocTimeStamp') ||
       (Type === undefined && dict.get(PDFName.of('ByteRange')) !== undefined);
+
     if (
       this.cryptoFactory &&
       ref &&
@@ -263,6 +289,7 @@ class PDFObjectParser extends BaseParser {
       isSignatureDict
     ) {
       const contents = dict.get(PDFName.of('Contents'));
+
       if (contents instanceof PDFString || contents instanceof PDFHexString) {
         const resumeAt = this.bytes.position();
         this.bytes.restorePosition(contentsPos);
@@ -309,11 +336,13 @@ class PDFObjectParser extends BaseParser {
     // value is only trusted if `endstream` follows it.
     const Length = dict.get(PDFName.of('Length'));
     const length = this.resolveStreamLength(Length);
+
     if (length !== undefined) {
       end = start.offset + length;
       this.noteStreamExtent(start.offset, end);
       this.bytes.moveTo(end);
       this.skipWhitespaceAndComments();
+
       if (!this.matchKeyword(Keywords.endstream)) {
         // Index scans must never revisit bytes covered by a known length,
         // even when the terminator itself is damaged.
@@ -356,16 +385,21 @@ class PDFObjectParser extends BaseParser {
    */
   resolvePendingStreamLengths(): void {
     const pending = this.pendingStreamLengths;
+
     if (pending.length === 0) return;
     const saved = this.bytes.position();
+
     for (const { stream, lengthRef, start, end } of pending) {
       const length = this.resolveStreamLength(lengthRef);
+
       if (length === undefined || start + length === end) continue;
+
       if (!this.endstreamFollows(start + length)) continue;
       const raw = this.bytes.slice(start, start + length);
       const decrypt = this.streamDecryption.get(stream);
       stream.contents = decrypt ? decrypt(raw) : raw;
     }
+
     pending.length = 0;
     this.bytes.restorePosition(saved);
   }
@@ -373,6 +407,7 @@ class PDFObjectParser extends BaseParser {
   private endstreamFollows(offset: number): boolean {
     this.bytes.moveTo(offset);
     this.skipWhitespaceAndComments();
+
     return this.matchKeyword(Keywords.endstream);
   }
 
@@ -399,9 +434,12 @@ class PDFObjectParser extends BaseParser {
 
   private resolveStreamLength(Length: PDFObject | undefined) {
     let value: PDFObject | undefined = Length;
+
     if (value instanceof PDFRef) value = this.lookupStreamLength(value);
+
     if (!(value instanceof PDFNumber)) return;
     const n = value.asNumber();
+
     return Number.isInteger(n) && n >= 0 ? n : undefined;
   }
 
@@ -447,9 +485,11 @@ class PDFObjectParser extends BaseParser {
     // Check if the previous character is a valid delimiter
     if (currentOffset > 0) {
       const prevByte = this.bytes.peekAt(currentOffset - 1);
+
       if (prevByte === undefined) {
         return false;
       }
+
       // Valid delimiters before "stream": whitespace, newline, carriage return,
       // tab, or PDF delimiter characters like < > ( ) [ ] / %
       const isValidPrefix =

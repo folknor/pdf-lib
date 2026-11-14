@@ -70,6 +70,7 @@ const Action = new r.Struct({
 });
 
 const PostcompensationAction = new r.Array(Action, r.uint32);
+
 const PostCompensationTable = new r.Struct({
   lookupTable: LookupTable(new r.Pointer(r.uint16, PostcompensationAction)),
 });

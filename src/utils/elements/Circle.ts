@@ -10,6 +10,7 @@ import {
 
 import GraphElement from './GraphElement.js';
 import Point from './Point.js';
+
 export default class Circle extends GraphElement {
   O: Point;
   r: number;
@@ -48,8 +49,10 @@ export default class Circle extends GraphElement {
   orthoProjection(P: Point) {
     const center = this.center().toCoords();
     const coords = P.toCoords();
+
     if (distanceCoords(coords, center) < this.ray()) return P;
     const vect = times(unitVector(minus(coords, center)), this.ray());
+
     return new Point(plus(center, vect));
   }
 }

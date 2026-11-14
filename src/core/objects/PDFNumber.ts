@@ -37,6 +37,7 @@ class PDFNumber extends PDFObject {
 
   override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.stringValue, buffer, offset);
+
     return this.stringValue.length;
   }
 }

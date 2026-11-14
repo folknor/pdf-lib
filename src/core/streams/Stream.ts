@@ -51,15 +51,18 @@ class Stream implements StreamType {
     if (this.pos >= this.end) {
       return -1;
     }
+
     return this.bytes[this.pos++]!;
   }
 
   getUint16() {
     const b0 = this.getByte();
     const b1 = this.getByte();
+
     if (b0 === -1 || b1 === -1) {
       return -1;
     }
+
     return (b0 << 8) + b1;
   }
 
@@ -68,6 +71,7 @@ class Stream implements StreamType {
     const b1 = this.getByte();
     const b2 = this.getByte();
     const b3 = this.getByte();
+
     return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
   }
 
@@ -79,15 +83,19 @@ class Stream implements StreamType {
 
     if (!length) {
       const subarray = bytes.subarray(pos, strEnd);
+
       // `this.bytes` is always a `Uint8Array` here.
       return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
     } else {
       let end = pos + length;
+
       if (end > strEnd) {
         end = strEnd;
       }
+
       this.pos = end;
       const subarray = bytes.subarray(pos, end);
+
       // `this.bytes` is always a `Uint8Array` here.
       return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
     }
@@ -96,12 +104,14 @@ class Stream implements StreamType {
   peekByte(): number {
     const peekedByte = this.getByte();
     this.pos--;
+
     return peekedByte;
   }
 
   peekBytes(length: number, forceClamped = false) {
     const bytes = this.getBytes(length, forceClamped);
     this.pos -= bytes.length;
+
     return bytes;
   }
 
@@ -109,6 +119,7 @@ class Stream implements StreamType {
     if (!n) {
       n = 1;
     }
+
     this.pos += n;
   }
 

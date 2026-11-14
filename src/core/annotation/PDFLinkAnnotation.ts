@@ -30,6 +30,7 @@ class PDFLinkAnnotation extends PDFAnnotation {
    */
   Dest(): PDFArray | PDFName | PDFString | undefined {
     const dest = this.dict.lookup(PDFName.of('Dest'));
+
     if (
       dest instanceof PDFArray ||
       dest instanceof PDFName ||
@@ -37,6 +38,7 @@ class PDFLinkAnnotation extends PDFAnnotation {
     ) {
       return dest;
     }
+
     return;
   }
 
@@ -47,10 +49,12 @@ class PDFLinkAnnotation extends PDFAnnotation {
    */
   getUrl(): string | undefined {
     const action = this.A();
+
     if (!action) return;
 
     // Check that this is a URI action
     const actionType = action.lookup(PDFName.of('S'), PDFName);
+
     if (actionType?.toString() !== '/URI') return;
 
     // Get the URI value - can be PDFString, PDFHexString, or PDFName
@@ -59,9 +63,11 @@ class PDFLinkAnnotation extends PDFAnnotation {
     if (uri instanceof PDFString) {
       return uri.asString();
     }
+
     if (uri instanceof PDFHexString) {
       return uri.decodeText();
     }
+
     if (uri instanceof PDFName) {
       // PDFName.decodeText() already strips the leading '/'
       return uri.decodeText();

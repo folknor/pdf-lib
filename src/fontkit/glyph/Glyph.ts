@@ -60,6 +60,7 @@ export default class Glyph {
     }
 
     const metric = table.metrics.get(table.metrics.length - 1);
+
     const res = {
       advance: metric ? metric.advance : 0,
       bearing: table.bearings.get(this.id - table.metrics.length) || 0,
@@ -75,6 +76,7 @@ export default class Glyph {
 
     const metrics = this._getDefaultMetrics(cbox);
     metrics.advanceWidth += this._getHVARAdjustment();
+
     return (this._metrics = metrics);
   }
 
@@ -83,6 +85,7 @@ export default class Glyph {
   _getHVARAdjustment(): number {
     const processor = this._font._variationProcessor;
     const hvar = this._font.HVAR;
+
     return processor && hvar
       ? processor.getAdvanceAdjustment(this.id, hvar)
       : 0;
@@ -106,12 +109,14 @@ export default class Glyph {
     // must stay on unvaried table values.
     let advanceHeight;
     let topBearing;
+
     if (this._font.vmtx) {
       ({ advance: advanceHeight, bearing: topBearing } = this._getTableMetrics(
         this._font.vmtx,
       ));
     } else {
       let os2;
+
       if (cbox === undefined || cbox === null) {
         ({ cbox } = this);
       }
@@ -164,6 +169,7 @@ export default class Glyph {
    */
   getScaledPath(size: number): Path {
     const scale = (1 / this._font.unitsPerEm) * size;
+
     return this.path.scale(scale);
   }
 
@@ -191,6 +197,7 @@ export default class Glyph {
 
   _getName(): string | null | undefined {
     const { post } = this._font;
+
     if (!post) {
       return null;
     }
@@ -201,6 +208,7 @@ export default class Glyph {
 
       case 2: {
         const id = post.glyphNameIndex[this.id];
+
         if (id < StandardNames.length) {
           return StandardNames[id];
         }

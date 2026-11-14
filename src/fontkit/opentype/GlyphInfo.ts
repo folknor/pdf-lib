@@ -45,6 +45,7 @@ export default class GlyphInfo implements Occurrence {
     this.id = id;
 
     this.features = {};
+
     if (Array.isArray(features)) {
       for (let i = 0; i < features.length; i++) {
         const feature = features[i]!;
@@ -73,6 +74,7 @@ export default class GlyphInfo implements Occurrence {
     this.substituted = true;
 
     const GDEF = this._font.GDEF;
+
     if (GDEF?.glyphClassDef) {
       // TODO: clean this up
       const classID = OTProcessor.prototype.getClassID(id, GDEF.glyphClassDef);

@@ -6,6 +6,7 @@ import type ShapingPlan from '../ShapingPlan.js';
 const VARIATION_FEATURES: string[] = ['rvrn'];
 const COMMON_FEATURES: string[] = ['ccmp', 'locl', 'rlig', 'mark', 'mkmk'];
 const FRACTIONAL_FEATURES: string[] = ['frac', 'numr', 'dnom'];
+
 const HORIZONTAL_FEATURES: string[] = [
   'calt',
   'clig',
@@ -14,8 +15,10 @@ const HORIZONTAL_FEATURES: string[] = [
   'curs',
   'kern',
 ];
+
 // @ts-ignore - Reserved for future vertical feature support
 const _VERTICAL_FEATURES: string[] = ['vert'];
+
 const DIRECTIONAL_FEATURES: Record<string, string[]> = {
   ltr: ['ltra', 'ltrm'],
   rtl: ['rtla', 'rtlm'],
@@ -32,18 +35,14 @@ export default class DefaultShaper {
     // selected, so subclass overrides (Arabic joining features, Indic and
     // USE reordering, Hangul composition) run. Naming DefaultShaper here
     // silently skips them all; the TypeScript migration did exactly that.
-    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
     this.planPreprocessing(plan);
-    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
     this.planFeatures(plan);
-    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
     this.planPostprocessing(plan, features);
 
     // Assign the global features to all the glyphs
     plan.assignGlobalFeatures(glyphs);
 
     // Assign local features to glyphs
-    // biome-ignore lint/complexity/noThisInStatic: dispatch to the subclass is the point
     this.assignFeatures(plan, glyphs);
   }
 
@@ -78,6 +77,7 @@ export default class DefaultShaper {
     // Enable contextual fractions
     for (let i = 0; i < glyphs.length; i++) {
       const glyph = glyphs[i]!;
+
       if (glyph.codePoints[0] === 0x2044) {
         // fraction slash
         let start = i;

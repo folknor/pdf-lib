@@ -30,19 +30,25 @@ class BorderStyle {
 
   W(): PDFNumber | undefined {
     const W = this.dict.lookup(PDFName.of('W'));
+
     if (W instanceof PDFNumber) return W;
+
     return;
   }
 
   S(): PDFName | undefined {
     const S = this.dict.lookup(PDFName.of('S'));
+
     if (S instanceof PDFName) return S;
+
     return;
   }
 
   D(): PDFArray | undefined {
     const D = this.dict.lookup(PDFName.of('D'));
+
     if (D instanceof PDFArray) return D;
+
     return;
   }
 
@@ -61,12 +67,18 @@ class BorderStyle {
    */
   getStyle(): BorderStyleType {
     const S = this.S();
+
     if (!S) return BorderStyleType.Solid;
     const value = S.decodeText();
+
     if (value === 'D') return BorderStyleType.Dashed;
+
     if (value === 'B') return BorderStyleType.Beveled;
+
     if (value === 'I') return BorderStyleType.Inset;
+
     if (value === 'U') return BorderStyleType.Underline;
+
     return BorderStyleType.Solid;
   }
 
@@ -85,15 +97,19 @@ class BorderStyle {
    */
   getDashPattern(): number[] | undefined {
     const D = this.D();
+
     if (!D) return;
 
     const pattern: number[] = [];
+
     for (let i = 0; i < D.size(); i++) {
       const item = D.get(i);
+
       if (item instanceof PDFNumber) {
         pattern.push(item.asNumber());
       }
     }
+
     return pattern.length > 0 ? pattern : undefined;
   }
 

@@ -12,6 +12,7 @@ import { PropertyDescriptor } from './utils.js';
 export type FieldDefinition =
   | Base
   | ((res: Record<string, unknown>) => unknown);
+
 export type Fields = Record<string, FieldDefinition>;
 
 interface StructContext {
@@ -52,6 +53,7 @@ export class Struct extends Base<Record<string, unknown>> {
     if (this.process != null) {
       this.process.call(res, stream);
     }
+
     return res;
   }
 
@@ -72,6 +74,7 @@ export class Struct extends Base<Record<string, unknown>> {
     for (const key in fields) {
       let val: unknown;
       const type = fields[key]!;
+
       if (typeof type === 'function') {
         val = type.call(res, res);
       } else {
@@ -98,6 +101,7 @@ export class Struct extends Base<Record<string, unknown>> {
     if (val == null) {
       val = {};
     }
+
     const ctx = {
       parent,
       val,
@@ -109,8 +113,10 @@ export class Struct extends Base<Record<string, unknown>> {
     }
 
     let size = 0;
+
     for (const key in this.fields) {
       const type = this.fields[key]!;
+
       if (typeof type !== 'function' && type.size != null) {
         size += type.size(val[key], ctx);
       }
@@ -145,12 +151,14 @@ export class Struct extends Base<Record<string, unknown>> {
 
     for (const key in this.fields) {
       const type = this.fields[key]!;
+
       if (typeof type !== 'function' && type.encode != null) {
         type.encode(stream, val[key], ctx);
       }
     }
 
     let i = 0;
+
     while (i < ctx.pointers.length) {
       const ptr = ctx.pointers[i++]!;
       ptr.type.encode(stream, ptr.val, ptr.parent);

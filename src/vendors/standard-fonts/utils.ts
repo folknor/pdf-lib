@@ -20,6 +20,7 @@ const chars =
 
 // Use a lookup table to find the index.
 const lookup = new Uint8Array(256);
+
 for (let i = 0; i < chars.length; i++) {
   lookup[chars.charCodeAt(i)] = i;
 }
@@ -36,6 +37,7 @@ export const decodeFromBase64 = (base64: string): Uint8Array => {
 
   if (base64[base64.length - 1] === '=') {
     bufferLength--;
+
     if (base64[base64.length - 2] === '=') {
       bufferLength--;
     }
@@ -59,9 +61,11 @@ export const decodeFromBase64 = (base64: string): Uint8Array => {
 
 const arrayToString = (array: Uint8Array): string => {
   let str = '';
+
   for (let i = 0; i < array.length; i++) {
     str += String.fromCharCode(array[i]!);
   }
+
   return str;
 };
 
@@ -74,8 +78,10 @@ export const padStart = (
   padChar: string,
 ): string => {
   let padding = '';
+
   for (let idx = 0, len = length - value.length; idx < len; idx++) {
     padding += padChar;
   }
+
   return padding + value;
 };

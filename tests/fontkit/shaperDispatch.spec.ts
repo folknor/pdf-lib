@@ -13,6 +13,7 @@ const glyphs = (codePoints: number[]) =>
 const planned = (shaper: typeof DefaultShaper, script: string, dir: string) => {
   const plan = new ShapingPlan(null, script, dir);
   shaper.plan(plan, [], []);
+
   return plan;
 };
 
@@ -40,13 +41,17 @@ describe('shaper hook dispatch', () => {
       hasGlyphForCodePoint: () => true,
       glyphForCodePoint: (c: number) => ({ id: c, codePoints: [c] }),
     };
+
     const shape = (cps: number[]) => {
       const run = glyphs(cps);
       HangulShaper.plan(new ShapingPlan(font, 'hang', 'ltr'), run, []);
+
       return run.map((g) => g.codePoints);
     };
+
     // GA + JONGSEONG KIYEOK composes to GAG.
     expect(shape([0xac00, 0x11a8]).map((c) => c[0])).toEqual([0xac01]);
+
     // H, comma and d sit at multiples of 28 below U+AC00 and used to be
     // taken for LV syllables and "composed" into I, - and e.
     for (const c of [0x48, 0x2c, 0x64]) {
@@ -60,6 +65,7 @@ describe('shaper hook dispatch', () => {
     const font: any = fontkit.create(
       fs.readFileSync('./assets/fonts/noto_sans_sharada/NotoSansSharada-Regular.ttf'),
     );
+
     // SHARADA SIGN JIHVAMULIYA (repha) + SHARADA LETTER KA
     const run = font.layout(String.fromCodePoint(0x111c2, 0x11191));
     expect(run.codePoints).toEqual([[0x11191], [0x111c2]]);
@@ -81,8 +87,10 @@ describe('USE Tibetan clusters', () => {
   const font: any = fontkit.create(
     fs.readFileSync('./assets/fonts/noto_serif_tibetan/NotoSerifTibetan[wght].ttf'),
   );
+
   const shape = (...cps: number[]) =>
     font.layout(String.fromCodePoint(...cps)).codePoints;
+
   const dotted = (...cps: number[]) =>
     shape(...cps).some((c: number[]) => c.includes(0x25cc));
 
@@ -91,9 +99,11 @@ describe('USE Tibetan clusters', () => {
     // The font maps II: preserve it through the canonical stage and let
     // the font's own multiple substitution split its drawing, not its text.
     expect(shape(0x0f40, 0x0f73).flat()).toEqual([0x0f40, 0x0f73]);
+
     for (const v of [0x0f74, 0x0f7a, 0x0f7c, 0x0f80]) {
       expect(dotted(0x0f40, 0x0f71, v)).toBe(false);
     }
+
     expect(dotted(0x0f40, 0x0f75)).toBe(false);
     expect(dotted(0x0f40, 0x0f81)).toBe(false);
   });
@@ -117,6 +127,7 @@ describe('USE Tibetan clusters', () => {
       expect(a.text.flat().sort()).toEqual([0x0f40, v, 0x0f74].sort());
       expect(a.clusters).toEqual(a.glyphs.map(() => 0));
     }
+
     const run = font.layout(String.fromCodePoint(0x0f40, 0x0f7a, 0x0f74));
     expect(run.glyphs.map((g: any) => g.id)).toEqual([157, 1337]);
     expect(run.positions.map((p: any) => [p.xAdvance, p.xOffset, p.yOffset]))
@@ -131,6 +142,7 @@ describe('USE Tibetan clusters', () => {
       expect(run.positions.map((p: any) => p.attachedTo)).toEqual([null, 0, 1]);
       expect(run.positions[2].yOffset).not.toBe(run.positions[1].yOffset);
     }
+
     expect(dotted(0x0f40, 0x0f7a, 0x0f74, 0x0f7a, 0x0f74)).toBe(false);
   });
 
@@ -143,6 +155,7 @@ describe('USE Tibetan clusters', () => {
       expect(a.positions).toEqual(b.positions);
       expect(a.positions.at(-1).attachedTo).toBe(0);
     }
+
     const run = font.layout(String.fromCodePoint(0x0f40, 0x0f84, 0x0f74));
     expect(run.glyphs.map((g: any) => g.id)).toEqual([157, 1352]);
     expect([run.positions.at(-1).xOffset, run.positions.at(-1).yOffset])

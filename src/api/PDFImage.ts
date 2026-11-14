@@ -94,6 +94,7 @@ export default class PDFImage implements Embeddable {
    */
   scale(factor: number) {
     assertIs(factor, 'factor', ['number']);
+
     return { width: this.width * factor, height: this.height * factor };
   }
 
@@ -155,6 +156,7 @@ export default class PDFImage implements Embeddable {
       const { doc, ref } = this;
       this.embedTask = this.embedder.embedIntoContext(doc.context, ref);
     }
+
     await this.embedTask;
 
     // We clear `this.embedder` so that the indirectly referenced image data

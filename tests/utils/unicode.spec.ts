@@ -353,10 +353,12 @@ describe('utf16Decode', () => {
     // This exceeds the ~32k argument limit of String.fromCodePoint(...args)
     const charCount = 50000;
     const input = new Uint8Array(charCount * 2);
+
     for (let i = 0; i < charCount; i++) {
       input[i * 2] = 0;     // high byte
       input[i * 2 + 1] = 65; // 'A'
     }
+
     const expected = 'A'.repeat(charCount);
     const actual = utf16Decode(input, false);
     expect(actual).toEqual(expected);
@@ -460,9 +462,11 @@ describe('utf8Decode', () => {
     input[0] = 0xef;
     input[1] = 0xbb;
     input[2] = 0xbf;
+
     for (let i = 0; i < charCount; i++) {
       input[3 + i] = 65; // 'A'
     }
+
     const expected = 'A'.repeat(charCount);
     const actual = utf8Decode(input);
     expect(actual).toEqual(expected);

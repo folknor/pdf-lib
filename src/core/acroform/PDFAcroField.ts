@@ -14,6 +14,7 @@ import PDFString from '../objects/PDFString.js';
 //   `/HeBo Tf` -> ['HeBo', undefined]
 const tfRegex =
   /\/([^\0\t\n\f\r ]+)[\0\t\n\f\r ]*(\d*\.\d+|\d+)?[\0\t\n\f\r ]+Tf/;
+
 class PDFAcroField {
   readonly dict: PDFDict;
   readonly ref: PDFRef;
@@ -29,11 +30,13 @@ class PDFAcroField {
 
   Ff(): PDFNumber | undefined {
     const numberOrRef = this.getInheritableAttribute(PDFName.of('Ff'));
+
     return this.dict.context.lookupMaybe(numberOrRef, PDFNumber);
   }
 
   V(): PDFObject | undefined {
     const valueOrRef = this.getInheritableAttribute(PDFName.of('V'));
+
     return this.dict.context.lookup(valueOrRef);
   }
 
@@ -47,7 +50,9 @@ class PDFAcroField {
 
   DA(): PDFString | PDFHexString | undefined {
     const da = this.dict.lookup(PDFName.of('DA'));
+
     if (da instanceof PDFString || da instanceof PDFHexString) return da;
+
     return;
   }
 
@@ -61,8 +66,10 @@ class PDFAcroField {
     // return new PDFAcroField(parent);
 
     const parentRef = this.dict.get(PDFName.of('Parent'));
+
     if (parentRef instanceof PDFRef) {
       const parent = this.dict.lookup(PDFName.of('Parent'), PDFDict);
+
       return new PDFAcroField(parent, parentRef);
     }
 
@@ -76,7 +83,9 @@ class PDFAcroField {
 
   getFullyQualifiedName(): string | undefined {
     const parent = this.getParent();
+
     if (!parent) return this.getPartialName();
+
     return `${parent.getFullyQualifiedName()}.${this.getPartialName()}`;
   }
 
@@ -109,8 +118,10 @@ class PDFAcroField {
    */
   getDefaultAppearanceFontName(): string | undefined {
     const da = this.getDefaultAppearance();
+
     if (!da) return;
     const match = findLastMatch(da, tfRegex);
+
     return match.match?.[1];
   }
 
@@ -120,22 +131,28 @@ class PDFAcroField {
    */
   getDefaultAppearanceFontSize(): number | undefined {
     const da = this.getDefaultAppearance();
+
     if (!da) return;
     const match = findLastMatch(da, tfRegex);
     const sizeStr = match.match?.[2];
+
     return sizeStr ? parseFloat(sizeStr) : undefined;
   }
 
   setFontSize(fontSize: number) {
     const da = this.getDefaultAppearance();
+
     if (!da) {
       this.setDefaultAppearance(`/Helv ${fontSize} Tf 0 g`);
+
       return;
     }
 
     const daMatch = findLastMatch(da, tfRegex);
+
     if (!daMatch.match) {
       this.setDefaultAppearance(`/Helv ${fontSize} Tf 0 g`);
+
       return;
     }
 
@@ -157,6 +174,7 @@ class PDFAcroField {
 
   hasFlag(flag: number): boolean {
     const flags = this.getFlags();
+
     return (flags & flag) !== 0;
   }
 
@@ -180,12 +198,14 @@ class PDFAcroField {
     this.ascend((node) => {
       if (!attribute) attribute = node.dict.get(name);
     });
+
     return attribute;
   }
 
   ascend(visitor: (node: PDFAcroField) => any): void {
     visitor(this);
     const parent = this.getParent();
+
     if (parent) parent.ascend(visitor);
   }
 }

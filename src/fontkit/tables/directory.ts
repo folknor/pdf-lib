@@ -36,6 +36,7 @@ const Directory = new r.Struct({
 Directory.process = function (this: Record<string, unknown>) {
   const self = this as unknown as DirectoryData;
   const tables: Record<string, TableEntryData> = {};
+
   for (const table of self.tables as TableEntryData[]) {
     tables[table.tag] = table;
   }
@@ -62,9 +63,11 @@ const ENCODABLE_TAGS = new Set([
  */
 const checksum = (view: DataView, start: number, length: number): number => {
   let sum = 0;
+
   for (let i = 0; i < length; i += 4) {
     sum = (sum + view.getUint32(start + i)) >>> 0;
   }
+
   return sum;
 };
 
@@ -88,9 +91,12 @@ export const encodeSfnt = (tables: Record<string, unknown>): Uint8Array => {
     if (!ENCODABLE_TAGS.has(tag)) {
       throw new Error(`encodeSfnt cannot write table "${tag}"`);
     }
+
     const bytes = (Tables[tag] as r.Base<unknown>).toBuffer(tables[tag]);
+
     // checkSumAdjustment is computed over the file with this field zero.
     if (tag === 'head') bytes.fill(0, 8, 12);
+
     return bytes;
   });
 
@@ -99,9 +105,11 @@ export const encodeSfnt = (tables: Record<string, unknown>): Uint8Array => {
   const align = (n: number) => (n + 3) & ~3;
 
   let size = headerSize;
+
   const offsets = encoded.map((bytes) => {
     const offset = size;
     size = align(size + bytes.length);
+
     return offset;
   });
 
@@ -121,9 +129,11 @@ export const encodeSfnt = (tables: Record<string, unknown>): Uint8Array => {
     const bytes = encoded[i]!;
     const offset = offsets[i]!;
     out.set(bytes, offset);
+
     if (tag === 'head') headOffset = offset;
 
     const record = 12 + 16 * i;
+
     for (let c = 0; c < 4; c++) out[record + c] = tag.charCodeAt(c);
     view.setUint32(record + 4, checksum(view, offset, bytes.length));
     view.setUint32(record + 8, offset);

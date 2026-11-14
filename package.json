@@ -40,10 +40,11 @@
   },
   "description": "Create and modify PDF files with JavaScript",
   "devDependencies": {
-    "@biomejs/biome": "^2.6.7",
+    "@oxlint/plugins": "1.93.0",
     "@types/color": "^4.2.1",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
+    "oxlint": "1.93.0",
     "rimraf": "^6.1.4",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
@@ -81,9 +82,8 @@
   "private": false,
   "scripts": {
     "build": "tsc",
-    "check": "pnpm lint",
     "clean": "rimraf dist coverage",
-    "lint": "pnpm exec biome check --write --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
+    "lint": "oxlint",
     "release": "pnpm release:prep && npm publish",
     "release:prep": "pnpm clean && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "test": "vitest run",

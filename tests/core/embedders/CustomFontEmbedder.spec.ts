@@ -20,9 +20,11 @@ import {
 import { compressWidths } from '../../../src/core/embedders/CustomFontEmbedder';
 
 const ubuntuFont = fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf');
+
 const notoSansThai = fs.readFileSync(
   './assets/fonts/noto_sans_thai/NotoSansThai[wdth,wght].ttf',
 );
+
 const sourceHanFont = fs.readFileSync(
   './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
 );
@@ -38,21 +40,25 @@ describe('CustomFontEmbedder', () => {
       fontkit,
       new Uint8Array(ubuntuFont),
     );
+
     expect(embedder.fontName).toBe('Ubuntu');
   });
 
   it('can set a custom font name', async () => {
     const customName = 'abc123';
+
     const embedder = await CustomFontEmbedder.for(
       fontkit,
       new Uint8Array(ubuntuFont),
       customName,
     );
+
     expect(embedder.customName).toBe(customName);
   });
 
   it('can embed font dictionaries into PDFContexts without a predefined ref', async () => {
     const context = PDFContext.create();
+
     const embedder = await CustomFontEmbedder.for(
       fontkit,
       new Uint8Array(ubuntuFont),
@@ -67,6 +73,7 @@ describe('CustomFontEmbedder', () => {
   it('can embed font dictionaries into PDFContexts with a predefined ref', async () => {
     const context = PDFContext.create();
     const predefinedRef = PDFRef.of(9999);
+
     const embedder = await CustomFontEmbedder.for(
       fontkit,
       new Uint8Array(ubuntuFont),
@@ -83,9 +90,11 @@ describe('CustomFontEmbedder', () => {
     'writes the decoded TrueType program length (subset: %s)',
     async (subset) => {
       const context = PDFContext.create();
+
       const embedder = subset
         ? await CustomFontSubsetEmbedder.for(fontkit, ubuntuFont)
         : await CustomFontEmbedder.for(fontkit, ubuntuFont);
+
       embedder.encodeText('A');
       const ref = await embedder.embedIntoContext(context);
       const { key, bytes, stream } = fontFileOf(context, ref);
@@ -94,6 +103,7 @@ describe('CustomFontEmbedder', () => {
       expect(stream.dict.lookup(PDFName.of('Length1'), PDFNumber).asNumber()).toBe(
         bytes.length,
       );
+
       if (!subset) expect(bytes.length).toBe(ubuntuFont.length);
       else expect(bytes.length).toBeLessThan(ubuntuFont.length);
     },
@@ -101,8 +111,10 @@ describe('CustomFontEmbedder', () => {
 
   it('can encode text strings into PDFHexString objects', async () => {
     const text = 'Stuff and thingz!';
+
     const hexCodes =
       '00360057005801AA000300440051004700030057004B004C0051004A005D0004';
+
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
 
     expect(embedder.encodeText(text).toHexString()).toBeInstanceOf(
@@ -148,10 +160,12 @@ describe('CustomFontEmbedder', () => {
     const text = 'office ffl';
     const encoded = embedder.encodeText(text);
     const ids = encoded.codes.map((h) => parseInt(h, 16));
+
     const expected = ids.reduce(
       (sum, id) => sum + Math.round(embedder.font.getGlyph(id).advanceWidth),
       0,
     );
+
     expect(ids.length).toBeLessThan(text.length);
     // No kerning in this string, so the advances are the /W widths.
     expect(encoded.isUnpositioned()).toBe(true);
@@ -204,6 +218,7 @@ describe('CustomFontEmbedder', () => {
   it('does not create orphan objects when re-embedded', async () => {
     const context = PDFContext.create();
     const predefinedRef = PDFRef.of(9999);
+
     const embedder = await CustomFontEmbedder.for(
       fontkit,
       new Uint8Array(ubuntuFont),
@@ -231,6 +246,7 @@ describe('CustomFontEmbedder', () => {
     const widths = widthsOf(context, ref);
 
     expect(widths.size).toBe(font.numGlyphs);
+
     for (let id = 0; id < font.numGlyphs; id++) {
       expect(widths.get(id)).toBeCloseTo(
         font.getGlyph(id).advanceWidth * (1000 / font.unitsPerEm),
@@ -357,12 +373,15 @@ describe('CustomFontEmbedder', () => {
 
   it('passes the PostScript name through to fontkit.create', async () => {
     const calls: unknown[][] = [];
+
     const recordingFontkit = {
       create: (...args: [Uint8Array, string?]) => {
         calls.push(args);
+
         return fontkit.create(args[0]);
       },
     };
+
     await CustomFontEmbedder.for(
       recordingFontkit,
       ubuntuFont,
@@ -432,6 +451,7 @@ describe('CustomFontEmbedder', () => {
         .lookup(ref, PDFDict)
         .lookup(PDFName.of('DescendantFonts'), PDFArray)
         .lookup(0, PDFDict);
+
       expect(cidFont.get(PDFName.of('Subtype'))).toBe(
         PDFName.of('CIDFontType0'),
       );
@@ -442,9 +462,11 @@ describe('CustomFontEmbedder', () => {
       );
 
       const source = embedder.font as any;
+
       const embedded = CFFFont.decode(
         new DecodeStream(decodePDFRawStream(stream).decode()),
       );
+
       const numGlyphs = source.numGlyphs;
       expect(embedded.isCIDFont).toBe(true);
       expect(embedded.topDict['CharStrings'].length).toBe(numGlyphs);
@@ -465,6 +487,7 @@ describe('CustomFontEmbedder', () => {
     const otf = fs.readFileSync(
       './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
     );
+
     const embedder = await CustomFontEmbedder.for(fontkit, otf);
     const source = embedder.font as any;
     const context = PDFContext.create();
@@ -514,9 +537,11 @@ describe('CustomFontEmbedder', () => {
       // recomputed to match the encoded glyphs exactly.
       let maxPoints = 0;
       let maxContours = 0;
+
       for (let id = 0; id < embedded.numGlyphs; id++) {
         const decoded = embedded.getGlyph(id)._decode();
         expect(decoded.numberOfContours).toBeGreaterThanOrEqual(0);
+
         if (decoded.numberOfContours === 0) continue;
         maxPoints = Math.max(maxPoints, decoded.points.length);
         maxContours = Math.max(maxContours, decoded.numberOfContours);
@@ -524,10 +549,12 @@ describe('CustomFontEmbedder', () => {
         // rounding scaled composite components to the integer grid.
         const actual = embedded.getGlyph(id).path.bbox;
         const expected = source.getGlyph(id).path.bbox;
+
         for (const key of ['minX', 'minY', 'maxX', 'maxY'] as const) {
           expect(Math.abs(actual[key] - expected[key])).toBeLessThanOrEqual(1);
         }
       }
+
       expect(embedded.maxp.maxPoints).toBe(maxPoints);
       expect(embedded.maxp.maxContours).toBe(maxContours);
       expect(embedded.maxp.maxComponentElements).toBe(0);
@@ -559,9 +586,11 @@ describe('CustomFontEmbedder', () => {
     for (const subset of [false, true]) {
       it(`embeds a converted TrueType font (${subset ? 'subset' : 'whole'})`, async () => {
         const context = PDFContext.create();
+
         const embedder = subset
           ? await CustomFontSubsetEmbedder.for(fontkit, otf)
           : await CustomFontEmbedder.for(fontkit, otf);
+
         embedder.encodeText('$');
         const ref = await embedder.embedIntoContext(context);
 
@@ -570,10 +599,12 @@ describe('CustomFontEmbedder', () => {
         expect(stream.dict.lookup(PDFName.of('Length1'), PDFNumber).asNumber()).toBe(
           bytes.length,
         );
+
         const cidFont = context
           .lookup(ref, PDFDict)
           .lookup(PDFName.of('DescendantFonts'), PDFArray)
           .lookup(0, PDFDict);
+
         expect(cidFont.get(PDFName.of('Subtype'))).toBe(
           PDFName.of('CIDFontType2'),
         );
@@ -590,6 +621,7 @@ describe('CustomFontEmbedder', () => {
         );
         const a = actual.path.bbox;
         const e = expected.path.bbox;
+
         for (const k of ['minX', 'minY', 'maxX', 'maxY'] as const) {
           expect(Math.abs(a[k] - e[k])).toBeLessThanOrEqual(1);
         }
@@ -621,6 +653,7 @@ describe('deriveFontFlags', () => {
       post: { isFixedPitch: 1 },
       head: { macStyle: { italic: true } },
     } as any);
+
     expect(flags).toBe((1 << 0) | (1 << 2) | (1 << 6));
   });
 });
@@ -661,6 +694,7 @@ describe('compressWidths', () => {
 
   it('compresses a font with many same-width glyphs', async () => {
     const entries: [number, number][] = [];
+
     for (let id = 0; id < 20000; id++) entries.push([id, 1000]);
     expect(compressWidths(entries)).toEqual([0, 19999, 1000]);
   });
@@ -671,13 +705,16 @@ const widthsOf = (context: PDFContext, fontRef: PDFRef) => {
     .lookup(fontRef, PDFDict)
     .lookup(PDFName.of('DescendantFonts'), PDFArray)
     .lookup(0, PDFDict);
+
   const W = cidFontDict.lookup(PDFName.of('W'), PDFArray);
 
   const widths = new Map<number, number>();
   let idx = 0;
+
   while (idx < W.size()) {
     const first = W.lookup(idx, PDFNumber).asNumber();
     const next = W.lookup(idx + 1);
+
     if (next instanceof PDFArray) {
       next.asArray().forEach((width, offset) => {
         widths.set(first + offset, (width as PDFNumber).asNumber());
@@ -686,10 +723,12 @@ const widthsOf = (context: PDFContext, fontRef: PDFRef) => {
     } else {
       const last = (next as PDFNumber).asNumber();
       const width = W.lookup(idx + 2, PDFNumber).asNumber();
+
       for (let id = first; id <= last; id++) widths.set(id, width);
       idx += 3;
     }
   }
+
   return widths;
 };
 
@@ -709,10 +748,13 @@ const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
     .lookup(PDFName.of('DescendantFonts'), PDFArray)
     .lookup(0, PDFDict)
     .lookup(PDFName.of('FontDescriptor'), PDFDict);
+
   const key = descriptor.has(PDFName.of('FontFile2'))
     ? 'FontFile2'
     : 'FontFile3';
+
   const stream = descriptor.lookup(PDFName.of(key), PDFRawStream);
+
   return { key, bytes: decodePDFRawStream(stream).decode(), stream };
 };
 
@@ -722,16 +764,21 @@ const fontFileOf = (context: PDFContext, fontRef: PDFRef) => {
 // the whole-file sum 0xB1B0AFBA.
 const expectWellFormedSfnt = (bytes: Uint8Array) => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
   const sum = (start: number, length: number) => {
     let total = 0;
+
     for (let i = 0; i < length; i += 4) {
       let word = 0;
+
       for (let b = 0; b < 4; b++) {
         const at = start + i + b;
         word = word * 256 + (i + b < length ? bytes[at]! : 0);
       }
+
       total = (total + word) % 2 ** 32;
     }
+
     return total;
   };
 
@@ -743,6 +790,7 @@ const expectWellFormedSfnt = (bytes: Uint8Array) => {
   expect(view.getUint16(10)).toBe(numTables * 16 - searchRange);
 
   const tags: string[] = [];
+
   for (let i = 0; i < numTables; i++) {
     const record = 12 + 16 * i;
     const tag = String.fromCharCode(...bytes.subarray(record, record + 4));
@@ -753,11 +801,14 @@ const expectWellFormedSfnt = (bytes: Uint8Array) => {
     expect(offset % 4).toBe(0);
     expect(offset + length).toBeLessThanOrEqual(bytes.length);
     let expected = sum(offset, length);
+
     if (tag === 'head') {
       expected = (expected - view.getUint32(offset + 8) + 2 ** 32) % 2 ** 32;
     }
+
     expect(checkSum).toBe(expected);
   }
+
   expect(tags).toEqual([...tags].sort());
   expect(tags).toContain('head');
   expect(bytes.length % 4).toBe(0);
@@ -778,5 +829,6 @@ const toUnicodeOf =(context: PDFContext, fontRef: PDFRef) => {
   const stream = context
     .lookup(fontRef, PDFDict)
     .lookup(PDFName.of('ToUnicode'), PDFRawStream);
+
   return new TextDecoder().decode(decodePDFRawStream(stream).decode());
 };

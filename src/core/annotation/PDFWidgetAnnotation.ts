@@ -19,30 +19,39 @@ class PDFWidgetAnnotation extends PDFAnnotation {
       Rect: [0, 0, 0, 0],
       Parent: parent,
     });
+
     return new PDFWidgetAnnotation(dict);
   };
 
   MK(): PDFDict | undefined {
     const MK = this.dict.lookup(PDFName.of('MK'));
+
     if (MK instanceof PDFDict) return MK;
+
     return;
   }
 
   BS(): PDFDict | undefined {
     const BS = this.dict.lookup(PDFName.of('BS'));
+
     if (BS instanceof PDFDict) return BS;
+
     return;
   }
 
   DA(): PDFString | PDFHexString | undefined {
     const da = this.dict.lookup(PDFName.of('DA'));
+
     if (da instanceof PDFString || da instanceof PDFHexString) return da;
+
     return;
   }
 
   override P(): PDFRef | undefined {
     const P = this.dict.get(PDFName.of('P'));
+
     if (P instanceof PDFRef) return P;
+
     return;
   }
 
@@ -66,31 +75,39 @@ class PDFWidgetAnnotation extends PDFAnnotation {
 
   getAppearanceCharacteristics(): AppearanceCharacteristics | undefined {
     const MK = this.MK();
+
     if (MK) return AppearanceCharacteristics.fromDict(MK);
+
     return;
   }
 
   getOrCreateAppearanceCharacteristics(): AppearanceCharacteristics {
     const MK = this.MK();
+
     if (MK) return AppearanceCharacteristics.fromDict(MK);
 
     const ac = AppearanceCharacteristics.fromDict(this.dict.context.obj({}));
     this.dict.set(PDFName.of('MK'), ac.dict);
+
     return ac;
   }
 
   getBorderStyle(): BorderStyle | undefined {
     const BS = this.BS();
+
     if (BS) return BorderStyle.fromDict(BS);
+
     return;
   }
 
   getOrCreateBorderStyle(): BorderStyle {
     const BS = this.BS();
+
     if (BS) return BorderStyle.fromDict(BS);
 
     const bs = BorderStyle.fromDict(this.dict.context.obj({}));
     this.dict.set(PDFName.of('BS'), bs.dict);
+
     return bs;
   }
 
@@ -99,8 +116,10 @@ class PDFWidgetAnnotation extends PDFAnnotation {
 
     if (normal instanceof PDFDict) {
       const keys = normal.keys();
+
       for (let idx = 0, len = keys.length; idx < len; idx++) {
         const key = keys[idx];
+
         if (key !== PDFName.of('Off')) return key;
       }
     }

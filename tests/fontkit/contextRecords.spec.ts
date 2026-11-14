@@ -4,6 +4,7 @@
 import GSUBProcessor from '../../src/fontkit/opentype/GSUBProcessor.js';
 
 const cov = (...glyphs: number[]) => ({ version: 1, glyphs });
+
 const glyph = (id: number, isMark = false) => ({
   id,
   features: { test: true },
@@ -20,11 +21,13 @@ const processor = (lookups: any[]) => {
   p.table = { lookupList: { get: (i: number) => lookups[i] } };
   p.font = { GDEF: { markGlyphSetsDef: { coverage: [cov(10)] } } };
   p.ligatureID = 1;
+
   return p;
 };
 
 const run = (lookups: any[], glyphs: any[]) => {
   processor(lookups).applyLookups([{ features: ['test'], index: 0, lookup: lookups[0] }], glyphs);
+
   return glyphs.map((g) => g.id);
 };
 
@@ -33,6 +36,7 @@ const singles = (from: number[], to: number[], flags: any = {}) => ({
   flags,
   subTables: [{ version: 2, coverage: cov(...from), substitute: { get: (i: number) => to[i] } }],
 });
+
 const context = (flags: any, coverages: number[][], records: number[][], markFilteringSet?: number) => ({
   lookupType: 5,
   flags,
@@ -66,6 +70,7 @@ describe('contextual lookup records', () => {
       flags: { flags: { ignoreMarks: true } },
       subTables: [{ coverage: cov(1), ligatureSets: { get: () => [{ glyph: 50, components: [2] }] } }],
     };
+
     const outer = context({ flags: { ignoreMarks: true } }, [[1], [2], [3]], [[0, 1], [1, 2]]);
     const glyphs = [glyph(1), glyph(10, true), glyph(2), glyph(3)];
     expect(run([outer, ligature, singles([3], [99])], glyphs)).toEqual([50, 10, 99]);

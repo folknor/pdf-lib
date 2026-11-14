@@ -3,10 +3,12 @@ import { PDFArray, PDFDocument, PDFHexString, PDFString } from '../../src/index'
 
 const ids = (doc: PDFDocument) => {
   const id = doc.context.lookup(doc.context.trailerInfo.ID, PDFArray);
+
   return [0, 1].map((idx) =>
     Array.from(id.lookup(idx, PDFString, PDFHexString).asBytes()),
   );
 };
+
 const readIDs = async (bytes: Uint8Array, password?: string) =>
   ids(await PDFDocument.load(bytes, { updateMetadata: false, password }));
 
@@ -29,9 +31,11 @@ for (const useObjectStreams of [false, true]) {
         PDFString.of('original first'), PDFString.of('original second'),
       ]);
       const original = await source.save({ useObjectStreams });
+
       const doc = await PDFDocument.load(original, {
         forIncrementalUpdate: true, updateMetadata: false,
       });
+
       const before = ids(doc);
       const trailerID = doc.context.trailerInfo.ID;
       const full = await readIDs(await doc.save({ rewrite: true, useObjectStreams }));
@@ -50,9 +54,11 @@ for (const useObjectStreams of [false, true]) {
     it('carries each committed ID into the next revision', async () => {
       const source = await PDFDocument.create({ updateMetadata: false });
       source.addPage();
+
       const doc = await PDFDocument.load(await source.save(), {
         forIncrementalUpdate: true, updateMetadata: false,
       });
+
       const original = ids(doc);
       const first = await readIDs(await doc.commit({ useObjectStreams }));
       expect(ids(doc)).toEqual(first);
@@ -69,9 +75,11 @@ for (const useObjectStreams of [false, true]) {
       source.addPage();
       source.encrypt({ userPassword: 'user', algorithm: 'RC4-128' });
       const original = await source.save({ useObjectStreams });
+
       const doc = await PDFDocument.load(original, {
         password: 'user', forIncrementalUpdate: true, updateMetadata: false,
       });
+
       const before = await readIDs(original, 'user');
       doc.context.trailerInfo.ID = doc.context.obj([
         PDFString.of('changed'), PDFString.of('changed'),

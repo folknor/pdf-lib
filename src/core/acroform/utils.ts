@@ -24,9 +24,11 @@ export const createPDFAcroFields = (
   if (!kidDicts) return [];
 
   const kids: [PDFAcroField, PDFRef][] = [];
+
   for (let idx = 0, len = kidDicts.size(); idx < len; idx++) {
     const ref = kidDicts.get(idx);
     const dict = kidDicts.lookup(idx);
+
     // if (dict instanceof PDFDict) kids.push(PDFAcroField.fromDict(dict));
     if (ref instanceof PDFRef && dict instanceof PDFDict) {
       kids.push([createPDFAcroField(dict, ref), ref]);
@@ -41,7 +43,9 @@ export const createPDFAcroField = (
   ref: PDFRef,
 ): PDFAcroField => {
   const isNonTerminal = isNonTerminalAcroField(dict);
+
   if (isNonTerminal) return PDFAcroNonTerminal.fromDict(dict, ref);
+
   return createPDFAcroTerminal(dict, ref);
 };
 
@@ -68,6 +72,7 @@ const isNonTerminalAcroField = (dict: PDFDict): boolean => {
     for (let idx = 0, len = kids.size(); idx < len; idx++) {
       const kid = kids.lookup(idx);
       const kidIsField = kid instanceof PDFDict && kid.has(PDFName.of('T'));
+
       if (kidIsField) return true;
     }
   }
@@ -82,8 +87,11 @@ const createPDFAcroTerminal = (dict: PDFDict, ref: PDFRef): PDFAcroTerminal => {
   const type = dict.context.lookupMaybe(ftNameOrRef, PDFName);
 
   if (type === PDFName.of('Btn')) return createPDFAcroButton(dict, ref);
+
   if (type === PDFName.of('Ch')) return createPDFAcroChoice(dict, ref);
+
   if (type === PDFName.of('Tx')) return PDFAcroText.fromDict(dict, ref);
+
   if (type === PDFName.of('Sig')) return PDFAcroSignature.fromDict(dict, ref);
 
   // We should never reach this line. But there are a lot of weird PDFs out
@@ -126,11 +134,13 @@ const getInheritableAttribute = (startNode: PDFDict, name: PDFName) => {
   ascend(startNode, (node) => {
     if (!attribute) attribute = node.get(name);
   });
+
   return attribute;
 };
 
 const ascend = (startNode: PDFDict, visitor: (node: PDFDict) => any) => {
   visitor(startNode);
   const Parent = startNode.lookupMaybe(PDFName.of('Parent'), PDFDict);
+
   if (Parent) ascend(Parent, visitor);
 };

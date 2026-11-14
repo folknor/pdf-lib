@@ -21,10 +21,12 @@ const readData = (file: string) =>
 describe('PDFObjectStreamParser', () => {
   it('parses simple object streams', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       N: 3,
       First: 18,
     });
+
     const contents = readData('object-stream1');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -45,10 +47,12 @@ describe('PDFObjectStreamParser', () => {
     PDFNull
   ]`, async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       N: 9,
       First: 44,
     });
+
     const contents = readData('object-stream2');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -68,10 +72,12 @@ describe('PDFObjectStreamParser', () => {
 
   it('handles object streams with newlines separating the integer pairs', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       N: 182,
       First: 1786,
     });
+
     const contents = readData('object-stream3');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -82,11 +88,13 @@ describe('PDFObjectStreamParser', () => {
 
   it('handles encoded object streams with PDFName filters', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       Filter: 'FlateDecode',
       N: 115,
       First: 924,
     });
+
     const contents = readData('object-stream4');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -97,11 +105,13 @@ describe('PDFObjectStreamParser', () => {
 
   it('handles encoded object streams with PDFArray filters', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       Filter: ['FlateDecode'],
       N: 115,
       First: 924,
     });
+
     const contents = readData('object-stream4');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -112,11 +122,13 @@ describe('PDFObjectStreamParser', () => {
 
   it('throws an error for invalid Filters', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       Filter: 42,
       N: 115,
       First: 924,
     });
+
     const contents = readData('object-stream4');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -127,10 +139,12 @@ describe('PDFObjectStreamParser', () => {
 
   it('throws an error for invalid object streams', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       N: 1,
       First: 5,
     });
+
     const contents = readData('object-stream-invalid');
     const stream = PDFRawStream.of(dict, contents);
 
@@ -141,10 +155,12 @@ describe('PDFObjectStreamParser', () => {
 
   it('prevents reparsing', async () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       N: 3,
       First: 18,
     });
+
     const contents = readData('object-stream1');
     const stream = PDFRawStream.of(dict, contents);
 

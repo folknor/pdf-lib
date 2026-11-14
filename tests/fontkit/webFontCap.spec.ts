@@ -5,17 +5,20 @@ import fontkit from 'src/fontkit.js';
 
 const read = (path: string) => new Uint8Array(fs.readFileSync(path));
 const woff = read('./assets/fonts/fantasque/Webfonts/FantasqueSansMono-Regular.woff');
+
 const woff2 = read(
   './assets/fonts/fantasque/Webfonts/FantasqueSansMono-Regular.woff2',
 );
 
 const u16 = (v: number) => [(v >>> 8) & 0xff, v & 0xff];
+
 const u32 = (v: number) => [
   (v >>> 24) & 0xff,
   (v >>> 16) & 0xff,
   (v >>> 8) & 0xff,
   v & 0xff,
 ];
+
 const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
 
 // A WOFF whose two tables each declare a uint32 length of 2^32-1. The old
@@ -28,6 +31,7 @@ const hugeWoff = (): Uint8Array => {
     ...u32(0xffffffff),
     ...u32(0),
   ];
+
   return new Uint8Array([
     ...ascii('wOFF'),
     ...u32(0x00010000),
@@ -110,6 +114,7 @@ describe('WOFF/WOFF2 decode cap', () => {
 
   it('defaults to DecodeStream.maxDecodedSize', () => {
     const saved = DecodeStream.maxDecodedSize;
+
     try {
       DecodeStream.maxDecodedSize = 16;
       expect(() => fontkit.create(woff)).toThrow(DecodedStreamTooLargeError);
@@ -122,8 +127,10 @@ describe('WOFF/WOFF2 decode cap', () => {
     const bytes = await (await PDFDocument.create()).save({
       useObjectStreams: false,
     });
+
     const capped = await PDFDocument.load(bytes, { maxDecodedStreamSize: 16 });
     capped.registerFontkit(fontkit);
+
     for (const font of [woff, woff2]) {
       await expect(capped.embedFont(font)).rejects.toThrow(
         'exceeds the maximum of 16 bytes',
@@ -132,6 +139,7 @@ describe('WOFF/WOFF2 decode cap', () => {
         'exceeds the maximum of 16 bytes',
       );
     }
+
     const uncapped = await PDFDocument.load(bytes);
     uncapped.registerFontkit(fontkit);
     await expect(uncapped.embedFont(woff)).resolves.toBeDefined();

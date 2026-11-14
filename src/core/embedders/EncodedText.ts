@@ -47,6 +47,7 @@ export default class EncodedText {
     actualText: ActualTextSpan[] = [],
   ) {
     const count = codes.length;
+
     if (
       advances.length !== count ||
       widths.length !== count ||
@@ -57,8 +58,10 @@ export default class EncodedText {
     ) {
       throw new Error('EncodedText: per-glyph arrays differ in length');
     }
+
     attachmentRoots(attachedTo);
     let previousEnd = 0;
+
     for (const span of actualText) {
       if (
         !Number.isInteger(span.start) ||
@@ -71,8 +74,10 @@ export default class EncodedText {
           'EncodedText: actual text spans overlap or are out of range',
         );
       }
+
       previousEnd = span.end;
     }
+
     for (const kind of spacing) {
       if (
         !Number.isInteger(kind.characters) ||
@@ -85,7 +90,9 @@ export default class EncodedText {
         );
       }
     }
+
     let advance = 0;
+
     for (let idx = 0; idx < count; idx++) {
       for (const value of [
         advances[idx]!,
@@ -97,8 +104,10 @@ export default class EncodedText {
           throw new Error(`EncodedText: glyph ${idx} has a non-finite metric`);
         }
       }
+
       advance += advances[idx]!;
     }
+
     this.codes = codes;
     this.advances = advances;
     this.widths = widths;
@@ -132,25 +141,31 @@ export default class EncodedText {
     fontSize: number,
   ): EncodedText {
     if (characterSpacing === 0 && wordSpacing === 0) return this;
+
     const extras = spacingExtras(
       this.spacing,
       characterSpacing,
       wordSpacing,
       fontSize,
     );
+
     const count = this.codes.length;
     // Pen shift before each glyph, from the spacing alone.
     const shifts = new Array<number>(count);
     let shift = 0;
+
     for (let idx = 0; idx < count; idx++) {
       shifts[idx] = shift;
       shift += extras[idx]!;
     }
+
     const roots = attachmentRoots(this.attachedTo);
     const advances = this.advances.map((value, idx) => value + extras[idx]!);
+
     const xOffsets = this.xOffsets.map(
       (value, idx) => value + shifts[roots[idx]!]! - shifts[idx]!,
     );
+
     return new EncodedText(
       [...this.codes],
       advances,
@@ -184,6 +199,7 @@ export default class EncodedText {
         return false;
       }
     }
+
     return true;
   }
 }
@@ -202,11 +218,13 @@ export const BASE_SPACING: GlyphSpacing = Object.freeze({
   characters: 1,
   spaces: 0,
 });
+
 /** One U+0020. */
 export const SPACE_SPACING: GlyphSpacing = Object.freeze({
   characters: 1,
   spaces: 1,
 });
+
 /** Nothing (a mark, a hidden default-ignorable, inside a cluster). */
 export const NO_SPACING: GlyphSpacing = Object.freeze({
   characters: 0,
@@ -243,10 +261,13 @@ export const spacingExtras = (
   ) {
     throw new Error('Text spacing and font size must be finite');
   }
+
   if (fontSize === 0 && (characterSpacing !== 0 || wordSpacing !== 0)) {
     throw new Error('Text spacing cannot be applied at font size 0');
   }
+
   const perEm = 1000 / (fontSize || 1);
+
   return spacing.map(
     (kind) =>
       (kind.characters * characterSpacing + kind.spaces * wordSpacing) * perEm,
@@ -258,26 +279,35 @@ export const spacingExtras = (
 const attachmentRoots = (attachedTo: readonly (number | null)[]): number[] => {
   const count = attachedTo.length;
   const roots = new Array<number>(count).fill(-1);
+
   for (let idx = 0; idx < count; idx++) {
     const chain: number[] = [];
     let at = idx;
+
     while (roots[at] === -1) {
       if (chain.includes(at)) {
         throw new Error(`EncodedText: glyph ${idx} is attached in a cycle`);
       }
+
       chain.push(at);
       const next = attachedTo[at];
+
       if (next === null || next === undefined) {
         roots[at] = at;
         break;
       }
+
       if (!Number.isInteger(next) || next < 0 || next >= count) {
         throw new Error(`EncodedText: glyph ${at} is attached out of range`);
       }
+
       at = next;
     }
+
     const root = roots[at]!;
+
     for (const member of chain) roots[member] = root;
   }
+
   return roots;
 };

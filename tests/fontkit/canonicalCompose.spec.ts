@@ -7,6 +7,7 @@ const composeCanonical = (codePoints: number[], hasGlyph: (cp: number) => boolea
 
 const font = (...mapped: number[]) => {
   const set = new Set(mapped);
+
   return (cp: number) => set.has(cp);
 };
 
@@ -64,16 +65,19 @@ describe('canonical composition', () => {
 
   it('ranks Tibetan U after AA and before other vowels without crossing locks', () => {
     const all = () => true;
+
     for (const v of [0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80]) {
       for (const marks of [[v, 0x0f74], [0x0f74, v]]) {
         expect(composeCanonical([0x0f40, ...marks, 0x0f71, 0x0f39], all))
           .toEqual([0x0f40, 0x0f39, 0x0f71, 0x0f74, v]);
       }
+
       expect(composeCanonical([0x0f40, v, 0x034f, 0x0f74], all))
         .toEqual([0x0f40, v, 0x034f, 0x0f74]);
       expect(composeCanonical([0x0f40, v, 0x0f74, 0xfe00], all))
         .toEqual([0x0f40, v, 0x0f74, 0xfe00]);
     }
+
     expect(composeCanonical([0x0f40, 0x0f7c, 0x0f74, 0x0f7a, 0x0f74], all))
       .toEqual([0x0f40, 0x0f74, 0x0f74, 0x0f7c, 0x0f7a]);
     expect(composeCanonical([0x0f40, 0x0f74, 0x0f84], all))
@@ -139,6 +143,7 @@ describe('canonical composition', () => {
   it('composes Hebrew presentation forms only when asked', () => {
     const forms = (cps: number[], hasGlyph: (cp: number) => boolean) =>
       compose(cps, hasGlyph, undefined, { hebrewPresentationForms: true }).codePoints;
+
     const bet = font(0x05d1, 0x05bc, 0x05b7, 0xfb31);
     // BET + patah + dagesh: dagesh commutes past patah onto the bet.
     expect(forms([0x05d1, 0x05b7, 0x05bc], bet)).toEqual([0xfb31, 0x05b7]);
@@ -160,8 +165,10 @@ describe('canonical composition', () => {
     const layout = (path: string, cps: number[]) => {
       const f: any = fontkit.create(fs.readFileSync(path));
       const run = f.layout(String.fromCodePoint(...cps));
+
       return run.glyphs.map((g: any, i: number) => [g.id, run.positions[i].xOffset, run.positions[i].yOffset]);
     };
+
     // Noto Naskh Arabic stacks marks in logical order: shadda then fatha.
     const naskh = './assets/fonts/noto_naskh_arabic/NotoNaskhArabic[wght].ttf';
     expect(layout(naskh, [0x0628, 0x064e, 0x0651])).toEqual(layout(naskh, [0x0628, 0x0651, 0x064e]));
@@ -174,6 +181,7 @@ describe('canonical composition', () => {
   it('uses Hebrew presentation forms only for fonts without mark positioning', () => {
     const lacks = (path: string) =>
       (fontkit.create(fs.readFileSync(path)) as any)._layoutEngine.lacksMarkPositioning();
+
     expect(lacks('./assets/fonts/noto_serif_hebrew/NotoSerifHebrew[wdth,wght].ttf')).toBe(false);
     // No GPOS at all.
     expect(lacks('./assets/fonts/press_start_2p/PressStart2P-Regular.ttf')).toBe(true);
@@ -243,6 +251,7 @@ describe('canonical composition', () => {
       font(0x0c15, 0x0c46, 0x0c56, 0x0c4d), [0, 1, 2])).toEqual({
       codePoints: [0x0c15, 0x0c46, 0x0c56, 0x0c4d], clusters: [0, 1, 1, 2],
     });
+
     for (const [cp, parts] of [
       [0x0b4b, [0x0b47, 0x0b3e]],
       [0x0f77, [0x0fb2, 0x0f71, 0x0f80]],
@@ -252,10 +261,12 @@ describe('canonical composition', () => {
       expect(composeCanonical([cp], font(...parts))).toEqual(parts);
       expect(composeCanonical([cp], font(cp, ...parts))).toEqual([cp]);
       expect(composeCanonical([cp], font(...parts.slice(1)))).toEqual([cp]);
+
       for (const vs of [0xfe00, 0xe0100]) {
         expect(composeCanonical([cp, vs], font(...parts))).toEqual([cp, vs]);
       }
     }
+
     // Self-containing Khmer splits cannot rescue an unmapped vowel.
     expect(composeCanonical([0x17be], font(0x17c1))).toEqual([0x17be]);
     expect(composeCanonical([0x17be], font(0x17c1, 0x17be))).toEqual([0x17be]);

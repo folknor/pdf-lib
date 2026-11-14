@@ -23,6 +23,7 @@ class PDFNull extends PDFObject {
     buffer[offset++] = CharCodes.u;
     buffer[offset++] = CharCodes.l;
     buffer[offset++] = CharCodes.l;
+
     return 4;
   }
 }

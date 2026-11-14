@@ -8,6 +8,7 @@ import DefaultShaper from './DefaultShaper.js';
 import base64DeflatedTrie from './trie.js';
 
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
+
 const FEATURES: string[] = [
   'isol',
   'fina',
@@ -123,6 +124,7 @@ const STATE_TABLE: [string | null, string | null, number][][] = [
 export default class ArabicShaper extends DefaultShaper {
   static override planFeatures(plan: ShapingPlan): void {
     plan.add(['ccmp', 'locl']);
+
     for (let i = 0; i < FEATURES.length; i++) {
       const feature = FEATURES[i]!;
       plan.addStage(feature, false);
@@ -143,6 +145,7 @@ export default class ArabicShaper extends DefaultShaper {
       let curAction: string | null, prevAction: string | null;
       const glyph = glyphs[i]!;
       const type = getShapingClass(glyph.codePoints[0]!);
+
       if (type === ShapingClasses['Transparent']) {
         actions[i] = NONE;
         continue;
@@ -165,6 +168,7 @@ export default class ArabicShaper extends DefaultShaper {
     for (let index = 0; index < glyphs.length; index++) {
       const glyphToApply = glyphs[index]!;
       const feature = actions[index];
+
       if (feature) {
         glyphToApply.features[feature] = true;
       }
@@ -174,11 +178,13 @@ export default class ArabicShaper extends DefaultShaper {
 
 function getShapingClass(codePoint: number): number {
   const res = trie.get(codePoint);
+
   if (res) {
     return res - 1;
   }
 
   const category = getCategory(codePoint);
+
   if (category === 'Mn' || category === 'Me' || category === 'Cf') {
     return ShapingClasses['Transparent']!;
   }

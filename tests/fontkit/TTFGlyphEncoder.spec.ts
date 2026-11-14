@@ -3,6 +3,7 @@ import TTFGlyphEncoder from '../../src/fontkit/glyph/TTFGlyphEncoder';
 
 const header = (bytes: Uint8Array) => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
   return {
     numberOfContours: view.getInt16(0),
     xMin: view.getInt16(2),

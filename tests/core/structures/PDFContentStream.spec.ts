@@ -20,6 +20,7 @@ import {
 describe('PDFContentStream', () => {
   const context = PDFContext.create();
   const dict = PDFDict.withContext(context);
+
   const operators = [
     PDFOperator.of(Ops.BeginText),
     PDFOperator.of(Ops.SetFontAndSize, [PDFName.of('F1'), PDFNumber.of(24)]),
@@ -73,9 +74,11 @@ describe('PDFContentStream', () => {
 
   it('can be serialized', () => {
     const stream = PDFContentStream.of(dict, operators, false);
+
     const buffer = new Uint8Array(stream.sizeInBytes() + 3).fill(
       toCharCode(' '),
     );
+
     expect(stream.copyBytesInto(buffer, 2)).toBe(89);
     expect(buffer).toEqual(
       typedArrayFor(
@@ -98,12 +101,15 @@ describe('PDFContentStream', () => {
       '100 100 Td\n' +
       '(Hello World and stuff!) Tj\n' +
       'ET\n';
+
     const encodedContents = zlibSync(new TextEncoder().encode(contents));
 
     const stream = PDFContentStream.of(dict, operators, true);
+
     const buffer = new Uint8Array(stream.sizeInBytes() + 3).fill(
       toCharCode(' '),
     );
+
     const headerContent = `<<\n/Length ${encodedContents.length}\n/Filter /FlateDecode\n>>\n`;
     const expectedSize = headerContent.length + 'stream\n'.length + encodedContents.length + '\nendstream'.length;
     expect(stream.copyBytesInto(buffer, 2)).toBe(expectedSize);

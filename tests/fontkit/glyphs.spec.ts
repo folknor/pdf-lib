@@ -14,8 +14,10 @@ const openUbuntu = () => fontkit.create(new Uint8Array(ubuntuBytes));
 const firstCompositeGlyph = (font: any) => {
   for (let id = 0; id < font.numGlyphs; id++) {
     const decoded = font.getGlyph(id)._decode();
+
     if (decoded.numberOfContours < 0) return { id, decoded };
   }
+
   throw new Error('no composite glyph in test font');
 };
 
@@ -38,12 +40,14 @@ describe('color and bitmap glyphs', () => {
     const expected = reference.getGlyph(id).path.toSVG();
 
     const font = openUbuntu();
+
     for (const component of decoded.components) {
       font._glyphs[component.glyphID] = new COLRGlyph(
         component.glyphID,
         font,
       );
     }
+
     expect(font.getGlyph(id).path.toSVG()).toBe(expected);
   });
 
@@ -53,6 +57,7 @@ describe('color and bitmap glyphs', () => {
       CPAL: {},
       _getBaseGlyph: () => null,
     };
+
     const glyph = new COLRGlyph(1, fakeFont);
     expect(glyph.layers).toBeNull();
     expect(glyph.bbox).toEqual(new BBox(0, 0, 0, 0));
@@ -77,8 +82,10 @@ describe('color and bitmap glyphs', () => {
     const bytes = fs.readFileSync(
       './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
     );
+
     const encodeSubset = (colour: boolean) => {
       const font = fontkit.create(new Uint8Array(bytes)) as any;
+
       if (colour) {
         font.directory.tables = {
           ...font.directory.tables,
@@ -89,10 +96,14 @@ describe('color and bitmap glyphs', () => {
         Object.defineProperty(font, 'CPAL', { value: {} });
         expect(font.getGlyph(1000)).toBeInstanceOf(COLRGlyph);
       }
+
       const subset = font.createSubset();
+
       for (const gid of [1000, 2000, 3000]) subset.includeGlyph(gid);
+
       return subset.encode();
     };
+
     expect(encodeSubset(true)).toEqual(encodeSubset(false));
   });
 
@@ -107,6 +118,7 @@ describe('color and bitmap glyphs', () => {
     expect(glyph.layers).toBeNull();
 
     const calls: string[] = [];
+
     const ctx = new Proxy(
       {},
       {
@@ -115,6 +127,7 @@ describe('color and bitmap glyphs', () => {
         },
       },
     );
+
     glyph.render(ctx, 12);
     expect(calls).toContain('moveTo');
     expect(calls).toContain('fill');
@@ -168,6 +181,7 @@ describe('color and bitmap glyphs', () => {
         fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
       ),
     ) as any;
+
     expect(otf.maxp.version).toBe(0x00005000);
     expect(Object.keys(otf.maxp)).not.toContain('maxPoints');
     expect(otf.numGlyphs).toBeGreaterThan(0);
@@ -179,6 +193,7 @@ describe('color and bitmap glyphs', () => {
         fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
       ),
     ) as any;
+
     const space = otf.glyphForCodePoint(0x20);
     expect(space.path.commands).toHaveLength(0);
     expect(space.cbox).toEqual(new BBox(0, 0, 0, 0));
@@ -231,15 +246,20 @@ describe('composite variation metrics', () => {
   const flaggedComposite = (font: any) => {
     for (let id = 0; id < font.numGlyphs; id++) {
       const decoded = font.getGlyph(id)._decode();
+
       if (decoded.numberOfContours >= 0) continue;
       const flagged = decoded.components.filter((c: any) => c.useMyMetrics);
+
       if (flagged.length !== 1) continue;
+
       // An unflagged component that is a different glyph from the flagged one.
       const other = decoded.components.find(
         (c: any) => c.glyphID !== flagged[0].glyphID,
       );
+
       if (other) return { id, flagged: flagged[0].glyphID, other: other.glyphID };
     }
+
     throw new Error('no USE_MY_METRICS composite in test font');
   };
 
@@ -350,17 +370,21 @@ describe('GPOSProcessor.applyAnchor', () => {
       { xOffset: 0, yOffset: 0 },
     ];
     processor.glyphIterator = { index: 1, cur: {} };
+
     return processor as GPOSProcessor & { positions: any[]; glyphIterator: any };
   };
+
   const anchor = (x: number, y: number) => ({ xCoordinate: x, yCoordinate: y });
 
   it('skips marks whose base anchor is NULL', () => {
     const processor = makeProcessor();
+
     const applied = processor.applyAnchor(
       { markAnchor: anchor(1, 2) },
       null,
       0,
     );
+
     expect(applied).toBe(false);
     expect(processor.positions[1]).toEqual({ xOffset: 0, yOffset: 0 });
     expect(processor.glyphIterator.cur.markAttachment).toBeUndefined();

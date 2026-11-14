@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'src/fontkit/layout/canonicalData.ts');
 const [ucdDir, flag] = process.argv.slice(2);
+
 if (!ucdDir) {
   console.error('usage: gen-canonical-data.mjs <ucd-dir> [--write]');
   process.exit(2);
@@ -28,22 +29,27 @@ if (!ucdDir) {
 
 const decompositions = new Map(); // cp -> [cp] or [cp, cp]
 const ccc = new Map(); // cp -> nonzero class
+
 for (const line of readFileSync(join(ucdDir, 'UnicodeData.txt'), 'ascii').split('\n')) {
   if (!line) continue;
   const f = line.split(';');
   const cp = parseInt(f[0], 16);
   // Ranges (<CJK Ideograph, First> ... Last>) carry no decomposition and class 0.
   const cls = parseInt(f[3], 10);
+
   if (cls !== 0) ccc.set(cp, cls);
   const d = f[5];
+
   if (d && !d.startsWith('<')) {
     decompositions.set(cp, d.split(' ').map((h) => parseInt(h, 16)));
   }
 }
 
 const explicit = new Set();
+
 for (const line of readFileSync(join(ucdDir, 'CompositionExclusions.txt'), 'ascii').split('\n')) {
   const code = line.split('#')[0].trim();
+
   if (code) explicit.add(parseInt(code, 16));
 }
 
@@ -51,12 +57,15 @@ for (const line of readFileSync(join(ucdDir, 'CompositionExclusions.txt'), 'asci
 // non-starter decompositions. Only two-code-point mappings can compose, so
 // only those are recorded.
 const excluded = [];
+
 for (const [cp, d] of decompositions) {
   if (d.length !== 2) continue;
+
   if (explicit.has(cp) || ccc.has(cp) || ccc.has(d[0])) excluded.push(cp);
 }
 
 const hex = (n) => n.toString(16);
+
 const decompText = [...decompositions]
   .sort((a, b) => a[0] - b[0])
   .map(([cp, d]) => `${hex(cp)}:${d.map(hex).join(',')}`)
@@ -64,11 +73,14 @@ const decompText = [...decompositions]
 
 // Runs of consecutive code points with one class: start-end:class.
 const cccRuns = [];
+
 for (const cp of [...ccc.keys()].sort((a, b) => a - b)) {
   const last = cccRuns[cccRuns.length - 1];
+
   if (last && last[1] === cp - 1 && last[2] === ccc.get(cp)) last[1] = cp;
   else cccRuns.push([cp, cp, ccc.get(cp)]);
 }
+
 const cccText = cccRuns
   .map(([a, b, c]) => (a === b ? `${hex(a)}:${c}` : `${hex(a)}-${hex(b)}:${c}`))
   .join(';');
@@ -77,7 +89,9 @@ const excludedText = excluded.sort((a, b) => a - b).map(hex).join(',');
 
 const wrap = (s) => {
   const lines = [];
+
   for (let i = 0; i < s.length; i += 76) lines.push(`  '${s.slice(i, i + 76)}'`);
+
   return lines.join(' +\n');
 };
 
@@ -102,12 +116,15 @@ if (flag === '--write') {
   console.log(`wrote ${out}: ${decompositions.size} decompositions, ${ccc.size} classed code points, ${excluded.length} exclusions`);
 } else {
   let current = '';
+
   try {
     current = readFileSync(out, 'utf8');
   } catch {}
+
   if (current !== source) {
     console.error(`${out} differs from the UCD; rerun with --write`);
     process.exit(1);
   }
+
   console.log(`${out} matches the UCD`);
 }

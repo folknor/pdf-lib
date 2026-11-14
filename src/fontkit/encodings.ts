@@ -20,6 +20,7 @@ const SINGLE_BYTE_ENCODINGS = new Set([
   'iso-8859-6',
   'iso-8859-8',
 ]);
+
 const MAC_ENCODINGS: Record<string, string> = {
   'x-mac-croatian':
     'ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®Š™´¨≠ŽØ∞±≤≥∆µ∂∑∏š∫ªºΩžø¿¡¬√ƒ≈Ć«Č… ÀÃÕŒœĐ—“”‘’÷◊©⁄€‹›Æ»–·‚„‰ÂćÁčÈÍÎÏÌÓÔđÒÚÛÙıˆ˜¯πË˚¸Êæˇ',
@@ -45,19 +46,23 @@ export function getEncodingMapping(
   encoding: string,
 ): Map<number, number> | undefined {
   const cached = encodingCache.get(encoding);
+
   if (cached) {
     return cached;
   }
 
   // These encodings aren't supported by TextDecoder.
   const mapping = MAC_ENCODINGS[encoding];
+
   if (mapping) {
     const res = new Map<number, number>();
+
     for (let i = 0; i < mapping.length; i++) {
       res.set(mapping.charCodeAt(i), 0x80 + i);
     }
 
     encodingCache.set(encoding, res);
+
     return res;
   }
 
@@ -67,17 +72,20 @@ export function getEncodingMapping(
     // Use this to create a mapping of code points.
     const decoder = new TextDecoder(encoding);
     const byteMapping = new Uint8Array(0x80);
+
     for (let i = 0; i < 0x80; i++) {
       byteMapping[i] = 0x80 + i;
     }
 
     const res = new Map<number, number>();
     const s = decoder.decode(byteMapping);
+
     for (let i = 0; i < 0x80; i++) {
       res.set(s.charCodeAt(i), 0x80 + i);
     }
 
     encodingCache.set(encoding, res);
+
     return res;
   }
 

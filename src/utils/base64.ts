@@ -15,6 +15,7 @@ const chars =
 
 // Use a lookup table to find the index.
 const lookup = new Uint8Array(256);
+
 for (let i = 0; i < chars.length; i++) {
   lookup[chars.charCodeAt(i)] = i;
 }
@@ -22,6 +23,7 @@ for (let i = 0; i < chars.length; i++) {
 export const encodeToBase64 = (bytes: Uint8Array): string => {
   let base64 = '';
   const len = bytes.length;
+
   for (let i = 0; i < len; i += 3) {
     base64 += chars[bytes[i]! >> 2];
     base64 += chars[((bytes[i]! & 3) << 4) | ((bytes[i + 1] ?? 0) >> 4)];
@@ -51,6 +53,7 @@ export const decodeFromBase64 = (base64: string): Uint8Array<ArrayBuffer> => {
 
   if (base64[base64.length - 1] === '=') {
     bufferLength--;
+
     if (base64[base64.length - 2] === '=') {
       bufferLength--;
     }

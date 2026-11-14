@@ -19,6 +19,7 @@ type NumberType =
   | 'Int32'
   | 'Float'
   | 'Double';
+
 type Endian = 'BE' | 'LE';
 
 export class NumberT extends Base<number> {
@@ -31,6 +32,7 @@ export class NumberT extends Base<number> {
     this.type = type;
     this.endian = endian;
     this.fn = this.type;
+
     if (this.type[this.type.length - 1] !== '8') {
       this.fn += this.endian;
     }
@@ -42,6 +44,7 @@ export class NumberT extends Base<number> {
 
   decode(stream: DecodeStream): number {
     const method = `read${this.fn}` as keyof DecodeStream;
+
     return (stream[method] as () => number)();
   }
 

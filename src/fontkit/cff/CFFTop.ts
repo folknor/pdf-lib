@@ -25,6 +25,7 @@ class PredefinedOp {
 
   decode(stream: any, parent: any, operands: number[]): any {
     const index = operands[0];
+
     if (index !== undefined && this.predefinedOps[index]) {
       return this.predefinedOps[index];
     }
@@ -38,6 +39,7 @@ class PredefinedOp {
 
   encode(stream: any, value: any, ctx: any): number | any[] {
     const index = this.predefinedOps.indexOf(value);
+
     if (index !== -1) {
       // CFFDict.encodeOperands callers iterate the result as operands.
       return [index];
@@ -93,11 +95,13 @@ class RangeArray extends r.Array {
     const length = resolveLength(this.length, stream, parent);
     let count = 0;
     const res: any[] = [];
+
     while (count < length) {
       const range = this.type.decode(stream, parent) as {
         offset: number;
         nLeft: number;
       };
+
       range.offset = count;
       count += range.nLeft + 1;
       res.push(range);
@@ -155,9 +159,11 @@ const FDSelect = new r.VersionedStruct(r.uint8, {
 });
 
 const ptr = new CFFPointer(CFFPrivateDict);
+
 class CFFPrivateOp {
   decode(stream: any, parent: any, operands: number[]): any {
     parent.length = operands[0] ?? 0;
+
     return ptr.decode(stream, parent, [operands[1] ?? 0]);
   }
 

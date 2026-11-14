@@ -21,12 +21,14 @@ const pageUtils = () => {
   const pageTree = (parent?: PDFRef): [PDFRef, PDFPageTree] => {
     const tree = PDFPageTree.withContext(context, parent);
     const ref = context.register(tree);
+
     return [ref, tree];
   };
 
   const pageLeaf = (parent: PDFRef): [PDFRef, PDFPageLeaf] => {
     const leaf = PDFPageLeaf.withContextAndParent(context, parent);
     const ref = context.register(leaf);
+
     return [ref, leaf];
   };
 
@@ -500,6 +502,7 @@ describe('PDFPageTree', () => {
       const buildTree = () => {
         const { pageTree } = pageUtils();
         const [, lvl1Tree1] = pageTree();
+
         return lvl1Tree1;
       };
 
@@ -515,6 +518,7 @@ describe('PDFPageTree', () => {
       const buildTree = () => {
         const { pageTree } = pageUtils();
         const [, lvl1Tree1] = pageTree();
+
         return lvl1Tree1;
       };
 
@@ -583,9 +587,11 @@ describe('PDFPageTree', () => {
     expect(parent).toBeInstanceOf(PDFPageTree);
 
     let ascentions = 0;
+
     const handleAscend = () => {
       ascentions += 1;
     };
+
     expect(() => parent?.ascend(handleAscend)).not.toThrow();
     expect(ascentions).toBe(1);
   });

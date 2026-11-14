@@ -11,9 +11,11 @@ describe('gvar packed point numbers', () => {
     // 3 points; one run of 3 words (0x80 | 2): deltas 0x0100, 1, 2.
     const bytes = new Uint8Array([3, 0x82, 0x01, 0x00, 0x00, 0x01, 0x00, 0x02]);
     const fake = { font: { stream: new DecodeStream(bytes) } };
+
     const points = GlyphVariationProcessor.prototype.decodePoints.call(
       fake as any,
     );
+
     expect(Array.from(points)).toEqual([256, 257, 259]);
   });
 });
@@ -29,6 +31,7 @@ describe('OpenType context lookups', () => {
       getClassID: () => 1,
       glyphIterator: { cur: { id: 1 } },
     };
+
     const apply = OTProcessor.prototype.applyContext;
     expect(apply.call(fake, { version: 1, ruleSets: [null] })).toBe(false);
     expect(apply.call(fake, { version: 2, classSet: [] })).toBe(false);
@@ -38,13 +41,16 @@ describe('OpenType context lookups', () => {
 
   it('matches chaining backtrack sequences closest glyph first', () => {
     const calls: any[][] = [];
+
     const fake: any = {
       coverageSequenceMatches: (index: number, seq: any[]) => {
         calls.push([index, seq]);
+
         return true;
       },
       applyLookupList: () => true,
     };
+
     const backtrackCoverage = ['closest', 'middle', 'furthest'];
     OTProcessor.prototype.applyChainingContext.call(fake, {
       version: 3,
@@ -83,6 +89,7 @@ describe('cmap subtables', () => {
         },
       }],
     });
+
     expect(cmap.lookup(0xfffe)).toBe(1);
     expect(cmap.codePointsForGlyph(1)).toEqual([0xfffe]);
     expect(cmap.lookup(0xffff)).toBe(rangeOffset === 0 ? 2 : 0);
@@ -100,12 +107,14 @@ describe('cmap subtables', () => {
         },
       ],
     });
+
     expect(cmap.lookup(0x42)).toBe(6);
     expect(cmap.codePointsForGlyph(5)).toEqual([0x41, 0x43]);
   });
 
   it('keeps the format 14 variation-selector subtable', () => {
     const uvs = { version: 14, varSelectors: lazy([]) };
+
     const cmap = new CmapProcessor({
       tables: [
         {
@@ -116,6 +125,7 @@ describe('cmap subtables', () => {
         { platformID: 0, encodingID: 5, table: uvs },
       ],
     });
+
     expect(cmap.uvs).toBe(uvs);
     expect(cmap.codePointsForGlyph(1)).toEqual([0]);
   });
@@ -124,6 +134,7 @@ describe('cmap subtables', () => {
 describe('COLR layer colours', () => {
   const red = { red: 255, green: 0, blue: 0, alpha: 255 };
   const blue = { red: 0, green: 0, blue: 255, alpha: 255 };
+
   const makeFont = (rendered: string[]) => ({
     COLR: {
       baseGlyphRecord: [{ gid: 1, firstLayerIndex: 0, numLayers: 3 }],
@@ -147,6 +158,7 @@ describe('COLR layer colours', () => {
   it('draws foreground layers in the caller colour', () => {
     const rendered: string[] = [];
     const stack: string[] = [];
+
     const ctx: any = {
       color: 'caller',
       save() {
@@ -159,6 +171,7 @@ describe('COLR layer colours', () => {
         this.color = rgb.join(',');
       },
     };
+
     new COLRGlyph(1, makeFont(rendered)).render(ctx, 12);
     expect(rendered).toEqual(['10:0,0,255', '11:caller']);
     expect(ctx.color).toBe('caller');

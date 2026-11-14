@@ -66,6 +66,7 @@ export default class PDFJavaScript implements Embeddable {
       const { scriptName } = this.embedder;
       checkCatalogNameUnused(catalog, JavaScript, scriptName);
       const ref = await this.embedder.embedIntoContext(context, this.ref);
+
       try {
         checkCatalogNameUnused(catalog, JavaScript, scriptName);
       } catch (error) {

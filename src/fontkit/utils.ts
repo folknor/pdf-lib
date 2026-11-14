@@ -1,6 +1,7 @@
 export function binarySearch<T>(arr: T[], cmp: (item: T) => number): number {
   let min = 0;
   let max = arr.length - 1;
+
   while (min <= max) {
     const mid = (min + max) >> 1;
     const res = cmp(arr[mid]!);
@@ -19,9 +20,11 @@ export function binarySearch<T>(arr: T[], cmp: (item: T) => number): number {
 
 export function range(index: number, end: number): number[] {
   const result: number[] = [];
+
   while (index < end) {
     result.push(index++);
   }
+
   return result;
 }
 
@@ -30,7 +33,9 @@ export const asciiDecoder = new TextDecoder('ascii');
 // Based on https://github.com/niklasvh/base64-arraybuffer. MIT license.
 const CHARS =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
 const LOOKUP = new Uint8Array(256);
+
 for (let i = 0; i < CHARS.length; i++) {
   LOOKUP[CHARS.charCodeAt(i)] = i;
 }
@@ -40,6 +45,7 @@ export function decodeBase64(base64: string): Uint8Array {
 
   if (base64[base64.length - 1] === '=') {
     bufferLength--;
+
     if (base64[base64.length - 2] === '=') {
       bufferLength--;
     }

@@ -43,8 +43,10 @@ class PDFXRefStreamParser {
     const Size = this.dict.lookup(SizeName, PDFNumber);
 
     const Index = this.dict.lookup(PDFName.of('Index'));
+
     if (Index instanceof PDFArray) {
       this.subsections = [];
+
       for (let idx = 0, len = Index.size(); idx < len; idx += 2) {
         const firstObjectNumber = Index.lookup(idx + 0, PDFNumber).asNumber();
         const length = Index.lookup(idx + 1, PDFNumber).asNumber();
@@ -56,6 +58,7 @@ class PDFXRefStreamParser {
 
     const W = this.dict.lookup(PDFName.of('W'), PDFArray);
     this.byteWidths = [-1, -1, -1];
+
     for (let idx = 0, len = W.size(); idx < len; idx++) {
       this.byteWidths[idx] = W.lookup(idx, PDFNumber).asNumber();
     }
@@ -65,6 +68,7 @@ class PDFXRefStreamParser {
     if (this.alreadyParsed) {
       throw new ReparseError('PDFXRefStreamParser', 'parseIntoContext');
     }
+
     this.alreadyParsed = true;
 
     const Size = this.dict.lookupMaybe(SizeName, PDFNumber);
@@ -112,16 +116,19 @@ class PDFXRefStreamParser {
 
       for (let objIdx = 0; objIdx < length; objIdx++) {
         let type = 0;
+
         for (let idx = 0, len = typeFieldWidth; idx < len; idx++) {
           type = (type << 8) | this.bytes.next();
         }
 
         let offset = 0;
+
         for (let idx = 0, len = offsetFieldWidth; idx < len; idx++) {
           offset = (offset << 8) | this.bytes.next();
         }
 
         let generationNumber = 0;
+
         for (let idx = 0, len = genFieldWidth; idx < len; idx++) {
           generationNumber = (generationNumber << 8) | this.bytes.next();
         }
@@ -130,6 +137,7 @@ class PDFXRefStreamParser {
         if (typeFieldWidth === 0) type = 1;
 
         const objectNumber = firstObjectNumber + objIdx;
+
         // Type-2 entries are compressed objects in an object stream;
         // the third field is the index within the stream, not a generation number
         const entry = {

@@ -26,20 +26,24 @@ const markAllDicts = (doc: PDFDocument, value: number) => {
 
 const expectAllDictsMarked = (doc: PDFDocument, value: number) => {
   let count = 0;
+
   for (const [, obj] of doc.context.enumerateIndirectObjects()) {
     if (!(obj instanceof PDFDict)) continue;
     expect(obj.lookup(Marker, PDFNumber).asNumber()).toBe(value);
     count++;
   }
+
   expect(count).toBeGreaterThan(0);
 };
 
 describe('Full save of a PDF with object streams', () => {
   it('uses a fixture that actually contains object streams', async () => {
     const doc = await PDFDocument.load(source);
+
     const objStms = doc.context
       .enumerateIndirectObjects()
       .filter(([, obj]) => isObjStm(obj));
+
     expect(objStms.length).toBeGreaterThan(0);
   });
 
@@ -47,20 +51,25 @@ describe('Full save of a PDF with object streams', () => {
     it(`keeps modifications across save/load cycles (useObjectStreams: ${useObjectStreams})`, async () => {
       const doc1 = await PDFDocument.load(source);
       markAllDicts(doc1, 1);
+
       const doc2 = await PDFDocument.load(
         await doc1.save({ useObjectStreams }),
       );
+
       expectAllDictsMarked(doc2, 1);
 
       markAllDicts(doc2, 2);
+
       const doc3 = await PDFDocument.load(
         await doc2.save({ useObjectStreams }),
       );
+
       expectAllDictsMarked(doc3, 2);
     });
 
     it(`does not write the source /ObjStm containers (useObjectStreams: ${useObjectStreams})`, async () => {
       const doc = await PDFDocument.load(source);
+
       const sourceRefs = doc.context
         .enumerateIndirectObjects()
         .filter(([, obj]) => isObjStm(obj))
@@ -69,6 +78,7 @@ describe('Full save of a PDF with object streams', () => {
       const reloaded = await PDFDocument.load(
         await doc.save({ useObjectStreams }),
       );
+
       for (const ref of sourceRefs) {
         expect(isObjStm(reloaded.context.lookup(ref))).toBe(false);
       }

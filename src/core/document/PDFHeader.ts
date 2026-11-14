@@ -19,6 +19,7 @@ class PDFHeader {
 
   toString(): string {
     const bc = charFromCode(129);
+
     return `%PDF-${this.major}.${this.minor}\n%${bc}${bc}${bc}${bc}`;
   }
 

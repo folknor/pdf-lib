@@ -11,6 +11,7 @@ import { NumberT } from './Number.js';
 import * as utils from './utils.js';
 
 type EncodingResolver = (parent: unknown) => string;
+
 type LengthType = number | string | NumberT | ((parent: unknown) => number);
 
 function encodingWidth(encoding: string): number {
@@ -37,11 +38,13 @@ function byteLength(string: string, encoding: string): number {
       return string.length;
     case 'utf8': {
       let len = 0;
+
       for (let i = 0; i < string.length; i++) {
         let c = string.charCodeAt(i);
 
         if (c >= 0xd800 && c <= 0xdbff && i < string.length - 1) {
           const c2 = string.charCodeAt(++i);
+
           if ((c2 & 0xfc00) === 0xdc00) {
             c = ((c & 0x3ff) << 10) + (c2 & 0x3ff) + 0x10000;
           } else {
@@ -59,8 +62,10 @@ function byteLength(string: string, encoding: string): number {
           len += 4;
         }
       }
+
       return len;
     }
+
     case 'utf16le':
     case 'utf16-le':
     case 'utf16be':
@@ -89,9 +94,11 @@ export class StringT extends Base<string> {
     let length: number | undefined;
 
     let encoding = this.encoding;
+
     if (typeof encoding === 'function') {
       encoding = encoding.call(parent, parent) || 'ascii';
     }
+
     const width = encodingWidth(encoding);
 
     if (this.length != null) {
@@ -132,6 +139,7 @@ export class StringT extends Base<string> {
     }
 
     let encoding = this.encoding;
+
     if (typeof encoding === 'function') {
       encoding = encoding.call(parent?.val, parent?.val) || 'ascii';
     }
@@ -141,6 +149,7 @@ export class StringT extends Base<string> {
     }
 
     let size = byteLength(val, encoding);
+
     if (this.length instanceof NumberT) {
       size += this.length.size();
     }
@@ -158,6 +167,7 @@ export class StringT extends Base<string> {
     parent?: { val?: Record<string, unknown> },
   ): void {
     let encoding = this.encoding;
+
     if (typeof encoding === 'function') {
       encoding = encoding.call(parent?.val, parent?.val) || 'ascii';
     }

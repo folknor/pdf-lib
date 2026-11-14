@@ -34,6 +34,7 @@ describe('PDFStreamWriter', () => {
       BaseFont: 'Helvetica',
       Encoding: 'MacRomanEncoding',
     });
+
     const fontDictRef = context.register(fontDict);
 
     const page = context.obj({
@@ -42,6 +43,7 @@ describe('PDFStreamWriter', () => {
       Contents: contentStreamRef,
       Resources: { Font: { F1: fontDictRef } },
     });
+
     const pageRef = context.register(page);
 
     const pages = context.obj({
@@ -49,6 +51,7 @@ describe('PDFStreamWriter', () => {
       Kids: [pageRef],
       Count: 1,
     });
+
     const pagesRef = context.register(pages);
     page.set(PDFName.of('Parent'), pagesRef);
 
@@ -56,6 +59,7 @@ describe('PDFStreamWriter', () => {
       Type: 'Catalog',
       Pages: pagesRef,
     });
+
     context.trailerInfo.Root = context.register(catalog);
 
     const buffer = await PDFStreamWriter.forContext(
@@ -74,18 +78,23 @@ describe('PDFStreamWriter', () => {
 
   it('keeps /Sig and /DocTimeStamp dicts out of object streams', async () => {
     const context = PDFContext.create();
+
     const pagesRef = context.register(
       context.obj({ Type: 'Pages', Kids: [], Count: 0 }),
     );
+
     context.trailerInfo.Root = context.register(
       context.obj({ Type: 'Catalog', Pages: pagesRef }),
     );
+
     const sigRef = context.register(
       context.obj({ Type: 'Sig', Filter: 'Adobe.PPKLite' }),
     );
+
     const tsRef = context.register(
       context.obj({ Type: 'DocTimeStamp', Filter: 'Adobe.PPKLite' }),
     );
+
     const plainRef = context.register(context.obj({ Foo: 'Bar' }));
 
     const buffer = await PDFStreamWriter.forContext(
@@ -93,6 +102,7 @@ describe('PDFStreamWriter', () => {
       Infinity,
       false,
     ).serializeToBuffer();
+
     const text = new TextDecoder('latin1').decode(buffer);
 
     expect(text).toContain(`\n${sigRef.objectNumber} 0 obj\n<<\n/Type /Sig`);

@@ -20,6 +20,7 @@ describe('PDFAcroTerminal', () => {
     const dict = context.obj({
       Kids: kidsRef,
     });
+
     const dictRef = context.register(dict);
 
     const terminal = PDFAcroTerminal.fromDict(dict, dictRef);
@@ -200,6 +201,7 @@ describe('PDFAcroTerminal', () => {
         Type: 'Annot',
         Subtype: 'Widget',
       });
+
       const dictRef = context.register(dict);
 
       const terminal = PDFAcroTerminal.fromDict(dict, dictRef);
@@ -223,6 +225,7 @@ describe('PDFAcroTerminal', () => {
         Type: 'Annot',
         Subtype: 'Widget',
       });
+
       const dictRef = context.register(dict);
 
       const terminal = PDFAcroTerminal.fromDict(dict, dictRef);
@@ -314,6 +317,7 @@ describe('PDFAcroTerminal', () => {
         Type: 'Annot',
         Subtype: 'Widget',
       });
+
       const dictRef = context.register(dict);
 
       const terminal = PDFAcroTerminal.fromDict(dict, dictRef);
@@ -344,6 +348,7 @@ describe('PDFAcroTerminal', () => {
         FT: 'Tx',
         Kids: kidsRef,
       });
+
       const dictRef = context.register(dict);
 
       const terminal = PDFAcroTerminal.fromDict(dict, dictRef);

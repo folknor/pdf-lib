@@ -13,6 +13,7 @@ class PngEmbedder {
     maxDecodedSize?: number,
   ) {
     const png = PNG.load(imageData, maxDecodedSize);
+
     return new PngEmbedder(png);
   }
 
@@ -46,6 +47,7 @@ class PngEmbedder {
 
     if (ref) {
       context.assign(ref, xObject);
+
       return ref;
     } else {
       return context.register(xObject);

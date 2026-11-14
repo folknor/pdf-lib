@@ -9,6 +9,7 @@ export type PDFVersion = readonly [number, number];
 
 export const parsePDFVersion = (text: string): PDFVersion | undefined => {
   const match = /^(\d{1,4})\.(\d{1,4})$/.exec(text);
+
   return match ? [Number(match[1]), Number(match[2])] : undefined;
 };
 
@@ -23,8 +24,10 @@ export const versionString = (version: PDFVersion): string =>
 
 export const getCatalog = (context: PDFContext): PDFDict | undefined => {
   const root = context.trailerInfo.Root;
+
   if (!root) return undefined;
   const catalog = context.lookup(root);
+
   return catalog instanceof PDFDict ? catalog : undefined;
 };
 
@@ -36,8 +39,11 @@ export const getCatalogVersion = (
   context: PDFContext,
 ): PDFVersion | 'malformed' | undefined => {
   const value = getCatalog(context)?.lookup(PDFName.of('Version'));
+
   if (value === undefined) return undefined;
+
   if (!(value instanceof PDFName)) return 'malformed';
+
   return parsePDFVersion(value.decodeText()) ?? 'malformed';
 };
 
@@ -49,6 +55,7 @@ export const getCatalogVersion = (
 export const getEffectiveVersion = (context: PDFContext): PDFVersion => {
   const header = parsePDFVersion(context.header.getVersionString()) ?? [1, 0];
   const catalog = getCatalogVersion(context);
+
   return catalog === undefined || catalog === 'malformed'
     ? header
     : maxVersion(header, catalog);
@@ -68,6 +75,7 @@ export const getIncrementVersion = (context: PDFContext): PDFVersion => {
   const original = context.pdfFileDetails.originalHeader ?? context.header;
   const header = parsePDFVersion(original.getVersionString()) ?? [1, 0];
   const catalog = getCatalogVersion(context);
+
   return catalog === undefined || catalog === 'malformed'
     ? header
     : maxVersion(header, catalog);
@@ -82,6 +90,7 @@ const checkObjectStreamDeclarations = (
       'Cannot write object streams: the catalog /Version is malformed.',
     );
   }
+
   if (incremental) {
     if (!(context.trailerInfo.Root instanceof PDFRef) || !getCatalog(context)) {
       throw new Error(
@@ -110,17 +119,23 @@ export const planObjectStreamVersion = (
   incremental: boolean,
 ): (() => void) => {
   checkObjectStreamDeclarations(context, incremental);
+
   return () => {
     checkObjectStreamDeclarations(context, incremental);
+
     const version = incremental
       ? getIncrementVersion(context)
       : getEffectiveVersion(context);
+
     if (supportsObjectStreams(version)) return;
     const [major, minor] = OBJECT_STREAM_VERSION;
+
     if (!incremental) {
       context.header = PDFHeader.forVersion(major, minor);
+
       return;
     }
+
     getCatalog(context)!.set(
       PDFName.of('Version'),
       PDFName.of(versionString(OBJECT_STREAM_VERSION)),

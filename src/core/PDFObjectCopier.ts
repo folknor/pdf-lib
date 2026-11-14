@@ -96,11 +96,13 @@ class PDFObjectCopier {
   /** Source and destination refs for indirect objects already copied. */
   getCopiedRefs(): Map<PDFRef, PDFRef> {
     const refs = new Map<PDFRef, PDFRef>();
+
     for (const [source, destination] of this.traversedObjects) {
       if (source instanceof PDFRef && destination instanceof PDFRef) {
         refs.set(source, destination);
       }
     }
+
     return refs;
   }
 
@@ -111,9 +113,11 @@ class PDFObjectCopier {
     // tree nodes directly into originalPage so they are preserved during
     // the copy.
     const { InheritableEntries } = PDFPageLeaf;
+
     for (let idx = 0, len = InheritableEntries.length; idx < len; idx++) {
       const key = PDFName.of(InheritableEntries[idx]!);
       const value = clonedPage.getInheritableAttribute(key)!;
+
       if (!clonedPage.get(key) && value) clonedPage.set(key, value);
     }
 
@@ -123,6 +127,7 @@ class PDFObjectCopier {
     // shared resources causes file size explosion.
     if (this.options.optimizeResources) {
       const prunedResources = pruneResources(originalPage, this.src);
+
       if (prunedResources) clonedPage.set(PDFName.Resources, prunedResources);
     }
 
@@ -176,6 +181,7 @@ class PDFObjectCopier {
     this.traversedObjects.set(originalStream, clonedStream);
 
     const entries = originalStream.dict.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       clonedStream.dict.set(key, this.copy(value));
@@ -192,6 +198,7 @@ class PDFObjectCopier {
       this.traversedObjects.set(ref, newRef);
 
       const dereferencedValue = this.src.lookup(ref);
+
       if (dereferencedValue) {
         const cloned = this.copy(dereferencedValue);
         this.dest.assign(newRef, cloned);

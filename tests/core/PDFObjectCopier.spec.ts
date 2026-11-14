@@ -20,10 +20,12 @@ describe('PDFObjectCopier', () => {
   it('copies PDFDicts, including their indirect references', () => {
     // Arrange
     const src = PDFContext.create();
+
     const origDict = src.obj({
       Foo: PDFString.of('stuff and things'),
       Bar: PDFRef.of(13),
     });
+
     src.register(origDict);
 
     src.assign(PDFRef.of(13), src.obj([1, PDFRef.of(17)]));
@@ -75,10 +77,12 @@ describe('PDFObjectCopier', () => {
   it('copies PDFArrays, including their indirect references', () => {
     // Arrange
     const src = PDFContext.create();
+
     const origArray = src.obj([
       PDFString.of('stuff and things'),
       PDFRef.of(13),
     ]);
+
     src.register(origArray);
 
     src.assign(PDFRef.of(13), src.obj({ Foo: 1, Bar: PDFRef.of(17) }));
@@ -129,10 +133,12 @@ describe('PDFObjectCopier', () => {
   it('copies PDFStreams, including their indirect references', () => {
     // Arrange
     const src = PDFContext.create();
+
     const origStream = src.stream(new Uint8Array([1, 2, 3, 4, 5]), {
       Foo: PDFString.of('stuff and things'),
       Bar: PDFRef.of(13),
     });
+
     src.register(origStream);
 
     src.assign(PDFRef.of(13), src.obj([1, PDFRef.of(17)]));
@@ -467,6 +473,7 @@ describe('PDFObjectCopier', () => {
       const contentData = new TextEncoder().encode(
         'BT /F1 12 Tf (Hello) Tj ET q /Im1 Do Q',
       );
+
       const contentStream = PDFRawStream.of(src.obj({}), contentData);
       const contentRef = src.register(contentStream);
 

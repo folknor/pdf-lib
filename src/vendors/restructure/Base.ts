@@ -14,6 +14,7 @@ export abstract class Base<T = unknown> {
 
   fromBuffer(buffer: Uint8Array): T {
     const stream = new DecodeStream(buffer);
+
     return this.decode(stream);
   }
 
@@ -22,6 +23,7 @@ export abstract class Base<T = unknown> {
     const buffer = new Uint8Array(size);
     const stream = new EncodeStream(buffer);
     this.encode(stream, value);
+
     return buffer;
   }
 }

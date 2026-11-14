@@ -53,6 +53,7 @@ class PDFCrossRefSection {
     } else if (!this.subsections[0]![0]!.offset) {
       this.subsections[0]![0]!.offset = ref.objectNumber;
     }
+
     this.append({ ref, offset: nextFreeObjectNumber, deleted: true });
   }
 
@@ -85,6 +86,7 @@ class PDFCrossRefSection {
   ): void {
     const merged: Entry[] = [];
     let nextExpectedObjNum = 0;
+
     const fillUpTo = (end: number) => {
       while (nextExpectedObjNum < end) {
         merged.push(gapEntry(nextExpectedObjNum));
@@ -99,19 +101,25 @@ class PDFCrossRefSection {
         nextExpectedObjNum = entry.ref.objectNumber + 1;
       }
     }
+
     fillUpTo(through + 1);
+
     if (merged.length === 0) return;
 
     // Build the free object linked list
     // Each free entry's offset should point to the next free object
     const freeIndices: number[] = [];
+
     for (let i = 0; i < merged.length; i++) {
       if (merged[i]!.deleted) freeIndices.push(i);
     }
+
     for (let i = 0; i < freeIndices.length; i++) {
       const nextFreeIdx = freeIndices[i + 1];
+
       const nextFreeObjNum =
         nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
+
       merged[freeIndices[i]!]!.offset = nextFreeObjNum;
     }
 
@@ -130,6 +138,7 @@ class PDFCrossRefSection {
     ) {
       const range = this.subsections[rangeIdx]!;
       section += `${range[0]!.ref.objectNumber} ${range.length}\n`;
+
       for (
         let entryIdx = 0, entryLen = range.length;
         entryIdx < entryLen;
@@ -150,6 +159,7 @@ class PDFCrossRefSection {
 
   sizeInBytes(): number {
     let size = 5;
+
     for (let idx = 0, len = this.subsections.length; idx < len; idx++) {
       const subsection = this.subsections[idx]!;
       const subsectionLength = subsection.length;
@@ -159,6 +169,7 @@ class PDFCrossRefSection {
       size += String(subsectionLength).length;
       size += 20 * subsectionLength;
     }
+
     return size;
   }
 
@@ -233,6 +244,7 @@ class PDFCrossRefSection {
       this.subsections.push([currEntry]);
       this.chunkIdx = 0;
       this.chunkLength = 1;
+
       return;
     }
 
@@ -244,17 +256,21 @@ class PDFCrossRefSection {
       for (let c = 0; c < this.subsections.length; c++) {
         const first = this.subsections[c]![0]!;
         const last = this.subsections[c]![this.subsections[c]!.length - 1]!;
+
         if (first.ref.objectNumber > currEntry.ref.objectNumber) {
           // Goes before this subsection, or at the start of it
           if (first.ref.objectNumber - currEntry.ref.objectNumber === 1) {
             // First element of subsection
             this.subsections[c]!.unshift(currEntry);
+
             if (c === this.chunkIdx) this.chunkLength += 1;
+
             return;
           } else {
             // Create subsection
             this.subsections.splice(c, 0, [currEntry]);
             this.chunkIdx++;
+
             return;
           }
         } else if (last.ref.objectNumber > currEntry.ref.objectNumber) {
@@ -262,12 +278,16 @@ class PDFCrossRefSection {
           const cep = this.subsections[c]!.findIndex(
             (ee) => ee.ref.objectNumber > currEntry.ref.objectNumber,
           );
+
           this.subsections[c]!.splice(cep, 0, currEntry);
+
           if (c === this.chunkIdx) this.chunkLength += 1;
+
           return;
         }
         // Bigger, keep looking
       }
+
       // If got to here, then a new subsection is required
       this.subsections.push([currEntry]);
       this.chunkIdx += 1;

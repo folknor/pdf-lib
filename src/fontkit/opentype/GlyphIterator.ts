@@ -55,12 +55,15 @@ export default class GlyphIterator {
     ) {
       return true;
     }
+
     if (!glyph.isMark) {
       return false;
     }
+
     if (this.markFilter) {
       return !this.markFilter(glyph.id);
     }
+
     return !!(
       this.markAttachmentType &&
       glyph.markAttachmentType !== this.markAttachmentType
@@ -69,6 +72,7 @@ export default class GlyphIterator {
 
   move(dir: number): GlyphInfo | null {
     this.index += dir;
+
     while (
       0 <= this.index &&
       this.index < this.glyphs.length &&
@@ -96,6 +100,7 @@ export default class GlyphIterator {
     const idx = this.index;
     const res = this.increment(count);
     this.index = idx;
+
     return res;
   }
 
@@ -104,12 +109,14 @@ export default class GlyphIterator {
     this.increment(count);
     const res = this.index;
     this.index = idx;
+
     return res;
   }
 
   increment(count: number = 1): GlyphInfo | null {
     const dir = count < 0 ? -1 : 1;
     count = Math.abs(count);
+
     while (count--) {
       this.move(dir);
     }

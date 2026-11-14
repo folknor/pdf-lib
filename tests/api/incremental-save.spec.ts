@@ -114,6 +114,7 @@ describe('Incremental Save', () => {
     const pdfBytes = fs.readFileSync(
       './assets/pdfs/linearized_with_object_streams.pdf',
     );
+
     const pdfDoc = await PDFDocument.load(pdfBytes, {
       forIncrementalUpdate: true,
       updateMetadata: false,

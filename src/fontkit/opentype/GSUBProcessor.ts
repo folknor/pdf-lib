@@ -12,6 +12,7 @@ export default class GSUBProcessor extends OTProcessor {
       lookup.lookupType === 7
         ? lookup.subTables[0]?.lookupType
         : lookup.lookupType;
+
     return type === 8;
   }
 
@@ -20,11 +21,13 @@ export default class GSUBProcessor extends OTProcessor {
       case 1: {
         // Single Substitution
         const index = this.coverageIndex(table.coverage);
+
         if (index === -1) {
           return false;
         }
 
         const glyph = this.glyphIterator.cur!;
+
         switch (table.version) {
           case 1:
             glyph.id = (glyph.id + table.deltaGlyphID) & 0xffff;
@@ -41,6 +44,7 @@ export default class GSUBProcessor extends OTProcessor {
       case 2: {
         // Multiple Substitution
         const index = this.coverageIndex(table.coverage);
+
         if (index !== -1) {
           const sequence = table.sequences.get(index);
 
@@ -48,6 +52,7 @@ export default class GSUBProcessor extends OTProcessor {
             // If the sequence length is zero, delete the glyph.
             // The OpenType spec disallows this, but seems like Harfbuzz and Uniscribe allow it.
             this.replaceGlyph(this.glyphIterator.index, []);
+
             return true;
           }
 
@@ -56,6 +61,7 @@ export default class GSUBProcessor extends OTProcessor {
 
           const features = this.glyphIterator.cur!.features;
           const curGlyph = this.glyphIterator.cur!;
+
           const replacement = sequence
             .slice(1)
             .map((gid: number, i: number) => {
@@ -65,11 +71,13 @@ export default class GSUBProcessor extends OTProcessor {
                 piece(curGlyph, []),
                 features,
               );
+
               glyph.shaperInfo = curGlyph.shaperInfo;
               glyph.isLigated = curGlyph.isLigated;
               glyph.ligatureComponent = i + 1;
               glyph.substituted = true;
               glyph.isMultiplied = true;
+
               return glyph;
             });
 
@@ -77,6 +85,7 @@ export default class GSUBProcessor extends OTProcessor {
             curGlyph,
             ...replacement,
           ]);
+
           return true;
         }
 
@@ -86,6 +95,7 @@ export default class GSUBProcessor extends OTProcessor {
       case 3: {
         // Alternate Substitution
         const index = this.coverageIndex(table.coverage);
+
         if (index === -1) {
           return false;
         }
@@ -96,22 +106,27 @@ export default class GSUBProcessor extends OTProcessor {
         const glyph = this.glyphIterator.cur!;
         const value = this.currentFeatureValue(glyph);
         const alternates = table.alternateSet.get(index);
+
         if (value === 0 || value > alternates.length) {
           return false;
         }
+
         glyph.id = alternates[value - 1];
+
         return true;
       }
 
       case 4: {
         // Ligature Substitution
         const index = this.coverageIndex(table.coverage);
+
         if (index === -1) {
           return false;
         }
 
         for (const ligature of table.ligatureSets.get(index)) {
           const matched = this.sequenceMatchIndices(1, ligature.components);
+
           if (!matched) {
             continue;
           }
@@ -123,14 +138,17 @@ export default class GSUBProcessor extends OTProcessor {
             curGlyph,
             ...matched.map((matchedIndex) => this.glyphs[matchedIndex]!),
           ]);
+
           // Glyphs skipped between the components join its cluster.
           const lastMatched = matched[matched.length - 1]!;
+
           for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
             occurrence.cluster = Math.min(
               occurrence.cluster,
               this.glyphs[i]!.cluster,
             );
           }
+
           for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
             this.glyphs[i]!.cluster = occurrence.cluster;
           }
@@ -142,6 +160,7 @@ export default class GSUBProcessor extends OTProcessor {
             occurrence,
             curGlyph.features,
           );
+
           ligatureGlyph.shaperInfo = curGlyph.shaperInfo;
           ligatureGlyph.isLigated = true;
           ligatureGlyph.substituted = true;
@@ -171,6 +190,7 @@ export default class GSUBProcessor extends OTProcessor {
           //
           //   This in fact happened to a font...  See https://bugzilla.gnome.org/show_bug.cgi?id=437633
           let isMarkLigature = curGlyph.isMark;
+
           for (let i = 0; i < matched.length && isMarkLigature; i++) {
             isMarkLigature = this.glyphs[matched[i]!]!.isMark;
           }
@@ -197,6 +217,7 @@ export default class GSUBProcessor extends OTProcessor {
                     this.glyphs[idx]!.ligatureComponent || 1,
                     lastNumComps,
                   );
+
                 this.glyphs[idx]!.ligatureID = ligatureGlyph.ligatureID;
                 this.glyphs[idx]!.ligatureComponent = ligComponent;
                 idx++;
@@ -220,6 +241,7 @@ export default class GSUBProcessor extends OTProcessor {
                     this.glyphs[i]!.ligatureComponent || 1,
                     lastNumComps,
                   );
+
                 this.glyphs[i]!.ligatureComponent = ligComponent;
               } else {
                 break;
@@ -231,11 +253,13 @@ export default class GSUBProcessor extends OTProcessor {
           // ligature glyph. Applied directly by the pass, the ligature
           // consumes up to its last component.
           this.consumedTo(lastMatched + 1);
+
           for (let i = matched.length - 1; i >= 0; i--) {
             this.replaceGlyph(matched[i]!, []);
           }
 
           this.glyphs[this.glyphIterator.index] = ligatureGlyph;
+
           return true;
         }
 
@@ -260,6 +284,7 @@ export default class GSUBProcessor extends OTProcessor {
         }
 
         const index = this.coverageIndex(table.coverage);
+
         if (index === -1 || index >= table.glyphCount) {
           return false;
         }
@@ -272,6 +297,7 @@ export default class GSUBProcessor extends OTProcessor {
           this.coverageSequenceMatches(1, table.lookaheadCoverage)
         ) {
           this.glyphIterator.cur!.id = table.substitute.get(index);
+
           return true;
         }
 

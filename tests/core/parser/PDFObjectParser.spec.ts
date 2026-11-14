@@ -25,11 +25,13 @@ type ParseOptions = { capNumbers?: boolean };
 
 const parse = (value: string | Uint8Array, options: ParseOptions = {}) => {
   const context = PDFContext.create();
+
   const parser = PDFObjectParser.forBytes(
     typedArrayFor(value),
     context,
     options.capNumbers,
   );
+
   return parser.parseObject();
 };
 
@@ -46,8 +48,10 @@ describe('PDFObjectParser', () => {
     const ignoredWarnings = [
       'Parsed number that is too large for some PDF readers:',
     ];
+
     console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
+
       if (!isIgnored) origConsoleWarn(...args);
     });
   });
@@ -416,6 +420,7 @@ describe('PDFObjectParser', () => {
         \0\t\n\f\r % Comment
       ]% Comment
       \0\t\n\f\r % Comment`;
+
       const object = parse(input);
       expect(object).toBeInstanceOf(PDFArray);
 
@@ -509,6 +514,7 @@ describe('PDFObjectParser', () => {
         >>% Comment
         \0\t\n\f\r % Comment
       `;
+
       const object = parse(input);
       expect(object).toBeInstanceOf(PDFDict);
 
@@ -637,6 +643,7 @@ describe('PDFObjectParser', () => {
         new Uint8Array([12, 492, 0, 129]),
         'endstream',
       );
+
       const output = mergeIntoTypedArray(
         '<<\n/Length 4\n>>\nstream\n',
         new Uint8Array([12, 492, 0, 129]),
@@ -667,6 +674,7 @@ describe('PDFObjectParser', () => {
       // Multiple occurrences of "stream" within words should not affect parsing
       const input =
         '<<>>\nstream\nbitstream upstream downstream mainstream\nendstream';
+
       const object = parse(input);
       expect(object).toBeInstanceOf(PDFRawStream);
       expect(String(object)).toBe(
@@ -678,10 +686,13 @@ describe('PDFObjectParser', () => {
   describe('when parsing streams with an indirect /Length (#180)', () => {
     const parseWithLength = (input: string, length?: PDFNumber | PDFDict) => {
       const context = PDFContext.create();
+
       if (length) context.assign(PDFRef.of(5), length);
       const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
+
       return parser.parseObject() as PDFRawStream;
     };
+
     const input = '<< /Length 5 0 R >>\nstream\nabc\r\nendstream';
 
     it('keeps a trailing \\r when the referenced length is available', () => {
@@ -706,13 +717,16 @@ describe('PDFObjectParser', () => {
           decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
         }),
       } as unknown as ConstructorParameters<typeof PDFObjectParser>[3];
+
       const context = PDFContext.create();
+
       const parser = new PDFObjectParser(
         ByteStream.of(typedArrayFor(input)),
         context,
         false,
         xorFactory,
       );
+
       const stream = parser.parseObject(PDFRef.of(1)) as PDFRawStream;
       context.assign(PDFRef.of(5), PDFNumber.of(4));
       parser.resolvePendingStreamLengths();
@@ -755,12 +769,14 @@ describe('PDFObjectParser', () => {
 
     const parseEncrypted = (input: string) => {
       const context = PDFContext.create();
+
       const parser = new PDFObjectParser(
         ByteStream.of(typedArrayFor(input)),
         context,
         false,
         xorFactory,
       );
+
       return parser.parseObject(PDFRef.of(1)) as PDFDict;
     };
 
@@ -768,6 +784,7 @@ describe('PDFObjectParser', () => {
       const dict = parseEncrypted(
         '<< /Contents <0A0B> /Name (ab) /Type /Sig >>',
       );
+
       expect(dict.get(PDFName.of('Contents'))).toBeInstanceOf(PDFHexString);
       expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
       // Other strings are still decrypted: 'a'^1='`', 'b'^1='c'
@@ -778,6 +795,7 @@ describe('PDFObjectParser', () => {
       const dict = parseEncrypted(
         '<< /Contents <0A0B> /ByteRange [0 1 2 3] >>',
       );
+
       expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
     });
 

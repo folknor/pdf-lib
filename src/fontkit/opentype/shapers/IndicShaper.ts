@@ -27,6 +27,7 @@ const indicMachine = JSON.parse(
     Array.from(unzlibSync(decodeBase64(base64DeflatedIndicMachine))),
   ),
 );
+
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(indicMachine);
 
@@ -129,11 +130,13 @@ class IndicInfo {
 
 function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   let syllable = 0;
+
   for (const { start, end, tags } of syllableRuns(
     stateMachine,
     glyphs.map(indicCategory),
   )) {
     ++syllable;
+
     for (let i = start; i < end; i++) {
       glyphs[i]!.shaperInfo = tags
         ? new IndicInfo(
@@ -181,6 +184,7 @@ function consonantPosition(
   virama: GlyphInfo,
 ): number {
   const glyphs = [virama, consonant, virama];
+
   if (
     wouldSubstitute(glyphs.slice(0, 2), 'blwf') ||
     wouldSubstitute(glyphs.slice(1, 3), 'blwf')
@@ -207,9 +211,11 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
   const dottedCircle = font.glyphForCodePoint(0x25cc).id;
   const virama = font.glyphForCodePoint(indicConfig.virama).id;
+
   if (virama) {
     // A probe for consonantPosition, never part of the run.
     const info = new GlyphInfo(font, virama, mapped([indicConfig.virama], 0));
+
     for (let i = 0; i < glyphs.length; i++) {
       if (glyphs[i].shaperInfo.position === POSITIONS.Base_C) {
         glyphs[i].shaperInfo.position = consonantPosition(
@@ -242,6 +248,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         dottedCircle,
         inserted([0x25cc], glyphs[start].cluster),
       );
+
       g.shaperInfo = new IndicInfo(
         1 << indicCategory(g),
         indicPosition(g),
@@ -251,6 +258,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
       // Insert after possible Repha.
       let i = start;
+
       while (i < end && glyphs[i].shaperInfo.category === CATEGORIES.Repha) {
         i++;
       }
@@ -289,14 +297,17 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         glyphs[start + 1].copy(),
         glyphs[start + 2].copy(),
       ];
+
       if (
         wouldSubstitute(g.slice(0, 2), 'rphf') ||
         (indicConfig.rephMode === 'Explicit' && wouldSubstitute(g, 'rphf'))
       ) {
         limit += 2;
+
         while (limit < end && isJoiner(glyphs[limit])) {
           limit++;
         }
+
         base = start;
         hasReph = true;
       }
@@ -305,9 +316,11 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       glyphs[start].shaperInfo.category === CATEGORIES.Repha
     ) {
       limit++;
+
       while (limit < end && isJoiner(glyphs[limit])) {
         limit++;
       }
+
       base = start;
       hasReph = true;
     }
@@ -361,6 +374,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             break;
           }
         } while (i > limit);
+
         break;
       }
 
@@ -435,6 +449,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             break;
           }
         }
+
         break;
       }
     }
@@ -462,9 +477,11 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     // With lohit-ttf-20121122/Lohit-Malayalam.ttf
     if (plan.isOldSpec) {
       const disallowDoubleHalants = plan.unicodeScript !== 'Malayalam';
+
       for (let i = base + 1; i < end; i++) {
         if (glyphs[i].shaperInfo.category === CATEGORIES.H) {
           let j;
+
           for (j = end - 1; j > i; j--) {
             if (
               isConsonant(glyphs[j]) ||
@@ -489,8 +506,10 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
     // Attach misc marks to previous char to move with them.
     let lastPos = POSITIONS.Start;
+
     for (let i = start; i < end; i++) {
       const info = glyphs[i].shaperInfo;
+
       if (
         info.category &
         (JOINER_FLAGS |
@@ -500,6 +519,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
           (HALANT_OR_COENG_FLAGS & info.category))
       ) {
         info.position = lastPos;
+
         if (
           info.category === CATEGORIES.H &&
           info.position === POSITIONS.Pre_M
@@ -526,6 +546,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     // For post-base consonants let them own anything before them
     // since the last consonant or matra.
     let last = base;
+
     for (let i = base + 1; i < end; i++) {
       if (isConsonant(glyphs[i])) {
         for (let j = last + 1; j < i; j++) {
@@ -533,6 +554,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             glyphs[j].shaperInfo.position = glyphs[i].shaperInfo.position;
           }
         }
+
         last = i;
       } else if (glyphs[i].shaperInfo.category === CATEGORIES.M) {
         last = i;
@@ -567,8 +589,10 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
     // Pre-base
     const blwf = !plan.isOldSpec && indicConfig.blwfMode === 'Pre_And_Post';
+
     for (let i = start; i < base; i++) {
       glyphs[i].features.half = true;
+
       if (blwf) {
         glyphs[i].features.blwf = true;
       }
@@ -613,10 +637,12 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     const prefLen = 2;
+
     if (features.pref && base + prefLen < end) {
       // Find a Halant,Ra sequence and mark it for pre-base reordering processing.
       for (let i = base + 1; i + prefLen - 1 < end; i++) {
         const g = [glyphs[i].copy(), glyphs[i + 1].copy()];
+
         if (wouldSubstitute(g, 'pref')) {
           for (let j = 0; j < prefLen; j++) {
             glyphs[i++].features.pref = true;
@@ -681,6 +707,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
     // Find base again
     let base = start;
+
     for (; base < end; base++) {
       if (glyphs[base].shaperInfo.position >= POSITIONS.Base_C) {
         if (tryPref && base + 1 < end) {
@@ -696,12 +723,15 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
                 // Ok, this was a 'pref' candidate but didn't form any.
                 // Base is around here...
                 base = i;
+
                 while (base < end && isHalantOrCoeng(glyphs[base])) {
                   base++;
                 }
+
                 glyphs[base]!.shaperInfo.position = POSITIONS['Base_C']!;
                 tryPref = false;
               }
+
               break;
             }
           }
@@ -719,6 +749,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             }
 
             i++; // Skip halant.
+
             while (i < end && isJoiner(glyphs[i])) {
               i++;
             }
@@ -740,6 +771,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         ) {
           base--;
         }
+
         break;
       }
     }
@@ -818,6 +850,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         for (let i = newPos; i > start; i--) {
           if (glyphs[i - 1].shaperInfo.position === POSITIONS.Pre_M) {
             const oldPos = i - 1;
+
             if (oldPos < base && base <= newPos) {
               // Shouldn't actually happen.
               base--;
@@ -877,6 +910,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         //     fixed in shaping engine, there was no case where reph position
         //     will be found on this step.
         newRephPos = start + 1;
+
         while (newRephPos < base && !isHalantOrCoeng(glyphs[newRephPos])) {
           newRephPos++;
         }
@@ -895,6 +929,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         //    consonant that is not a potential pre-base reordering Ra.
         if (!found && rephPos === POSITIONS.After_Main) {
           newRephPos = base;
+
           while (
             newRephPos + 1 < end &&
             glyphs[newRephPos + 1].shaperInfo.position <= POSITIONS.After_Main
@@ -913,6 +948,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         // This is our take on what step 4 is trying to say (and failing, BADLY).
         if (!found && rephPos === POSITIONS.After_Sub) {
           newRephPos = base;
+
           while (
             newRephPos + 1 < end &&
             !(
@@ -936,6 +972,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       if (!found) {
         // Copied from step 2.
         newRephPos = start + 1;
+
         while (newRephPos < base && !isHalantOrCoeng(glyphs[newRephPos])) {
           newRephPos++;
         }
@@ -953,6 +990,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       // 6. Otherwise, reorder reph to the end of the syllable.
       if (!found) {
         newRephPos = end - 1;
+
         while (
           newRephPos > start &&
           glyphs[newRephPos].shaperInfo.position === POSITIONS.SMVD
@@ -1030,6 +1068,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
                 glyphs[newPos - 1].shaperInfo.category === CATEGORIES.M
               ) {
                 const oldPos = i;
+
                 for (let j = base + 1; j < oldPos; j++) {
                   if (glyphs[j].shaperInfo.category === CATEGORIES.M) {
                     newPos--;
@@ -1078,9 +1117,11 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 function nextSyllable(glyphs: GlyphInfo[], start: number): number {
   if (start >= glyphs.length) return start;
   const syllable = glyphs[start]!.shaperInfo.syllable;
+
   while (
     ++start < glyphs.length &&
     glyphs[start]!.shaperInfo.syllable === syllable
   );
+
   return start;
 }

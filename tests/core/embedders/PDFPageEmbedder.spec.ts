@@ -12,6 +12,7 @@ const examplePdf = fs.readFileSync('./assets/pdfs/normal.pdf');
 
 const examplePage = async () => {
   const doc = await PDFDocument.load(examplePdf);
+
   return doc.getPages()[0];
 };
 
@@ -52,12 +53,14 @@ describe('PDFPageEmbedder', () => {
 
   it('calculates dimensions depending on the bounding box when given one', async () => {
     const page = await examplePage();
+
     const boundingBox = {
       left: 100,
       bottom: 100,
       right: 222,
       top: 333,
     };
+
     const embedder = await PDFPageEmbedder.for(page.node, boundingBox);
 
     expect(embedder.width).toEqual(122);
@@ -96,6 +99,7 @@ describe('PDFPageEmbedder', () => {
       right: 200,
       top: 300,
     };
+
     const embedder = await PDFPageEmbedder.for(page.node, clipBox);
 
     // Should use the clipping box as-is

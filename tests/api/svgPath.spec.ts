@@ -32,6 +32,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M100,200 C100,100 250,100 250,200 S400,300 400,200',
     );
+
     expect(operators.length).toBe(3);
     expect(operators.toString()).toBe(
       '100 200 m,100 100 250 100 250 200 c,250 300 400 300 400 200 c',
@@ -42,6 +43,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M100,200 c0,-100 150,-100 150,0 s150,100 150,0',
     );
+
     expect(operators.length).toBe(3);
     expect(operators.toString()).toBe(
       '100 200 m,100 100 250 100 250 200 c,250 300 400 300 400 200 c',
@@ -68,6 +70,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M300,200 h-150 a150,150 0 1,0 150,-150 z',
     );
+
     expect(operators.length).toBe(6);
     expect(operators.toString()).toBe(
       '300 200 m,150 200 l,150 282.8427124746191 217.15728752538098 350 300 350 c,382.84271247461896 350 450 282.842712474619 450 200.00000000000003 c,450 117.15728752538101 382.84271247461896 50.00000000000003 300 50.00000000000002 c,h',
@@ -78,6 +81,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M300,200 h-150 A150,150 0 1,0 300,50 z',
     );
+
     expect(operators.length).toBe(6);
     expect(operators.toString()).toBe(
       '300 200 m,150 200 l,150 282.8427124746191 217.15728752538098 350 300 350 c,382.84271247461896 350 450 282.842712474619 450 200.00000000000003 c,450 117.15728752538101 382.84271247461896 50.00000000000003 300 50.00000000000002 c,h',
@@ -86,9 +90,11 @@ describe('svgPathToOperators', () => {
 
   it('parses arc flags written without separators (cantoo-scribe/pdf-lib#166)', () => {
     const compact = svgPathToOperators('M300,200 h-150 a150,150 0 10150,-150 z');
+
     const spaced = svgPathToOperators(
       'M300,200 h-150 a150,150 0 1,0 150,-150 z',
     );
+
     expect(compact.toString()).toBe(spaced.toString());
   });
 
@@ -126,17 +132,21 @@ describe('svgPathToOperators', () => {
     const compact = svgPathToOperators(
       'M0,0 a5 5 0 0110 0 5 5 0 0010 0 5 5 0 1110 0',
     );
+
     const spaced = svgPathToOperators(
       'M0,0 a5 5 0 0 1 10 0 5 5 0 0 0 10 0 5 5 0 1 1 10 0',
     );
+
     expect(compact.toString()).toBe(spaced.toString());
   });
 
   it('parses repeated compact arc segments', () => {
     const compact = svgPathToOperators('M0,0 a10 10 0 0110-10 10 10 0 1010 10');
+
     const spaced = svgPathToOperators(
       'M0,0 a10 10 0 0 1 10 -10 10 10 0 1 0 10 10',
     );
+
     expect(compact.toString()).toBe(spaced.toString());
   });
 
@@ -144,6 +154,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'm 100 100 S 200,100 200,200 200,200 100,200 T 0,250',
     );
+
     expect(operators.length).toBe(4);
     expect(operators.toString()).toBe(
       '100 100 m,100 100 200 100 200 200 c,200 300 200 200 100 200 c,0 200 0 250 v',
@@ -154,6 +165,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M 0,25 5,25 M 10,25 15,25 M 20,25 25,25',
     );
+
     expect(operators.length).toBe(6);
     expect(operators.toString()).toBe(
       '0 25 m,5 25 l,10 25 m,15 25 l,20 25 m,25 25 l',
@@ -180,6 +192,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M100 100 S200,100 200,200 M95 105 s100,0 100,100',
     );
+
     expect(operators.length).toBe(4);
     expect(operators.toString()).toBe(
       '100 100 m,100 100 200 100 200 200 c,95 105 m,95 105 195 105 195 205 c',
@@ -190,6 +203,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M100 100 T100,200 200,200 M90,120 t0,100 100,0',
     );
+
     expect(operators.length).toBe(6);
     expect(operators.toString()).toBe(
       '100 100 m,100 100 100 200 v,100 300 200 200 v,90 120 m,90 120 90 220 v,90 320 190 220 v',
@@ -201,6 +215,7 @@ describe('svgPathToOperators', () => {
     const operators = svgPathToOperators(
       'M 10,25 Q 30,0 50,25 Q 70,50 90,25 T 130,25 T 170,25',
     );
+
     expect(operators.length).toBe(5);
     expect(operators.toString()).toBe(
       '10 25 m,30 0 50 25 v,70 50 90 25 v,110 0 130 25 v,150 50 170 25 v',

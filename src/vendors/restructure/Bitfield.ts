@@ -23,8 +23,10 @@ export class Bitfield extends Base<Record<string, boolean>> {
     const val = this.type.decode(stream);
 
     const res: Record<string, boolean> = {};
+
     for (let i = 0; i < this.flags.length; i++) {
       const flag = this.flags[i];
+
       if (flag != null) {
         res[flag] = Boolean(val & (1 << i));
       }
@@ -39,8 +41,10 @@ export class Bitfield extends Base<Record<string, boolean>> {
 
   encode(stream: EncodeStream, keys: Record<string, boolean>): void {
     let val = 0;
+
     for (let i = 0; i < this.flags.length; i++) {
       const flag = this.flags[i];
+
       if (flag != null) {
         if (keys[flag]) {
           val |= 1 << i;

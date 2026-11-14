@@ -15,6 +15,7 @@ class PDFCatalog extends PDFDict {
     const dict = new Map();
     dict.set(PDFName.of('Type'), PDFName.of('Catalog'));
     dict.set(PDFName.of('Pages'), pages);
+
     return new PDFCatalog(dict, context);
   };
 
@@ -39,17 +40,21 @@ class PDFCatalog extends PDFDict {
 
   getAcroForm(): PDFAcroForm | undefined {
     const dict = this.AcroForm();
+
     if (!dict) return;
+
     return PDFAcroForm.fromDict(dict);
   }
 
   getOrCreateAcroForm(): PDFAcroForm {
     let acroForm = this.getAcroForm();
+
     if (!acroForm) {
       acroForm = PDFAcroForm.create(this.context);
       const acroFormRef = this.context.register(acroForm.dict);
       this.set(PDFName.of('AcroForm'), acroFormRef);
     }
+
     return acroForm;
   }
 
@@ -59,17 +64,21 @@ class PDFCatalog extends PDFDict {
 
   getViewerPreferences(): ViewerPreferences | undefined {
     const dict = this.ViewerPreferences();
+
     if (!dict) return;
+
     return ViewerPreferences.fromDict(dict);
   }
 
   getOrCreateViewerPreferences(): ViewerPreferences {
     let viewerPrefs = this.getViewerPreferences();
+
     if (!viewerPrefs) {
       viewerPrefs = ViewerPreferences.create(this.context);
       const viewerPrefsRef = this.context.register(viewerPrefs.dict);
       this.set(PDFName.of('ViewerPreferences'), viewerPrefsRef);
     }
+
     return viewerPrefs;
   }
 
@@ -83,6 +92,7 @@ class PDFCatalog extends PDFDict {
   insertLeafNode(leafRef: PDFRef, index: number): PDFRef {
     const pagesRef = this.get(PDFName.of('Pages')) as PDFRef;
     const maybeParentRef = this.Pages().insertLeafNode(leafRef, index);
+
     return maybeParentRef || pagesRef;
   }
 

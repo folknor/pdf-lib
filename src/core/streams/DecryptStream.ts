@@ -29,16 +29,20 @@ class DecryptStream extends DecodeStream {
 
   override readBlock() {
     let chunk;
+
     if (this.initialized) {
       chunk = this.nextChunk;
     } else {
       chunk = this.stream.getBytes(chunkSize);
       this.initialized = true;
     }
+
     if (!chunk || chunk.length === 0) {
       this.eof = true;
+
       return;
     }
+
     this.nextChunk = this.stream.getBytes(chunkSize);
     const hasMoreData = this.nextChunk && this.nextChunk.length > 0;
 

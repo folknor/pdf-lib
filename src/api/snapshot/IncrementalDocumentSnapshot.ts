@@ -29,6 +29,7 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
     if (objectNumber > this.lastObjectNumber) {
       return true;
     }
+
     return this.changedObjects.has(objectNumber);
   }
 
@@ -68,6 +69,7 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
     if (ref.objectNumber === 0 || ref.objectNumber > this.lastObjectNumber) {
       return;
     }
+
     this.deleted.set(ref.objectNumber, ref);
   }
 

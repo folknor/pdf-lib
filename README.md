@@ -9,7 +9,7 @@ Built with LLMs. See [LLM.md](LLM.md).
 
 - ESM-only (no CJS/UMD)
 - TypeScript with stricter settings
-- Biome instead of ESLint/Prettier
+- Oxlint instead of ESLint/Prettier
 - Vitest instead of Jest
 - pnpm instead of yarn
 - Truncated PDFs (an indirect object with no `endobj`) are rejected on load rather than silently dropping the unfinished object

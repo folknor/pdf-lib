@@ -29,27 +29,34 @@ export default class WOFFFont extends TTFFont {
   override _decompress(maxDecodedSize: number): void {
     const entries = Object.values(this.directory.tables) as any[];
     let size = 0;
+
     for (const entry of entries) {
       size += padded(entry.length);
     }
+
     if (size > maxDecodedSize) {
       throw new DecodedStreamTooLargeError(size, maxDecodedSize);
     }
 
     const out = new Uint8Array(size);
     let pos = 0;
+
     for (const entry of entries) {
       this.stream.pos = entry.offset;
+
       if (entry.compLength < entry.length) {
         this.stream.pos += 2; // skip the zlib header; inflateSync is raw
+
         const table = inflateSync(
           this.stream.readBuffer(entry.compLength - 2),
           { out: new Uint8Array(entry.length) },
         );
+
         out.set(table, pos);
       } else {
         out.set(this.stream.readBuffer(entry.length), pos);
       }
+
       entry.offset = pos;
       pos += padded(entry.length);
     }

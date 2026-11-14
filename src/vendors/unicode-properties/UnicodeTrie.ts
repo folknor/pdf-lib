@@ -56,6 +56,7 @@ const isBigEndian =
 function swap32LE(array: Uint8Array): void {
   if (isBigEndian) {
     const len = array.length;
+
     for (let i = 0; i < len; i += 4) {
       const tmp0 = array[i]!;
       const tmp1 = array[i + 1]!;
@@ -105,6 +106,7 @@ export class UnicodeTrie {
       index =
         (this.data[codePoint >> SHIFT_2]! << INDEX_SHIFT) +
         (codePoint & DATA_MASK);
+
       return this.data[index]!;
     }
 
@@ -115,6 +117,7 @@ export class UnicodeTrie {
         (this.data[LSCP_INDEX_2_OFFSET + ((codePoint - 0xd800) >> SHIFT_2)]! <<
           INDEX_SHIFT) +
         (codePoint & DATA_MASK);
+
       return this.data[index]!;
     }
 
@@ -126,6 +129,7 @@ export class UnicodeTrie {
         ]!;
       index = this.data[index + ((codePoint >> SHIFT_2) & INDEX_2_MASK)]!;
       index = (index << INDEX_SHIFT) + (codePoint & DATA_MASK);
+
       return this.data[index]!;
     }
 

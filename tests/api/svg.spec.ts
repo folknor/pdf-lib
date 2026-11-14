@@ -25,16 +25,21 @@ function getAllContentStreamText(
   page: ReturnType<PDFDocument['addPage']>,
 ): string {
   const contents = page.node.Contents();
+
   if (!contents || !(contents instanceof PDFArray)) {
     return '';
   }
+
   let result = '';
+
   for (let i = 0; i < contents.size(); i++) {
     const stream = contents.lookup(i);
+
     if (stream instanceof PDFContentStream) {
       result += stream.getContentsString();
     }
   }
+
   return result;
 }
 
@@ -48,6 +53,7 @@ async function drawAndGetText(
   const doc = await PDFDocument.create();
   const page = doc.addPage();
   page.drawSvg(svg, options);
+
   return getAllContentStreamText(page);
 }
 
@@ -60,6 +66,7 @@ function expectMatrixClose(
   tolerance = 1e-10,
 ) {
   expect(actual).toHaveLength(6);
+
   for (let i = 0; i < 6; i++) {
     expect(actual[i]).toBeCloseTo(expected[i]!, tolerance);
   }
@@ -118,6 +125,7 @@ describe('combineMatrix', () => {
 
   it('rotation 90 CW * rotation 90 CW = rotation 180 CW', () => {
     const angle = Math.PI / 2;
+
     const r90: TransformationMatrix = [
       Math.cos(angle),
       Math.sin(angle),
@@ -126,6 +134,7 @@ describe('combineMatrix', () => {
       0,
       0,
     ];
+
     const result = combineMatrix(r90, r90);
     const angle180 = Math.PI;
     expectMatrixClose(result, [
@@ -250,6 +259,7 @@ describe('transformationToMatrix', () => {
     it('rotate(90) produces approximately [0,1,-1,0,0,0] (inverted for PDF)', () => {
       // The code negates the angle: degreesToRadians(-90)
       const a = degreesToRadians(-90);
+
       const expected: TransformationMatrix = [
         Math.cos(a),
         Math.sin(a),
@@ -258,11 +268,13 @@ describe('transformationToMatrix', () => {
         0,
         0,
       ];
+
       expectMatrixClose(transformationToMatrix('rotate', [90]), expected);
     });
 
     it('rotate(180) produces [-1,0,0,-1,0,0] approximately', () => {
       const a = degreesToRadians(-180);
+
       const expected: TransformationMatrix = [
         Math.cos(a),
         Math.sin(a),
@@ -271,6 +283,7 @@ describe('transformationToMatrix', () => {
         0,
         0,
       ];
+
       expectMatrixClose(transformationToMatrix('rotate', [180]), expected);
     });
 
@@ -376,6 +389,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="none" stroke="red" stroke-width="1"/></svg>',
     );
+
     // Should have the stroke color (red) but no fill operator
     expect(text).toContain('1 0 0 RG');
     // Stroke-only => S operator, not f or B
@@ -388,6 +402,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="transparent" stroke="blue" stroke-width="1"/></svg>',
     );
+
     expect(text).toContain('0 0 1 RG');
     expect(text).toMatch(/\nS\n/);
     // Should NOT contain a fill color
@@ -398,6 +413,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="red"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -405,6 +421,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="rgb(0,128,255)"/></svg>',
     );
+
     // color library normalizes to 0-1 range
     // 0/255 = 0, 128/255 ~= 0.502, 255/255 = 1
     expect(text).toMatch(/0 [\d.]+ 1 rg/);
@@ -414,6 +431,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="#ff0000"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -421,6 +439,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="#00ff00"/></svg>',
     );
+
     expect(text).toContain('0 1 0 rg');
   });
 
@@ -428,6 +447,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="blue"/></svg>',
     );
+
     expect(text).toContain('0 0 1 RG');
   });
 
@@ -436,6 +456,7 @@ describe('parseColor (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="currentColor"/></svg>',
     );
+
     expect(text).toContain('0 0 0 rg');
   });
 });
@@ -448,6 +469,7 @@ describe('parseBlendMode (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="red" style="mix-blend-mode:multiply"/></svg>',
     );
+
     expect(text).toMatch(/\/GS\S* gs/);
   });
 
@@ -455,6 +477,7 @@ describe('parseBlendMode (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="red" style="mix-blend-mode:screen"/></svg>',
     );
+
     expect(text).toMatch(/\/GS\S* gs/);
   });
 
@@ -462,6 +485,7 @@ describe('parseBlendMode (via drawSvg)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" fill="red" style="mix-blend-mode:unknown-mode"/></svg>',
     );
+
     expect(text).not.toMatch(/\/GS\S* gs/);
   });
 
@@ -491,10 +515,12 @@ describe('parseBlendMode (via drawSvg)', () => {
       'difference',
       'exclusion',
     ];
+
     for (const mode of modes) {
       const text = await drawAndGetText(
         `<svg width="100" height="100"><rect width="50" height="50" fill="red" style="mix-blend-mode:${mode}"/></svg>`,
       );
+
       // All valid blend modes should produce a gs operator
       expect(text).toMatch(/\/GS\S* gs/);
     }
@@ -510,6 +536,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect x="10" y="10" width="100" height="50" fill="red"/></svg>',
       );
+
       // Should contain fill color
       expect(text).toContain('1 0 0 rg');
       // Should contain fill operator (f)
@@ -523,6 +550,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50" fill="none" stroke="green" stroke-width="2"/></svg>',
       );
+
       // Should contain stroke color (green = #008000 = rgb(0, 128/255, 0))
       expect(text).toMatch(/0 0\.501\d+ 0 RG/);
       // Stroke width
@@ -535,6 +563,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50" fill="red" stroke="blue" stroke-width="1"/></svg>',
       );
+
       expect(text).toContain('1 0 0 rg'); // red fill
       expect(text).toContain('0 0 1 RG'); // blue stroke
       expect(text).toMatch(/\nB\n/); // fill-and-stroke
@@ -544,6 +573,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50"/></svg>',
       );
+
       expect(text).toContain('0 0 0 rg');
       expect(text).toMatch(/\nf\n/);
       expect(text).not.toContain('RG');
@@ -553,6 +583,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50" fill="none"/></svg>',
       );
+
       expect(text).not.toContain('rg');
       expect(text).not.toContain('RG');
     });
@@ -561,6 +592,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="100" height="50" rx="10" ry="10" fill="red"/></svg>',
       );
+
       // Rounded corners use bezier curves
       const curveMatches = text.match(/\bc\n/g);
       expect(curveMatches).not.toBeNull();
@@ -573,6 +605,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><circle cx="100" cy="100" r="50" fill="blue"/></svg>',
       );
+
       expect(text).toContain('0 0 1 rg');
       // Circle uses 4 bezier curves
       const curveMatches = text.match(/\bc\n/g);
@@ -584,6 +617,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><circle cx="100" cy="100" r="50" fill="none" stroke="black" stroke-width="2"/></svg>',
       );
+
       expect(text).toContain('0 0 0 RG');
       expect(text).toContain('2 w');
       expect(text).toMatch(/\nS\n/);
@@ -595,6 +629,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><ellipse cx="100" cy="50" rx="80" ry="40" fill="green"/></svg>',
       );
+
       // Green color
       expect(text).toMatch(/[\d.]+ [\d.]+ [\d.]+ rg/);
       // 4 bezier curves
@@ -607,6 +642,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><ellipse cx="100" cy="50" rx="80" ry="40" fill="none" stroke="red" stroke-width="1"/></svg>',
       );
+
       expect(text).toContain('1 0 0 RG');
       expect(text).toMatch(/\nS\n/);
     });
@@ -617,6 +653,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><line x1="10" y1="20" x2="100" y2="150" stroke="black"/></svg>',
       );
+
       expect(text).toContain('m'); // moveTo
       expect(text).toContain('l'); // lineTo
       expect(text).toMatch(/\nS\n/); // stroke
@@ -626,6 +663,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><line x1="0" y1="0" x2="50" y2="50" stroke="red" stroke-width="3"/></svg>',
       );
+
       expect(text).toContain('3 w');
     });
   });
@@ -635,6 +673,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><path d="M10 10 L 100 10 L 100 100 Z" fill="red"/></svg>',
       );
+
       expect(text).toContain('1 0 0 rg');
       expect(text).toContain('m'); // moveTo
     });
@@ -643,6 +682,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><path fill="red"/></svg>',
       );
+
       // The path runner returns early if no d attribute
       expect(text).not.toContain('rg');
     });
@@ -651,6 +691,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><path d="M10 80 C 40 10, 65 10, 95 80" stroke="black" fill="none"/></svg>',
       );
+
       expect(text).toMatch(/c\n/);
     });
 
@@ -658,6 +699,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><path d="M10 10 L100 10 L100 100 Z" fill="red" fill-rule="evenodd"/></svg>',
       );
+
       // evenodd fill rule uses f* operator instead of f
       expect(text).toMatch(/f\*/);
     });
@@ -668,6 +710,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><text x="10" y="50">Hello</text></svg>',
       );
+
       // Text drawing produces BT/ET block
       expect(text).toContain('BT');
       expect(text).toContain('ET');
@@ -679,6 +722,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><text x="10" y="50" fill="red">Colored</text></svg>',
       );
+
       expect(text).toContain('1 0 0 rg');
     });
 
@@ -686,6 +730,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><text x="10" y="50" font-size="24">Big</text></svg>',
       );
+
       // Tf operator should contain 24
       expect(text).toMatch(/\/\S+ 24 Tf/);
     });
@@ -694,6 +739,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><text x="10" y="50">Default size</text></svg>',
       );
+
       expect(text).toMatch(/\/\S+ 12 Tf/);
     });
   });
@@ -703,6 +749,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><polygon points="50,10 90,90 10,90" fill="red"/></svg>',
       );
+
       // Polygon is converted to path with d="M50,10 90,90 10,90Z"
       expect(text).toContain('1 0 0 rg');
       expect(text).toContain('m'); // moveTo from M
@@ -714,6 +761,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><polyline points="10,10 50,50 90,10" fill="none" stroke="red"/></svg>',
       );
+
       expect(text).toContain('1 0 0 RG');
       expect(text).toMatch(/\nS\n/);
       // open path: no closepath operator between the polyline's moveTo and
@@ -727,6 +775,7 @@ describe('drawSvg end-to-end — element types', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><polygon points="10,10 50,50 90,10" fill="none" stroke="red"/></svg>',
       );
+
       // scope to the polygon's own path (the viewport clip rect also emits h)
       const path = text.slice(text.indexOf('10 10 m'), text.lastIndexOf('S'));
       expect(path).toContain('90 10 l');
@@ -740,6 +789,7 @@ describe('no-paint guards for line and text', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g stroke="red"><line x2="20" y2="20" stroke="none"/></g></svg>',
     );
+
     expect(text).not.toContain('RG');
     expect(text).not.toMatch(/\nS\n/);
   });
@@ -748,6 +798,7 @@ describe('no-paint guards for line and text', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><line x2="20" y2="20"/></svg>',
     );
+
     expect(text).not.toContain('RG');
     expect(text).not.toMatch(/\nS\n/);
   });
@@ -756,6 +807,7 @@ describe('no-paint guards for line and text', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g fill="red"><text x="5" y="20" fill="none">X</text></g></svg>',
     );
+
     expect(text).not.toContain('BT');
     expect(text).not.toContain('rg');
   });
@@ -764,6 +816,7 @@ describe('no-paint guards for line and text', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><text x="5" y="20" fill="transparent">X</text></svg>',
     );
+
     expect(text).not.toContain('BT');
   });
 });
@@ -773,6 +826,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g fill="red"><rect width="50" height="50" fill="unset"/></g></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -780,6 +834,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50" height="50" color="red" fill="currentColor"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -787,6 +842,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g color="red" fill="currentColor"><rect color="blue" width="20" height="20"/></g></svg>',
     );
+
     expect(text).toContain('0 0 1 rg');
     expect(text).not.toContain('1 0 0 rg');
   });
@@ -795,6 +851,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="20" height="20" color="rgba(255,0,0,0.5)" fill="currentColor"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).toMatch(/\/GS\S* gs/);
   });
@@ -803,6 +860,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g color="red"><rect color="transparent" fill="currentColor" width="20" height="20"/></g></svg>',
     );
+
     expect(text).not.toContain('rg');
   });
 
@@ -810,6 +868,7 @@ describe('fill="unset" and currentColor', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g color="blue"><line x2="20" y2="20" stroke="currentColor"/></g></svg>',
     );
+
     expect(text).toContain('0 0 1 RG');
   });
 });
@@ -822,6 +881,7 @@ describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g fill="red"><path d="M0 0 L50 0 L50 50 Z" fill="none" stroke="blue"/></g></svg>',
     );
+
     expect(text).not.toContain('1 0 0 rg');
     expect(text).toContain('0 0 1 RG');
     expect(text).toMatch(/\nS\n/);
@@ -831,6 +891,7 @@ describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><path d="M0 0 L50 0 L50 50 Z"/></svg>',
     );
+
     expect(text).toContain('0 0 0 rg');
     expect(text).not.toContain('RG');
   });
@@ -839,6 +900,7 @@ describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><path d="M0 0 L50 0 L50 50 Z" fill="none"/></svg>',
     );
+
     expect(text).not.toContain('rg');
     expect(text).not.toContain('RG');
   });
@@ -847,6 +909,7 @@ describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><circle cx="50" cy="50" r="20" fill="none"/></svg>',
     );
+
     expect(text).not.toContain('rg');
     expect(text).not.toContain('RG');
   });
@@ -855,6 +918,7 @@ describe('fill none vs unset (cantoo-scribe/pdf-lib#165)', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><g stroke="blue"><rect width="50" height="50" fill="red" stroke="none"/></g></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).not.toContain('RG');
   });
@@ -871,6 +935,7 @@ describe('default stroke-width (cantoo-scribe/pdf-lib#164)', () => {
       const text = await drawAndGetText(
         `<svg width="100" height="100">${shape} fill="none" stroke="red"/></svg>`,
       );
+
       expect(text).toContain('1 0 0 RG');
       expect(text).toContain('1 w');
       expect(text).toMatch(/\nS\n/);
@@ -887,6 +952,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><rect width="50" height="50" fill="red" fill-opacity="0.5"/></svg>',
       );
+
       expect(text).toMatch(/\/GS\S* gs/);
     });
 
@@ -894,6 +960,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><rect width="50" height="50" fill="none" stroke="red" stroke-opacity="0.5" stroke-width="1"/></svg>',
       );
+
       expect(text).toMatch(/\/GS\S* gs/);
     });
 
@@ -901,6 +968,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><rect width="50" height="50" fill="red" opacity="0.5"/></svg>',
       );
+
       expect(text).toMatch(/\/GS\S* gs/);
     });
   });
@@ -910,6 +978,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="black" stroke-linecap="round"/></svg>',
       );
+
       expect(text).toContain('1 J');
     });
 
@@ -917,6 +986,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="black" stroke-linecap="square"/></svg>',
       );
+
       expect(text).toContain('2 J');
     });
 
@@ -927,6 +997,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="black" stroke-linecap="butt"/></svg>',
       );
+
       // The line should still be drawn (stroke operator present)
       expect(text).toMatch(/\nS\n/);
       // Butt is the default, so no explicit J operator is emitted
@@ -942,6 +1013,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><path d="M10 10 L50 50 L90 10" fill="none" stroke="black" stroke-width="1" stroke-linejoin="round"/></svg>',
       );
+
       // The path should still be drawn with a stroke
       expect(text).toMatch(/\nS\n/);
       // No j operator is emitted (feature not yet wired into the drawing pipeline)
@@ -952,6 +1024,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><path d="M10 10 L50 50 L90 10" fill="none" stroke="black" stroke-width="1" stroke-linejoin="bevel"/></svg>',
       );
+
       expect(text).toMatch(/\nS\n/);
     });
   });
@@ -961,6 +1034,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="50" height="50" fill="red" transform="translate(10,20)"/></svg>',
       );
+
       expect(text).toContain('cm');
     });
 
@@ -968,6 +1042,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="50" height="50" fill="red" transform="scale(2)"/></svg>',
       );
+
       expect(text).toContain('cm');
     });
 
@@ -975,6 +1050,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="50" height="50" fill="red" transform="rotate(45)"/></svg>',
       );
+
       expect(text).toContain('cm');
     });
 
@@ -982,6 +1058,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="200" height="200"><rect width="50" height="50" fill="red" transform="translate(10,20) scale(2)"/></svg>',
       );
+
       expect(text).toContain('cm');
     });
   });
@@ -991,6 +1068,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><rect width="50" height="50" fill="red" style="fill:blue"/></svg>',
       );
+
       // Blue should win over red
       expect(text).toContain('0 0 1 rg');
       expect(text).not.toContain('1 0 0 rg');
@@ -1000,6 +1078,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="red" style="stroke:blue"/></svg>',
       );
+
       expect(text).toContain('0 0 1 RG');
       expect(text).not.toContain('1 0 0 RG');
     });
@@ -1008,6 +1087,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><line x1="0" y1="0" x2="50" y2="50" stroke="black" stroke-width="1" style="stroke-width:5"/></svg>',
       );
+
       expect(text).toContain('5 w');
     });
   });
@@ -1017,6 +1097,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><g fill="red"><rect width="50" height="50"/></g></svg>',
       );
+
       expect(text).toContain('1 0 0 rg');
     });
 
@@ -1024,6 +1105,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><g stroke="blue"><line x1="0" y1="0" x2="50" y2="50"/></g></svg>',
       );
+
       expect(text).toContain('0 0 1 RG');
     });
 
@@ -1031,6 +1113,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><g fill="red"><rect width="50" height="50" fill="blue"/></g></svg>',
       );
+
       expect(text).toContain('0 0 1 rg');
       expect(text).not.toContain('1 0 0 rg');
     });
@@ -1039,6 +1122,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><g fill="green"><g><rect width="50" height="50"/></g></g></svg>',
       );
+
       // Green = 0 0.502 0 (approximately)
       expect(text).toMatch(/0 [\d.]+ 0 rg/);
     });
@@ -1047,6 +1131,7 @@ describe('SVG attribute handling', () => {
       const text = await drawAndGetText(
         '<svg width="100" height="100"><g stroke-width="4" stroke="black"><line x1="0" y1="0" x2="50" y2="50"/></g></svg>',
       );
+
       expect(text).toContain('4 w');
     });
   });
@@ -1087,6 +1172,7 @@ describe('SVG viewBox and sizing', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="100"><rect width="200" height="100" fill="red"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).toMatch(/\nf\n/);
   });
@@ -1095,6 +1181,7 @@ describe('SVG viewBox and sizing', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200" viewBox="0 0 100 100"><rect width="100" height="100" fill="red"/></svg>',
     );
+
     // The viewBox is 100x100 but SVG is 200x200, so scale factor of 2 should be applied
     expect(text).toContain('cm');
     expect(text).toContain('1 0 0 rg');
@@ -1127,6 +1214,7 @@ describe('getAspectRatioTransformation (via nested SVG)', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="100" viewBox="0 0 100 100" preserveAspectRatio="none"><rect width="100" height="100" fill="red"/></svg>',
     );
+
     // With "none", it should scale x by 2 and y by 1
     expect(text).toContain('cm');
     expect(text).toContain('1 0 0 rg');
@@ -1136,6 +1224,7 @@ describe('getAspectRatioTransformation (via nested SVG)', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="100" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid"><rect width="100" height="100" fill="red"/></svg>',
     );
+
     expect(text).toContain('cm');
     expect(text).toContain('1 0 0 rg');
   });
@@ -1144,6 +1233,7 @@ describe('getAspectRatioTransformation (via nested SVG)', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="100" viewBox="0 0 100 100" preserveAspectRatio="xMinYMin"><rect width="100" height="100" fill="red"/></svg>',
     );
+
     expect(text).toContain('cm');
     expect(text).toContain('1 0 0 rg');
   });
@@ -1152,6 +1242,7 @@ describe('getAspectRatioTransformation (via nested SVG)', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="100" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="red"/></svg>',
     );
+
     expect(text).toContain('cm');
     expect(text).toContain('1 0 0 rg');
   });
@@ -1168,6 +1259,7 @@ describe('Multiple elements in single SVG', () => {
         <circle cx="100" cy="100" r="30" fill="blue"/>
       </svg>`,
     );
+
     // Red fill from rect
     expect(text).toContain('1 0 0 rg');
     // Blue fill from circle
@@ -1186,6 +1278,7 @@ describe('Multiple elements in single SVG', () => {
         </g>
       </svg>`,
     );
+
     // Both rects should inherit red from the group
     // Count occurrences of the red fill
     const redMatches = text.match(/1 0 0 rg/g);
@@ -1219,6 +1312,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><!-- comment --><rect width="50" height="50" fill="red"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -1226,6 +1320,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="100" height="100"><rect width="50%" height="50%" fill="red"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
   });
 
@@ -1233,9 +1328,11 @@ describe('Edge cases', () => {
     const { default: PDFSvg } = await import('../../src/api/PDFSvg');
     const doc = await PDFDocument.create();
     const page = doc.addPage();
+
     const pdfSvg = new PDFSvg(
       '<svg width="100" height="100"><rect width="50" height="50" fill="red"/></svg>',
     );
+
     page.drawSvg(pdfSvg);
     const text = getAllContentStreamText(page);
     expect(text).toContain('1 0 0 rg');
@@ -1245,6 +1342,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200" style="font-family:Helvetica"><text x="10" y="50">Hi</text></svg>',
     );
+
     expect(text).toContain('BT');
     expect(text).toContain('ET');
   });
@@ -1253,6 +1351,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><text x="100" y="50" text-anchor="middle">Centered</text></svg>',
     );
+
     expect(text).toContain('BT');
     expect(text).toContain('Tm');
   });
@@ -1261,6 +1360,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><text x="100" y="50" text-anchor="end">Right</text></svg>',
     );
+
     expect(text).toContain('BT');
     expect(text).toContain('Tm');
   });
@@ -1269,6 +1369,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><text x="50" y="50" dominant-baseline="middle">Mid</text></svg>',
     );
+
     expect(text).toContain('BT');
   });
 
@@ -1276,6 +1377,7 @@ describe('Edge cases', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><text x="50" y="50" dominant-baseline="hanging">Hang</text></svg>',
     );
+
     expect(text).toContain('BT');
   });
 });
@@ -1299,6 +1401,7 @@ describe('combineMatrix numerical correctness', () => {
       [1, 2, 3, 4, 5, 6],
       [7, 8, 9, 10, 11, 12],
     );
+
     expectMatrixClose(result, [31, 46, 39, 58, 52, 76]);
   });
 
@@ -1307,6 +1410,7 @@ describe('combineMatrix numerical correctness', () => {
       [-1, 0, 0, -1, 0, 0],
       [1, 0, 0, 1, 10, 20],
     );
+
     // a' = -1*1 + 0*0 = -1, b' = 0*1 + (-1)*0 = 0
     // c' = -1*0 + 0*1 = 0,  d' = 0*0 + (-1)*1 = -1
     // e' = -1*10 + 0*20 + 0 = -10
@@ -1319,6 +1423,7 @@ describe('combineMatrix numerical correctness', () => {
       [0.5, 0, 0, 0.5, 0, 0],
       [1, 0, 0, 1, 100, 200],
     );
+
     expectMatrixClose(result, [0.5, 0, 0, 0.5, 50, 100]);
   });
 });
@@ -1365,6 +1470,7 @@ describe('Nested SVG elements', () => {
         </svg>
       </svg>`,
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).toContain('cm');
   });
@@ -1377,6 +1483,7 @@ describe('Nested SVG elements', () => {
         </svg>
       </svg>`,
     );
+
     expect(text).toContain('0 0 1 rg');
     expect(text).toContain('cm');
   });
@@ -1390,6 +1497,7 @@ describe('Font attributes in SVG', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200" font-size="20"><text x="10" y="50">Big</text></svg>',
     );
+
     expect(text).toMatch(/\/\S+ 20 Tf/);
   });
 
@@ -1397,6 +1505,7 @@ describe('Font attributes in SVG', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><g font-size="18"><text x="10" y="50">Grouped</text></g></svg>',
     );
+
     expect(text).toMatch(/\/\S+ 18 Tf/);
   });
 
@@ -1418,6 +1527,7 @@ describe('Font attributes in SVG', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><text x="10" y="50" font-family="&quot;Linux Libertine O&quot;, serif">Test</text></svg>',
     );
+
     // Should not crash, and text should still render
     expect(text).toContain('BT');
     expect(text).toContain('ET');
@@ -1542,6 +1652,7 @@ describe('Graphics state management in drawSvg', () => {
         <rect x="60" width="50" height="50" fill="blue"/>
       </svg>`,
     );
+
     const qCount = (text.match(/^q$/gm) || []).length;
     const bigQCount = (text.match(/^Q$/gm) || []).length;
     // Each element should have its own q/Q pair
@@ -1594,6 +1705,7 @@ describe('Complex SVG structures', () => {
         </g>
       </svg>`,
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).toContain('cm');
   });
@@ -1602,6 +1714,7 @@ describe('Complex SVG structures', () => {
     const text = await drawAndGetText(
       '<svg width="200" height="200"><rect width="50" height="50" fill="red" transform="translate(50,50) rotate(45) scale(1.5)"/></svg>',
     );
+
     expect(text).toContain('1 0 0 rg');
     expect(text).toContain('cm');
   });

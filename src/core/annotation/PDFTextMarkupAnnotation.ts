@@ -39,6 +39,7 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
         options.quadPoints.righttopY,
       ].map((point) => PDFNumber.of(point)),
     );
+
     textmarkupAnnotation.dict.set(PDFName.of('QuadPoints'), quadPointsArray);
 
     return textmarkupAnnotation;
@@ -46,18 +47,23 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
 
   QuadPoints(): PDFNumber[] | undefined {
     const quadPoints = this.dict.lookup(PDFName.of('QuadPoints'));
+
     if (quadPoints instanceof PDFArray) {
       const numbers: PDFNumber[] = [];
+
       for (let idx = 0, len = quadPoints.size(); idx < len; idx++) {
         const num = quadPoints.lookup(idx);
+
         if (num instanceof PDFNumber) {
           numbers.push(num);
         } else {
           return;
         }
       }
+
       return numbers;
     }
+
     return;
   }
 
@@ -111,17 +117,20 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
         rightTopX,
         rightTopY,
       ];
+
       if (coords.length !== 8 || coords.some((n) => typeof n !== 'number')) {
         throw new Error(
           'setQuadPoints requires either a tuple of 8 numbers or 8 individual number arguments',
         );
       }
+
       values = coords as number[];
     }
 
     const quadPointsArray = this.dict.context.obj(
       values.map((v) => PDFNumber.of(v)),
     );
+
     this.dict.set(PDFName.of('QuadPoints'), quadPointsArray);
   }
 }

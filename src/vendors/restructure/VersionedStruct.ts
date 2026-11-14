@@ -10,6 +10,7 @@ import type { NumberT } from './Number.js';
 import { type Fields, Struct } from './Struct.js';
 
 type VersionType = NumberT | string;
+
 type VersionFields = Record<string | number, Fields | VersionedStruct> & {
   header?: Fields;
 };
@@ -41,6 +42,7 @@ export class VersionedStruct extends Struct {
     super();
     this.type = type;
     this.versions = versions;
+
     if (typeof type === 'string') {
       this.versionPath = type.split('.');
     }
@@ -67,6 +69,7 @@ export class VersionedStruct extends Struct {
     }
 
     const fields = this.versions[res.version as string | number];
+
     if (fields == null) {
       throw new Error(`Unknown version ${res.version}`);
     }
@@ -80,6 +83,7 @@ export class VersionedStruct extends Struct {
     if (this.process != null) {
       this.process.call(res, stream);
     }
+
     return res;
   }
 
@@ -103,6 +107,7 @@ export class VersionedStruct extends Struct {
     };
 
     let size = 0;
+
     if (typeof this.type !== 'string') {
       size += this.type.size();
     }
@@ -110,6 +115,7 @@ export class VersionedStruct extends Struct {
     if (this.versions.header) {
       for (const key in this.versions.header) {
         const type = this.versions.header[key]!;
+
         if (typeof type !== 'function' && type.size != null) {
           size += type.size(val[key], ctx);
         }
@@ -117,6 +123,7 @@ export class VersionedStruct extends Struct {
     }
 
     const fields = this.versions[val['version'] as string | number];
+
     if (fields == null) {
       throw new Error(`Unknown version ${val['version']}`);
     }
@@ -124,6 +131,7 @@ export class VersionedStruct extends Struct {
     if (!(fields instanceof VersionedStruct)) {
       for (const key in fields) {
         const type = fields[key]!;
+
         if (typeof type !== 'function' && type.size != null) {
           size += type.size(val[key], ctx);
         }
@@ -168,6 +176,7 @@ export class VersionedStruct extends Struct {
     if (this.versions.header) {
       for (const key in this.versions.header) {
         const type = this.versions.header[key]!;
+
         if (typeof type !== 'function' && type.encode != null) {
           type.encode(stream, val[key], ctx);
         }
@@ -175,9 +184,11 @@ export class VersionedStruct extends Struct {
     }
 
     const fields = this.versions[val['version'] as string | number];
+
     if (!(fields instanceof VersionedStruct)) {
       for (const key in fields as Fields) {
         const type = (fields as Fields)[key]!;
+
         if (typeof type !== 'function' && type.encode != null) {
           type.encode(stream, val[key], ctx);
         }
@@ -185,6 +196,7 @@ export class VersionedStruct extends Struct {
     }
 
     let i = 0;
+
     while (i < ctx.pointers.length) {
       const ptr = ctx.pointers[i++]!;
       ptr.type.encode(stream, ptr.val, ptr.parent);

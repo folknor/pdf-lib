@@ -31,8 +31,10 @@ export default class UnicodeLayoutEngine {
     // find each base + mark cluster, and position the marks relative to the base
     let clusterStart = 0;
     let clusterEnd = 0;
+
     for (let index = 0; index < glyphs.length; index++) {
       const cps = codePoints[index]!;
+
       if (cps.length > 0 && cps.every(isMark)) {
         // TODO: handle ligatures
         clusterEnd = index;

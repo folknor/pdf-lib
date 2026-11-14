@@ -29,6 +29,7 @@ class TestDecodeStream extends DecodeStream {
   protected override readBlock(): void {
     if (this.dataPos >= this.data.length) {
       this.eof = true;
+
       return;
     }
 
@@ -389,9 +390,11 @@ describe('DecodeStream', () => {
 
     it('decodes a large stream correctly', () => {
       const data = new Uint8Array(2000);
+
       for (let i = 0; i < data.length; i++) {
         data[i] = i % 256;
       }
+
       const stream = new TestDecodeStream(data);
 
       const decoded = stream.decode();
@@ -404,9 +407,11 @@ describe('DecodeStream', () => {
       // The default minBufferLength is 512. A stream with 2000 bytes should
       // trigger buffer growth via ensureBuffer.
       const data = new Uint8Array(2000);
+
       for (let i = 0; i < data.length; i++) {
         data[i] = i % 256;
       }
+
       const stream = new TestDecodeStream(data);
 
       const decoded = stream.decode();
@@ -416,9 +421,11 @@ describe('DecodeStream', () => {
 
     it('handles data that exactly matches the minimum buffer length', () => {
       const data = new Uint8Array(512);
+
       for (let i = 0; i < data.length; i++) {
         data[i] = i % 256;
       }
+
       const stream = new TestDecodeStream(data);
 
       const decoded = stream.decode();
@@ -427,9 +434,11 @@ describe('DecodeStream', () => {
 
     it('handles data delivered in small chunks that cumulatively exceed initial buffer', () => {
       const data = new Uint8Array(1500);
+
       for (let i = 0; i < data.length; i++) {
         data[i] = (i * 7) % 256;
       }
+
       // Use a small chunk size so readBlock is called many times
       const stream = new TestDecodeStream(data, undefined, 100);
 
@@ -484,9 +493,11 @@ describe('DecodeStream', () => {
 
     it('does not reject getBytes(n) reservations beyond the cap', () => {
       DecodeStream.maxDecodedSize = 1000;
+
       const flateStream = new FlateStream(
         new Stream(zlibSync(Uint8Array.of(42))),
       );
+
       expect(flateStream.getBytes(1001)).toEqual(Uint8Array.of(42));
     });
 
@@ -498,19 +509,23 @@ describe('DecodeStream', () => {
 
     it('does not reject ASCIIHex worst-case reservations', () => {
       DecodeStream.maxDecodedSize = 1;
+
       // '4 1' decodes to one byte but reserves (len+1)>>1 = 3 bytes
       const hex = new AsciiHexStream(
         new Stream(Uint8Array.from([0x34, 0x20, 0x31, 0x20, 0x3e])),
       );
+
       expect(hex.decode()).toEqual(Uint8Array.of(0x41));
     });
 
     it('does not reject RunLength reservations', () => {
       DecodeStream.maxDecodedSize = 2;
+
       // repeat run: 255 => 'A' x2, but reserves n+1 = 3 bytes; then EOD
       const rl = new RunLengthStream(
         new Stream(Uint8Array.of(255, 0x41, 128, 0)),
       );
+
       expect(rl.decode()).toEqual(Uint8Array.of(0x41, 0x41));
     });
   });
@@ -547,9 +562,11 @@ describe('DecodeStream', () => {
       // Passing maybeMinBufferLength = 600, the internal minBufferLength
       // should become 1024 (next power of 2 >= 600 starting from 512).
       const data = new Uint8Array(800);
+
       for (let i = 0; i < data.length; i++) {
         data[i] = i % 256;
       }
+
       const stream = new TestDecodeStream(data, 600);
 
       const decoded = stream.decode();

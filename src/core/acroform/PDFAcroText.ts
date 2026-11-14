@@ -16,19 +16,25 @@ class PDFAcroText extends PDFAcroTerminal {
       FT: 'Tx',
       Kids: [],
     });
+
     const ref = context.register(dict);
+
     return new PDFAcroText(dict, ref);
   };
 
   MaxLen(): PDFNumber | undefined {
     const maxLen = this.dict.lookup(PDFName.of('MaxLen'));
+
     if (maxLen instanceof PDFNumber) return maxLen;
+
     return;
   }
 
   Q(): PDFNumber | undefined {
     const q = this.dict.lookup(PDFName.of('Q'));
+
     if (q instanceof PDFNumber) return q;
+
     return;
   }
 
@@ -42,6 +48,7 @@ class PDFAcroText extends PDFAcroTerminal {
 
   getMaxLength(): number | undefined {
     const maxLen = this.MaxLen()?.asNumber();
+
     return maxLen === 0 ? undefined : maxLen;
   }
 
@@ -70,7 +77,9 @@ class PDFAcroText extends PDFAcroTerminal {
 
   getValue(): PDFString | PDFHexString | undefined {
     const v = this.V();
+
     if (v instanceof PDFString || v instanceof PDFHexString) return v;
+
     return;
   }
 }

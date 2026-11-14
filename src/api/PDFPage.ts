@@ -119,6 +119,7 @@ export default class PDFPage {
     const dummyRef = PDFRef.of(-1);
     const pageLeaf = PDFPageLeaf.withContextAndParent(doc.context, dummyRef);
     const pageRef = doc.context.register(pageLeaf);
+
     return new PDFPage(pageLeaf, pageRef, doc);
   };
 
@@ -180,6 +181,7 @@ export default class PDFPage {
    */
   getRotation(): Rotation {
     const Rotate = this.node.Rotate();
+
     return degrees(Rotate ? Rotate.asNumber() : 0);
   }
 
@@ -239,12 +241,15 @@ export default class PDFPage {
     if (hasCropBox && rectanglesAreEqual(cropBox, mediaBox)) {
       this.setCropBox(mediaBox.x, mediaBox.y, width, height);
     }
+
     if (hasBleedBox && rectanglesAreEqual(bleedBox, mediaBox)) {
       this.setBleedBox(mediaBox.x, mediaBox.y, width, height);
     }
+
     if (hasTrimBox && rectanglesAreEqual(trimBox, mediaBox)) {
       this.setTrimBox(mediaBox.x, mediaBox.y, width, height);
     }
+
     if (hasArtBox && rectanglesAreEqual(artBox, mediaBox)) {
       this.setArtBox(mediaBox.x, mediaBox.y, width, height);
     }
@@ -427,6 +432,7 @@ export default class PDFPage {
    */
   getSize(): { width: number; height: number } {
     const { width, height } = this.getMediaBox();
+
     return { width, height };
   }
 
@@ -477,6 +483,7 @@ export default class PDFPage {
    */
   getMediaBox(): { x: number; y: number; width: number; height: number } {
     const mediaBox = this.node.MediaBox();
+
     return mediaBox.asRectangle();
   }
 
@@ -498,6 +505,7 @@ export default class PDFPage {
    */
   getCropBox(): { x: number; y: number; width: number; height: number } {
     const cropBox = this.node.CropBox();
+
     return cropBox?.asRectangle() ?? this.getMediaBox();
   }
 
@@ -520,6 +528,7 @@ export default class PDFPage {
    */
   getBleedBox(): { x: number; y: number; width: number; height: number } {
     const bleedBox = this.node.BleedBox();
+
     return bleedBox?.asRectangle() ?? this.getCropBox();
   }
 
@@ -541,6 +550,7 @@ export default class PDFPage {
    */
   getTrimBox(): { x: number; y: number; width: number; height: number } {
     const trimBox = this.node.TrimBox();
+
     return trimBox?.asRectangle() ?? this.getCropBox();
   }
 
@@ -560,6 +570,7 @@ export default class PDFPage {
    */
   getArtBox(): { x: number; y: number; width: number; height: number } {
     const artBox = this.node.ArtBox();
+
     return artBox?.asRectangle() ?? this.getCropBox();
   }
 
@@ -591,6 +602,7 @@ export default class PDFPage {
       pushGraphicsState(),
       translate(x, y),
     );
+
     const startRef = this.doc.context.register(start);
 
     const end = this.createContentStream(popGraphicsState());
@@ -644,10 +656,12 @@ export default class PDFPage {
     assertIs(y, 'y', ['number']);
 
     const annots = this.node.Annots();
+
     if (!annots) return;
 
     for (let idx = 0; idx < annots.size(); idx++) {
       const annot = annots.lookup(idx);
+
       if (annot instanceof PDFDict) this.translateAnnot(annot, x, y);
     }
   }
@@ -728,10 +742,12 @@ export default class PDFPage {
     assertIs(y, 'y', ['number']);
 
     const annots = this.node.Annots();
+
     if (!annots) return;
 
     for (let idx = 0; idx < annots.size(); idx++) {
       const annot = annots.lookup(idx);
+
       if (annot instanceof PDFDict) this.scaleAnnot(annot, x, y);
     }
   }
@@ -1076,6 +1092,7 @@ export default class PDFPage {
       'number',
     ]);
     assertOrUndefined(options.textRise, 'options.textRise', ['number']);
+
     const overprint = this.overprintState(
       options.overprint,
       'options.overprint',
@@ -1093,19 +1110,23 @@ export default class PDFPage {
     // EncodedText.withSpacing for why the operators cannot do it).
     const characterSpacing = options.characterSpacing ?? 0;
     const wordSpacing = options.wordSpacing ?? 0;
+
     const textState = {
       characterSpacing,
       wordSpacing,
       horizontalScaling: options.horizontalScaling ?? 100,
     };
+
     const textWidth = (t: string) =>
       newFont.widthOfTextAtSize(t, fontSize, textState);
+
     const lines =
       options.maxWidth === undefined
         ? lineSplit(cleanText(text))
         : breakTextIntoLines(text, wordBreaks, options.maxWidth, textWidth);
 
     const encodedLines = new Array(lines.length) as EncodedText[];
+
     for (let idx = 0, len = lines.length; idx < len; idx++) {
       encodedLines[idx] = newFont
         .encodeText(lines[idx]!)
@@ -1197,6 +1218,7 @@ export default class PDFPage {
     assertOrUndefined(options.ySkew, 'options.ySkew', [[Object, 'Rotation']]);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+
     const overprint = this.overprintState(
       options.overprint,
       'options.overprint',
@@ -1284,6 +1306,7 @@ export default class PDFPage {
     assertOrUndefined(options.ySkew, 'options.ySkew', [[Object, 'Rotation']]);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+
     // The embedded page paints both fills and strokes, so `overprint` sets
     // both roles. Its content inherits these as defaults and may replace
     // them with graphics states of its own.
@@ -1407,6 +1430,7 @@ export default class PDFPage {
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
     assertIsOneOfOrUndefined(options.fillRule, 'options.fillRule', FillRule);
+
     const overprint = this.overprintState(
       options.overprint,
       'options.overprint',
@@ -1492,6 +1516,7 @@ export default class PDFPage {
     assertIsOneOfOrUndefined(options.lineCap, 'options.lineCap', LineCapStyle);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+
     // A line is a stroke, so its `overprint` is the stroking flag.
     const overprint = this.overprintState(
       undefined,
@@ -1592,6 +1617,7 @@ export default class PDFPage {
       1,
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+
     const overprint = this.overprintState(
       options.overprint,
       'options.overprint',
@@ -1725,6 +1751,7 @@ export default class PDFPage {
       LineCapStyle,
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+
     const overprint = this.overprintState(
       options.overprint,
       'options.overprint',
@@ -1732,6 +1759,7 @@ export default class PDFPage {
       'options.borderOverprint',
       options.overprintMode,
     );
+
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
       ...(options.borderOpacity !== undefined && {
@@ -1860,6 +1888,7 @@ export default class PDFPage {
       const font = this.doc.embedStandardFont(StandardFonts.Helvetica);
       this.setFont(font);
     }
+
     return [this.font!, this.fontKey!];
   }
 
@@ -1873,12 +1902,14 @@ export default class PDFPage {
     this.contentStream = this.createContentStream();
     this.contentStreamRef = this.doc.context.register(this.contentStream);
     this.node.addContentStream(this.contentStreamRef);
+
     return this.contentStream;
   }
 
   private createContentStream(...operators: PDFOperator[]): PDFContentStream {
     const dict = this.doc.context.obj({});
     const contentStream = PDFContentStream.of(dict, operators);
+
     return contentStream;
   }
 
@@ -1893,18 +1924,23 @@ export default class PDFPage {
   private paint(color: PaintColor | undefined): ColorOperand | undefined {
     if (color?.type !== ColorTypes.Separation) return color;
     const { separation, tint } = color;
+
     if (!(separation instanceof PDFSeparation)) {
       throw new TypeError('A Separation colour needs a PDFSeparation');
     }
+
     if (separation.doc !== this.doc) {
       throw new Error(
         `Colourant "${separation.name}" belongs to a different PDFDocument`,
       );
     }
+
     if (!(typeof tint === 'number' && tint >= 0 && tint <= 1)) {
       throw new RangeError(`A Separation tint must be in [0, 1]: ${tint}`);
     }
+
     const colorSpace = this.node.getOrCreateColorSpace('CS', separation.ref);
+
     return { type: ColorTypes.Separation, colorSpace, tint };
   }
 
@@ -1937,16 +1973,20 @@ export default class PDFPage {
   ): OverprintState {
     assertOrUndefined(fill, fillName, ['boolean']);
     assertOrUndefined(stroke, strokeName, ['boolean']);
+
     if (!(mode === undefined || mode === 0 || mode === 1)) {
       throw new TypeError(
         `\`options.overprintMode\` must be 0, 1 or undefined, but was actually ${String(mode)}`,
       );
     }
+
     const anyRole = fill !== undefined || stroke !== undefined;
+
     if (!anyRole && mode === undefined) return {};
 
     const floor: PDFVersion = [1, 3];
     const context = this.doc.context;
+
     if (
       compareVersions(getEffectiveVersion(context), floor) < 0 ||
       compareVersions(getIncrementVersion(context), floor) < 0
@@ -1957,13 +1997,17 @@ export default class PDFPage {
     }
 
     const state: OverprintState = {};
+
     if (anyRole) {
       state.op = (fill as boolean | undefined) ?? false;
       state.OP = (stroke as boolean | undefined) ?? false;
     }
+
     const opm =
       (mode as 0 | 1 | undefined) ?? (state.op || state.OP ? 1 : undefined);
+
     if (opm !== undefined) state.OPM = opm;
+
     return state;
   }
 
@@ -2016,13 +2060,16 @@ export default class PDFPage {
 
     // convert the annotation dictionaries to PDFAnnotation instances
     const annotations: PDFAnnotation[] = [];
+
     for (let i = 0; i < annotsArray.size(); i++) {
       const annotDict = annotsArray.lookup(i);
+
       if (annotDict instanceof PDFDict) {
         const pdfAnnotation = AnnotationFactory.fromDict(annotDict);
         annotations.push(pdfAnnotation);
       }
     }
+
     return annotations;
   }
 
@@ -2066,16 +2113,20 @@ export default class PDFPage {
    */
   removeAnnotation(annotation: PDFAnnotation): boolean {
     const ref = this.doc.context.getObjectRef(annotation.dict);
+
     if (!ref) return false;
 
     // Check if this annotation is actually on this page
     const annotsArray = this.node.Annots();
+
     if (!annotsArray) return false;
 
     const index = annotsArray.indexOf(ref);
+
     if (index === undefined) return false;
 
     this.node.removeAnnot(ref);
+
     return true;
   }
 
@@ -2098,6 +2149,7 @@ export default class PDFPage {
   removeAnnotations(predicate: (annot: PDFAnnotation) => boolean): number {
     const annotations = this.annotations();
     let removed = 0;
+
     for (const annot of annotations) {
       if (predicate(annot)) {
         if (this.removeAnnotation(annot)) {
@@ -2105,6 +2157,7 @@ export default class PDFPage {
         }
       }
     }
+
     return removed;
   }
 
@@ -2208,15 +2261,19 @@ export default class PDFPage {
 
   private scaleAnnot(annot: PDFDict, x: number, y: number) {
     const selectors = ['RD', 'CL', 'Vertices', 'QuadPoints', 'L', 'Rect'];
+
     for (let idx = 0, len = selectors.length; idx < len; idx++) {
       const list = annot.lookup(PDFName.of(selectors[idx]!));
+
       if (list instanceof PDFArray) list.scalePDFNumbers(x, y);
     }
 
     const inkLists = annot.lookup(PDFName.of('InkList'));
+
     if (inkLists instanceof PDFArray) {
       for (let idx = 0, len = inkLists.size(); idx < len; idx++) {
         const arr = inkLists.lookup(idx);
+
         if (arr instanceof PDFArray) arr.scalePDFNumbers(x, y);
       }
     }
@@ -2224,15 +2281,19 @@ export default class PDFPage {
 
   private translateAnnot(annot: PDFDict, x: number, y: number) {
     const selectors = ['RD', 'CL', 'Vertices', 'QuadPoints', 'L', 'Rect'];
+
     for (let idx = 0, len = selectors.length; idx < len; idx++) {
       const list = annot.lookup(PDFName.of(selectors[idx]!));
+
       if (list instanceof PDFArray) list.translatePDFNumbers(x, y);
     }
 
     const inkLists = annot.lookup(PDFName.of('InkList'));
+
     if (inkLists instanceof PDFArray) {
       for (let idx = 0, len = inkLists.size(); idx < len; idx++) {
         const arr = inkLists.lookup(idx);
+
         if (arr instanceof PDFArray) arr.translatePDFNumbers(x, y);
       }
     }

@@ -108,6 +108,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
 
     let size = 0;
     let localCtx = ctx;
+
     if (this.length instanceof NumberT) {
       size += this.length.size();
       localCtx = { parent: ctx, pointerSize: 0 };
@@ -134,6 +135,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
         parent,
         pointerOffset: 0,
       };
+
       encodeCtx.pointerOffset =
         stream.pos +
         this.size(
@@ -152,6 +154,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
     if (this.length instanceof NumberT) {
       const encodeCtx = ctx as EncodeArrayContext;
       let i = 0;
+
       while (i < encodeCtx.pointers.length) {
         const ptr = encodeCtx.pointers[i++]!;
         ptr.type.encode(stream, ptr.val, ptr.parent);

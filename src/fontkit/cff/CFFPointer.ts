@@ -31,6 +31,7 @@ export default class CFFPointer extends r.Pointer {
       } as unknown as NumberT;
 
       this.size(value, ctx);
+
       return [new Ptr(0)];
     }
 
@@ -40,6 +41,7 @@ export default class CFFPointer extends r.Pointer {
     } as unknown as NumberT;
 
     super.encode(stream, value, ctx);
+
     return [new Ptr(ptr!)];
   }
 }

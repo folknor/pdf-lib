@@ -12,7 +12,9 @@ class PDFAcroListBox extends PDFAcroChoice {
       FT: 'Ch',
       Kids: [],
     });
+
     const ref = context.register(dict);
+
     return new PDFAcroListBox(dict, ref);
   };
 }

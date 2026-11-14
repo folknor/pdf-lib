@@ -10,6 +10,7 @@ class PDFRef extends PDFObject {
     const tag = `${objectNumber} ${generationNumber} R`;
 
     let instance = pool.get(tag);
+
     if (!instance) {
       instance = new PDFRef(ENFORCER, objectNumber, generationNumber);
       pool.set(tag, instance);
@@ -48,6 +49,7 @@ class PDFRef extends PDFObject {
 
   override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.tag, buffer, offset);
+
     return this.tag.length;
   }
 }

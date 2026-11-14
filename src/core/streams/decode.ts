@@ -32,13 +32,16 @@ const integerParam = (
   fallback: number,
 ): number => {
   const value = params.lookup(PDFName.of(key));
+
   if (value === undefined || value === PDFNull) return fallback;
+
   if (
     !(value instanceof PDFNumber) ||
     !Number.isSafeInteger(value.asNumber())
   ) {
     throw new InvalidDecodeParmsError(`/${key} is not an integer`);
   }
+
   return value.asNumber();
 };
 
@@ -48,18 +51,25 @@ const predictorOf = (
 ): PredictorParams | undefined => {
   if (params === undefined) return undefined;
   const predictor = integerParam(params, 'Predictor', 1);
+
   if (predictor === 1) return undefined;
+
   if (predictor !== 2 && (predictor < 10 || predictor > 15)) {
     throw new InvalidDecodeParmsError(`unknown /Predictor ${predictor}`);
   }
+
   const colors = integerParam(params, 'Colors', 1);
   const bitsPerComponent = integerParam(params, 'BitsPerComponent', 8);
   const columns = integerParam(params, 'Columns', 1);
+
   if (colors < 1) throw new InvalidDecodeParmsError(`/Colors ${colors}`);
+
   if (columns < 1) throw new InvalidDecodeParmsError(`/Columns ${columns}`);
+
   if (![1, 2, 4, 8, 16].includes(bitsPerComponent)) {
     throw new InvalidDecodeParmsError(`/BitsPerComponent ${bitsPerComponent}`);
   }
+
   return {
     predictor,
     colors,
@@ -80,17 +90,23 @@ const decodeStream = (
     encoding === PDFName.of('LZWDecode')
   ) {
     let decoded: DecodeStream;
+
     if (encoding === PDFName.of('FlateDecode')) {
       decoded = limit(new FlateStream(stream));
     } else {
       const earlyChange = params ? integerParam(params, 'EarlyChange', 1) : 1;
+
       if (earlyChange !== 0 && earlyChange !== 1) {
         throw new InvalidDecodeParmsError(`/EarlyChange ${earlyChange}`);
       }
+
       decoded = limit(new LZWStream(stream, undefined, earlyChange as 0 | 1));
     }
+
     const predictor = predictorOf(params);
+
     if (predictor === undefined) return decoded;
+
     return new PredictorStream(
       decoded,
       predictor,
@@ -98,15 +114,19 @@ const decodeStream = (
       decoded.maxDecodedSize,
     );
   }
+
   if (encoding === PDFName.of('ASCII85Decode')) {
     return limit(new Ascii85Stream(stream));
   }
+
   if (encoding === PDFName.of('ASCIIHexDecode')) {
     return limit(new AsciiHexStream(stream));
   }
+
   if (encoding === PDFName.of('RunLengthDecode')) {
     return limit(new RunLengthStream(stream));
   }
+
   throw new UnsupportedEncodingError(encoding.asString());
 };
 
@@ -121,6 +141,7 @@ const parmsPerFilter = (
   DecodeParms: unknown,
 ): (PDFDict | undefined)[] => {
   const none = filters.map(() => undefined);
+
   if (
     filters.length === 0 ||
     DecodeParms === undefined ||
@@ -128,25 +149,32 @@ const parmsPerFilter = (
   ) {
     return none;
   }
+
   const entry = (value: unknown): PDFDict | undefined => {
     if (value === undefined || value === PDFNull) return undefined;
+
     if (value instanceof PDFDict) return value;
     throw new InvalidDecodeParmsError('an entry is not a dictionary');
   };
+
   if (DecodeParms instanceof PDFDict) {
     if (filters.length !== 1) {
       throw new InvalidDecodeParmsError('one dictionary for several filters');
     }
+
     return [DecodeParms];
   }
+
   if (DecodeParms instanceof PDFArray) {
     if (DecodeParms.size() !== filters.length) {
       throw new InvalidDecodeParmsError(
         `${DecodeParms.size()} entries for ${filters.length} filters`,
       );
     }
+
     return filters.map((_, idx) => entry(DecodeParms.lookup(idx)));
   }
+
   throw new InvalidDecodeParmsError('not a dictionary or an array');
 };
 
@@ -165,10 +193,12 @@ export const decodePDFRawStream = (
   // Per-document limit (LoadOptions.maxDecodedStreamSize) wins over the
   // global default. Applied to every decoding stage of the chain.
   const maxDecodedSize = dict.context.maxDecodedStreamSize;
+
   const limit = <T extends StreamType>(s: T): T => {
     if (maxDecodedSize !== undefined && s instanceof DecodeStream) {
       s.maxDecodedSize = maxDecodedSize;
     }
+
     return s;
   };
 
@@ -178,6 +208,7 @@ export const decodePDFRawStream = (
 
   const Filter = dict.lookup(PDFName.of('Filter'));
   let filters: PDFName[];
+
   if (Filter === undefined || Filter === PDFNull) filters = [];
   else if (Filter instanceof PDFName) filters = [Filter];
   else if (Filter instanceof PDFArray) {

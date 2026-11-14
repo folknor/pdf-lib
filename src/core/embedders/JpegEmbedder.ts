@@ -74,6 +74,7 @@ function parseExifOrientation(dataView: DataView): ExifOrientation {
         const magic = isLittleEndian
           ? dataView.getUint16(tiffOffset + 2, true)
           : dataView.getUint16(tiffOffset + 2, false);
+
         if (magic !== 42) {
           pos += 2 + segmentLength;
           continue;
@@ -85,6 +86,7 @@ function parseExifOrientation(dataView: DataView): ExifOrientation {
           : dataView.getUint32(tiffOffset + 4, false);
 
         const ifdStart = tiffOffset + ifdOffset;
+
         if (ifdStart + 2 > dataView.byteLength) {
           pos += 2 + segmentLength;
           continue;
@@ -98,6 +100,7 @@ function parseExifOrientation(dataView: DataView): ExifOrientation {
         // Search for orientation tag
         for (let i = 0; i < numEntries; i++) {
           const entryOffset = ifdStart + 2 + i * 12;
+
           if (entryOffset + 12 > dataView.byteLength) break;
 
           const tag = isLittleEndian
@@ -137,6 +140,7 @@ class JpegEmbedder {
     );
 
     const soi = dataView.getUint16(0);
+
     if (soi !== 0xffd8) throw new Error('SOI not found in JPEG');
 
     let pos = 2;
@@ -145,6 +149,7 @@ class JpegEmbedder {
     while (pos < dataView.byteLength) {
       marker = dataView.getUint16(pos);
       pos += 2;
+
       if (MARKERS.includes(marker)) break;
       pos += dataView.getUint16(pos);
     }
@@ -229,6 +234,7 @@ class JpegEmbedder {
 
     if (ref) {
       context.assign(ref, xObject);
+
       return ref;
     } else {
       return context.register(xObject);

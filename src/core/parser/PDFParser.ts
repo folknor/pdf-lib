@@ -183,6 +183,7 @@ class PDFParser extends PDFObjectParser {
     );
     this.objectsPerTick = objectsPerTick;
     this.throwOnInvalidObject = throwOnInvalidObject;
+
     // Only the parse that becomes the document reports (PDFDocument.load
     // delivers the buffer); an index pass reports nothing, its parse is
     // repeated by the load that uses it.
@@ -199,6 +200,7 @@ class PDFParser extends PDFObjectParser {
     // Set before parsing so object/xref streams decoded during the parse
     // are capped too.
     this.context.maxDecodedStreamSize = maxDecodedStreamSize;
+
     if (forIncrementalUpdate) {
       this.context.pdfFileDetails.originalBytes = pdfBytes;
     }
@@ -208,20 +210,25 @@ class PDFParser extends PDFObjectParser {
     if (this.alreadyParsed) {
       throw new ReparseError('PDFParser', 'parseDocument');
     }
+
     this.alreadyParsed = true;
 
     this.context.header = this.parseHeader();
+
     if (this.context.pdfFileDetails.originalBytes) {
       this.context.pdfFileDetails.originalHeader = this.context.header;
     }
 
     if (this.mode === 'xref') {
       const startXRef = this.locateStartXRef();
+
       try {
         if (startXRef === undefined) {
           throw new XRefLoadError('no startxref');
         }
+
         await this.loadByXRef(startXRef);
+
         return this.context;
       } catch (e) {
         if (e instanceof BodyIndexNeeded) {
@@ -238,6 +245,7 @@ class PDFParser extends PDFObjectParser {
             false,
             'index',
           );
+
           const resolver = new PDFParser(
             this.pdfBytes,
             Infinity,
@@ -251,20 +259,25 @@ class PDFParser extends PDFObjectParser {
             'xref',
             new Map(),
           );
+
           resolver.context.onWarning = silentWarningHandler;
           resolver.effective = this.effective;
           resolver.keyless = this.keyless;
           resolver.context.trailerInfo = this.context.trailerInfo;
           indexer.lengthResolver = resolver;
           await indexer.parseDocument();
+
           return this.restart('xref', indexer.bodyIndex);
         }
+
         if (!(e instanceof XRefLoadError)) throw e;
       }
+
       return this.restart('rebuild');
     }
 
     let prevOffset;
+
     while (!this.bytes.done()) {
       try {
         await this.parseDocumentSection();
@@ -277,12 +290,16 @@ class PDFParser extends PDFObjectParser {
         ) {
           break;
         }
+
         throw e;
       }
+
       const offset = this.bytes.offset();
+
       if (offset === prevOffset) {
         throw new StalledParserError(this.bytes.position());
       }
+
       prevOffset = offset;
     }
 
@@ -323,11 +340,14 @@ class PDFParser extends PDFObjectParser {
       mode,
       bodyIndex,
     );
+
     const context = await parser.parseDocument();
     this.streamCryptPlans.clear();
+
     for (const [num, plan] of parser.streamCryptPlans) {
       this.streamCryptPlans.set(num, plan);
     }
+
     return context;
   }
 
@@ -339,30 +359,42 @@ class PDFParser extends PDFObjectParser {
   private locateStartXRef(): number | undefined {
     const bytes = this.pdfBytes;
     const keyword = Keywords.startxref;
+
     const isBoundary = (byte: number | undefined) =>
       byte === undefined || IsWhitespace[byte] || IsDelimiter[byte];
+
     for (let at = bytes.length - keyword.length; at >= 0; at--) {
       let match = true;
+
       for (let k = 0; k < keyword.length; k++) {
         if (bytes[at + k] !== keyword[k]) {
           match = false;
           break;
         }
       }
+
       if (!match) continue;
+
       // A whole token only: not the tail of a longer word.
       if (at > 0 && !isBoundary(bytes[at - 1])) continue;
       let idx = at + keyword.length;
+
       if (!IsWhitespace[bytes[idx]!]) return undefined;
+
       while (idx < bytes.length && IsWhitespace[bytes[idx]!]) idx++;
       let digits = '';
+
       while (idx < bytes.length && IsDigit[bytes[idx]!]) {
         digits += String.fromCharCode(bytes[idx++]!);
       }
+
       const value = Number(digits);
+
       if (digits === '' || !isBoundary(bytes[idx])) return undefined;
+
       return Number.isSafeInteger(value) ? value : undefined;
     }
+
     return undefined;
   }
 
@@ -390,6 +422,7 @@ class PDFParser extends PDFObjectParser {
   private async loadByXRef(startXRef: number): Promise<void> {
     const { context } = this;
     let xref;
+
     try {
       xref = PDFXRefChainReader.read(
         this.pdfBytes,
@@ -401,6 +434,7 @@ class PDFParser extends PDFObjectParser {
       if (e instanceof XRefChainError) throw new XRefLoadError(e.message);
       throw e;
     }
+
     this.effective = xref.entries;
     context.trailerInfo = {
       Size: PDFNumber.of(xref.size),
@@ -410,24 +444,30 @@ class PDFParser extends PDFObjectParser {
       ID: xref.trailer.ID,
     };
     context.pdfFileDetails.prevStartXRef = startXRef;
+
     if (xref.hasStreamSection) context.pdfFileDetails.useObjectStreams = true;
 
     // Without the key of an encrypted file, object streams cannot be read:
     // their members are left out (the parse that finds the key loads them).
     const keyless =
       context.trailerInfo.Encrypt !== undefined && !this.cryptoFactory;
+
     this.keyless = keyless;
 
     const numbers = [...xref.entries.keys()].sort((a, b) => a - b);
+
     for (const num of numbers) {
       this.load(num);
+
       if (this.shouldWaitForTick()) await waitForTick();
     }
+
     for (const [stream, ref] of this.containers) {
       this.decryptContainer(ref, stream);
     }
 
     const encrypt = context.trailerInfo.Encrypt;
+
     if (
       encrypt !== undefined &&
       !(context.lookup(encrypt) instanceof PDFDict)
@@ -446,10 +486,12 @@ class PDFParser extends PDFObjectParser {
 
     // A Root that is an unloaded member is not damaged, only not read yet.
     const root = context.trailerInfo.Root;
+
     const rootSkipped =
       keyless &&
       root instanceof PDFRef &&
       xref.entries.get(root.objectNumber)?.kind === 'compressed';
+
     if (!rootSkipped) this.maybeRecoverRoot();
 
     await this.decryptStreams();
@@ -474,10 +516,12 @@ class PDFParser extends PDFObjectParser {
   private load(num: number): void {
     if (this.loaded.has(num) || this.loading.has(num)) return;
     const entry = this.effective?.get(num);
+
     // However it is reached (a stream /Length included), a member stays
     // unread without the key.
     if (this.keyless && entry?.kind === 'compressed') return;
     this.loading.add(num);
+
     try {
       if (entry?.kind === 'inUse') {
         if (!this.loadBody(num, entry.offset, entry.generation)) {
@@ -495,6 +539,7 @@ class PDFParser extends PDFObjectParser {
   private recoverBody(num: number, generation: number, failed: number): void {
     if (!this.bodyIndex) throw new BodyIndexNeeded();
     const offset = this.bodyIndex.get(`${num} ${generation}`);
+
     if (offset !== undefined && offset !== failed) {
       this.loadBody(num, offset, generation);
     }
@@ -509,28 +554,37 @@ class PDFParser extends PDFObjectParser {
     if (!Number.isSafeInteger(offset) || offset >= this.pdfBytes.length) {
       return false;
     }
+
     const saved = this.bytes.position();
+
     try {
       this.bytes.moveTo(offset);
       let ref: PDFRef;
+
       try {
         ref = this.parseIndirectObjectHeader();
       } catch {
         return false;
       }
+
       if (ref.objectNumber !== num || ref.generationNumber !== generation) {
         return false;
       }
+
       let object: PDFObject;
+
       try {
         object = this.parseBody(ref);
       } catch (e) {
         if (isFatal(e) || e instanceof BodyIndexNeeded) throw e;
         this.bytes.moveTo(offset);
         this.tryToParseInvalidIndirectObject();
+
         return true;
       }
+
       this.context.assign(ref, object);
+
       return true;
     } finally {
       this.bytes.restorePosition(saved);
@@ -547,14 +601,18 @@ class PDFParser extends PDFObjectParser {
     this.skipWhitespaceAndComments();
     const start = this.bytes.position();
     let object = this.parseObject();
+
     const isXRef =
       object instanceof PDFRawStream &&
       object.dict.lookup(TypeName) === XRefName;
+
     const clear = ref === this.encryptRef || isXRef || !this.cryptoFactory;
+
     if (!clear) {
       this.bytes.restorePosition(start);
       object = this.parseObject(ref);
     }
+
     if (object instanceof PDFRawStream && !isXRef) {
       if (object.dict.lookup(TypeName) === ObjStmName) {
         this.containers.set(object, ref);
@@ -562,21 +620,26 @@ class PDFParser extends PDFObjectParser {
         this.pendingDecryption.push({ ref, stream: object });
       }
     }
+
     this.skipWhitespaceAndComments();
     this.matchKeyword(Keywords.endobj);
+
     return object;
   }
 
   private loadMember(num: number, container: number, index: number): void {
     const parser = this.prepareContainer(container);
+
     if (!parser) return;
     let object: PDFObject;
+
     try {
       object = parser.readMember(index, num);
     } catch (e) {
       if (e instanceof ObjectStreamMemberError) return;
       throw e;
     }
+
     this.context.assign(PDFRef.of(num, 0), object);
   }
 
@@ -593,39 +656,54 @@ class PDFParser extends PDFObjectParser {
    */
   private prepareContainer(num: number): PDFObjectStreamParser | undefined {
     const prepared = this.preparedContainers.get(num);
+
     if (prepared) return prepared;
+
     if (this.failedContainers.has(num)) return undefined;
+
     if (this.preparingContainers.has(num)) {
       // Fails the outer preparation too, which checks before publishing.
       this.failedContainers.add(num);
+
       return undefined;
     }
+
     this.preparingContainers.add(num);
+
     try {
       this.load(num);
       const entry = this.effective?.get(num);
+
       const ref =
         entry?.kind === 'inUse' ? PDFRef.of(num, entry.generation) : undefined;
+
       const stream = ref && this.context.lookup(ref);
+
       if (
         !ref ||
         !(stream instanceof PDFRawStream) ||
         stream.dict.lookup(TypeName) !== ObjStmName
       ) {
         this.failedContainers.add(num);
+
         return undefined;
       }
+
       this.loadDecodeDependencies(stream.dict);
+
       if (this.failedContainers.has(num)) return undefined;
+
       try {
         this.decryptContainer(ref, stream);
         const parser = PDFObjectStreamParser.forStream(stream);
         parser.memberTable();
         this.preparedContainers.set(num, parser);
+
         return parser;
       } catch (e) {
         if (isFatal(e)) throw e;
         this.failedContainers.add(num);
+
         return undefined;
       }
     } finally {
@@ -646,24 +724,33 @@ class PDFParser extends PDFObjectParser {
     const need = (value: PDFObject | undefined) => {
       if (!(value instanceof PDFRef)) return value;
       this.load(value.objectNumber);
+
       return this.context.lookup(value);
     };
+
     const each = (value: PDFObject | undefined) =>
       value instanceof PDFArray ? value.asArray().map(need) : [value];
+
     for (const key of ['Length', 'N', 'First']) need(dict.get(PDFName.of(key)));
     const filter = need(dict.get(PDFName.of('Filter')));
+
     if (filter === undefined) return; // /DecodeParms is then ignored
     const filters = each(filter);
     const parms = each(need(dict.get(PDFName.of('DecodeParms'))));
     filters.forEach((name, idx) => {
       const params = parms[idx];
+
       if (!(params instanceof PDFDict)) return;
       const param = (key: string) => need(params.get(PDFName.of(key)));
+
       if (name === PDFName.of('Crypt')) param('Name');
       const lzw = name === PDFName.of('LZWDecode');
+
       if (!lzw && name !== PDFName.of('FlateDecode')) return;
+
       if (lzw) param('EarlyChange');
       const predictor = param('Predictor');
+
       if (predictor instanceof PDFNumber && predictor.asNumber() > 1) {
         for (const key of ['Colors', 'BitsPerComponent', 'Columns']) {
           param(key);
@@ -686,12 +773,15 @@ class PDFParser extends PDFObjectParser {
   private skipKnownStreamExtent(): boolean {
     if (this.mode !== 'index') return false;
     const at = this.bytes.offset();
+
     for (const [start, end] of this.knownStreamExtents) {
       if (at >= start && at < end) {
         this.bytes.moveTo(end);
+
         return true;
       }
     }
+
     return false;
   }
 
@@ -703,7 +793,9 @@ class PDFParser extends PDFObjectParser {
     if (this.lengthResolver) {
       return this.lengthResolver.lookupStreamLength(ref);
     }
+
     if (this.effective) this.load(ref.objectNumber);
+
     return this.context.lookup(ref);
   }
 
@@ -724,11 +816,13 @@ class PDFParser extends PDFObjectParser {
         this.context.delete(ref);
       }
     }
+
     // Only object streams are decrypted during the scan; a plan recorded
     // for one that did not survive describes no object of the document.
     for (const num of [...this.streamCryptPlans.keys()]) {
       const last = this.lastAssigned.get(num);
       const survivor = last && this.context.lookup(last);
+
       if (
         !(survivor instanceof PDFRawStream) ||
         !this.decryptedContainers.has(survivor)
@@ -747,13 +841,17 @@ class PDFParser extends PDFObjectParser {
    */
   private async decryptStreams(): Promise<void> {
     const pending = this.pendingDecryption;
+
     if (pending.length === 0) return;
     const roles = computeStreamRoles(this.context);
+
     for (const { ref, stream } of pending) {
       if (this.context.lookup(ref) !== stream) continue;
       this.decryptStream(ref, stream, roles, false);
+
       if (this.shouldWaitForTick()) await waitForTick();
     }
+
     pending.length = 0;
   }
 
@@ -769,6 +867,7 @@ class PDFParser extends PDFObjectParser {
   ): void {
     const factory = this.cryptoFactory!;
     const declaration = readCryptDeclaration(stream.dict, this.context, strict);
+
     const name = selectStreamCrypt(
       factory,
       roles,
@@ -776,11 +875,15 @@ class PDFParser extends PDFObjectParser {
       stream.dict,
       declaration,
     );
+
     const { objectNumber: num, generationNumber: gen } = ref;
+
     const decrypt = (raw: Uint8Array) =>
       factory.decryptStream(raw, num, gen, name);
+
     stream.contents = decrypt(stream.contents);
     this.streamDecryption.set(stream, decrypt);
+
     if (declaration) removeCryptFilter(stream.dict, declaration);
     this.streamCryptPlans.set(num, {
       method: factory.methodOf(name),
@@ -797,8 +900,10 @@ class PDFParser extends PDFObjectParser {
 
     if (!isValidCatalog(catalog)) {
       const indirectObjects = this.context.enumerateIndirectObjects();
+
       for (let idx = 0, len = indirectObjects.length; idx < len; idx++) {
         const [ref, object] = indirectObjects[idx]!;
+
         if (isValidCatalog(object)) {
           this.context.trailerInfo.Root = ref;
         }
@@ -814,8 +919,10 @@ class PDFParser extends PDFObjectParser {
         const minor = this.parseRawInt();
         const header = PDFHeader.forVersion(major, minor);
         this.skipBinaryHeaderComment();
+
         return header;
       }
+
       this.bytes.next();
     }
 
@@ -830,6 +937,7 @@ class PDFParser extends PDFObjectParser {
     const generationNumber = this.parseRawInt();
 
     this.skipWhitespaceAndComments();
+
     if (!this.matchKeyword(Keywords.obj)) {
       throw new MissingKeywordError(this.bytes.position(), Keywords.obj);
     }
@@ -839,23 +947,28 @@ class PDFParser extends PDFObjectParser {
 
   private matchIndirectObjectHeader(): boolean {
     const initialOffset = this.bytes.offset();
+
     try {
       this.parseIndirectObjectHeader();
+
       return true;
     } catch {
       this.bytes.moveTo(initialOffset);
+
       return false;
     }
   }
 
   private shouldWaitForTick = () => {
     this.parsedObjects += 1;
+
     return this.parsedObjects % this.objectsPerTick === 0;
   };
 
   private async parseIndirectObject(): Promise<PDFRef> {
     const headerOffset = this.bytes.offset();
     const ref = this.parseIndirectObjectHeader();
+
     // Recorded before the body is parsed, so a body that fails still counts.
     if (this.mode === 'index') {
       this.bodyIndex!.set(
@@ -874,6 +987,7 @@ class PDFParser extends PDFObjectParser {
     const start = this.bytes.position();
     const exempt = ref === this.encryptRef;
     let object = this.parseObject(exempt ? undefined : ref);
+
     if (
       !exempt &&
       object instanceof PDFRawStream &&
@@ -909,6 +1023,7 @@ class PDFParser extends PDFObjectParser {
       // Assigned only so a later stream's indirect /Length resolves as in a
       // rebuild; no member or xref-stream content is read.
       this.context.assign(ref, object);
+
       return ref;
     }
 
@@ -930,6 +1045,7 @@ class PDFParser extends PDFObjectParser {
     ) {
       PDFXRefStreamParser.forStream(object).parseIntoContext();
     }
+
     // Every scanned body is registered; keepLastAssigned keeps one per number.
     this.context.assign(ref, object);
     this.lastAssigned.set(ref.objectNumber, ref);
@@ -953,12 +1069,16 @@ class PDFParser extends PDFObjectParser {
     const start = this.bytes.offset();
 
     let failed = true;
+
     while (!this.bytes.done()) {
       if (this.skipKnownStreamExtent()) continue;
+
       if (this.matchKeyword(Keywords.endobj)) {
         failed = false;
       }
+
       if (!failed) break;
+
       if (this.mode === 'index') this.skipIndexData();
       else this.bytes.next();
     }
@@ -996,12 +1116,14 @@ class PDFParser extends PDFObjectParser {
         // A decompression-bomb guard must abort loading, not be swallowed
         // into an invalid object.
         if (e instanceof DecodedStreamTooLargeError) throw e;
+
         // Nor may an undecidable crypt filter leave a body undecrypted.
         if (e instanceof CryptFilterError) throw e;
         // TODO: Add tracing/logging mechanism to track when this happens!
         this.bytes.moveTo(initialOffset);
         this.tryToParseInvalidIndirectObject();
       }
+
       this.skipWhitespaceAndComments();
 
       // TODO: Can this be done only when needed, to avoid harming performance?
@@ -1013,6 +1135,7 @@ class PDFParser extends PDFObjectParser {
 
   private maybeParseCrossRefSection(): PDFCrossRefSection | void {
     this.skipWhitespaceAndComments();
+
     if (!this.matchKeyword(Keywords.xref)) return;
     this.skipWhitespaceAndComments();
 
@@ -1032,18 +1155,22 @@ class PDFParser extends PDFObjectParser {
       this.skipWhitespaceAndComments();
 
       const byte = this.bytes.peek();
+
       if (byte === CharCodes.n || byte === CharCodes.f) {
         const ref = PDFRef.of(objectNumber, secondInt);
+
         if (this.bytes.next() === CharCodes.n) {
           xref.addEntry(ref, firstInt);
         } else {
           // this.context.delete(ref);
           xref.addDeletedEntry(ref, firstInt);
         }
+
         objectNumber += 1;
       } else {
         objectNumber = firstInt;
       }
+
       this.skipWhitespaceAndComments();
     }
 
@@ -1052,6 +1179,7 @@ class PDFParser extends PDFObjectParser {
 
   private maybeParseTrailerDict(): void {
     this.skipWhitespaceAndComments();
+
     if (!this.matchKeyword(Keywords.trailer)) return;
     this.skipWhitespaceAndComments();
 
@@ -1067,6 +1195,7 @@ class PDFParser extends PDFObjectParser {
       Info: dict.get(PDFName.of('Info')) || context.trailerInfo.Info,
       ID: dict.get(PDFName.of('ID')) || context.trailerInfo.ID,
     };
+
     // If open for incremental update, then deleted objects need to be preserved,
     // and largestObjectNumber has to be at least Size-1. Use Math.max so a
     // later section with a smaller Size (e.g. linearized PDFs) cannot lower it.
@@ -1080,6 +1209,7 @@ class PDFParser extends PDFObjectParser {
 
   private maybeParseTrailer(): PDFTrailer | void {
     this.skipWhitespaceAndComments();
+
     if (!this.matchKeyword(Keywords.startxref)) return;
     this.skipWhitespaceAndComments();
 
@@ -1113,11 +1243,13 @@ class PDFParser extends PDFObjectParser {
    */
   private skipJibberish(): void {
     this.skipWhitespaceAndComments();
+
     while (!this.bytes.done()) {
       if (this.skipKnownStreamExtent()) continue;
       const initialOffset = this.bytes.offset();
       const byte = this.bytes.peek();
       const isAlphaNumeric = byte >= CharCodes.Space && byte <= CharCodes.Tilde;
+
       if (isAlphaNumeric) {
         if (
           this.matchKeyword(Keywords.xref) ||
@@ -1129,6 +1261,7 @@ class PDFParser extends PDFObjectParser {
           break;
         }
       }
+
       if (this.mode === 'index') this.skipIndexData();
       else this.bytes.next();
     }
@@ -1138,7 +1271,9 @@ class PDFParser extends PDFObjectParser {
   private skipIndexData(): void {
     const start = this.bytes.offset();
     this.skipWhitespaceAndComments();
+
     if (this.bytes.offset() !== start) return;
+
     try {
       this.parseObject();
     } catch (e) {
@@ -1147,8 +1282,10 @@ class PDFParser extends PDFObjectParser {
       // dictionary may still contain strings or a nested stream to skip.
       this.bytes.moveTo(start);
       this.bytes.next();
+
       while (!this.bytes.done()) {
         const byte = this.bytes.peek();
+
         if (IsWhitespace[byte] || IsDelimiter[byte]) break;
         this.bytes.next();
       }
@@ -1170,6 +1307,7 @@ class PDFParser extends PDFObjectParser {
    */
   private skipBinaryHeaderComment(): void {
     this.skipWhitespaceAndComments();
+
     try {
       const initialOffset = this.bytes.offset();
       this.parseIndirectObjectHeader();

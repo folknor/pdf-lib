@@ -159,6 +159,7 @@ describe('isType', () => {
 
   it('matches a tuple [Constructor, label] descriptor', () => {
     class Foo {}
+
     expect(isType(new Foo(), [Foo, 'Foo'])).toBe(true);
     expect(isType({}, [Foo, 'Foo'])).toBe(false);
   });
@@ -189,6 +190,7 @@ describe('createTypeErrorMsg', () => {
 
   it('handles tuple type descriptors', () => {
     class Bar {}
+
     const msg = createTypeErrorMsg('oops', 'val', [[Bar, 'Bar']]);
     expect(msg).toContain('`Bar`');
   });

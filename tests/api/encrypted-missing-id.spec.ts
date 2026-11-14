@@ -9,6 +9,7 @@ const withoutId = (bytes: Uint8Array) => {
   const text = Buffer.from(bytes).toString('latin1');
   const id = /\/ID\s*\[\s*<[^>]*>\s*<[^>]*>\s*\]/;
   expect(text).toMatch(id);
+
   return new Uint8Array(
     Buffer.from(text.replace(id, (match) => ' '.repeat(match.length)), 'latin1'),
   );
@@ -18,6 +19,7 @@ const source = async () => {
   const doc = await PDFDocument.create({ updateMetadata: false });
   doc.addPage().node.set(PDFName.of('Note'), PDFString.of('decrypted note'));
   doc.setTitle('decrypted title');
+
   return doc;
 };
 
@@ -54,11 +56,13 @@ describe('encrypted PDFs without a trailer ID', () => {
   for (const profile of legacyProfiles) {
     it(`decrypts ${profile.algorithm} keyed with an empty ID, like pdf.js`, async () => {
       const doc = await source();
+
       const options: SecurityOptions = {
         algorithm: profile.algorithm,
         userPassword: 'user',
         ownerPassword: 'owner',
       };
+
       // Author a legacy fixture whose key actually uses the empty ID.
       // Removing a random ID after encryption cannot produce such a file.
       const security: any = PDFSecurity.create(doc.context, options);
@@ -66,9 +70,11 @@ describe('encrypted PDFs without a trailer ID', () => {
       security.encryption = security.initializeV1V2V4(profile, options);
       doc.context.security = security.encrypt();
       const bytes = withoutId(await doc.save({ useObjectStreams: false }));
+
       for (const password of ['user', 'owner']) {
         assertDecrypted(await PDFDocument.load(bytes, { password }));
       }
+
       await expect(PDFDocument.load(bytes, { password: 'wrong' }))
         .rejects.toThrow('Password incorrect');
     });

@@ -210,6 +210,7 @@ describe('PDFString', () => {
     it('can interpret UTF-16BE strings with escaped octal codes', () => {
       const literal =
         '\\376\\377\\000\\105\\000\\147\\000\\147\\000\\040\\330\\074\\337\\163';
+
       expect(PDFString.of(literal).decodeText()).toBe('Egg 🍳');
     });
 
@@ -226,6 +227,7 @@ describe('PDFString', () => {
     it('can interpret UTF-16LE strings with escaped octal codes', () => {
       const literal =
         '\\377\\376\\105\\000\\147\\000\\147\\000\\040\\000\\074\\330\\163\\337';
+
       expect(PDFString.of(literal).decodeText()).toBe('Egg 🍳');
     });
 

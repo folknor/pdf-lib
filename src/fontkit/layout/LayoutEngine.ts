@@ -61,8 +61,10 @@ export default class LayoutEngine {
     // script above was detected from the typed text.
     const hasGlyph = (cp: number): boolean =>
       this.font.hasGlyphForCodePoint(cp);
+
     // Every rewrite below carries each code point's source cluster.
     const initial = initialClusters(string);
+
     let { codePoints: input, clusters } = composeCanonical(
       initial.codePoints,
       hasGlyph,
@@ -72,6 +74,7 @@ export default class LayoutEngine {
 
     // morx fonts carry their own Thai processing, so AAT is left alone.
     const first = Array.isArray(script) ? script[0] : script;
+
     if (
       (first === 'thai' || first === 'lao ') &&
       !(this.engine instanceof AATLayoutEngine)
@@ -88,6 +91,7 @@ export default class LayoutEngine {
 
     // Normalize script to a string
     const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
+
     const glyphRun = new GlyphRun(
       glyphs,
       codePoints,
@@ -96,12 +100,14 @@ export default class LayoutEngine {
       language ?? null,
       direction ?? null,
     );
+
     glyphRun.clusters = sources.map((source: number) => clusters[source]!);
     glyphRun.characters = initial.characters;
 
     // Return early if there are no glyphs
     if (glyphs.length === 0) {
       glyphRun.positions = [];
+
       return glyphRun;
     }
 
@@ -142,6 +148,7 @@ export default class LayoutEngine {
   lacksMarkPositioning(): boolean {
     if (this.font.morx) return false;
     const features: { tag: string }[] = this.font.GPOS?.featureList ?? [];
+
     return !features.some((feature) => feature.tag === 'mark');
   }
 
@@ -201,8 +208,10 @@ export default class LayoutEngine {
     const { glyphs, codePoints } = glyphRun;
     const positions = glyphRun.positions!;
     const space = this.font.glyphForCodePoint(0x20);
+
     for (let i = 0; i < glyphs.length; i++) {
       const codePoint = codePoints[i]![0];
+
       if (codePoint !== undefined && this.isDefaultIgnorable(codePoint)) {
         glyphs[i] = space;
         positions[i]!.xAdvance = 0;
@@ -234,6 +243,7 @@ export default class LayoutEngine {
     const result = new Set<string>();
 
     const codePoints = this.font._cmapProcessor.codePointsForGlyph(gid);
+
     for (const codePoint of codePoints) {
       result.add(String.fromCodePoint(codePoint));
     }

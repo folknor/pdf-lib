@@ -3,9 +3,13 @@ import UPNG from '../vendors/upng.js';
 
 const getImageType = (ctype: number) => {
   if (ctype === 0) return PngType.Greyscale;
+
   if (ctype === 2) return PngType.Truecolour;
+
   if (ctype === 3) return PngType.IndexedColour;
+
   if (ctype === 4) return PngType.GreyscaleWithAlpha;
+
   if (ctype === 6) return PngType.TruecolourWithAlpha;
   throw new Error(`Unknown color type: ${ctype}`);
 };
@@ -75,7 +79,9 @@ export class PNG {
             pngData.byteOffset,
             pngData.byteOffset + pngData.byteLength,
           );
+
     const upng = UPNGmod.decode(buffer, maxDecodedSize);
+
     if (upng.numFrames > 1) throw new Error('Animated PNGs are not supported');
 
     const frame = new Uint8Array(UPNGmod.toRGBA8(upng));
@@ -84,6 +90,7 @@ export class PNG {
     this.rgbChannel = rgbChannel;
 
     const hasAlphaValues = alphaChannel.some((a) => a < 255);
+
     if (hasAlphaValues) this.alphaChannel = alphaChannel;
 
     this.type = getImageType(upng.ctype);

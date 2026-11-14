@@ -33,7 +33,9 @@ const xyzTag = (x: number, y: number, z: number): number[][] => [
 const toBytes = (words: number[]): Uint8Array => {
   const out = new Uint8Array(words.length * 4);
   const view = new DataView(out.buffer);
+
   for (let i = 0; i < words.length; i++) view.setUint32(i * 4, words[i]! >>> 0);
+
   return out;
 };
 
@@ -42,10 +44,12 @@ const ascii = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0));
 const concat = (parts: Uint8Array[]): Uint8Array => {
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let offset = 0;
+
   for (const p of parts) {
     out.set(p, offset);
     offset += p.length;
   }
+
   return out;
 };
 
@@ -63,16 +67,19 @@ export const getSRGBProfile = (): Uint8Array => {
   if (srgbProfile) return srgbProfile.slice();
 
   const description = 'sRGB IEC61966-2.1 (pdf-lib)';
+
   const desc = concat([
     toBytes([sig('desc'), 0, description.length + 1]),
     ascii(`${description}\0`),
     // No Unicode or ScriptCode description.
     new Uint8Array(4 + 4 + 2 + 1 + 67),
   ]);
+
   const cprt = concat([
     toBytes([sig('text'), 0]),
     ascii('No copyright, use freely\0'),
   ]);
+
   const wtpt = toBytes(xyzTag(0.9642, 1.0, 0.8249).flat());
   const rXYZ = toBytes(xyzTag(0.4360747, 0.2225045, 0.0139322).flat());
   const gXYZ = toBytes(xyzTag(0.3850649, 0.7168786, 0.0971045).flat());
@@ -82,6 +89,7 @@ export const getSRGBProfile = (): Uint8Array => {
   const curveView = new DataView(curve.buffer);
   curveView.setUint32(0, sig('curv') >>> 0);
   curveView.setUint32(8, points);
+
   for (let i = 0; i < points; i++) {
     const v = i / (points - 1);
     const linear = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -99,13 +107,16 @@ export const getSRGBProfile = (): Uint8Array => {
     ['gTRC', curve],
     ['bTRC', curve],
   ];
+
   const align = (n: number) => (n + 3) & ~3;
   let offset = 128 + 4 + tags.length * 12;
   const placed = new Map<Uint8Array, number>();
   const table: number[] = [tags.length];
   const data: Uint8Array[] = [];
+
   for (const [name, bytes] of tags) {
     let at = placed.get(bytes);
+
     if (at === undefined) {
       at = offset;
       placed.set(bytes, at);
@@ -114,6 +125,7 @@ export const getSRGBProfile = (): Uint8Array => {
       data.push(padded);
       offset += padded.length;
     }
+
     table.push(sig(name), at, bytes.length);
   }
 
@@ -126,6 +138,7 @@ export const getSRGBProfile = (): Uint8Array => {
   hv.setUint32(20, sig('XYZ ') >>> 0);
   // Creation date: a fixed date keeps the profile's bytes reproducible.
   const created = [2026, 1, 1, 0, 0, 0];
+
   for (let i = 0; i < created.length; i++)
     hv.setUint16(24 + i * 2, created[i]!);
   hv.setUint32(36, sig('acsp') >>> 0);
@@ -134,6 +147,7 @@ export const getSRGBProfile = (): Uint8Array => {
   hv.setUint32(76, s15Fixed16(0.8249));
 
   srgbProfile = concat([header, toBytes(table), ...data]);
+
   return srgbProfile.slice();
 };
 
@@ -183,48 +197,63 @@ export const checkOutputProfile = (
 ): { components: number } | { error: string } => {
   if (bytes.length < 132) return { error: 'the ICC profile is truncated' };
   const size = u32(bytes, 0);
+
   if (size < 132 || size > bytes.length) {
     return { error: 'the ICC profile size field does not match its data' };
   }
+
   if (sigAt(bytes, 36) !== 'acsp')
     return { error: "the data is not an ICC profile (no 'acsp')" };
   const major = bytes[8]!;
+
   if (major < 2 || (part === 1 ? major >= 3 : major >= 5)) {
     return {
       error: `an ICC version ${major} profile is not allowed in a PDF/A-${part} output intent`,
     };
   }
+
   const deviceClass = sigAt(bytes, 12);
+
   if (deviceClass !== 'mntr' && deviceClass !== 'prtr') {
     return {
       error: `an ICC '${deviceClass}' profile cannot be an output intent profile`,
     };
   }
+
   const space = sigAt(bytes, 16);
   const components = componentsBySpace[space];
+
   if (components === undefined) {
     return { error: `ICC colour space '${space}' is not RGB, CMYK or gray` };
   }
+
   const pcs = sigAt(bytes, 20);
+
   if (pcs !== 'XYZ ' && pcs !== 'Lab ')
     return { error: 'the ICC profile connection space is invalid' };
 
   const count = u32(bytes, 128);
+
   if (128 + 4 + count * 12 > size)
     return { error: 'the ICC tag table is truncated' };
   const tableEnd = 132 + count * 12;
   const tags = new Map<string, { offset: number; length: number }>();
+
   for (let i = 0; i < count; i++) {
     const at = 132 + i * 12;
     const offset = u32(bytes, at + 4);
     const length = u32(bytes, at + 8);
+
     if (offset < tableEnd || offset + length > size) {
       return { error: 'an ICC tag lies outside the profile data' };
     }
+
     tags.set(sigAt(bytes, at), { offset, length });
   }
+
   const missing = (names: string[]) => names.filter((n) => !tags.has(n));
   const required = ['desc', 'wtpt', 'cprt'];
+
   const transform = tags.has('A2B0')
     ? []
     : space === 'RGB '
@@ -232,20 +261,25 @@ export const checkOutputProfile = (
       : space === 'GRAY'
         ? ['kTRC']
         : ['A2B0'];
+
   const absent = missing([...required, ...transform]);
+
   if (absent.length > 0) {
     return {
       error: `the ICC profile lacks required tags: ${absent.join(', ')}`,
     };
   }
+
   for (const name of [...required, ...transform]) {
     const { offset, length } = tags.get(name)!;
     const accepted = tagTypes[name.endsWith('TRC') ? 'TRC' : name]!;
     const type = length >= 4 ? sigAt(bytes, offset) : '';
     const minimum = minimumLength[type] ?? 12;
+
     if (!accepted.includes(type) || length < minimum) {
       return { error: `the ICC '${name}' tag is not valid tag data` };
     }
   }
+
   return { components };
 };

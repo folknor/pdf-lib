@@ -65,11 +65,13 @@ export const separation = (
   tint: number,
 ): SeparationColor => {
   assertRange(tint, 'tint', 0, 1);
+
   return { type: ColorTypes.Separation, separation: colorSpace, tint };
 };
 
 export const grayscale = (gray: number): Grayscale => {
   assertRange(gray, 'gray', 0.0, 1.0);
+
   return { type: ColorTypes.Grayscale, gray };
 };
 
@@ -77,6 +79,7 @@ export const rgb = (red: number, green: number, blue: number): RGB => {
   assertRange(red, 'red', 0, 1);
   assertRange(green, 'green', 0, 1);
   assertRange(blue, 'blue', 0, 1);
+
   return { type: ColorTypes.RGB, red, green, blue };
 };
 
@@ -90,6 +93,7 @@ export const cmyk = (
   assertRange(magenta, 'magenta', 0, 1);
   assertRange(yellow, 'yellow', 0, 1);
   assertRange(key, 'key', 0, 1);
+
   return { type: ColorTypes.CMYK, cyan, magenta, yellow, key };
 };
 
@@ -98,6 +102,7 @@ export const colorString = (
 ): { rgb: Color; alpha: number | undefined } => {
   assertIs(color, 'color', ['string']);
   const colorDescription = ColorParser(color).unitObject();
+
   return {
     rgb: rgb(colorDescription.r, colorDescription.g, colorDescription.b),
     alpha: colorDescription.alpha,

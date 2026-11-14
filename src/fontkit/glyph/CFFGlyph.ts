@@ -40,8 +40,10 @@ export default class CFFGlyph extends Glyph {
 
     let width: number | null = null;
     let nStems = 0;
+
     let x = 0,
       y = 0;
+
     let usedGsubrs: Record<number, boolean>;
     let usedSubrs: Record<number, boolean>;
     let open = false;
@@ -72,6 +74,7 @@ export default class CFFGlyph extends Glyph {
       }
 
       nStems += stack.length >> 1;
+
       return (stack.length = 0);
     }
 
@@ -87,6 +90,7 @@ export default class CFFGlyph extends Glyph {
     const parse = () => {
       while (stream.pos < end) {
         let op = stream.readUInt8();
+
         if (op < 32) {
           let index, subr, phase;
           let c1x, c1y, c2x, c2y, c3x, c3y;
@@ -116,11 +120,13 @@ export default class CFFGlyph extends Glyph {
                 y += stack.shift() ?? 0;
                 path.lineTo(x, y);
               }
+
               break;
 
             case 6: // hlineto
             case 7: // vlineto
               phase = op === 6;
+
               while (stack.length >= 1) {
                 if (phase) {
                   x += stack.shift() ?? 0;
@@ -131,6 +137,7 @@ export default class CFFGlyph extends Glyph {
                 path.lineTo(x, y);
                 phase = !phase;
               }
+
               break;
 
             case 8: // rrcurveto
@@ -143,11 +150,13 @@ export default class CFFGlyph extends Glyph {
                 y = c2y + (stack.shift() ?? 0);
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
+
               break;
 
             case 10: // callsubr
               index = (stack.pop() ?? 0) + subrsBias;
               subr = subrs[index];
+
               if (subr) {
                 usedSubrs[index] = true;
                 const p = stream.pos;
@@ -158,12 +167,14 @@ export default class CFFGlyph extends Glyph {
                 stream.pos = p;
                 end = e;
               }
+
               break;
 
             case 11: // return
               if (cff.version >= 2) {
                 break;
               }
+
               return;
 
             case 14: // endchar
@@ -179,6 +190,7 @@ export default class CFFGlyph extends Glyph {
                 path.closePath();
                 open = false;
               }
+
               break;
 
             case 15: {
@@ -205,6 +217,7 @@ export default class CFFGlyph extends Glyph {
                 vstore,
                 vsindex,
               );
+
               const numBlends = stack.pop() ?? 0;
               let numOperands = numBlends * blendVector.length;
               let delta = stack.length - numOperands;
@@ -212,6 +225,7 @@ export default class CFFGlyph extends Glyph {
 
               for (let i = 0; i < numBlends; i++) {
                 let sum = stack[base + i] ?? 0;
+
                 for (let j = 0; j < blendVector.length; j++) {
                   sum += (blendVector[j] ?? 0) * (stack[delta++] ?? 0);
                 }
@@ -297,6 +311,7 @@ export default class CFFGlyph extends Glyph {
                 y = c2y + (stack.shift() ?? 0);
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
+
               break;
 
             case 27: // hhcurveto
@@ -313,6 +328,7 @@ export default class CFFGlyph extends Glyph {
                 y = c2y;
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
               }
+
               break;
 
             case 28: // shortint
@@ -322,6 +338,7 @@ export default class CFFGlyph extends Glyph {
             case 29: // callgsubr
               index = (stack.pop() ?? 0) + gsubrsBias;
               subr = gsubrs[index];
+
               if (subr) {
                 usedGsubrs[index] = true;
                 const p = stream.pos;
@@ -332,11 +349,13 @@ export default class CFFGlyph extends Glyph {
                 stream.pos = p;
                 end = e;
               }
+
               break;
 
             case 30: // vhcurveto
             case 31: // hvcurveto
               phase = op === 31;
+
               while (stack.length >= 4) {
                 if (phase) {
                   c1x = x + (stack.shift() ?? 0);
@@ -357,11 +376,13 @@ export default class CFFGlyph extends Glyph {
                 path.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
                 phase = !phase;
               }
+
               break;
 
             case 12: {
               op = stream.readUInt8();
               let a: number, b: number;
+
               switch (op) {
                 case 3:
                   // and
@@ -473,6 +494,7 @@ export default class CFFGlyph extends Glyph {
                 case 29: {
                   // index
                   let indexIdx = stack.pop() ?? 0;
+
                   if (indexIdx < 0) {
                     indexIdx = 0;
                   } else if (indexIdx > stack.length - 1) {
@@ -491,6 +513,7 @@ export default class CFFGlyph extends Glyph {
                   if (j >= 0) {
                     while (j > 0) {
                       const t = stack[n - 1] ?? 0;
+
                       for (let i = n - 2; i >= 0; i--) {
                         stack[i + 1] = stack[i] ?? 0;
                       }
@@ -501,6 +524,7 @@ export default class CFFGlyph extends Glyph {
                   } else {
                     while (j < 0) {
                       const t = stack[0] ?? 0;
+
                       for (let i = 0; i <= n; i++) {
                         stack[i] = stack[i + 1] ?? 0;
                       }
@@ -509,6 +533,7 @@ export default class CFFGlyph extends Glyph {
                       j++;
                     }
                   }
+
                   break;
                 }
 
@@ -573,6 +598,7 @@ export default class CFFGlyph extends Glyph {
                   const starty = y;
 
                   pts = [];
+
                   for (let i = 0; i <= 4; i++) {
                     x += stack.shift() ?? 0;
                     y += stack.shift() ?? 0;
@@ -597,6 +623,7 @@ export default class CFFGlyph extends Glyph {
                 default:
                   throw new Error(`Unknown op: 12 ${op}`);
               }
+
               break;
             }
 

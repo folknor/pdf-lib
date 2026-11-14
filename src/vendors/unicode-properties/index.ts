@@ -13,9 +13,11 @@ import { UnicodeTrie } from './UnicodeTrie.js';
 function base64Decode(str: string): Uint8Array {
   const binaryString = atob(str);
   const bytes = new Uint8Array(binaryString.length);
+
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
+
   return bytes;
 }
 
@@ -61,21 +63,25 @@ const NUMBER_MASK = (1 << NUMBER_BITS) - 1;
 
 export function getCategory(codePoint: number): string {
   const val = trie.get(codePoint);
+
   return data.categories[(val >> CATEGORY_SHIFT) & CATEGORY_MASK]!;
 }
 
 export function getCombiningClass(codePoint: number): string {
   const val = trie.get(codePoint);
+
   return data.combiningClasses[(val >> COMBINING_SHIFT) & COMBINING_MASK]!;
 }
 
 export function getScript(codePoint: number): string {
   const val = trie.get(codePoint);
+
   return data.scripts[(val >> SCRIPT_SHIFT) & SCRIPT_MASK]!;
 }
 
 export function getEastAsianWidth(codePoint: number): string {
   const val = trie.get(codePoint);
+
   return data.eaw[(val >> EAW_SHIFT) & EAW_MASK]!;
 }
 
@@ -90,28 +96,34 @@ export function getNumericValue(codePoint: number): number | null {
   } else if (num < 0x1e0) {
     const numerator = (num >> 4) - 12;
     const denominator = (num & 0xf) + 1;
+
     return numerator / denominator;
   } else if (num < 0x300) {
     val = (num >> 5) - 14;
     let exp = (num & 0x1f) + 2;
+
     while (exp > 0) {
       val *= 10;
       exp--;
     }
+
     return val;
   } else {
     val = (num >> 2) - 0xbf;
     let exp = (num & 3) + 1;
+
     while (exp > 0) {
       val *= 60;
       exp--;
     }
+
     return val;
   }
 }
 
 export function isAlphabetic(codePoint: number): boolean {
   const category = getCategory(codePoint);
+
   return (
     category === 'Lu' ||
     category === 'Ll' ||
@@ -128,6 +140,7 @@ export function isDigit(codePoint: number): boolean {
 
 export function isPunctuation(codePoint: number): boolean {
   const category = getCategory(codePoint);
+
   return (
     category === 'Pc' ||
     category === 'Pd' ||
@@ -153,11 +166,13 @@ export function isTitleCase(codePoint: number): boolean {
 
 export function isWhiteSpace(codePoint: number): boolean {
   const category = getCategory(codePoint);
+
   return category === 'Zs' || category === 'Zl' || category === 'Zp';
 }
 
 export function isBaseForm(codePoint: number): boolean {
   const category = getCategory(codePoint);
+
   return (
     category === 'Nd' ||
     category === 'No' ||
@@ -174,6 +189,7 @@ export function isBaseForm(codePoint: number): boolean {
 
 export function isMark(codePoint: number): boolean {
   const category = getCategory(codePoint);
+
   return category === 'Mn' || category === 'Me' || category === 'Mc';
 }
 

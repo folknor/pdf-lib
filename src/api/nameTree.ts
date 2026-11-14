@@ -12,10 +12,13 @@ import {
 
 const compareBytes = (left: Uint8Array, right: Uint8Array): number => {
   const length = Math.min(left.length, right.length);
+
   for (let idx = 0; idx < length; idx++) {
     const diff = left[idx]! - right[idx]!;
+
     if (diff !== 0) return diff;
   }
+
   return left.length - right.length;
 };
 
@@ -45,6 +48,7 @@ export const isWritableFlatNameTree = (node: PDFDict): boolean => {
   if (!node.has(Names)) return true;
 
   const names = node.lookup(Names);
+
   if (!(names instanceof PDFArray) || names.size() % 2 !== 0) return false;
 
   for (let idx = 0, len = names.size(); idx < len; idx += 2) {
@@ -63,6 +67,7 @@ export const sortNameTreeNames = (names: PDFArray): void => {
 
   for (let idx = 0, len = names.size(); idx + 1 < len; idx += 2) {
     const key = names.get(idx);
+
     if (!isNameTreeKey(key)) return;
     pairs.push({ key, value: names.get(idx + 1) });
   }
@@ -88,28 +93,38 @@ export type NameTreeEntry = { key: NameTreeKey; value: PDFObject };
 export const readNameTree = (root: PDFDict): NameTreeEntry[] => {
   const entries: NameTreeEntry[] = [];
   const seen = new Set<PDFDict>();
+
   const visit = (node: PDFDict, depth: number) => {
     if (seen.has(node) || depth > MAX_DEPTH) return;
     seen.add(node);
     // Untyped lookups throughout: a wrong-typed entry is skipped, never
     // thrown, so it cannot hide its healthy siblings.
     const kids = node.lookup(Kids);
+
     if (kids instanceof PDFArray) {
       for (let i = 0; i < kids.size(); i++) {
         const kid = kids.lookup(i);
+
         if (kid instanceof PDFDict) visit(kid, depth + 1);
       }
+
       return;
     }
+
     if (node.has(Kids)) return;
     const names = node.lookup(Names);
+
     if (!(names instanceof PDFArray)) return;
+
     for (let i = 0; i + 1 < names.size(); i += 2) {
       const key = names.lookup(i);
+
       if (isNameTreeKey(key)) entries.push({ key, value: names.get(i + 1) });
     }
   };
+
   visit(root, 0);
+
   return entries;
 };
 
@@ -127,12 +142,14 @@ type Leaf = {
   ref: PDFRef | undefined;
   entries: NameTreeEntry[];
 };
+
 type Inner = {
   kind: 'inner';
   dict: PDFDict;
   ref: PDFRef | undefined;
   kids: TreeNode[];
 };
+
 type TreeNode = Leaf | Inner;
 
 const firstKey = (node: TreeNode): NameTreeKey | undefined =>
@@ -141,6 +158,7 @@ const firstKey = (node: TreeNode): NameTreeKey | undefined =>
     : node.kids.length > 0
       ? firstKey(node.kids[0]!)
       : undefined;
+
 const lastKey = (node: TreeNode): NameTreeKey | undefined =>
   node.kind === 'leaf'
     ? node.entries[node.entries.length - 1]?.key
@@ -159,6 +177,7 @@ const lastKey = (node: TreeNode): NameTreeKey | undefined =>
  */
 const analyse = (root: PDFDict): TreeNode => {
   const seen = new Set<PDFDict>();
+
   const fail = (reason: string): never => {
     throw new UnwritableNameTreeError(reason);
   };
@@ -169,20 +188,25 @@ const analyse = (root: PDFDict): TreeNode => {
     depth: number,
   ): TreeNode => {
     if (depth > MAX_DEPTH) fail('it is deeper than this library edits');
+
     if (seen.has(dict)) fail('a node is reached more than once');
     seen.add(dict);
     const isRoot = depth === 0;
 
     let node: TreeNode;
+
     if (dict.has(Kids)) {
       if (dict.has(Names)) fail('a node has both /Kids and /Names');
       const kidsArray = dict.lookup(Kids);
+
       if (!(kidsArray instanceof PDFArray)) fail('/Kids is not an array');
       const arr = kidsArray as PDFArray;
       const kids: TreeNode[] = [];
+
       for (let i = 0; i < arr.size(); i++) {
         const raw = arr.get(i);
         const kid = arr.lookup(i);
+
         if (!(kid instanceof PDFDict)) fail('a kid is not a dictionary');
         kids.push(
           visit(
@@ -192,26 +216,34 @@ const analyse = (root: PDFDict): TreeNode => {
           ),
         );
       }
+
       for (let i = 1; i < kids.length; i++) {
         if (compareKeys(lastKey(kids[i - 1]!)!, firstKey(kids[i]!)!) >= 0) {
           fail('the key ranges of its kids are out of order or overlap');
         }
       }
+
       node = { kind: 'inner', dict, ref, kids };
     } else {
       const entries: NameTreeEntry[] = [];
+
       if (dict.has(Names)) {
         const names = dict.lookup(Names);
+
         if (!(names instanceof PDFArray) || names.size() % 2 !== 0) {
           fail('a /Names entry is not an array of pairs');
         }
+
         const arr = names as PDFArray;
+
         for (let i = 0; i < arr.size(); i += 2) {
           const key = arr.lookup(i);
+
           if (!isNameTreeKey(key)) fail('a key is not a string');
           entries.push({ key: key as NameTreeKey, value: arr.get(i + 1) });
         }
       }
+
       if (isRoot) {
         entries.sort((a, b) => compareKeys(a.key, b.key));
       } else {
@@ -221,17 +253,20 @@ const analyse = (root: PDFDict): TreeNode => {
           }
         }
       }
+
       node = { kind: 'leaf', dict, ref, entries };
     }
 
     if (!isRoot) {
       const low = firstKey(node);
       const high = lastKey(node);
+
       if (!low || !high) fail('a node below the root is empty');
       const limits = dict.lookup(Limits);
       const pair = limits instanceof PDFArray && limits.size() === 2;
       const l0 = pair ? limits.lookup(0) : undefined;
       const l1 = pair ? limits.lookup(1) : undefined;
+
       if (
         !isNameTreeKey(l0) ||
         !isNameTreeKey(l1) ||
@@ -241,6 +276,7 @@ const analyse = (root: PDFDict): TreeNode => {
         fail('a /Limits entry does not match the keys under it');
       }
     }
+
     return node;
   };
 
@@ -274,8 +310,10 @@ export type NameTreeEdit = {
  */
 const displace = (displaced: PDFRef[], node: TreeNode): void => {
   if (node.ref) displaced.push(node.ref);
+
   for (const key of [Names, Kids, Limits]) {
     const raw = node.dict.get(key);
+
     if (raw instanceof PDFRef) displaced.push(raw);
   }
 };
@@ -297,21 +335,28 @@ const rebuild = (
 ): PDFObject => {
   displace(displaced, node);
   const dict = context.obj({}) as PDFDict;
+
   for (const [key, value] of node.dict.entries()) {
     if (key !== Names && key !== Kids && key !== Limits) dict.set(key, value);
   }
+
   if ('entries' in contents) {
     const names = context.obj([]) as PDFArray;
+
     for (const { key, value } of contents.entries) {
       names.push(key);
       names.push(value);
     }
+
     dict.set(Names, names);
   } else {
     dict.set(Kids, context.obj(contents.kids));
   }
+
   if (!isRoot && low && high) dict.set(Limits, context.obj([low, high]));
+
   if (isRoot) return dict;
+
   return node.ref ? context.register(dict) : dict;
 };
 
@@ -338,8 +383,10 @@ export const insertIntoNameTree = (
     if (node.kind === 'leaf' || node.kids.length === 0) {
       const entries = node.kind === 'leaf' ? [...node.entries] : [];
       let at = entries.length;
+
       while (at > 0 && compareKeys(entries[at - 1]!.key, key) > 0) at--;
       entries.splice(at, 0, { key, value });
+
       return rebuild(
         context,
         displaced,
@@ -350,17 +397,21 @@ export const insertIntoNameTree = (
         entries[entries.length - 1]!.key,
       );
     }
+
     let pick = 0;
+
     for (let i = node.kids.length - 1; i >= 0; i--) {
       if (compareKeys(firstKey(node.kids[i]!)!, key) <= 0) {
         pick = i;
         break;
       }
     }
+
     const kids = node.kids.map(original);
     kids[pick] = insert(node.kids[pick]!, false);
     const low = compareKeys(key, firstKey(node)!) < 0 ? key : firstKey(node);
     const high = compareKeys(key, lastKey(node)!) > 0 ? key : lastKey(node);
+
     return rebuild(context, displaced, node, { kids }, isRoot, low, high);
   };
 
@@ -386,11 +437,14 @@ export const removeFromNameTree = (
   // Decide every match before building anything, so a throwing predicate
   // leaves no new objects behind.
   const doomed = new Set<NameTreeEntry>();
+
   const mark = (node: TreeNode) => {
     if (node.kind === 'inner') node.kids.forEach(mark);
     else for (const e of node.entries) if (matches(e.key)) doomed.add(e);
   };
+
   mark(tree);
+
   if (doomed.size === 0) return undefined;
 
   const touches = (node: TreeNode): boolean =>
@@ -401,16 +455,21 @@ export const removeFromNameTree = (
   // Returns the node's replacement, or undefined when it ends up empty.
   const remove = (node: TreeNode, isRoot: boolean): PDFObject | undefined => {
     if (!touches(node)) return original(node);
+
     if (node.kind === 'leaf') {
       const entries = node.entries.filter((e) => {
         if (!doomed.has(e)) return true;
         removed.push(e.value);
+
         return false;
       });
+
       if (entries.length === 0 && !isRoot) {
         displace(displaced, node);
+
         return undefined;
       }
+
       return rebuild(
         context,
         displaced,
@@ -421,29 +480,37 @@ export const removeFromNameTree = (
         entries[entries.length - 1]?.key,
       );
     }
+
     const kept: { obj: PDFObject; node: TreeNode }[] = [];
     let low: NameTreeKey | undefined;
     let high: NameTreeKey | undefined;
+
     for (const kid of node.kids) {
       const obj = remove(kid, false);
+
       if (obj === undefined) continue;
       kept.push({ obj, node: kid });
     }
+
     // Limits of the survivors, read from what remains under them.
     const remaining = (n: TreeNode): NameTreeKey[] =>
       n.kind === 'leaf'
         ? n.entries.filter((e) => !doomed.has(e)).map((e) => e.key)
         : n.kids.flatMap(remaining);
+
     for (const { node: kid } of kept) {
       const keys = remaining(kid);
       low ??= keys[0];
       high = keys[keys.length - 1] ?? high;
     }
+
     if (kept.length === 0) {
       if (!isRoot) {
         displace(displaced, node);
+
         return undefined;
       }
+
       return rebuild(
         context,
         displaced,
@@ -454,7 +521,9 @@ export const removeFromNameTree = (
         high,
       );
     }
+
     const kids = kept.map((k) => k.obj);
+
     return rebuild(context, displaced, node, { kids }, isRoot, low, high);
   };
 
@@ -464,10 +533,13 @@ export const removeFromNameTree = (
 /** A catalog `/Names` entry that is neither absent nor a dictionary. */
 const catalogNamesDict = (catalog: PDFDict): PDFDict | undefined => {
   const value = catalog.lookup(Names);
+
   if (value === undefined || value === PDFNull) return undefined;
+
   if (!(value instanceof PDFDict)) {
     throw new UnwritableNameTreeError('the catalog /Names is not a dictionary');
   }
+
   return value;
 };
 
@@ -476,10 +548,13 @@ const catalogTreeRoot = (
   tree: PDFName,
 ): PDFDict | undefined => {
   const value = catalogNamesDict(catalog)?.lookup(tree);
+
   if (value === undefined || value === PDFNull) return undefined;
+
   if (!(value instanceof PDFDict)) {
     throw new UnwritableNameTreeError(`${tree} is not a dictionary`);
   }
+
   return value;
 };
 
@@ -490,12 +565,14 @@ export const readCatalogNameTree = (
 ): NameTreeEntry[] => {
   const names = catalog.lookup(Names);
   const root = names instanceof PDFDict ? names.lookup(tree) : undefined;
+
   return root instanceof PDFDict ? readNameTree(root) : [];
 };
 
 /** Throws unless the catalog /AF is absent, null or an array. */
 export const checkCatalogAF = (catalog: PDFDict): void => {
   const af = catalog.lookup(PDFName.of('AF'));
+
   if (af !== undefined && af !== PDFNull && !(af instanceof PDFArray)) {
     throw new UnwritableNameTreeError('the catalog /AF is not an array');
   }
@@ -504,6 +581,7 @@ export const checkCatalogAF = (catalog: PDFDict): void => {
 /** Throws unless the catalog name tree `tree` (absent counts) is editable. */
 export const checkCatalogNameTree = (catalog: PDFDict, tree: PDFName): void => {
   const root = catalogTreeRoot(catalog, tree);
+
   if (root) checkNameTree(root);
 };
 
@@ -540,6 +618,7 @@ export const checkCatalogNameUnused = (
   name: string,
 ): void => {
   checkCatalogNameTree(catalog, tree);
+
   // The strict check just passed, so the tolerant read skips nothing.
   if (readCatalogNameTree(catalog, tree).some((e) => keyNames(e.key, name))) {
     throw new DuplicateNameError(tree, name);
@@ -560,10 +639,13 @@ const publish = (
 ): void => {
   const old = catalogNamesDict(catalog);
   const raw = catalog.get(Names);
+
   if (raw instanceof PDFRef) displaced.push(raw);
   const rawRoot = old?.get(tree);
+
   if (rawRoot instanceof PDFRef) displaced.push(rawRoot);
   const names = context.obj({}) as PDFDict;
+
   if (old) for (const [key, value] of old.entries()) names.set(key, value);
   names.set(tree, root);
   catalog.set(Names, names);
@@ -583,6 +665,7 @@ export const insertIntoCatalogNameTree = (
   const root = catalogTreeRoot(catalog, tree) ?? (context.obj({}) as PDFDict);
   const edit = insertIntoNameTree(context, root, key, value);
   publish(context, catalog, tree, edit.root, edit.displaced);
+
   return edit.displaced;
 };
 
@@ -600,10 +683,14 @@ export const removeFromCatalogNameTree = (
   if (!readCatalogNameTree(catalog, tree).some(({ key }) => matches(key))) {
     return undefined;
   }
+
   const root = catalogTreeRoot(catalog, tree);
+
   if (!root) return undefined;
   const edit = removeFromNameTree(context, root, matches);
+
   if (!edit) return undefined;
   publish(context, catalog, tree, edit.root, edit.displaced);
+
   return edit;
 };

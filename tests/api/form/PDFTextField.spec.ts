@@ -826,6 +826,7 @@ describe('PDFTextField', () => {
 
       const savedBytes = await pdfDoc.save();
       const loadedDoc = await PDFDocument.load(savedBytes);
+
       const loadedField = loadedDoc
         .getForm()
         .getTextField('persist.align.right');

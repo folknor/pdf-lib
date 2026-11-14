@@ -26,6 +26,7 @@ class PDFString extends PDFObject {
     const hours = padStart(String(date.getUTCHours()), 2, '0');
     const mins = padStart(String(date.getUTCMinutes()), 2, '0');
     const secs = padStart(String(date.getUTCSeconds()), 2, '0');
+
     return new PDFString(`D:${year}${month}${day}${hours}${mins}${secs}Z`);
   };
 
@@ -51,6 +52,7 @@ class PDFString extends PDFObject {
       const char = this.value[idx]!;
       const byte = toCharCode(char);
       const nextChar = this.value[idx + 1];
+
       if (!escaped) {
         if (byte === CharCodes.BackSlash) escaped = true;
         else if (byte === CharCodes.CarriageReturn) {
@@ -74,6 +76,7 @@ class PDFString extends PDFObject {
         else if (byte === CharCodes.BackSlash) pushByte(CharCodes.BackSlash);
         else if (byte >= CharCodes.Zero && byte <= CharCodes.Seven) {
           octal += char;
+
           if (octal.length === 3 || !(nextChar! >= '0' && nextChar! <= '7')) {
             pushByte(parseInt(octal, 8));
             octal = '';
@@ -89,15 +92,20 @@ class PDFString extends PDFObject {
 
   decodeText(): string {
     const bytes = this.asBytes();
+
     if (hasUtf16BOM(bytes)) return utf16Decode(bytes);
+
     if (hasUtf8BOM(bytes)) return utf8Decode(bytes);
+
     return pdfDocEncodingDecode(bytes);
   }
 
   decodeDate(): Date {
     const text = this.decodeText();
     const date = parseDate(text);
+
     if (!date) throw new InvalidPDFDateStringError(text);
+
     return date;
   }
 
@@ -121,6 +129,7 @@ class PDFString extends PDFObject {
     buffer[offset++] = CharCodes.LeftParen;
     offset += copyStringIntoBuffer(this.value, buffer, offset);
     buffer[offset++] = CharCodes.RightParen;
+
     return this.value.length + 2;
   }
 }

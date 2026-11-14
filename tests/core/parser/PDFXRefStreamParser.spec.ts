@@ -12,6 +12,7 @@ const readData = (file: string) =>
 describe('PDFXRefStreamParser', () => {
   it('can parse XRef streams (1)', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       DecodeParms: { Columns: 4, Predictor: 12 },
       Filter: 'FlateDecode',
@@ -19,13 +20,16 @@ describe('PDFXRefStreamParser', () => {
       Size: 319,
       W: [1, 2, 1],
     });
+
     const contents = readData('xref-stream1');
     const stream = PDFRawStream.of(dict, contents);
 
     const entries = PDFXRefStreamParser.forStream(stream).parseIntoContext();
+
     const normal = entries.filter(
       (entry) => !entry.deleted && !entry.inObjectStream,
     );
+
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
@@ -44,6 +48,7 @@ describe('PDFXRefStreamParser', () => {
 
   it('can parse XRef streams (2)', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       DecodeParms: { Columns: 4, Predictor: 12 },
       Filter: 'FlateDecode',
@@ -57,13 +62,16 @@ describe('PDFXRefStreamParser', () => {
       Size: 323,
       W: [1, 2, 1],
     });
+
     const contents = readData('xref-stream2');
     const stream = PDFRawStream.of(dict, contents);
 
     const entries = PDFXRefStreamParser.forStream(stream).parseIntoContext();
+
     const normal = entries.filter(
       (entry) => !entry.deleted && !entry.inObjectStream,
     );
+
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
@@ -81,6 +89,7 @@ describe('PDFXRefStreamParser', () => {
 
   it('can parse XRef streams (3)', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       DecodeParms: { Columns: 3, Predictor: 12 },
       Filter: ['FlateDecode'],
@@ -89,13 +98,16 @@ describe('PDFXRefStreamParser', () => {
       Size: 325,
       W: [1, 2, 0],
     });
+
     const contents = readData('xref-stream3');
     const stream = PDFRawStream.of(dict, contents);
 
     const entries = PDFXRefStreamParser.forStream(stream).parseIntoContext();
+
     const normal = entries.filter(
       (entry) => !entry.deleted && !entry.inObjectStream,
     );
+
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
@@ -114,6 +126,7 @@ describe('PDFXRefStreamParser', () => {
 
   it('can parse XRef streams (4)', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       Filter: 'FlateDecode',
       Index: [0, 146],
@@ -121,13 +134,16 @@ describe('PDFXRefStreamParser', () => {
       Size: 146,
       W: [1, 2, 2],
     });
+
     const contents = readData('xref-stream4');
     const stream = PDFRawStream.of(dict, contents);
 
     const entries = PDFXRefStreamParser.forStream(stream).parseIntoContext();
+
     const normal = entries.filter(
       (entry) => !entry.deleted && !entry.inObjectStream,
     );
+
     const deleted = entries.filter((entry) => entry.deleted);
     const inObjectStream = entries.filter((entry) => entry.inObjectStream);
 
@@ -168,6 +184,7 @@ describe('PDFXRefStreamParser', () => {
 
   it('prevents reparsing', () => {
     const context = PDFContext.create();
+
     const dict = context.obj({
       Filter: 'FlateDecode',
       Index: [0, 146],
@@ -175,6 +192,7 @@ describe('PDFXRefStreamParser', () => {
       Size: 146,
       W: [1, 2, 2],
     });
+
     const contents = readData('xref-stream4');
     const stream = PDFRawStream.of(dict, contents);
 

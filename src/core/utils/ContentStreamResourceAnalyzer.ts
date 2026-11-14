@@ -73,6 +73,7 @@ const isName = (
 
 const nameOperand = (v: ContentOperand | undefined): PDFName => {
   if (!isName(v)) throw new GiveUp();
+
   return v.name;
 };
 
@@ -93,15 +94,19 @@ class PageResourceAnalysis {
   run(page: PDFPageLeaf): PDFDict {
     const contents = page.get(PDFName.Contents);
     const resolved = this.context.lookup(contents);
+
     if (resolved instanceof PDFStream) {
       this.parseInPageScope([resolved]);
     } else if (resolved instanceof PDFArray) {
       const streams: PDFStream[] = [];
+
       for (let i = 0; i < resolved.size(); i++) {
         const s = this.context.lookup(resolved.get(i));
+
         if (!(s instanceof PDFStream)) throw new GiveUp();
         streams.push(s);
       }
+
       this.parseInPageScope(streams);
     } else if (resolved !== undefined) {
       throw new GiveUp();
@@ -115,14 +120,17 @@ class PageResourceAnalysis {
     for (const name of DEFAULT_COLOR_SPACES) {
       this.select('ColorSpace', PDFName.of(name));
     }
+
     for (const [key, value] of this.resources.entries()) {
       const category = FILTERABLE.get(key);
+
       if (!category || !(this.context.lookup(value) instanceof PDFDict)) {
         this.pending.push(value);
       }
     }
 
     this.drain();
+
     return this.filtered();
   }
 
@@ -130,30 +138,38 @@ class PageResourceAnalysis {
     for (const [key, cat] of FILTERABLE) {
       if (cat === category) {
         const d = this.context.lookup(this.resources.get(key));
+
         return d instanceof PDFDict ? d : undefined;
       }
     }
+
     return;
   }
 
   private select(category: string, name: PDFName) {
     let set = this.used.get(category);
+
     if (!set) {
       set = new Set();
       this.used.set(category, set);
     }
+
     if (set.has(name)) return;
     set.add(name);
     const value = this.categoryDict(category)?.get(name);
+
     if (value !== undefined) this.pending.push(value);
   }
 
   private drain() {
     while (this.pending.length > 0) {
       let obj: PDFObject | undefined = this.pending.pop()!;
+
       if (obj instanceof PDFRef) obj = this.context.lookup(obj);
+
       if (obj === undefined || this.walked.has(obj)) continue;
       this.walked.add(obj);
+
       if (this.walked.size > MAX_WALKED_OBJECTS) throw new GiveUp();
 
       if (obj instanceof PDFArray) {
@@ -173,9 +189,11 @@ class PageResourceAnalysis {
   private visitDict(dict: PDFDict, stream?: PDFStream) {
     if (stream && !this.ownResources(dict)) {
       const subtype = this.context.lookup(dict.get(PDFName.Subtype));
+
       const patternType = this.context.lookup(
         dict.get(PDFName.of('PatternType')),
       );
+
       if (
         subtype === PDFName.Form ||
         (patternType instanceof PDFNumber && patternType.asNumber() === 1)
@@ -185,11 +203,14 @@ class PageResourceAnalysis {
     }
 
     const subtype = this.context.lookup(dict.get(PDFName.Subtype));
+
     if (subtype === PDFName.of('Type3')) {
       const charProcs = this.context.lookup(dict.get(PDFName.of('CharProcs')));
+
       if (charProcs !== undefined && !(charProcs instanceof PDFDict)) {
         throw new GiveUp();
       }
+
       if (charProcs && !this.ownResources(dict)) {
         for (const [, value] of charProcs.entries()) {
           this.contentWithoutCaller(value);
@@ -198,9 +219,11 @@ class PageResourceAnalysis {
     }
 
     const ap = this.context.lookup(dict.get(PDFName.of('AP')));
+
     if (ap instanceof PDFDict) {
       for (const key of ['N', 'R', 'D']) {
         const appearance = this.context.lookup(ap.get(PDFName.of(key)));
+
         if (appearance instanceof PDFStream) {
           this.contentWithoutCaller(appearance);
         } else if (appearance instanceof PDFDict) {
@@ -221,8 +244,11 @@ class PageResourceAnalysis {
   /** A glyph or appearance stream: page scope unless it has resources. */
   private contentWithoutCaller(value: PDFObject) {
     const stream = this.context.lookup(value);
+
     if (stream === undefined) return;
+
     if (!(stream instanceof PDFStream)) throw new GiveUp();
+
     if (!this.ownResources(stream.dict)) this.parseInPageScope([stream]);
   }
 
@@ -231,36 +257,45 @@ class PageResourceAnalysis {
       if (stream instanceof PDFRawStream) {
         return decodePDFRawStream(stream).decode();
       }
+
       if (stream instanceof PDFContentStream) {
         return stream.getUnencodedContents();
       }
     } catch {
       throw new GiveUp();
     }
+
     throw new GiveUp();
   }
 
   /** Parses the exact concatenation of `streams` and selects what it uses. */
   private parseInPageScope(streams: PDFStream[]) {
     const fresh = streams.filter((s) => !this.parsed.has(s));
+
     if (fresh.length === 0) return;
+
     for (const s of fresh) this.parsed.add(s);
 
     const parts: Uint8Array[] = [];
     let total = 0;
+
     for (const s of fresh) {
       const bytes = this.decoded(s);
       total += bytes.length;
       this.budget -= bytes.length;
+
       if (this.budget < 0) throw new GiveUp();
       parts.push(bytes);
     }
+
     let joined: Uint8Array;
+
     if (parts.length === 1) {
       joined = parts[0]!;
     } else {
       joined = new Uint8Array(total);
       let offset = 0;
+
       for (const p of parts) {
         joined.set(p, offset);
         offset += p.length;
@@ -268,7 +303,9 @@ class PageResourceAnalysis {
     }
 
     const { operations, complete } = parseContentStream(joined);
+
     if (!complete) throw new GiveUp();
+
     for (const op of operations) this.useOperation(op);
   }
 
@@ -283,18 +320,22 @@ class PageResourceAnalysis {
 
   private useOperation({ operator, operands, inlineImage }: ContentOperation) {
     if (!KNOWN_OPERATORS.has(operator)) throw new GiveUp();
+
     if (inlineImage) {
       this.selectColorSpaceNames(inlineImage.dict.get(PDFName.of('CS')));
       this.selectColorSpaceNames(
         inlineImage.dict.get(PDFName.of('ColorSpace')),
       );
     }
+
     switch (operator) {
       case 'Tf':
         if (operands.length !== 2 || typeof operands[1] !== 'number') {
           throw new GiveUp();
         }
+
         this.select('Font', nameOperand(operands[0]));
+
         return;
       case 'Do':
       case 'gs':
@@ -302,6 +343,7 @@ class PageResourceAnalysis {
       case 'CS':
       case 'sh': {
         if (operands.length !== 1) throw new GiveUp();
+
         const category =
           operator === 'Do'
             ? 'XObject'
@@ -310,22 +352,30 @@ class PageResourceAnalysis {
               : operator === 'sh'
                 ? 'Shading'
                 : 'ColorSpace';
+
         this.select(category, nameOperand(operands[0]));
+
         return;
       }
+
       case 'scn':
       case 'SCN': {
         const last = operands[operands.length - 1];
         const numbers = isName(last) ? operands.slice(0, -1) : operands;
+
         if (numbers.some((n) => typeof n !== 'number')) throw new GiveUp();
+
         if (isName(last)) this.select('Pattern', last.name);
+
         return;
       }
+
       case 'BDC':
       case 'DP': {
         if (operands.length !== 2) throw new GiveUp();
         nameOperand(operands[0]);
         const props = operands[1];
+
         if (isName(props)) {
           this.select('Properties', props.name);
         } else if (
@@ -336,8 +386,10 @@ class PageResourceAnalysis {
         ) {
           throw new GiveUp();
         }
+
         return;
       }
+
       default:
         return;
     }
@@ -345,20 +397,27 @@ class PageResourceAnalysis {
 
   private filtered(): PDFDict {
     const out = this.context.obj({});
+
     for (const [key, value] of this.resources.entries()) {
       const category = FILTERABLE.get(key);
       const dict = this.context.lookup(value);
+
       if (!category || !(dict instanceof PDFDict)) {
         out.set(key, value);
         continue;
       }
+
       const keep = this.context.obj({});
+
       for (const name of this.used.get(category) ?? []) {
         const entry = dict.get(name);
+
         if (entry !== undefined) keep.set(name, entry);
       }
+
       if (keep.entries().length > 0) out.set(key, keep);
     }
+
     return out;
   }
 }
@@ -373,11 +432,14 @@ export function pruneResources(
   context: PDFContext,
 ): PDFDict | undefined {
   const resources = page.Resources();
+
   if (!resources) return;
   // PDF 1.1 Forms with resources of their own still required their names in
   // the page's resources.
   const [major, minor] = getEffectiveVersion(context);
+
   if (major < 1 || (major === 1 && minor < 2)) return;
+
   try {
     return new PageResourceAnalysis(context, resources).run(page);
   } catch (e) {

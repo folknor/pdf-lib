@@ -220,6 +220,7 @@ const showTextAdjusted = (array: string) =>
 // keeps float noise (1e-13) out of the content stream.
 const roundPosition = (value: number) => {
   const rounded = Math.round(value * 10000) / 10000;
+
   return rounded === 0 ? 0 : rounded;
 };
 
@@ -249,6 +250,7 @@ export const showEncodedText = (
   rise: number | PDFNumber = 0,
 ): PDFOperator[] => {
   const spans = text.actualText;
+
   if (spans.length === 0 && text.isUnpositioned()) {
     return [showText(text.toHexString())];
   }
@@ -265,55 +267,70 @@ export const showEncodedText = (
     if (pendingCodes !== '') parts.push(`<${pendingCodes}>`);
     pendingCodes = '';
   };
+
   const flushAdjust = () => {
     const adjust = roundPosition(pendingAdjust);
+
     if (adjust !== 0) {
       flushCodes();
       parts.push(numberToString(adjust));
     }
+
     pendingAdjust = 0;
   };
+
   const flushArray = () => {
     flushAdjust();
     flushCodes();
+
     if (parts.length > 0) {
       operators.push(showTextAdjusted(`[${parts.join(' ')}]`));
     }
+
     parts = [];
   };
 
   // Each /ActualText span holds exactly its glyphs: the shows are split at
   // its edges, with the adjustment after its last glyph inside it.
   let span = 0;
+
   for (let idx = 0, len = text.codes.length; idx < len; idx++) {
     if (spans[span] !== undefined && spans[span]!.start === idx) {
       flushArray();
       operators.push(beginActualText(spans[span]!.text));
     }
+
     const xOffset = text.xOffsets[idx]!;
+
     const glyphRise = roundPosition(
       baseRise + (text.yOffsets[idx]! * size) / 1000,
     );
+
     if (glyphRise !== currentRise) {
       flushArray();
       operators.push(setTextRise(glyphRise));
       currentRise = glyphRise;
     }
+
     // A TJ number n moves the pen by -n/1000 em.
     pendingAdjust -= xOffset;
     flushAdjust();
     pendingCodes += text.codes[idx]!;
     pendingAdjust += text.widths[idx]! + xOffset - text.advances[idx]!;
+
     if (spans[span] !== undefined && spans[span]!.end === idx + 1) {
       flushArray();
       operators.push(endMarkedContent());
       span++;
     }
   }
+
   flushArray();
+
   if (currentRise !== roundPosition(baseRise)) {
     operators.push(setTextRise(baseRise));
   }
+
   return operators;
 };
 

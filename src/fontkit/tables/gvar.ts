@@ -1,6 +1,7 @@
 import * as r from '../../vendors/restructure/index.js';
 
 const shortFrac = new r.Fixed(16, 'BE', 14);
+
 class Offset {
   static decode(stream: any, parent: any): number {
     // In short format, offsets are multiplied by 2.

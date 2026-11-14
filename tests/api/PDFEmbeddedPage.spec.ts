@@ -6,11 +6,13 @@ async function createSourceDoc(
   pageSizes: [number, number][],
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
+
   for (const [w, h] of pageSizes) {
     const page = doc.addPage([w, h]);
     // Draw something to create a Contents stream
     page.drawRectangle({ x: 0, y: 0, width: 1, height: 1 });
   }
+
   return doc.save();
 }
 
@@ -107,6 +109,7 @@ describe('PDFEmbeddedPage', () => {
         [300, 400],
         [500, 600],
       ]);
+
       const src = await PDFDocument.load(srcBytes);
 
       const dst = await PDFDocument.create();

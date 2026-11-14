@@ -12,6 +12,7 @@ describe('OS/2 version 0 metrics', () => {
     view.setInt16(72, -20);
     view.setUint16(74, 40000);
     view.setUint16(76, 35000);
+
     return buffer;
   };
 

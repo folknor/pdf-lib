@@ -64,6 +64,7 @@ let tables: Tables | undefined;
 const load = (): Tables => {
   if (tables) return tables;
   const decompositions = new Map<number, number[]>();
+
   for (const entry of DECOMPOSITIONS.split(';')) {
     const [cp, parts] = entry.split(':') as [string, string];
     decompositions.set(
@@ -71,33 +72,44 @@ const load = (): Tables => {
       parts.split(',').map((h) => parseInt(h, 16)),
     );
   }
+
   const classes = new Map<number, number>();
+
   for (const entry of COMBINING_CLASSES.split(';')) {
     const [range, cls] = entry.split(':') as [string, string];
     const [a, b = a] = range.split('-') as [string, string?];
+
     for (let cp = parseInt(a, 16); cp <= parseInt(b!, 16); cp++) {
       classes.set(cp, Number(cls));
     }
   }
+
   const excluded = new Set(
     COMPOSITION_EXCLUSIONS.split(',').map((h) => parseInt(h, 16)),
   );
+
   const compositions = new Map<number, Map<number, number>>();
   const hebrewForms = new Map<number, Map<number, number>>();
+
   for (const [cp, parts] of decompositions) {
     if (parts.length !== 2) continue;
+
     const table = !excluded.has(cp)
       ? compositions
       : isHebrewPresentationForm(cp)
         ? hebrewForms
         : null;
+
     if (!table) continue;
     const [first, second] = parts as [number, number];
     let bySecond = table.get(first);
+
     if (!bySecond) table.set(first, (bySecond = new Map()));
     bySecond.set(second, cp);
   }
+
   tables = { decompositions, classes, compositions, hebrewForms };
+
   return tables;
 };
 
@@ -125,13 +137,17 @@ export function composeCanonical(
 
   // Clusters holding a variation selector, judged on the typed sequence.
   const protectedAt = new Array<boolean>(codePoints.length).fill(false);
+
   for (let start = 0; start < codePoints.length; ) {
     let end = start + 1;
+
     while (end < codePoints.length && isMark(codePoints[end]!)) end++;
     let selector = false;
+
     for (let i = start; i < end; i++) {
       if (isVariationSelector(codePoints[i]!)) selector = true;
     }
+
     if (selector) protectedAt.fill(true, start, end);
     start = end;
   }
@@ -139,30 +155,38 @@ export function composeCanonical(
   // Shortest mapped decomposition of cp, or null when none is fully mapped.
   const decompose = (cp: number, seen = new Set<number>()): number[] | null => {
     if (hasGlyph(cp)) return [cp];
+
     if (seen.has(cp)) return null;
     const parts = SPLIT_VOWELS.get(cp) ?? decompositions.get(cp);
+
     if (!parts) return null;
     const path = new Set(seen).add(cp);
     const out: number[] = [];
+
     for (const part of parts) {
       const sub = decompose(part, path);
+
       if (!sub) return null;
       out.push(...sub);
     }
+
     return out;
   };
 
   const cps: number[] = [];
   const cpClusters: number[] = [];
   const locked: boolean[] = [];
+
   for (let i = 0; i < codePoints.length; i++) {
     const cp = codePoints[i]!;
+
     const parts =
       protectedAt[i] ||
       hasGlyph(cp) ||
       (!decompositions.has(cp) && !SPLIT_VOWELS.has(cp))
         ? null
         : decompose(cp);
+
     for (const part of parts ?? [cp]) {
       cps.push(part);
       cpClusters.push(clusters[i]!);
@@ -174,12 +198,15 @@ export function composeCanonical(
   // (MarkOrder.ts), stably, or by AMTRA in an Arabic run. Decided once
   // here, on the decomposed sequence, before anything composes.
   const arabic = new Array<boolean>(cps.length).fill(false);
+
   for (let start = 0; start < cps.length; ) {
     if (locked[start] || combiningClass(cps[start]!) === 0) {
       start++;
       continue;
     }
+
     let end = start + 1;
+
     while (
       end < cps.length &&
       !locked[end] &&
@@ -187,22 +214,28 @@ export function composeCanonical(
     ) {
       end++;
     }
+
     const isArabic = isArabicRun(cps, start, end);
+
     if (isArabic) arabic.fill(true, start, end);
+
     if (end - start > 1) {
       const members = cps.slice(start, end);
       const keys = isArabic ? arabicKeys(members) : members.map(shapingRank);
+
       const run = members.map((cp, k) => ({
         cp,
         cluster: cpClusters[start + k]!,
         key: keys[k]!,
       }));
+
       run.sort((a, b) => a.key - b.key);
       run.forEach(({ cp, cluster }, k) => {
         cps[start + k] = cp;
         cpClusters[start + k] = cluster;
       });
     }
+
     start = end;
   }
 
@@ -211,16 +244,19 @@ export function composeCanonical(
   let starter = -1; // index in out of the open starter, -1 if none
   let blockedByZero = false;
   const classesBetween = new Set<number>();
+
   for (let i = 0; i < cps.length; i++) {
     const cp = cps[i]!;
     const mark = isMark(cp);
     const cls = combiningClass(cp);
+
     if (locked[i]) {
       out.push(cp);
       outClusters.push(cpClusters[i]!);
       starter = -1;
       continue;
     }
+
     // A mark reaches the starter if it commutes past every mark left in
     // between (all nonzero classes other than its own). In an Arabic run it
     // must follow the starter directly: consumed marks are gone from out,
@@ -228,19 +264,24 @@ export function composeCanonical(
     const reaches = arabic[i]
       ? starter === out.length - 1
       : !classesBetween.has(cls);
+
     if (mark && cls !== 0 && starter >= 0 && !blockedByZero && reaches) {
       const base = out[starter]!;
+
       const composite =
         compositions.get(base)?.get(cp) ??
         (hebrewPresentationForms ? hebrewForms.get(base)?.get(cp) : undefined);
+
       if (composite !== undefined && hasGlyph(composite)) {
         out[starter] = composite;
         outClusters[starter] = Math.min(outClusters[starter]!, cpClusters[i]!);
         continue;
       }
     }
+
     out.push(cp);
     outClusters.push(cpClusters[i]!);
+
     if (!mark && cls === 0) {
       starter = out.length - 1;
       blockedByZero = false;
@@ -251,5 +292,6 @@ export function composeCanonical(
       classesBetween.add(cls);
     }
   }
+
   return { codePoints: out, clusters: outClusters };
 }

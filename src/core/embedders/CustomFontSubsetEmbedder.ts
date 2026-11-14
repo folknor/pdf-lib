@@ -28,6 +28,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     const font = asFont(
       await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
     );
+
     return new CustomFontSubsetEmbedder(
       font,
       fontData,
@@ -68,6 +69,7 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     // none and no /DW the PDF advances it by 1000).
     this.glyphs[subsetGlyphId] = glyph;
     this.glyphIdMap.set(glyph.id, subsetGlyphId);
+
     return subsetGlyphId;
   }
 

@@ -16,6 +16,7 @@ const useData = JSON.parse(
     Array.from(unzlibSync(decodeBase64(base64DeflatedUseData))),
   ),
 );
+
 const { categories } = useData;
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 const stateMachine = new StateMachine(useData);
@@ -87,13 +88,16 @@ class USEInfo {
 function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   const all = glyphs.map(useCategory);
   const kept: number[] = [];
+
   for (let i = 0; i < glyphs.length; i++) {
     if (categories[all[i]!] !== 'CGJ') kept.push(i);
   }
 
   let syllable = 0;
+
   const assign = (from: number, to: number, type: string) => {
     ++syllable;
+
     for (let i = from; i < to; i++) {
       glyphs[i]!.shaperInfo = new USEInfo(categories[all[i]!], type, syllable);
     }
@@ -101,6 +105,7 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
 
   // CGJs with no glyph before them follow no cluster: a syllable of their own.
   const lead = kept.length > 0 ? kept[0]! : glyphs.length;
+
   if (lead > 0) assign(0, lead, 'non_cluster');
 
   for (const { start, end, tags } of syllableRuns(
@@ -118,6 +123,7 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
     // until the grammar itself accepts the intact sequence; class-0 II
     // cannot be crossed by the canonical mark sort.
     const previous = glyphs[from - 1];
+
     if (
       tags?.[0] === 'broken_cluster' &&
       to === from + 1 &&
@@ -132,14 +138,18 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
       );
       continue;
     }
+
     assign(from, to, tags ? tags[0]! : 'non_cluster');
+
     if (!tags) continue;
 
     // Assign rphf feature, counting the matched glyphs only: CGJ is
     // transparent here too.
     const first = glyphs[kept[start]!]!;
+
     const limit =
       first.shaperInfo.category === 'R' ? 1 : Math.min(3, end - start - 1);
+
     for (let k = start; k < start + limit; k++) {
       glyphs[kept[k]!]!.features['rphf'] = true;
     }
@@ -201,6 +211,7 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
         dottedCircle,
         inserted([0x25cc], glyphs[start]!.cluster),
       );
+
       g.shaperInfo = new USEInfo('B', type, info.syllable);
 
       for (
@@ -219,6 +230,7 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
       // Got a repha. Reorder it to after first base, before first halant.
       for (i = start + 1; i < end; i++) {
         info = glyphs[i]!.shaperInfo;
+
         if (isBase(info) || isHalant(glyphs[i]!)) {
           // If we hit a halant, move before it; otherwise it's a base: move to it's
           // place, and shift things in between backward.
@@ -238,6 +250,7 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
     // Move things back.
     for (i = start, j = end; i < end; i++) {
       info = glyphs[i]!.shaperInfo;
+
       if (isBase(info) || isHalant(glyphs[i]!)) {
         // If we hit a halant, move after it; otherwise it's a base: move to it's
         // place, and shift things in between backward.
@@ -255,10 +268,12 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
 function nextSyllable(glyphs: GlyphInfo[], start: number): number {
   if (start >= glyphs.length) return start;
   const syllable = glyphs[start]!.shaperInfo.syllable;
+
   while (
     ++start < glyphs.length &&
     glyphs[start]!.shaperInfo.syllable === syllable
   );
+
   return start;
 }
 

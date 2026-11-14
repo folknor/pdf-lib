@@ -58,13 +58,16 @@ export const facturXRelationship = (
         `A Factur-X ${profile} invoice is attached with AFRelationship Data, not ${requested}.`,
       );
     }
+
     return AFRelationship.Data;
   }
+
   if (requested === undefined) {
     throw new Error(
       `A Factur-X ${profile} invoice needs an afRelationship (Data, Source or Alternative); it depends on how the PDF was produced.`,
     );
   }
+
   if (
     requested !== AFRelationship.Data &&
     requested !== AFRelationship.Source &&
@@ -74,6 +77,7 @@ export const facturXRelationship = (
       `A Factur-X invoice is attached with AFRelationship Data, Source or Alternative, not ${requested}.`,
     );
   }
+
   return requested;
 };
 
@@ -114,16 +118,22 @@ export const planFacturXAttachment = (
 ): (() => void) => {
   // The name tree.
   const namesValue = catalog.lookup(Names);
+
   if (namesValue !== undefined && !(namesValue instanceof PDFDict)) {
     throw refusal('the catalog /Names is not a dictionary');
   }
+
   const efValue = namesValue?.lookup(EmbeddedFiles);
+
   if (efValue !== undefined && !(efValue instanceof PDFDict)) {
     throw refusal('/EmbeddedFiles is not a dictionary');
   }
+
   if (efValue) checkNameTree(efValue);
+
   if (efValue?.has(Limits)) {
     const limits = efValue.lookup(Limits);
+
     if (
       !(limits instanceof PDFArray) ||
       limits.size() !== 2 ||
@@ -133,44 +143,58 @@ export const planFacturXAttachment = (
       throw refusal('the /EmbeddedFiles /Limits is malformed');
     }
   }
+
   const pairs: { key: PDFString | PDFHexString; value: PDFRef }[] = [];
   const seen = new Set<string>();
   const invoices = new Set<PDFRef>();
+
   const checkSpec = (ref: unknown, where: string): PDFDict => {
     const spec = ref instanceof PDFRef ? context.lookup(ref) : undefined;
+
     if (!(spec instanceof PDFDict)) {
       throw refusal(`${where} has an entry that is not a file specification`);
     }
+
     return spec;
   };
+
   const classify = (ref: PDFRef, fileSpec: PDFDict, key?: string) => {
     const names = [...specNames(fileSpec), ...(key === undefined ? [] : [key])];
+
     if (names.includes(XRECHNUNG_FILE_NAME)) {
       throw refusal(
         `the document has an ${XRECHNUNG_FILE_NAME} attachment, and XRECHNUNG is not supported`,
       );
     }
+
     if (names.includes(FACTUR_X_FILE_NAME)) invoices.add(ref);
   };
+
   for (const { key, value } of efValue ? readNameTree(efValue) : []) {
     const text = key.decodeText();
+
     if (seen.has(text)) {
       throw refusal(`the /EmbeddedFiles name tree has ${text} twice`);
     }
+
     seen.add(text);
     checkSpec(value, 'the /EmbeddedFiles name tree');
     pairs.push({ key, value: value as PDFRef });
   }
+
   for (const { key, value } of pairs) {
     classify(value, context.lookup(value) as PDFDict, key.decodeText());
   }
 
   // The catalog /AF array.
   const afValue = catalog.lookup(AF);
+
   if (afValue !== undefined && !(afValue instanceof PDFArray)) {
     throw refusal('the catalog /AF is not an array');
   }
+
   const afRefs: PDFRef[] = [];
+
   for (let i = 0; i < (afValue?.size() ?? 0); i++) {
     const ref = afValue!.get(i);
     const spec = checkSpec(ref, 'the catalog /AF');
@@ -180,6 +204,7 @@ export const planFacturXAttachment = (
 
   // The new file. Its objects are built now and registered on apply.
   const { bytes, relationship, description, modificationDate } = file;
+
   const stream = context.flateStream(bytes, {
     Type: 'EmbeddedFile',
     Subtype: 'text/xml',
@@ -188,6 +213,7 @@ export const planFacturXAttachment = (
       ModDate: PDFString.fromDate(modificationDate),
     },
   });
+
   const spec = context.obj({
     Type: 'Filespec',
     F: PDFString.of(FACTUR_X_FILE_NAME),
@@ -209,15 +235,18 @@ export const planFacturXAttachment = (
     const invoiceKeys = new Set(
       pairs.filter(({ value }) => invoices.has(value)).map(({ key }) => key),
     );
+
     const removed = efValue
       ? removeFromNameTree(context, efValue, (key) => invoiceKeys.has(key))
       : undefined;
+
     const inserted = insertIntoNameTree(
       context,
       removed?.root ?? efValue ?? context.obj({}),
       PDFHexString.fromText(FACTUR_X_FILE_NAME),
       specRef,
     );
+
     const namesDict = namesValue ? namesValue.clone(context) : context.obj({});
     namesDict.set(EmbeddedFiles, inserted.root);
     catalog.set(Names, namesDict);
@@ -233,6 +262,7 @@ export const planFacturXAttachment = (
       ...(removed?.displaced ?? []),
       ...inserted.displaced,
     ];
+
     for (const value of [
       catalogNames,
       namesValue?.get(EmbeddedFiles),
@@ -241,6 +271,7 @@ export const planFacturXAttachment = (
     ]) {
       if (value instanceof PDFRef) roots.push(value);
     }
+
     collectUnreferenced(context, roots);
   };
 };

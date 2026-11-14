@@ -98,6 +98,7 @@ export default class AATMorxProcessor {
       // enable/disable the requested features
       for (const feature of chain.features) {
         let f;
+
         if ((f = features[feature.featureType])) {
           if (f[feature.featureSetting]) {
             flags &= feature.disableFlags;
@@ -118,6 +119,7 @@ export default class AATMorxProcessor {
 
     // remove deleted glyphs
     let index = glyphs.length - 1;
+
     while (index >= 0) {
       if (glyphs[index]!.id === 0xffff) {
         glyphs.splice(index, 1);
@@ -132,8 +134,10 @@ export default class AATMorxProcessor {
   processSubtable(subtable: any, glyphs: Glyph[]): Glyph[] | void {
     this.subtable = subtable;
     this.glyphs = glyphs;
+
     if (this.subtable.type === 4) {
       this.processNoncontextualSubstitutions(this.subtable, this.glyphs);
+
       return;
     }
 
@@ -147,6 +151,7 @@ export default class AATMorxProcessor {
     const process = this.getProcessor();
 
     const reverse = !!(this.subtable.coverage & REVERSE_DIRECTION);
+
     return stateMachine.process(this.glyphs, reverse, process);
   }
 
@@ -154,11 +159,14 @@ export default class AATMorxProcessor {
     if (!this._stateMachineCache) {
       this._stateMachineCache = new Map();
     }
+
     if (this._stateMachineCache.has(subtable)) {
       return this._stateMachineCache.get(subtable)!;
     }
+
     const machine = new AATStateMachine(subtable.table.stateTable);
     this._stateMachineCache.set(subtable, machine);
+
     return machine;
   }
 
@@ -210,11 +218,13 @@ export default class AATMorxProcessor {
     index: number,
   ): void {
     const subsitutions = this.subtable.table.substitutionTable.items;
+
     if (entry.markIndex !== 0xffff && this.markedGlyph !== null) {
       const lookup = subsitutions.getItem(entry.markIndex);
       const lookupTable = new AATLookupTable(lookup);
       glyph = this.glyphs[this.markedGlyph]!;
       const gid = lookupTable.lookup(glyph.id);
+
       if (gid) {
         this.glyphs[this.markedGlyph] = { ...glyph, id: gid };
       }
@@ -225,6 +235,7 @@ export default class AATMorxProcessor {
       const lookupTable = new AATLookupTable(lookup);
       glyph = this.glyphs[index]!;
       const gid2 = lookupTable.lookup(glyph.id);
+
       if (gid2) {
         this.glyphs[index] = { ...glyph, id: gid2 };
       }
@@ -300,8 +311,10 @@ export default class AATMorxProcessor {
 
     for (let i = 0; i < glyphs.length; i++) {
       const glyph = glyphs[i]!;
+
       if (glyph.id !== 0xffff) {
         const gid = lookupTable.lookup(glyph.id);
+
         if (gid) {
           // 0 means do nothing
           glyphs[i] = { ...glyph, id: gid };
@@ -320,10 +333,12 @@ export default class AATMorxProcessor {
     // Inserted glyphs stand for no character and join the cluster of the
     // glyph they are inserted at.
     const cluster = this.glyphs[glyphIndex]?.cluster ?? 0;
+
     while (count--) {
       const gid = this.subtable.table.insertionActions.getItem(
         insertionActionIndex++,
       );
+
       insertions.push({ ...inserted([], cluster), id: gid });
     }
 
@@ -363,6 +378,7 @@ export default class AATMorxProcessor {
 
   getSupportedFeatures(): [number, number][] {
     const features: [number, number][] = [];
+
     for (const chain of this.morx.chains) {
       for (const feature of chain.features) {
         features.push([feature.featureType, feature.featureSetting]);
@@ -401,6 +417,7 @@ export default class AATMorxProcessor {
     }
 
     const reverse = !!(subtable.coverage & REVERSE_DIRECTION);
+
     if (reverse) {
       throw new Error('Reverse subtable, not supported.');
     }
@@ -434,6 +451,7 @@ export default class AATMorxProcessor {
         // Add input to result if only one matching (non-deleted) glyph remains.
         let count = 0;
         let found = 0;
+
         for (let i = 0; i < glyphs.length && count <= 1; i++) {
           if (glyphs[i]!.id !== 0xffff) {
             count++;
@@ -444,6 +462,7 @@ export default class AATMorxProcessor {
         if (count === 1) {
           const result = input.map((item) => item.id);
           const cached = this.inputCache![found];
+
           if (cached) {
             cached.push(result);
           } else {
@@ -472,16 +491,19 @@ function swap(
   reverseB: boolean = false,
 ): Glyph[] {
   const end = glyphs.splice(rangeB[0] - (rangeB[1] - 1), rangeB[1]);
+
   if (reverseB) {
     end.reverse();
   }
 
   const start = glyphs.splice(rangeA[0], rangeA[1], ...end);
+
   if (reverseA) {
     start.reverse();
   }
 
   glyphs.splice(rangeB[0] - (rangeA[1] - 1), 0, ...start);
+
   return glyphs;
 }
 
@@ -494,6 +516,7 @@ function reorderGlyphs(
   if (firstGlyph === null || lastGlyph === null) {
     return glyphs;
   }
+
   // const length = lastGlyph - firstGlyph + 1;
   switch (verb) {
     case 0: // no change

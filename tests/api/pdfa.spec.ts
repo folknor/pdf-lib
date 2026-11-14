@@ -26,10 +26,13 @@ const metadataText = (doc: PDFDocument) =>
 const withXmp = async (xmp: string) => {
   const doc = await PDFDocument.create({ updateMetadata: false });
   doc.addPage([100, 100]);
+
   const ref = doc.context.register(
     doc.context.stream(xmp, { Type: 'Metadata', Subtype: 'XML' }),
   );
+
   doc.catalog.set(PDFName.of('Metadata'), ref);
+
   return doc;
 };
 
@@ -49,6 +52,7 @@ describe('XML reader', () => {
     const doc = parseXml(
       `<a xmlns:p="http://www.aiim.org/pdfa/ns/&#x69;d/" p:part="1"/>`,
     );
+
     expect(doc.root.attributes.find((a) => a.local === 'part')?.ns).toBe(AID);
   });
 
@@ -84,12 +88,15 @@ describe('PDF/A identification', () => {
     const attr = await withXmp(
       rdf(`<rdf:Description rdf:about="" xmlns:q="${AID}" q:part="2" q:conformance="U"/>`),
     );
+
     expect(attr.getPDFADeclaration()).toEqual({ part: '2', conformance: 'U' });
+
     const element = await withXmp(
       rdf(
         `<rdf:Description rdf:about="" xmlns:z="${AID}"><z:part>3</z:part></rdf:Description><rdf:Description rdf:about="" xmlns:z="${AID}"><z:conformance>A</z:conformance></rdf:Description>`,
       ),
     );
+
     expect(element.getPDFADeclaration()).toEqual({ part: '3', conformance: 'A' });
   });
 
@@ -99,6 +106,7 @@ describe('PDF/A identification', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="1"/><rdf:Description rdf:about="" xmlns:pdfaid="${AID}"><pdfaid:part>2</pdfaid:part></rdf:Description>`,
       ),
     );
+
     expect(() => contradictory.getPDFADeclaration()).toThrow(/contradictory/);
     expect(() => contradictory.encrypt({ userPassword: 'x' })).toThrow(/PDF\/A/);
 
@@ -114,11 +122,13 @@ describe('PDF/A identification', () => {
         `<rdf:Description rdf:about="a" xmlns:pdfaid="${AID}" pdfaid:part="1"/><rdf:Description rdf:about="b"/>`,
       ),
     );
+
     expect(() => differentSubjects.getPDFADeclaration()).toThrow(/rdf:about/);
 
     const twoRoots = await withXmp(
       `<x:xmpmeta xmlns:x="adobe:ns:meta/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:RDF><rdf:Description/></rdf:RDF><rdf:RDF><rdf:Description xmlns:p="${AID}" p:part="1"/></rdf:RDF></x:xmpmeta>`,
     );
+
     expect(() => twoRoots.getPDFADeclaration()).toThrow(/more than one/);
 
     const unknownTwice = await withXmp(
@@ -126,6 +136,7 @@ describe('PDF/A identification', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="2" pdfaid:conformance="B"><pdfaid:future>a</pdfaid:future></rdf:Description><rdf:Description rdf:about="" xmlns:pdfaid="${AID}"><pdfaid:future>b</pdfaid:future></rdf:Description>`,
       ),
     );
+
     expect(() => unknownTwice.getPDFADeclaration()).toThrow(/contradictory/);
   });
 
@@ -133,6 +144,7 @@ describe('PDF/A identification', () => {
     const doc = await withXmp(
       `<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><Description xmlns:p="${AID}" p:part="2" p:conformance="B"/></RDF>`,
     );
+
     doc.setTitle('New');
     const packet = XmpPacket.parse(decodePDFRawStream(metadataStream(doc)).decode());
     expect(packet.readDefaultLanguage('http://purl.org/dc/elements/1.1/', 'title')).toEqual({
@@ -158,22 +170,28 @@ describe('declarePDFA', () => {
     const doc = await PDFDocument.create({ updateMetadata: false });
     doc.addPage();
     doc.declarePDFA({ part: 3, conformance: 'B' });
+
     const loaded = await PDFDocument.load(await doc.save({ compress: true }), {
       updateMetadata: false,
     });
+
     expect(loaded.getPDFADeclaration()).toEqual({ part: '3', conformance: 'B' });
     const metadata = metadataStream(loaded);
     expect(metadata.dict.get(PDFName.of('Filter'))).toBeUndefined();
     expect(metadata.dict.get(PDFName.of('Subtype'))).toBe(PDFName.of('XML'));
+
     const intents = loaded.context.lookup(
       loaded.catalog.get(PDFName.of('OutputIntents')),
       PDFArray,
     );
+
     const intent = intents.lookup(0, PDFDict);
     expect(intent.get(PDFName.of('S'))).toBe(PDFName.of('GTS_PDFA1'));
+
     const profile = decodePDFRawStream(
       intent.lookup(PDFName.of('DestOutputProfile')) as PDFRawStream,
     ).decode();
+
     expect(checkOutputProfile(profile, 1)).toEqual({ components: 3 });
     const id = loaded.context.lookup(loaded.context.trailerInfo.ID, PDFArray);
     expect(id.size()).toBe(2);
@@ -185,10 +203,12 @@ describe('declarePDFA', () => {
     expect(new DataView(profile.buffer).getUint32(0)).toBe(profile.length);
     // Tags with no data are refused.
     const view = new DataView(profile.buffer);
+
     for (let i = 0; i < view.getUint32(128); i++) {
       view.setUint32(132 + i * 12 + 4, 128);
       view.setUint32(132 + i * 12 + 8, 0);
     }
+
     expect(checkOutputProfile(profile, 1)).toHaveProperty('error');
   });
 
@@ -207,6 +227,7 @@ describe('declarePDFA', () => {
         '<rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:CreateDate="2020-02-31T00:00:00Z"/>',
       ),
     );
+
     doc.setCreationDate(new Date('2020-03-02T00:00:00Z'));
     expect(() => doc.declarePDFA({ part: 1, conformance: 'B' })).toThrow(/differ/);
   });
@@ -217,12 +238,15 @@ describe('declarePDFA', () => {
         '<rdf:Description rdf:about="" xmlns:ex="urn:ex:"><ex:keep>yes</ex:keep></rdf:Description><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Hello</rdf:li><rdf:li xml:lang="de">Hallo</rdf:li></rdf:Alt></dc:title></rdf:Description>',
       ),
     );
+
     doc.setTitle('Hello');
     doc.setAuthor('Ann');
     doc.declarePDFA({ part: 1, conformance: 'B' });
+
     const packet = XmpPacket.parse(
       decodePDFRawStream(metadataStream(doc)).decode(),
     );
+
     expect(packet.readText('urn:ex:', 'keep')).toEqual({ kind: 'text', value: 'yes' });
     expect(metadataText(doc)).toContain('Hallo');
     expect(packet.readList('http://purl.org/dc/elements/1.1/', 'creator')).toEqual({
@@ -237,6 +261,7 @@ describe('declarePDFA', () => {
         '<rdf:Description rdf:about="" xmlns:pdf="http://ns.adobe.com/pdf/1.3/" pdf:Producer="Other"/>',
       ),
     );
+
     doc.setProducer('Mine');
     const before = metadataText(doc);
     expect(() => doc.declarePDFA({ part: 1, conformance: 'B' })).toThrow(/differ/);
@@ -250,10 +275,13 @@ describe('declarePDFA', () => {
     const doc = await withXmp(
       rdf(`<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="2" pdfaid:conformance="A"/>`),
     );
+
     expect(() => doc.declarePDFA({ part: 2, conformance: 'B' })).toThrow(/already/);
+
     const same = await withXmp(
       rdf(`<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="3" pdfaid:conformance="B"/>`),
     );
+
     same.declarePDFA({ part: 3, conformance: 'B' });
     expect(same.getPDFADeclaration()).toEqual({ part: '3', conformance: 'B' });
   });
@@ -339,10 +367,12 @@ describe('PDF/A-1 and object streams', () => {
   it('refuses an increment onto a file with cross-reference streams', async () => {
     const source = await PDFDocument.create();
     source.addPage();
+
     const doc = await PDFDocument.load(await source.save({ useObjectStreams: false }), {
       forIncrementalUpdate: true,
       updateMetadata: false,
     });
+
     doc.getPage(0).drawText('x');
     await doc.commit({ useObjectStreams: true });
     doc.declarePDFA({ part: 1, conformance: 'B' });
@@ -359,6 +389,7 @@ describe('Info setters on a PDF/A document', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="1" pdfaid:conformance="B" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Old</rdf:li><rdf:li xml:lang="fr">Vieux</rdf:li></rdf:Alt></dc:title></rdf:Description>`,
       ),
     );
+
     doc.setTitle('New');
     doc.setModificationDate(new Date('2021-02-03T04:05:06.789Z'));
     const packet = XmpPacket.parse(decodePDFRawStream(metadataStream(doc)).decode());
@@ -386,6 +417,7 @@ describe('Info setters on a PDF/A document', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="2" pdfaid:conformance="B" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:creator><rdf:Seq><rdf:li rdf:parseType="Resource"><rdf:value>Old</rdf:value></rdf:li></rdf:Seq></dc:creator></rdf:Description>`,
       ),
     );
+
     expect(() => qualified.setAuthor('New')).toThrow(/text items/);
     expect(qualified.getAuthor()).toBeUndefined();
 
@@ -394,6 +426,7 @@ describe('Info setters on a PDF/A document', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="2" pdfaid:conformance="B" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:creator><rdf:Bag><rdf:li>A</rdf:li></rdf:Bag></dc:creator></rdf:Description>`,
       ),
     );
+
     bag.setAuthor('B');
     expect(metadataText(bag)).toContain('<rdf:Seq><rdf:li>B</rdf:li></rdf:Seq>');
   });
@@ -404,6 +437,7 @@ describe('Info setters on a PDF/A document', () => {
         `<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="1" pdfaid:conformance="B" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title><rdf:Alt><rdf:li xml:lang="x-default">A</rdf:li><rdf:li xml:lang="x-default">B</rdf:li></rdf:Alt></dc:title></rdf:Description>`,
       ),
     );
+
     expect(() => doc.setTitle('C')).toThrow(/x-default/);
   });
 
@@ -411,6 +445,7 @@ describe('Info setters on a PDF/A document', () => {
     const doc = await withXmp(
       rdf(`<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" pdfaid:part="4"/>`),
     );
+
     expect(() => doc.setTitle('x')).toThrow(/PDF\/A-4/);
   });
 
@@ -426,11 +461,13 @@ describe('attach() on a PDF/A document', () => {
     withXmp(
       rdf(`<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" ${attributes}/>`),
     );
+
   const full = {
     mimeType: 'text/plain',
     afRelationship: AFRelationship.Unspecified,
     modificationDate: new Date('2026-01-01T00:00:00Z'),
   };
+
   const bytes = new Uint8Array([1]);
 
   it('refuses PDF/A-1, unreadable XMP, unknown parts and PDF/A-4 levels', async () => {
@@ -459,11 +496,13 @@ describe('attach() on a PDF/A document', () => {
       await expect(doc.attach(bytes, 'a.txt')).rejects.toThrow(
         /mimeType.*afRelationship, modificationDate/,
       );
+
       for (const mimeType of ['', 'text', 'text/*', 'text/plain; charset=x']) {
         await expect(
           doc.attach(bytes, 'a.txt', { ...full, mimeType }),
         ).rejects.toThrow(/mimeType/);
       }
+
       await doc.attach(bytes, 'a.txt', full);
       const [saved] = (await PDFDocument.load(await doc.save())).getAttachments();
       expect(saved!.mimeType).toBe('text/plain');

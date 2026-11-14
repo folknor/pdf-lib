@@ -27,6 +27,7 @@ export default class TrueTypeCollection {
 
   constructor(stream: r.DecodeStream) {
     this.stream = stream;
+
     if (stream.readString(4) !== 'ttcf') {
       throw new Error('Not a TrueType collection');
     }
@@ -40,6 +41,7 @@ export default class TrueTypeCollection {
       stream.pos = offset;
       const font = new TTFFont(stream);
       const psName: unknown = font.postscriptName;
+
       if (
         psName === name ||
         (psName instanceof Uint8Array &&
@@ -56,6 +58,7 @@ export default class TrueTypeCollection {
 
   get fonts() {
     const fonts = [];
+
     for (const offset of this.header.offsets) {
       const stream = new r.DecodeStream(this.stream.buffer);
       stream.pos = offset;

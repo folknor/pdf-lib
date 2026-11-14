@@ -22,6 +22,7 @@ class PDFPageLeaf extends PDFDict {
     dict.set(PDFName.Parent, parent);
     dict.set(PDFName.Resources, context.obj({}));
     dict.set(PDFName.MediaBox, context.obj([0, 0, 612, 792]));
+
     return new PDFPageLeaf(dict, context, false);
   };
 
@@ -49,11 +50,14 @@ class PDFPageLeaf extends PDFDict {
       context || this.context,
       this.autoNormalizeCTM,
     );
+
     const entries = this.entries();
+
     for (let idx = 0, len = entries.length; idx < len; idx++) {
       const [key, value] = entries[idx]!;
       clone.set(key, value);
     }
+
     return clone;
   }
 
@@ -86,21 +90,25 @@ class PDFPageLeaf extends PDFDict {
 
   Resources(): PDFDict | undefined {
     const dictOrRef = this.getInheritableAttribute(PDFName.Resources);
+
     return this.context.lookupMaybe(dictOrRef, PDFDict);
   }
 
   MediaBox(): PDFArray {
     const arrayOrRef = this.getInheritableAttribute(PDFName.MediaBox);
+
     return this.context.lookup(arrayOrRef, PDFArray);
   }
 
   CropBox(): PDFArray | undefined {
     const arrayOrRef = this.getInheritableAttribute(PDFName.CropBox);
+
     return this.context.lookupMaybe(arrayOrRef, PDFArray);
   }
 
   Rotate(): PDFNumber | undefined {
     const numberOrRef = this.getInheritableAttribute(PDFName.Rotate);
+
     return this.context.lookupMaybe(numberOrRef, PDFNumber);
   }
 
@@ -109,6 +117,7 @@ class PDFPageLeaf extends PDFDict {
     this.ascend((node) => {
       if (!attribute) attribute = node.get(name);
     });
+
     return attribute;
   }
 
@@ -124,11 +133,14 @@ class PDFPageLeaf extends PDFDict {
 
   wrapContentStreams(startStream: PDFRef, endStream: PDFRef): boolean {
     const Contents = this.Contents();
+
     if (Contents instanceof PDFArray) {
       Contents.insert(0, startStream);
       Contents.push(endStream);
+
       return true;
     }
+
     return false;
   }
 
@@ -140,6 +152,7 @@ class PDFPageLeaf extends PDFDict {
   removeAnnot(annotRef: PDFRef) {
     const { Annots } = this.normalizedEntries();
     const index = Annots.indexOf(annotRef);
+
     if (index !== undefined) {
       Annots.remove(index);
     }
@@ -152,21 +165,25 @@ class PDFPageLeaf extends PDFDict {
 
   newFontDictionaryKey(tag: string): PDFName {
     const { Font } = this.normalizedEntries();
+
     return Font.uniqueKey(tag);
   }
 
   /** Find existing key for a font ref, or return undefined */
   findFontKey(fontDictRef: PDFRef): PDFName | undefined {
     const { Font } = this.normalizedEntries();
+
     for (const [key, value] of Font.entries()) {
       if (value === fontDictRef) return key;
     }
+
     return;
   }
 
   newFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
     const key = this.newFontDictionaryKey(tag);
     this.setFontDictionary(key, fontDictRef);
+
     return key;
   }
 
@@ -184,21 +201,25 @@ class PDFPageLeaf extends PDFDict {
 
   newXObjectKey(tag: string): PDFName {
     const { XObject } = this.normalizedEntries();
+
     return XObject.uniqueKey(tag);
   }
 
   /** Find existing key for an XObject ref, or return undefined */
   findXObjectKey(xObjectRef: PDFRef): PDFName | undefined {
     const { XObject } = this.normalizedEntries();
+
     for (const [key, value] of XObject.entries()) {
       if (value === xObjectRef) return key;
     }
+
     return;
   }
 
   newXObject(tag: string, xObjectRef: PDFRef): PDFName {
     const key = this.newXObjectKey(tag);
     this.setXObject(key, xObjectRef);
+
     return key;
   }
 
@@ -214,21 +235,25 @@ class PDFPageLeaf extends PDFDict {
 
   newExtGStateKey(tag: string): PDFName {
     const { ExtGState } = this.normalizedEntries();
+
     return ExtGState.uniqueKey(tag);
   }
 
   /** Find existing key for an ExtGState ref, or return undefined */
   findExtGStateKey(extGStateRef: PDFRef | PDFDict): PDFName | undefined {
     const { ExtGState } = this.normalizedEntries();
+
     for (const [key, value] of ExtGState.entries()) {
       if (value === extGStateRef) return key;
     }
+
     return;
   }
 
   newExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {
     const key = this.newExtGStateKey(tag);
     this.setExtGState(key, extGStateRef);
+
     return key;
   }
 
@@ -245,21 +270,26 @@ class PDFPageLeaf extends PDFDict {
   getOrCreateColorSpace(tag: string, colorSpaceRef: PDFRef): PDFName {
     const { Resources } = this.normalizedEntries();
     let ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
+
     if (!ColorSpace) {
       ColorSpace = this.context.obj({});
       Resources.set(PDFName.ColorSpace, ColorSpace);
     }
+
     for (const [key, value] of ColorSpace.entries()) {
       if (value === colorSpaceRef) return key;
     }
+
     const key = ColorSpace.uniqueKey(tag);
     ColorSpace.set(key, colorSpaceRef);
+
     return key;
   }
 
   ascend(visitor: (node: PDFPageTree | PDFPageLeaf) => any): void {
     visitor(this);
     const Parent = this.Parent();
+
     if (Parent) Parent.ascend(visitor);
   }
 
@@ -270,6 +300,7 @@ class PDFPageLeaf extends PDFDict {
 
     const contentsRef = this.get(PDFName.Contents);
     const contents = this.context.lookup(contentsRef);
+
     if (contents instanceof PDFStream) {
       this.set(PDFName.Contents, context.obj([contentsRef]));
     }
@@ -294,6 +325,7 @@ class PDFPageLeaf extends PDFDict {
 
     // Most pages have no ColorSpace, so do not create an empty dictionary.
     const ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
+
     if (ColorSpace)
       Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
 
@@ -308,6 +340,7 @@ class PDFPageLeaf extends PDFDict {
     const Annots = this.Annots()!;
     const Resources = this.Resources()!;
     const Contents = this.Contents() as PDFArray | undefined;
+
     return {
       Annots,
       Resources,

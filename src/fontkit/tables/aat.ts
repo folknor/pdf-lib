@@ -52,16 +52,19 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
 
     decode(stream: any, ctx: any): any {
       ctx = ctx.parent.parent;
+
       return this.type.decode(stream, ctx);
     }
 
     size(val: any, ctx: any): number {
       ctx = ctx.parent.parent;
+
       return this.type.size(val, ctx);
     }
 
     encode(stream: any, val: any, ctx: any): any {
       ctx = ctx.parent.parent;
+
       return this.type.encode(stream, val, ctx);
     }
   }
@@ -143,6 +146,7 @@ export function StateTable(
   );
 
   const Entry = new r.Struct(entry);
+
   const StateArray = new UnboundedArray(
     new r.Array(r.uint16, (t: any) => t.nClasses),
   );
@@ -184,6 +188,7 @@ export function StateTable1(
   );
 
   const Entry = new r.Struct(entry);
+
   const StateArray = new UnboundedArray(
     new r.Array(r.uint8, (t: any) => t.nClasses),
   );

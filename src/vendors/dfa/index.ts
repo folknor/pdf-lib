@@ -61,6 +61,7 @@ export default class StateMachine {
    */
   match(str: ArrayLike<number>): Iterable<DFAMatch> {
     const self = this;
+
     return {
       *[Symbol.iterator](): Generator<DFAMatch> {
         let state = INITIAL_STATE;
@@ -131,6 +132,7 @@ export default class StateMachine {
     for (const [start, end, tags] of this.match(str)) {
       for (const tag of tags) {
         const action = actions[tag];
+
         if (typeof action === 'function') {
           action(start, end, str.slice(start, end + 1));
         }

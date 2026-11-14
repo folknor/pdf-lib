@@ -10,23 +10,29 @@ describe('full saves without encryption', () => {
         const source = await PDFDocument.create({ updateMetadata: false });
         source.addPage();
         source.encrypt({ userPassword: 'user', ownerPassword: 'owner' });
+
         const doc = await PDFDocument.load(await source.save(), {
           password: 'user',
           updateMetadata: false,
         });
+
         const { context } = doc;
         const cryptParms = context.obj({ Name: 'CallerFilter' });
         const otherParms = context.obj({ Columns: 17 });
+
         const filters = chain
           ? context.obj(['Crypt', 'ASCIIHexDecode', 'FlateDecode'])
           : key('Crypt');
+
         const parms = chain
           ? context.obj([cryptParms, null, otherParms])
           : cryptParms;
+
         const stream = context.stream('0123456789', {
           Filter: filters,
           DecodeParms: parms,
         });
+
         const ref = context.register(stream);
         doc.catalog.set(key('TestStream'), ref);
         const before = stream.dict.toString();
@@ -44,6 +50,7 @@ describe('full saves without encryption', () => {
           const loaded = await PDFDocument.load(bytes, { updateMetadata: false });
           const emitted = loaded.context.lookup(ref, PDFRawStream);
           expect(emitted.getContents()).toEqual(contents);
+
           if (chain) {
             expect(emitted.dict.lookup(key('Filter'))?.toString()).toBe(
               '[ /ASCIIHexDecode /FlateDecode ]',
@@ -55,6 +62,7 @@ describe('full saves without encryption', () => {
             expect(emitted.dict.has(key('Filter'))).toBe(false);
             expect(emitted.dict.has(key('DecodeParms'))).toBe(false);
           }
+
           expect(cryptParms.lookup(key('Name'))).toBe(key('CallerFilter'));
           expect(otherParms).toBeInstanceOf(PDFDict);
         }

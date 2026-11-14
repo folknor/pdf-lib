@@ -303,6 +303,7 @@ export const utf16Decode = (
         codePoints.push(REPLACEMENT);
       } else {
         const second = decodeValues(input[idx++]!, input[idx++]!, byteOrder);
+
         if (isLowSurrogate(second)) {
           codePoints.push(first, second);
         } else {
@@ -326,13 +327,17 @@ export const utf16Decode = (
   // String.fromCodePoint throws RangeError when called with more arguments
   // than the engine's call stack allows (~32k). Chunk to stay safe.
   const chunkSize = 8192;
+
   if (codePoints.length <= chunkSize) {
     return String.fromCodePoint(...codePoints);
   }
+
   let result = '';
+
   for (let i = 0; i < codePoints.length; i += chunkSize) {
     result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));
   }
+
   return result;
 };
 
@@ -367,6 +372,7 @@ const decodeValues = (first: number, second: number, byteOrder: ByteOrder) => {
   // first one 8 to the left and than applying a bitwise or-operator to append
   // the second one.
   if (byteOrder === ByteOrder.LittleEndian) return (second << 8) | first;
+
   if (byteOrder === ByteOrder.BigEndian) return (first << 8) | second;
   throw new Error(`Invalid byteOrder: ${byteOrder}`);
 };
@@ -438,8 +444,10 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
       // Three bytes
       const byte2 = bytes[idx + 1] ?? 0;
       const byte3 = bytes[idx + 2] ?? 0;
+
       const codePoint =
         ((byte1 & 0x0f) << 12) | ((byte2 & 0x3f) << 6) | (byte3 & 0x3f);
+
       codePoints.push(codePoint);
       idx += 3;
     } else if ((byte1 & 0xf8) === 0xf0) {
@@ -447,11 +455,13 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
       const byte2 = bytes[idx + 1] ?? 0;
       const byte3 = bytes[idx + 2] ?? 0;
       const byte4 = bytes[idx + 3] ?? 0;
+
       const codePoint =
         ((byte1 & 0x07) << 18) |
         ((byte2 & 0x3f) << 12) |
         ((byte3 & 0x3f) << 6) |
         (byte4 & 0x3f);
+
       codePoints.push(codePoint);
       idx += 4;
     } else {
@@ -463,12 +473,16 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
 
   // String.fromCodePoint throws when called with too many arguments
   const chunkSize = 8192;
+
   if (codePoints.length <= chunkSize) {
     return String.fromCodePoint(...codePoints);
   }
+
   let result = '';
+
   for (let i = 0; i < codePoints.length; i += chunkSize) {
     result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));
   }
+
   return result;
 };

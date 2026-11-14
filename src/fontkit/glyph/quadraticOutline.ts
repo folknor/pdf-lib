@@ -38,9 +38,12 @@ const cubicPiece = (
     const d = lerp(a, b, t);
     const e = lerp(b, c, t);
     const f = lerp(d, e, t);
+
     return [f, e, c, p3];
   };
+
   const [q0, q1, q2, q3] = at(t0);
+
   if (t1 >= 1) return [q0, q1, q2, q3];
   // Split the remainder at the parameter t1 maps to within it, keeping the
   // left half.
@@ -50,6 +53,7 @@ const cubicPiece = (
   const c = lerp(q2, q3, s);
   const d = lerp(a, b, s);
   const e = lerp(b, c, s);
+
   return [q0, a, d, lerp(d, e, s)];
 };
 
@@ -76,17 +80,21 @@ const cubicToQuadratics = (
   const n = Math.max(1, Math.ceil(Math.cbrt(bound / tolerance)));
 
   const segments: Segment[] = [];
+
   for (let i = 0; i < n; i++) {
     const [a, b, c, d] =
       n === 1
         ? [p0, p1, p2, p3]
         : cubicPiece(p0, p1, p2, p3, i / n, (i + 1) / n);
+
     const control: Point = [
       (3 * (b[0] + c[0]) - (a[0] + d[0])) / 4,
       (3 * (b[1] + c[1]) - (a[1] + d[1])) / 4,
     ];
+
     segments.push({ points: [control, i === n - 1 ? p3 : d] });
   }
+
   return segments;
 };
 
@@ -102,6 +110,7 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
 
   for (const { command, args } of path.commands) {
     const a = args.map((v) => v ?? 0);
+
     switch (command) {
       case 'moveTo':
         close();
@@ -115,6 +124,7 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         point = end;
         break;
       }
+
       case 'quadraticCurveTo': {
         const end: Point = [a[2]!, a[3]!];
         current ??= { start: point, segments: [] };
@@ -122,6 +132,7 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         point = end;
         break;
       }
+
       case 'bezierCurveTo': {
         const end: Point = [a[4]!, a[5]!];
         current ??= { start: point, segments: [] };
@@ -137,6 +148,7 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         point = end;
         break;
       }
+
       case 'closePath':
         // A closed contour's current point stays where it was drawn to, as
         // Path and the charstring decoders treat it.
@@ -144,7 +156,9 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         break;
     }
   }
+
   close();
+
   return contours;
 };
 
@@ -159,15 +173,18 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
  */
 export const toTrueTypeOutline = (path: Path, tolerance: number): Path => {
   const out = new Path();
+
   for (const { start, segments } of contoursOf(path, tolerance)) {
     // Walking the segments backwards, each one's start is the previous
     // segment's end (or the contour start).
     const ends = [start, ...segments.map((s) => s.points.at(-1)!)];
     const last = ends.at(-1)!;
     out.moveTo(last[0], last[1]);
+
     for (let i = segments.length - 1; i >= 0; i--) {
       const target = ends[i]!;
       const { points } = segments[i]!;
+
       if (points.length === 1) {
         out.lineTo(target[0], target[1]);
       } else {
@@ -175,9 +192,11 @@ export const toTrueTypeOutline = (path: Path, tolerance: number): Path => {
         out.quadraticCurveTo(control[0], control[1], target[0], target[1]);
       }
     }
+
     // The contour returns to `last` implicitly; drop an explicit closing line
     // that would duplicate the start point.
     const final = out.commands.at(-1)!;
+
     if (
       final.command === 'lineTo' &&
       final.args[0] === last[0] &&
@@ -185,7 +204,9 @@ export const toTrueTypeOutline = (path: Path, tolerance: number): Path => {
     ) {
       out.commands.pop();
     }
+
     out.closePath();
   }
+
   return out;
 };

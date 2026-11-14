@@ -58,6 +58,7 @@ export default class TTFFont {
 
   static probe(buffer: Uint8Array): boolean {
     const format = asciiDecoder.decode(buffer.slice(0, 4));
+
     return (
       format === 'true' ||
       format === 'OTTO' ||
@@ -86,6 +87,7 @@ export default class TTFFont {
   _installTableGetters(): void {
     for (const tag in this.directory.tables) {
       const table = this.directory.tables[tag];
+
       if (tables[tag] && table.length > 0) {
         Object.defineProperty(this, tag, {
           get: this._getTable.bind(this, table),
@@ -126,8 +128,10 @@ export default class TTFFont {
 
   _getTableStream(tag: string): r.DecodeStream | null {
     const table = this.directory.tables[tag];
+
     if (table) {
       this.stream.pos = table.offset;
+
       return this.stream;
     }
 
@@ -149,6 +153,7 @@ export default class TTFFont {
     const result = tables[table.tag].decode(stream, this, table.length);
 
     this.stream.pos = pos;
+
     return result;
   }
 
@@ -162,9 +167,11 @@ export default class TTFFont {
     lang: string = this.defaultLanguage || fontkit.defaultLanguage,
   ): string | null {
     const record = this['name']?.records[key];
+
     if (record) {
       // Attempt to retrieve the entry, depending on which translation is available:
       const firstKey = Object.keys(record)[0];
+
       return (
         record[lang] ||
         (this.defaultLanguage ? record[this.defaultLanguage] : null) ||
@@ -290,6 +297,7 @@ export default class TTFFont {
    */
   get capHeight() {
     const os2 = this['OS/2'];
+
     // OS/2 v0 and v1 have no capHeight field.
     return os2?.capHeight ?? this.ascent;
   }
@@ -301,6 +309,7 @@ export default class TTFFont {
    */
   get xHeight() {
     const os2 = this['OS/2'];
+
     // OS/2 v0 and v1 have no xHeight field.
     return os2?.xHeight ?? 0;
   }
@@ -416,14 +425,17 @@ export default class TTFFont {
     const glyphs: (Glyph | null)[] = [];
     const codePoints: number[][] = [];
     const sources: number[] = [];
+
     const isSelector = (code: number) =>
       (0xfe00 <= code && code <= 0xfe0f) ||
       (0xe0100 <= code && code <= 0xe01ef);
 
     for (let i = 0; i < input.length; i++) {
       const code = input[i]!;
+
       if (isSelector(code)) continue;
       const next = input[i + 1];
+
       if (next !== undefined && isSelector(next)) {
         // Variation selector following normal codepoint.
         glyphs.push(this.getGlyph(this._cmapProcessor.lookup(code, next)));
@@ -432,6 +444,7 @@ export default class TTFFont {
         glyphs.push(this.glyphForCodePoint(code));
         codePoints.push([code]);
       }
+
       sources.push(i);
     }
 
@@ -503,11 +516,13 @@ export default class TTFFont {
    */
   _getBaseGlyph(glyph: number): Glyph | null {
     const cached = this._glyphs[glyph];
+
     if (isOutlineGlyph(cached)) {
       return cached;
     }
 
     let outline: Glyph | null = null;
+
     if (this.directory.tables.glyf) {
       outline = new TTFGlyph(glyph, this);
     } else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
@@ -576,6 +591,7 @@ export default class TTFFont {
    */
   get variationAxes(): Record<string, any> {
     const res: Record<string, any> = {};
+
     if (!this['fvar']) {
       return cacheValue(this, 'variationAxes', res);
     }
@@ -602,6 +618,7 @@ export default class TTFFont {
    */
   get namedVariations(): Record<string, any> {
     const res: Record<string, any> = {};
+
     if (!this['fvar']) {
       return cacheValue(this, 'namedVariations', res);
     }
@@ -609,11 +626,13 @@ export default class TTFFont {
     for (const instance of this['fvar'].instance) {
       // An instance with no English name string cannot be keyed or selected.
       const name = instance.name?.en;
+
       if (name == null) {
         continue;
       }
 
       const settings: Record<string, any> = {};
+
       for (let i = 0; i < this['fvar'].axis.length; i++) {
         const axis = this['fvar'].axis[i];
         settings[axis.axisTag.trim()] = instance.coord[i];
@@ -659,6 +678,7 @@ export default class TTFFont {
     // normalize the coordinates
     const coords = this['fvar'].axis.map((axis: any, _i: number) => {
       const axisTag = axis.axisTag.trim();
+
       if (axisTag in (settings as Record<string, number>)) {
         return Math.max(
           axis.minValue,

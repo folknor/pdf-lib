@@ -14,7 +14,9 @@ const load = (): any =>
 
 const encodeSubset = (font: any, gids: number[]): any => {
   const subset = font.createSubset();
+
   for (const gid of gids) subset.includeGlyph(gid);
+
   return fontkit.create(subset.encode());
 };
 
@@ -25,6 +27,7 @@ const polygons = (path: Path, steps = 32): Pt[][] => {
   const out: Pt[][] = [];
   let poly: Pt[] = [];
   let cur: Pt = [0, 0];
+
   for (const { command, args: a } of path.commands) {
     if (command === 'moveTo') {
       if (poly.length) out.push(poly);
@@ -35,6 +38,7 @@ const polygons = (path: Path, steps = 32): Pt[][] => {
       poly.push(cur);
     } else if (command === 'quadraticCurveTo') {
       const [x0, y0] = cur;
+
       for (let i = 1; i <= steps; i++) {
         const t = i / steps;
         const u = 1 - t;
@@ -43,9 +47,11 @@ const polygons = (path: Path, steps = 32): Pt[][] => {
           u * u * y0 + 2 * u * t * a[1]! + t * t * a[3]!,
         ]);
       }
+
       cur = [a[2]!, a[3]!];
     } else if (command === 'bezierCurveTo') {
       const [x0, y0] = cur;
+
       for (let i = 1; i <= steps; i++) {
         const t = i / steps;
         const u = 1 - t;
@@ -60,22 +66,27 @@ const polygons = (path: Path, steps = 32): Pt[][] => {
             t * t * t * a[5]!,
         ]);
       }
+
       cur = [a[4]!, a[5]!];
     } else if (command === 'closePath') {
       if (poly.length) out.push(poly);
       poly = [];
     }
   }
+
   if (poly.length) out.push(poly);
+
   return out;
 };
 
 const winding = (polys: Pt[][], [px, py]: Pt): number => {
   let w = 0;
+
   for (const poly of polys) {
     for (let i = 0; i < poly.length; i++) {
       const [x0, y0] = poly[i]!;
       const [x1, y1] = poly[(i + 1) % poly.length]!;
+
       if (y0 <= py && y1 > py) {
         if ((x1 - x0) * (py - y0) - (px - x0) * (y1 - y0) > 0) w++;
       } else if (y0 > py && y1 <= py) {
@@ -83,11 +94,13 @@ const winding = (polys: Pt[][], [px, py]: Pt): number => {
       }
     }
   }
+
   return w;
 };
 
 const distanceToEdges = (polys: Pt[][], [px, py]: Pt): number => {
   let best = Infinity;
+
   for (const poly of polys) {
     for (let i = 0; i < poly.length; i++) {
       const [x0, y0] = poly[i]!;
@@ -95,12 +108,15 @@ const distanceToEdges = (polys: Pt[][], [px, py]: Pt): number => {
       const dx = x1 - x0;
       const dy = y1 - y0;
       const len = dx * dx + dy * dy;
+
       const t = len
         ? Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / len))
         : 0;
+
       best = Math.min(best, Math.hypot(px - x0 - t * dx, py - y0 - t * dy));
     }
   }
+
   return best;
 };
 
@@ -112,16 +128,20 @@ const expectSameFill = (source: Path, converted: Path): number => {
   const b = polygons(converted);
   const { minX, minY, maxX, maxY } = source.cbox;
   let overlapPoints = 0;
+
   for (let x = minX - 5; x <= maxX + 5; x += 3) {
     for (let y = minY - 5; y <= maxY + 5; y += 3) {
       const p: Pt = [x, y];
+
       if (distanceToEdges(a, p) < 2) continue;
       const wa = winding(a, p);
       const wb = winding(b, p);
       expect(wb !== 0).toBe(wa !== 0);
+
       if (wa !== 0 && wa % 2 === 0) overlapPoints++;
     }
   }
+
   return overlapPoints;
 };
 
@@ -144,10 +164,12 @@ describe('CFF2 subsetting', () => {
     // Overlapping contours are flagged OVERLAP_SIMPLE on the first point.
     const glyf = embedded._getTableStream('glyf');
     const offset = embedded.loca.offsets[1];
+
     const bytes: Uint8Array = glyf.buffer.subarray(
       glyf.pos + offset,
       glyf.pos + embedded.loca.offsets[2],
     );
+
     const view = new DataView(bytes.buffer, bytes.byteOffset);
     const contours = view.getInt16(0);
     const instructionLength = view.getUint16(10 + 2 * contours);
@@ -183,6 +205,7 @@ describe('CFF2 subsetting', () => {
     const gids = Array.from({ length: font.numGlyphs }, (_, i) => i);
     const embedded = encodeSubset(font, gids.slice(1));
     expect(embedded.numGlyphs).toBe(font.numGlyphs);
+
     for (const gid of gids) {
       expectSameFill(font.getGlyph(gid).path, embedded.getGlyph(gid).path);
     }
@@ -204,6 +227,7 @@ describe('toTrueTypeOutline', () => {
     // source contour (and the closing line both share).
     // Sampled finely enough that the chords add well under 0.05.
     const source = polygons(path, 4096);
+
     for (const poly of polygons(out)) {
       for (const p of poly) {
         expect(distanceToEdges(source, p)).toBeLessThan(tolerance + 0.05);

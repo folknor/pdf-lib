@@ -8,6 +8,7 @@ type Primitive = string | number | boolean | undefined | null;
 // prettier-ignore
 const formatValue = (value: any) => {
   const type = typeof value;
+
   if (type === 'string') return singleQuote(value);
   else if (type === 'undefined') return backtick(value);
   else return value;
@@ -39,9 +40,11 @@ export const assertIsOneOf = (
   if (!Array.isArray(allowedValues)) {
     allowedValues = objectValues(allowedValues);
   }
+
   for (let idx = 0, len = allowedValues.length; idx < len; idx++) {
     if (value === allowedValues[idx]) return;
   }
+
   throw new TypeError(createValueErrorMsg(value, valueName, allowedValues));
 };
 
@@ -53,6 +56,7 @@ export const assertIsOneOfOrUndefined = (
   if (!Array.isArray(allowedValues)) {
     allowedValues = objectValues(allowedValues);
   }
+
   assertIsOneOf(value, valueName, allowedValues.concat(undefined));
 };
 
@@ -64,6 +68,7 @@ export const assertIsSubset = (
   if (!Array.isArray(allowedValues)) {
     allowedValues = objectValues(allowedValues);
   }
+
   for (let idx = 0, len = values.length; idx < len; idx++) {
     assertIsOneOf(values[idx], valueName, allowedValues);
   }
@@ -71,18 +76,29 @@ export const assertIsSubset = (
 
 export const getType = (val: any) => {
   if (val === null) return 'null';
+
   if (val === undefined) return 'undefined';
+
   if (typeof val === 'string') return 'string';
+
   if (typeof val === 'number') {
     if (Number.isNaN(val)) return 'NaN';
+
     return 'number';
   }
+
   if (typeof val === 'boolean') return 'boolean';
+
   if (typeof val === 'symbol') return 'symbol';
+
   if (typeof val === 'bigint') return 'bigint';
+
   if (val.constructor?.name) return val.constructor.name;
+
   if (val.name) return val.name;
+
   if (val.constructor) return String(val.constructor);
+
   return String(val);
 };
 
@@ -106,18 +122,30 @@ export type TypeDescriptor =
 
 export const isType = (value: any, type: TypeDescriptor) => {
   if (type === 'null') return value === null;
+
   if (type === 'undefined') return value === undefined;
+
   if (type === 'string') return typeof value === 'string';
+
   if (type === 'number')
     return typeof value === 'number' && !Number.isNaN(value);
+
   if (type === 'boolean') return typeof value === 'boolean';
+
   if (type === 'symbol') return typeof value === 'symbol';
+
   if (type === 'bigint') return typeof value === 'bigint';
+
   if (type === 'function') return typeof value === 'function';
+
   if (type === Date) return value instanceof Date;
+
   if (type === Array) return Array.isArray(value);
+
   if (type === Uint8Array) return value instanceof Uint8Array;
+
   if (type === ArrayBuffer) return value instanceof ArrayBuffer;
+
   return (
     value instanceof
     (
@@ -138,6 +166,7 @@ export const createTypeErrorMsg = (
 
   for (let idx = 0, len = types.length; idx < len; idx++) {
     const type = types[idx];
+
     if (type === 'null') allowedTypes[idx] = backtick('null');
     else if (type === 'undefined') allowedTypes[idx] = backtick('undefined');
     else if (type === 'string') allowedTypes[idx] = backtick('string');
@@ -177,6 +206,7 @@ export const assertIs = (
   for (let idx = 0, len = types.length; idx < len; idx++) {
     if (isType(value, types[idx]!)) return;
   }
+
   throw new TypeError(createTypeErrorMsg(value, valueName, types));
 };
 
@@ -208,6 +238,7 @@ export const assertRange = (
   assertIs(min, 'min', ['number']);
   assertIs(max, 'max', ['number']);
   max = Math.max(min, max);
+
   if (value < min || value > max) {
     // prettier-ignore
     throw new Error(
@@ -223,6 +254,7 @@ export const assertRangeOrUndefined = (
   max: number,
 ) => {
   assertIs(value, valueName, ['number', 'undefined']);
+
   if (typeof value === 'number') assertRange(value, valueName, min, max);
 };
 
@@ -232,6 +264,7 @@ export const assertMultiple = (
   multiplier: number,
 ) => {
   assertIs(value, valueName, ['number']);
+
   if (value % multiplier !== 0) {
     // prettier-ignore
     throw new Error(

@@ -65,6 +65,7 @@ export const isCatalogMetadata = (
   object: unknown,
 ): boolean => {
   const value = getCatalog(context)?.get(Metadata);
+
   return value !== undefined && context.lookup(value) === object;
 };
 
@@ -72,23 +73,29 @@ export const isCatalogMetadata = (
 const readMetadata = (context: PDFContext): MetadataRead => {
   const catalog = getCatalog(context);
   const value = catalog?.get(Metadata);
+
   if (value === undefined) return { kind: 'absent' };
   const stream = context.lookup(value);
+
   if (!(stream instanceof PDFRawStream)) {
     return {
       kind: 'unreadable',
       reason: 'the catalog /Metadata is not a stream',
     };
   }
+
   // An unfiltered stream is not bounded by the decoder; bound it here.
   const cap = context.maxDecodedStreamSize ?? DecodeStream.maxDecodedSize;
+
   if (stream.contents.length > cap) {
     return {
       kind: 'unreadable',
       reason: 'the catalog /Metadata stream is too large',
     };
   }
+
   let bytes: Uint8Array;
+
   try {
     bytes = decodePDFRawStream(stream).decode();
   } catch (e) {
@@ -97,6 +104,7 @@ const readMetadata = (context: PDFContext): MetadataRead => {
       reason: `the catalog /Metadata stream cannot be decoded (${(e as Error).message})`,
     };
   }
+
   try {
     return { kind: 'packet', packet: XmpPacket.parse(bytes), stream };
   } catch (e) {
@@ -115,53 +123,67 @@ const identificationKeys = [
 
 const identify = (packet: XmpPacket): PDFAState => {
   const declaration: Record<string, string> = {};
+
   // Every pdfaid property, known or not, must be a simple value stated once.
   for (const key of packet.propertyNames(PDFAID_NS)) {
     const occurrences = packet.properties(PDFAID_NS, key);
     const values = new Set<string>();
+
     for (const p of occurrences) {
       const read: XmpRead =
         p.form === 'attribute'
           ? { kind: 'text', value: p.attribute.value }
           : // Read each occurrence alone so that equal duplicates agree.
             readOne(p.element);
+
       if (read.kind !== 'text') {
         return {
           kind: 'unreadable',
           reason: `pdfaid:${key} is not a simple value`,
         };
       }
+
       values.add(read.value.trim());
     }
+
     if (values.size > 1) {
       return {
         kind: 'unreadable',
         reason: `contradictory pdfaid:${key} values (${[...values].join(', ')})`,
       };
     }
+
     const [value] = values;
+
     if (value !== undefined) declaration[key] = value;
   }
+
   if (declaration['part'] === undefined) {
     return packet.hasNamespace(PDFAID_NS)
       ? { kind: 'unreadable', reason: 'pdfaid properties without pdfaid:part' }
       : { kind: 'none' };
   }
+
   const known: Record<string, string> = {};
+
   for (const key of identificationKeys) {
     if (declaration[key] !== undefined) known[key] = declaration[key];
   }
+
   return { kind: 'declared', declaration: known as unknown as PDFADeclaration };
 };
 
 const readOne = (element: XmlElement): XmpRead => {
   const onlyText = element.children.every((c) => c.kind !== 'element');
+
   const plainAttributes = element.attributes.every(
     (a) =>
       a.ns === XMLNS_NAMESPACE ||
       (a.ns === XML_NAMESPACE && a.local === 'lang'),
   );
+
   if (!onlyText || !plainAttributes) return { kind: 'unsupported', reason: '' };
+
   return {
     kind: 'text',
     value: element.children
@@ -177,8 +199,11 @@ const readOne = (element: XmlElement): XmpRead => {
  */
 export const getPDFAState = (context: PDFContext): PDFAState => {
   const metadata = readMetadata(context);
+
   if (metadata.kind === 'absent') return { kind: 'none' };
+
   if (metadata.kind === 'unreadable') return metadata;
+
   return identify(metadata.packet);
 };
 
@@ -202,6 +227,7 @@ export const forbidsObjectStreams = (state: PDFAState): boolean =>
 /** Refuse `encrypt()` on a document that declares, or may declare, PDF/A. */
 export const assertMayEncrypt = (context: PDFContext): void => {
   const state = getPDFAState(context);
+
   if (state.kind !== 'none') {
     throw new Error(
       `Cannot encrypt: the document ${describe(state)}, and PDF/A forbids encryption.`,
@@ -223,18 +249,23 @@ export const assertPDFAWrite = (
 ): void => {
   if (!write.encrypted && !write.objectStreams && !write.incremental) return;
   const state = getPDFAState(context);
+
   if (state.kind === 'none') return;
+
   if (write.encrypted) {
     throw new Error(
       `Cannot write an encrypted file: the document ${describe(state)}, and PDF/A forbids encryption.`,
     );
   }
+
   if (!forbidsObjectStreams(state)) return;
+
   if (write.objectStreams) {
     throw new Error(
       `Cannot write object or cross-reference streams: the document ${describe(state)}, and PDF/A-1 forbids them. Save with useObjectStreams: false.`,
     );
   }
+
   if (write.incremental && context.pdfFileDetails.useObjectStreams) {
     throw new Error(
       `Cannot append an increment: the document ${describe(state)}, PDF/A-1 forbids cross-reference streams, and the file being extended uses them. Save with rewrite: true.`,
@@ -272,25 +303,33 @@ export const assertPDFAAttachment = (
   },
 ): void => {
   const state = getPDFAState(context);
+
   if (state.kind === 'none') return;
+
   const refuse = (why: string): never => {
     throw new Error(
       `Cannot attach ${JSON.stringify(name)}: the document ${describe(state)}, ${why}.`,
     );
   };
+
   if (state.kind === 'unreadable') {
     refuse('and PDF/A-1 forbids embedded files');
+
     return;
   }
+
   const { part } = state.declaration;
   const conformance = state.declaration.conformance?.toUpperCase();
+
   if (part === '2') return;
+
   const structured =
     part === '3' ||
     (part === '4' &&
       (conformance === undefined ||
         conformance === 'E' ||
         conformance === 'F'));
+
   if (!structured) {
     refuse(
       part === '4'
@@ -300,12 +339,17 @@ export const assertPDFAAttachment = (
           : 'a PDF/A part this library does not know, held to PDF/A-1, which forbids embedded files',
     );
   }
+
   const missing: string[] = [];
+
   if (options.mimeType === undefined || !MEDIA_TYPE.test(options.mimeType)) {
     missing.push('mimeType (a concrete type/subtype)');
   }
+
   if (options.afRelationship === undefined) missing.push('afRelationship');
+
   if (options.modificationDate === undefined) missing.push('modificationDate');
+
   if (missing.length > 0) {
     refuse(
       `which requires every embedded file to state its ${missing.join(', ')}`,
@@ -325,6 +369,7 @@ const textMapping = (ns: string, local: string): InfoMapping => ({
   write: (p, v) => p.setText(ns, local, v as string),
   isDate: false,
 });
+
 const dateMapping = (ns: string, local: string): InfoMapping => ({
   read: (p) => p.readText(ns, local),
   write: (p, v) => p.setText(ns, local, formatXmpDate(v as Date)),
@@ -341,7 +386,9 @@ export const infoMappings = {
   Author: {
     read: (p: XmpPacket): XmpRead => {
       const list = p.readList(DC_NS, 'creator', true);
+
       if (list.kind !== 'list') return list;
+
       return list.values.length === 1
         ? { kind: 'text', value: list.values[0]! }
         : {
@@ -382,8 +429,10 @@ const writeMetadata = (
     existing.dict.set(PDFName.of('Type'), Metadata);
     existing.dict.set(PDFName.of('Subtype'), PDFName.of('XML'));
     existing.updateContents(bytes);
+
     return;
   }
+
   const stream = context.stream(bytes, { Type: 'Metadata', Subtype: 'XML' });
   getCatalog(context)!.set(Metadata, context.register(stream));
 };
@@ -404,31 +453,41 @@ export const planInfoEdit = (
   value: string | Date,
 ): (() => void) => {
   const metadata = readMetadata(context);
+
   if (metadata.kind === 'absent') return () => {};
+
   if (metadata.kind === 'unreadable') {
     throw new Error(
       `Cannot set /${key}: the catalog XMP cannot be read (${metadata.reason}), so the document may declare PDF/A and its XMP could not be kept in step.`,
     );
   }
+
   const state = identify(metadata.packet);
+
   if (state.kind === 'none') return () => {};
+
   if (state.kind === 'unreadable') {
     throw new Error(`Cannot set /${key}: the document ${describe(state)}.`);
   }
+
   if (!['1', '2', '3'].includes(state.declaration.part)) {
     throw new Error(
       `Cannot set /${key}: the document ${describe(state)}, whose Info dictionary this library does not edit.`,
     );
   }
+
   try {
     infoMappings[key].write(metadata.packet, value);
   } catch (e) {
     if (e instanceof XmpError) {
-      throw new Error(`Cannot set /${key} on a PDF/A document: ${e.message}`);
+      throw new Error(`Cannot set /${key} on a PDF/A document: ${e.message}`, { cause: e });
     }
+
     throw e;
   }
+
   const bytes = metadata.packet.serialize();
+
   return () => writeMetadata(context, metadata.stream, bytes);
 };
 
@@ -458,13 +517,16 @@ const lookupIntents = (
   catalog: PDFDict,
 ): PDFArray | undefined => {
   const value = catalog.get(OutputIntents);
+
   if (value === undefined) return undefined;
   const intents = context.lookup(value);
+
   if (!(intents instanceof PDFArray)) {
     throw new Error(
       'Cannot declare PDF/A: the catalog /OutputIntents is not an array.',
     );
   }
+
   return intents;
 };
 
@@ -475,52 +537,66 @@ const checkExistingIntents = (
 ) => {
   let pdfaIntents = 0;
   let sharedProfile: unknown;
+
   for (let i = 0; i < intents.size(); i++) {
     const intent = context.lookup(intents.get(i));
+
     if (!(intent instanceof PDFDict)) {
       throw new Error(
         'Cannot declare PDF/A: an output intent is not a dictionary.',
       );
     }
+
     const isPDFA = intent.lookup(PDFName.of('S')) === GTS_PDFA1;
+
     if (isPDFA) pdfaIntents++;
     const profileRef = intent.get(DestOutputProfile);
+
     if (profileRef === undefined) {
       if (isPDFA) {
         throw new Error(
           'Cannot declare PDF/A: the GTS_PDFA1 output intent has no /DestOutputProfile.',
         );
       }
+
       continue;
     }
+
     // ISO 19005-1 6.2.2, -2 6.2.3: every intent's profile is the same object.
     if (sharedProfile !== undefined && profileRef !== sharedProfile) {
       throw new Error(
         'Cannot declare PDF/A: the output intents name different /DestOutputProfile objects.',
       );
     }
+
     sharedProfile = profileRef;
     const profile = context.lookup(profileRef);
+
     if (!(profile instanceof PDFRawStream)) {
       throw new Error(
         'Cannot declare PDF/A: an output intent profile is not a stream.',
       );
     }
+
     let bytes: Uint8Array;
+
     try {
       bytes = decodePDFRawStream(profile).decode();
     } catch (e) {
       throw new Error(
-        `Cannot declare PDF/A: an output intent profile cannot be decoded (${(e as Error).message}).`,
+        `Cannot declare PDF/A: an output intent profile cannot be decoded (${(e as Error).message}).`, { cause: e },
       );
     }
+
     const checked = checkOutputProfile(bytes, part);
+
     if ('error' in checked) {
       throw new Error(
         `Cannot declare PDF/A-${part}: in the existing output intent, ${checked.error}.`,
       );
     }
   }
+
   if (pdfaIntents === 0) {
     throw new Error(
       'Cannot declare PDF/A: the document has output intents but none with /S /GTS_PDFA1, and they are not replaced.',
@@ -544,13 +620,18 @@ const assertDeclarable = (context: PDFContext, part: number): PDFDict => {
       'Cannot declare PDF/A after encrypt(): PDF/A forbids encryption.',
     );
   }
+
   const catalog = getCatalog(context);
+
   if (!catalog)
     throw new Error('Cannot declare PDF/A: the document has no catalog.');
+
   if (getCatalogVersion(context) === 'malformed') {
     throw new Error('Cannot declare PDF/A: the catalog /Version is malformed.');
   }
+
   const version = getEffectiveVersion(context);
+
   if (
     compareVersions(version, [1, 0]) < 0 ||
     compareVersions(version, [1, 7]) > 0
@@ -559,6 +640,7 @@ const assertDeclarable = (context: PDFContext, part: number): PDFDict => {
       `Cannot declare PDF/A-${part} for a PDF ${version.join('.')} document; parts 1 to 3 are PDF 1.0 to 1.7.`,
     );
   }
+
   return catalog;
 };
 
@@ -584,33 +666,43 @@ export const planDeclarePDFA = (
   edit?: (packet: XmpPacket) => void,
 ): (() => void) => {
   const { part, conformance, outputIntent } = options;
+
   if (part !== 1 && part !== 2 && part !== 3) {
     throw new Error(`PDF/A part must be 1, 2 or 3, not ${String(part)}.`);
   }
+
   if (conformance !== 'B' && conformance !== 'U') {
     throw new Error(
       `PDF/A conformance must be 'B' or 'U', not ${String(conformance)}.`,
     );
   }
+
   if (part === 1 && conformance === 'U') {
     throw new Error('PDF/A-1 has no conformance level U.');
   }
+
   const catalog = assertDeclarable(context, part);
 
   const metadata = readMetadata(context);
+
   if (metadata.kind === 'unreadable') {
     throw new Error(
       `Cannot declare PDF/A: the catalog XMP cannot be read (${metadata.reason}).`,
     );
   }
+
   const packet =
     metadata.kind === 'packet' ? metadata.packet : XmpPacket.create();
+
   const state = identify(packet);
+
   if (state.kind === 'unreadable') {
     throw new Error(`Cannot declare PDF/A: the document ${describe(state)}.`);
   }
+
   if (state.kind === 'declared') {
     const { declaration } = state;
+
     if (
       declaration.part !== String(part) ||
       declaration.conformance?.toUpperCase() !== conformance
@@ -623,8 +715,10 @@ export const planDeclarePDFA = (
 
   // Trailer /ID (ISO 19005-1 6.1.3, -2/-3 6.1.3).
   const { ID } = context.trailerInfo;
+
   if (ID !== undefined) {
     const id = context.lookup(ID);
+
     if (
       !(id instanceof PDFArray) ||
       id.size() !== 2 ||
@@ -640,25 +734,32 @@ export const planDeclarePDFA = (
   // Output intent.
   const intents = lookupIntents(context, catalog);
   let newIntent: (() => void) | undefined;
+
   if (intents && intents.size() > 0) {
     if (outputIntent) {
       throw new Error(
         'Cannot declare PDF/A with an outputIntent: the document already has output intents, which are not replaced.',
       );
     }
+
     checkExistingIntents(context, intents, part);
   } else {
     const profile = outputIntent?.profile ?? getSRGBProfile();
+
     const identifier =
       outputIntent?.outputConditionIdentifier ?? SRGB_OUTPUT_CONDITION;
+
     if (!(profile instanceof Uint8Array))
       throw new Error('outputIntent.profile must be a Uint8Array.');
+
     if (typeof identifier !== 'string') {
       throw new Error(
         'outputIntent.outputConditionIdentifier must be a string.',
       );
     }
+
     const checked = checkOutputProfile(profile, part);
+
     if ('error' in checked)
       throw new Error(`Cannot declare PDF/A-${part}: ${checked.error}.`);
     const info = outputIntent ? outputIntent.info : SRGB_OUTPUT_CONDITION;
@@ -666,6 +767,7 @@ export const planDeclarePDFA = (
       const profileRef = context.register(
         context.flateStream(profile, { N: checked.components }),
       );
+
       const intent = context.obj({
         Type: 'OutputIntent',
         S: 'GTS_PDFA1',
@@ -673,7 +775,9 @@ export const planDeclarePDFA = (
         Info: info === undefined ? undefined : PDFHexString.fromText(info),
         DestOutputProfile: profileRef,
       });
+
       const ref = context.register(intent);
+
       if (intents) intents.push(ref);
       else catalog.set(OutputIntents, context.obj([ref]));
     };
@@ -686,24 +790,29 @@ export const planDeclarePDFA = (
   try {
     for (const key of Object.keys(infoMappings) as InfoKey[]) {
       const info = readInfo(key);
+
       if (info === undefined) continue;
       const mapping = infoMappings[key];
       const xmp = mapping.read(packet);
+
       if (xmp.kind === 'absent') {
         mapping.write(packet, info);
         continue;
       }
+
       if (part === 1) {
         if (xmp.kind === 'unsupported') {
           throw new XmpError(
             `its XMP counterpart of /${key} cannot be compared (${xmp.reason})`,
           );
         }
+
         const same = mapping.isDate
           ? parseXmpDate(xmp.value) !== undefined &&
             wholeSeconds(parseXmpDate(xmp.value)!) ===
               wholeSeconds(info as Date)
           : xmp.value === info;
+
         if (!same) {
           throw new XmpError(
             `Info /${key} and its XMP counterpart differ, and neither is chosen over the other`,
@@ -711,16 +820,19 @@ export const planDeclarePDFA = (
         }
       }
     }
+
     if (state.kind === 'none') {
       packet.setText(PDFAID_NS, 'part', String(part));
       packet.setText(PDFAID_NS, 'conformance', conformance);
     }
+
     edit?.(packet);
   } catch (e) {
     if (e instanceof XmpError)
-      throw new Error(`Cannot declare PDF/A-${part}: ${e.message}.`);
+      throw new Error(`Cannot declare PDF/A-${part}: ${e.message}.`, { cause: e });
     throw e;
   }
+
   const bytes = packet.serialize();
 
   const newId =
@@ -734,6 +846,7 @@ export const planDeclarePDFA = (
       bytes,
     );
     newIntent?.();
+
     if (newId) context.trailerInfo.ID = context.obj([newId, newId]);
   };
 };
@@ -754,16 +867,21 @@ export const planPDFA3Edit = (
 ): (() => void) => {
   assertDeclarable(context, 3);
   const metadata = readMetadata(context);
+
   if (metadata.kind === 'unreadable') {
     throw new Error(
       `Cannot ${what}: the catalog XMP cannot be read (${metadata.reason}).`,
     );
   }
+
   const declare = () =>
     planDeclarePDFA(context, { part: 3, conformance: 'B' }, readInfo, edit);
+
   if (metadata.kind === 'absent') return declare();
   const state = identify(metadata.packet);
+
   if (state.kind === 'none') return declare();
+
   if (
     state.kind !== 'declared' ||
     state.declaration.part !== '3' ||
@@ -775,13 +893,16 @@ export const planPDFA3Edit = (
       `Cannot ${what}: it needs PDF/A-3, and the document ${describe(state)}.`,
     );
   }
+
   try {
     edit(metadata.packet);
   } catch (e) {
-    if (e instanceof XmpError) throw new Error(`Cannot ${what}: ${e.message}.`);
+    if (e instanceof XmpError) throw new Error(`Cannot ${what}: ${e.message}.`, { cause: e });
     throw e;
   }
+
   const bytes = metadata.packet.serialize();
   const { stream } = metadata;
+
   return () => writeMetadata(context, stream, bytes);
 };

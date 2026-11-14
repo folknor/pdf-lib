@@ -139,6 +139,7 @@ describe('PDFContext', () => {
         [null, -24.179],
         { Foo: PDFName.of('Bar') },
       ];
+
       const obj = context.obj(array);
       expect(obj).toBeInstanceOf(PDFArray);
       expect(obj.toString()).toEqual(
@@ -158,6 +159,7 @@ describe('PDFContext', () => {
         Name: 'Foo#Bar!',
         Dictionary: { Array: [true, null] },
       };
+
       const obj = context.obj(dict);
       expect(obj).toBeInstanceOf(PDFDict);
       expect(obj.toString()).toEqual(
@@ -187,6 +189,7 @@ describe('PDFContext', () => {
         Name: 'Foo#Bar()',
         Dictionary: { Array: [true, null] },
       };
+
       const obj = context.obj(dict);
 
       // Default conversion

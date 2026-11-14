@@ -55,17 +55,20 @@ export default class WOFF2Font extends TTFFont {
     const buffer = this.stream.readBuffer(this.directory.totalCompressedSize);
 
     let decompressedSize = 0;
+
     for (const tag in this.directory.tables) {
       const entry = this.directory.tables[tag];
       entry.offset = decompressedSize;
       decompressedSize +=
         entry.transformLength != null ? entry.transformLength : entry.length;
     }
+
     if (decompressedSize > maxDecodedSize) {
       throw new DecodedStreamTooLargeError(decompressedSize, maxDecodedSize);
     }
 
     const decompressed = brotliDecompress(buffer, decompressedSize);
+
     if (!decompressed) {
       throw new Error('Error decoding compressed data in WOFF2');
     }
@@ -79,6 +82,7 @@ export default class WOFF2Font extends TTFFont {
     // As in TTFFont, a cached COLR/CBDT glyph stays cached, but callers asking
     // for the base glyph get the outline glyph.
     const cached = this._glyphs[glyph];
+
     if (isOutlineGlyph(cached)) {
       return cached;
     }
@@ -87,10 +91,13 @@ export default class WOFF2Font extends TTFFont {
       if (!this._transformedGlyphs) {
         this._transformGlyfTable();
       }
+
       const outline = new WOFF2Glyph(glyph, this);
+
       if (!cached) {
         this._glyphs[glyph] = outline;
       }
+
       return outline;
     }
 
@@ -102,6 +109,7 @@ export default class WOFF2Font extends TTFFont {
     const table: any = GlyfTable.decode(this.stream);
     const glyphs: TransformedGlyph[] = [];
     const bboxes: r.DecodeStream = table['bboxes'];
+
     const bboxBitmap = bboxes.readBuffer(
       4 * Math.floor((table['numGlyphs'] + 31) / 32),
     );
@@ -114,6 +122,7 @@ export default class WOFF2Font extends TTFFont {
         xMax: 0,
         yMax: 0,
       };
+
       const nContours = table['nContours'].readInt16BE();
       glyph.numberOfContours = nContours;
 
@@ -133,6 +142,7 @@ export default class WOFF2Font extends TTFFont {
           table['glyphs'],
           totalPoints,
         );
+
         for (let i = 0; i < nContours; i++) {
           glyph.points[nPoints[i]! - 1]!.endContour = true;
         }
@@ -145,6 +155,7 @@ export default class WOFF2Font extends TTFFont {
           glyph as any,
           table['composites'],
         );
+
         if (haveInstructions) {
           read255UInt16(table['glyphs']);
         }
@@ -158,6 +169,7 @@ export default class WOFF2Font extends TTFFont {
       } else if (glyph.points?.length) {
         glyph.xMin = glyph.yMin = Infinity;
         glyph.xMax = glyph.yMax = -Infinity;
+
         for (const { x, y } of glyph.points) {
           glyph.xMin = Math.min(glyph.xMin, x);
           glyph.yMin = Math.min(glyph.yMin, y);
@@ -248,6 +260,7 @@ function decodeTriplet(
   for (let i = 0; i < nPoints; i++) {
     let dx = 0,
       dy = 0;
+
     let flag = flags.readUInt8();
     const onCurve = !(flag >> 7);
     flag &= 0x7f;

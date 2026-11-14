@@ -258,6 +258,7 @@ describe('PDFLinkAnnotation', () => {
       const removed = page.removeAnnotations((annot) => {
         if (annot.getSubtype() !== AnnotationTypes.Link) return false;
         const url = (annot as PDFLinkAnnotation).getUrl();
+
         return url?.includes('remove.com') ?? false;
       });
 
@@ -282,6 +283,7 @@ describe('PDFLinkAnnotation', () => {
 
       const removed = page.removeAnnotations((annot) => {
         const url = (annot as PDFLinkAnnotation).getUrl?.();
+
         return url?.includes('nonexistent') ?? false;
       });
 

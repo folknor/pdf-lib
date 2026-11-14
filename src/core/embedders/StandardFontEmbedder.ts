@@ -63,6 +63,7 @@ class StandardFontEmbedder {
     const widths = new Array<number>(count);
     const zeros = new Array<number>(count).fill(0);
     const spacing = new Array<GlyphSpacing>(count);
+
     for (let idx = 0; idx < count; idx++) {
       const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
@@ -75,6 +76,7 @@ class StandardFontEmbedder {
           ? 0
           : this.font.getXAxisKerningForPair(left, right) || 0);
     }
+
     return new EncodedText(
       codes,
       advances,
@@ -93,6 +95,7 @@ class StandardFontEmbedder {
   ): number {
     const { characterSpacing = 0, wordSpacing = 0 } = spacing;
     const encoded = this.encodeText(text);
+
     return (
       (encoded.withSpacing(characterSpacing, wordSpacing, size).advance *
         size) /
@@ -111,6 +114,7 @@ class StandardFontEmbedder {
     const yBottom = Descender || FontBBox[1];
 
     let height = yTop - yBottom;
+
     if (!descender) height -= Math.abs(yBottom);
 
     return (height / 1000) * size;
@@ -120,6 +124,7 @@ class StandardFontEmbedder {
     const { Ascender, Descender, FontBBox } = this.font;
     const yTop = Ascender || FontBBox[3];
     const yBottom = Descender || FontBBox[1];
+
     return (1000 * height) / (yTop - yBottom);
   }
 
@@ -135,6 +140,7 @@ class StandardFontEmbedder {
 
     if (ref) {
       context.assign(ref, fontDict);
+
       return ref;
     } else {
       return context.register(fontDict);
@@ -149,8 +155,10 @@ class StandardFontEmbedder {
   private encodeTextAsGlyphs(text: string): Glyph[] {
     const codePoints = Array.from(text);
     const glyphs: Glyph[] = new Array(codePoints.length);
+
     for (let idx = 0, len = codePoints.length; idx < len; idx++) {
       const codePoint = toCodePoint(codePoints[idx]!)!;
+
       try {
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(codePoint);
       } catch {
@@ -158,6 +166,7 @@ class StandardFontEmbedder {
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(toCodePoint('?')!);
       }
     }
+
     return glyphs;
   }
 }

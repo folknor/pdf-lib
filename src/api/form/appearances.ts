@@ -114,6 +114,7 @@ export const normalizeAppearance = <T extends object>(
   appearance: T | AppearanceMapping<T>,
 ): AppearanceMapping<T> => {
   if ('normal' in appearance) return appearance;
+
   return { normal: appearance };
 };
 
@@ -122,8 +123,10 @@ const getDefaultSpacing = (field: {
   getDefaultAppearance(): string | undefined;
 }): TextSpacing | undefined => {
   const da = field.getDefaultAppearance();
+
   if (!da) return undefined;
   let spacing: TextSpacing | undefined;
+
   for (const { operator, operands } of parseContentStream(
     Uint8Array.from(da, (char) => char.charCodeAt(0)),
   ).operations) {
@@ -137,6 +140,7 @@ const getDefaultSpacing = (field: {
         operands[0];
     }
   }
+
   return spacing;
 };
 
@@ -146,6 +150,7 @@ const fieldSpacing = (
 ) => {
   const base = getDefaultSpacing(field);
   const override = getDefaultSpacing(widget);
+
   return base || override ? { ...base, ...override } : undefined;
 };
 
@@ -161,6 +166,7 @@ const getDefaultFontSize = (field: {
   const da = field.getDefaultAppearance() ?? '';
   const daMatch = findLastMatch(da, tfRegex).match ?? [];
   const defaultFontSize = Number(daMatch[2]);
+
   return Number.isFinite(defaultFontSize) ? defaultFontSize : undefined;
 };
 
@@ -182,9 +188,11 @@ const getDefaultColor = (field: {
   if (colorSpace === 'g' && c1) {
     return grayscale(Number(c1));
   }
+
   if (colorSpace === 'rg' && c1 && c2 && c3) {
     return rgb(Number(c1), Number(c2), Number(c3));
   }
+
   if (colorSpace === 'k' && c1 && c2 && c3 && c4) {
     return cmyk(Number(c1), Number(c2), Number(c3), Number(c4));
   }
@@ -202,6 +210,7 @@ const updateDefaultAppearance = (
   fontSize: number = 0,
 ) => {
   const spacing = getDefaultSpacing(field);
+
   const da = [
     ...(spacing?.characterSpacing !== undefined
       ? [`${spacing.characterSpacing} Tc`]
@@ -212,6 +221,7 @@ const updateDefaultAppearance = (
     setFillingColor(color).toString(),
     setFontAndSize(font?.name ?? 'dummy__noop', fontSize).toString(),
   ].join('\n');
+
   field.setDefaultAppearance(da);
 };
 
@@ -239,6 +249,7 @@ export const defaultCheckBoxAppearanceProvider: AppearanceProviderFor<
 
   // Update color
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor) {
     updateDefaultAppearance(widget, textColor);
   } else {
@@ -320,6 +331,7 @@ export const defaultRadioGroupAppearanceProvider: AppearanceProviderFor<
 
   // Update color
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor) {
     updateDefaultAppearance(widget, textColor);
   } else {
@@ -411,6 +423,7 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
     width: width - borderWidth * 2,
     height: height - borderWidth * 2,
   };
+
   const normalLayout = layoutSinglelineText(normalText, {
     alignment: TextAlignment.Center,
     spacing,
@@ -418,6 +431,7 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
     font,
     bounds,
   });
+
   const downLayout = layoutSinglelineText(downText, {
     alignment: TextAlignment.Center,
     spacing,
@@ -429,6 +443,7 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
   // Update font size and color
   const fontSize = Math.min(normalLayout.fontSize, downLayout.fontSize);
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor || widgetFontSize !== undefined) {
     updateDefaultAppearance(widget, textColor, font, fontSize);
   } else {
@@ -499,12 +514,14 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   let fontSize: number;
 
   const padding = textField.isCombed() ? 0 : 1;
+
   const bounds = {
     x: borderWidth + padding,
     y: borderWidth + padding,
     width: width - (borderWidth + padding) * 2,
     height: height - (borderWidth + padding) * 2,
   };
+
   if (textField.isMultiline()) {
     const layout = layoutMultilineText(text, {
       alignment: textField.getAlignment(),
@@ -513,6 +530,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
       font,
       bounds,
     });
+
     textLines = layout.lines;
     fontSize = layout.fontSize;
   } else if (textField.isCombed()) {
@@ -523,6 +541,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
       bounds,
       cellCount: textField.getMaxLength() ?? 0,
     });
+
     textLines = layout.cells;
     fontSize = layout.fontSize;
   } else {
@@ -533,12 +552,14 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
       font,
       bounds,
     });
+
     textLines = [layout.line];
     fontSize = layout.fontSize;
   }
 
   // Update font size and color
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor || widgetFontSize !== undefined) {
     updateDefaultAppearance(widget, textColor, font, fontSize);
   } else {
@@ -594,12 +615,14 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   const normalBackgroundColor = componentsToColor(ap?.getBackgroundColor());
 
   const padding = 1;
+
   const bounds = {
     x: borderWidth + padding,
     y: borderWidth + padding,
     width: width - (borderWidth + padding) * 2,
     height: height - (borderWidth + padding) * 2,
   };
+
   const { line, fontSize } = layoutSinglelineText(text, {
     alignment: TextAlignment.Left,
     spacing,
@@ -610,6 +633,7 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
 
   // Update font size and color
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor || widgetFontSize !== undefined) {
     updateDefaultAppearance(widget, textColor, font, fontSize);
   } else {
@@ -667,18 +691,22 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
   if (optionList.isSorted()) options.sort();
 
   let text = '';
+
   for (let idx = 0, len = options.length; idx < len; idx++) {
     text += options[idx];
+
     if (idx < len - 1) text += '\n';
   }
 
   const padding = 1;
+
   const bounds = {
     x: borderWidth + padding,
     y: borderWidth + padding,
     width: width - (borderWidth + padding) * 2,
     height: height - (borderWidth + padding) * 2,
   };
+
   const { lines, fontSize, lineHeight } = layoutMultilineText(text, {
     alignment: TextAlignment.Left,
     spacing,
@@ -688,8 +716,10 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
   });
 
   const selectedLines: number[] = [];
+
   for (let idx = 0, len = lines.length; idx < len; idx++) {
     const line = lines[idx]!;
+
     if (selected.includes(line.text)) selectedLines.push(idx);
   }
 
@@ -697,6 +727,7 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
 
   // Update font size and color
   const textColor = widgetColor ?? fieldColor ?? black;
+
   if (widgetColor || widgetFontSize !== undefined) {
     updateDefaultAppearance(widget, textColor, font, fontSize);
   } else {

@@ -31,8 +31,10 @@ class PDFAcroButton extends PDFAcroTerminal {
     }
 
     const values: (PDFString | PDFHexString)[] = [];
+
     for (let idx = 0, len = opt.size(); idx < len; idx++) {
       const value = opt.lookup(idx);
+
       if (value instanceof PDFString || value instanceof PDFHexString) {
         values.push(value);
       }
@@ -53,6 +55,7 @@ class PDFAcroButton extends PDFAcroTerminal {
       if (idx < 0 || idx > opt.size()) {
         throw new IndexOutOfBoundsError(idx, 0, opt.size());
       }
+
       opt.remove(idx);
     }
   }
@@ -64,11 +67,14 @@ class PDFAcroButton extends PDFAcroTerminal {
     const Opt: (PDFString | PDFHexString)[] = [];
 
     const widgets = this.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const exportVal =
         exportValues[idx] ??
         PDFHexString.fromText(widget.getOnValue()?.decodeText() ?? '');
+
       Opt.push(exportVal);
     }
 
@@ -85,10 +91,13 @@ class PDFAcroButton extends PDFAcroTerminal {
     const optText = opt.decodeText();
 
     let existingIdx: number | undefined;
+
     if (useExistingOptIdx) {
       const exportValues = this.getExportValues() ?? [];
+
       for (let idx = 0, len = exportValues.length; idx < len; idx++) {
         const exportVal = exportValues[idx]!;
+
         if (exportVal.decodeText() === optText) existingIdx = idx;
       }
     }
@@ -107,6 +116,7 @@ class PDFAcroButton extends PDFAcroTerminal {
     const optIdx = this.addOpt(opt, useExistingOptIdx);
     const apStateValue = PDFName.of(String(optIdx));
     this.addWidget(widget);
+
     return apStateValue;
   }
 }

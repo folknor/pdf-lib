@@ -39,6 +39,7 @@ class PDFName extends PDFObject {
    */
   static fromDecoded = (decodedValue: string): PDFName => {
     let instance = pool.get(decodedValue);
+
     if (!instance) {
       instance = new PDFName(ENFORCER, decodedValue);
       pool.set(decodedValue, instance);
@@ -114,6 +115,7 @@ class PDFName extends PDFObject {
     super();
 
     let encodedName = '/';
+
     for (let idx = 0, len = name.length; idx < len; idx++) {
       const character = name[idx]!;
       const code = toCharCode(character);
@@ -138,6 +140,7 @@ class PDFName extends PDFObject {
       const char = this.encodedName[idx]!;
       const byte = toCharCode(char);
       const nextChar = this.encodedName[idx + 1];
+
       if (!escaped) {
         if (byte === CharCodes.Hash) escaped = true;
         else pushByte(byte);
@@ -148,6 +151,7 @@ class PDFName extends PDFObject {
           (byte >= CharCodes.A && byte <= CharCodes.F)
         ) {
           hex += char;
+
           if (
             hex.length === 2 ||
             !(
@@ -172,6 +176,7 @@ class PDFName extends PDFObject {
   // TODO: Polyfill Array.from?
   decodeText(): string {
     const bytes = this.asBytes();
+
     return String.fromCharCode(...Array.from(bytes));
   }
 
@@ -198,6 +203,7 @@ class PDFName extends PDFObject {
 
   override copyBytesInto(buffer: Uint8Array, offset: number): number {
     copyStringIntoBuffer(this.encodedName, buffer, offset);
+
     return this.encodedName.length;
   }
 }

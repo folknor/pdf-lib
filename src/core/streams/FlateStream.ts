@@ -133,17 +133,21 @@ class FlateStream extends DecodeStream {
 
     const cmf = stream.getByte();
     const flg = stream.getByte();
+
     if (cmf === -1 || flg === -1) {
       throw new Error(`Invalid header in flate stream: ${cmf}, ${flg}`);
     }
+
     if ((cmf & 0x0f) !== 0x08) {
       throw new Error(
         `Unknown compression method in flate stream: ${cmf}, ${flg}`,
       );
     }
+
     if (((cmf << 8) + flg) % 31 !== 0) {
       throw new Error(`Bad FCHECK in flate stream: ${cmf}, ${flg}`);
     }
+
     if (flg & 0x20) {
       throw new Error(`FDICT bit set in flate stream: ${cmf}, ${flg}`);
     }
@@ -158,9 +162,11 @@ class FlateStream extends DecodeStream {
     const str = this.stream;
     // read block header
     let hdr = this.getBits(3);
+
     if (hdr & 1) {
       this.eof = true;
     }
+
     hdr >>= 1;
 
     if (hdr === 0) {
@@ -170,19 +176,27 @@ class FlateStream extends DecodeStream {
       if ((b = str.getByte()) === -1) {
         throw new Error('Bad block header in flate stream');
       }
+
       let blockLen = b;
+
       if ((b = str.getByte()) === -1) {
         throw new Error('Bad block header in flate stream');
       }
+
       blockLen |= b << 8;
+
       if ((b = str.getByte()) === -1) {
         throw new Error('Bad block header in flate stream');
       }
+
       let check = b;
+
       if ((b = str.getByte()) === -1) {
         throw new Error('Bad block header in flate stream');
       }
+
       check |= b << 8;
+
       if (check !== (~blockLen & 0xffff) && (blockLen !== 0 || check !== 0)) {
         // Ignoring error for bad "empty" block (see issue 1277)
         throw new Error('Bad uncompressed block length in flate stream');
@@ -195,6 +209,7 @@ class FlateStream extends DecodeStream {
       buffer = this.ensureBuffer(bufferLength + blockLen);
       const end = bufferLength + blockLen;
       this.bufferLength = end;
+
       if (blockLen === 0) {
         if (str.peekByte() === -1) {
           this.eof = true;
@@ -205,14 +220,17 @@ class FlateStream extends DecodeStream {
             this.eof = true;
             break;
           }
+
           buffer[n] = b;
         }
       }
+
       return;
     }
 
     let litCodeTable;
     let distCodeTable;
+
     if (hdr === 1) {
       // compressed block, fixed codes
       litCodeTable = fixedLitCodeTab;
@@ -227,9 +245,11 @@ class FlateStream extends DecodeStream {
       const codeLenCodeLengths = new Uint8Array(codeLenCodeMap.length);
 
       let i;
+
       for (i = 0; i < numCodeLenCodes; ++i) {
         codeLenCodeLengths[codeLenCodeMap[i]!] = this.getBits(3);
       }
+
       const codeLenCodeTab = this.generateHuffmanTable(codeLenCodeLengths);
 
       // build the literal and distance code tables
@@ -240,8 +260,10 @@ class FlateStream extends DecodeStream {
       let bitsLength;
       let bitsOffset;
       let what;
+
       while (i < codes) {
         const code = this.getCode(codeLenCodeTab);
+
         if (code === 16) {
           bitsLength = 2;
           bitsOffset = 3;
@@ -260,6 +282,7 @@ class FlateStream extends DecodeStream {
         }
 
         let repeatLength = this.getBits(bitsLength) + bitsOffset;
+
         while (repeatLength-- > 0) {
           codeLengths[i++] = what;
         }
@@ -278,38 +301,50 @@ class FlateStream extends DecodeStream {
     buffer = this.buffer;
     let limit = buffer ? buffer.length : 0;
     let pos = this.bufferLength;
+
     while (true) {
       let code1 = this.getCode(litCodeTable);
+
       if (code1 < 256) {
         if (pos + 1 >= limit) {
           buffer = this.ensureBuffer(pos + 1);
           limit = buffer.length;
         }
+
         buffer[pos++] = code1;
         continue;
       }
+
       if (code1 === 256) {
         this.bufferLength = pos;
+
         return;
       }
+
       code1 -= 257;
       code1 = lengthDecode[code1]!;
       let code2 = code1 >> 16;
+
       if (code2 > 0) {
         code2 = this.getBits(code2);
       }
+
       len = (code1 & 0xffff) + code2;
       code1 = this.getCode(distCodeTable);
       code1 = distDecode[code1]!;
       code2 = code1 >> 16;
+
       if (code2 > 0) {
         code2 = this.getBits(code2);
       }
+
       const dist = (code1 & 0xffff) + code2;
+
       if (pos + len >= limit) {
         buffer = this.ensureBuffer(pos + len);
         limit = buffer.length;
       }
+
       for (let k = 0; k < len; ++k, ++pos) {
         buffer[pos] = buffer[pos - dist]!;
       }
@@ -322,13 +357,16 @@ class FlateStream extends DecodeStream {
     let codeBuf = this.codeBuf;
 
     let b;
+
     while (codeSize < bits) {
       if ((b = str.getByte()) === -1) {
         throw new Error('Bad encoding in flate stream');
       }
+
       codeBuf |= b << codeSize;
       codeSize += 8;
     }
+
     b = codeBuf & ((1 << bits) - 1);
     this.codeBuf = codeBuf >> bits;
     this.codeSize = codeSize -= bits;
@@ -344,23 +382,29 @@ class FlateStream extends DecodeStream {
     let codeBuf = this.codeBuf;
 
     let b;
+
     while (codeSize < maxLen) {
       if ((b = str.getByte()) === -1) {
         // premature end of stream. code might however still be valid.
         // codeSize < codeLen check below guards against incomplete codeVal.
         break;
       }
+
       codeBuf |= b << codeSize;
       codeSize += 8;
     }
+
     const code = codes[codeBuf & ((1 << maxLen) - 1)]!;
     const codeLen = code >> 16;
     const codeVal = code & 0xffff;
+
     if (codeLen < 1 || codeSize < codeLen) {
       throw new Error('Bad encoding in flate stream');
     }
+
     this.codeBuf = codeBuf >> codeLen;
     this.codeSize = codeSize - codeLen;
+
     return codeVal;
   }
 
@@ -370,6 +414,7 @@ class FlateStream extends DecodeStream {
     // find max code length
     let maxLen = 0;
     let i;
+
     for (i = 0; i < n; ++i) {
       if (lengths[i]! > maxLen) {
         maxLen = lengths[i]!;
@@ -379,6 +424,7 @@ class FlateStream extends DecodeStream {
     // build the table
     const size = 1 << maxLen;
     const codes = new Int32Array(size);
+
     for (
       let len = 1, code = 0, skip = 2;
       len <= maxLen;
@@ -389,6 +435,7 @@ class FlateStream extends DecodeStream {
           // bit-reverse the code
           let code2 = 0;
           let t = code;
+
           for (i = 0; i < len; ++i) {
             code2 = (code2 << 1) | (t & 1);
             t >>= 1;
@@ -398,6 +445,7 @@ class FlateStream extends DecodeStream {
           for (i = code2; i < size; i += skip) {
             codes[i] = (len << 16) | val;
           }
+
           ++code;
         }
       }

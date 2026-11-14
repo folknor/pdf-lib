@@ -6,6 +6,7 @@ import GSUBProcessor from '../../src/fontkit/opentype/GSUBProcessor.js';
 
 const cov = (...glyphs: number[]) => ({ version: 1, glyphs });
 const glyph = (id: number, features: object = { test: true }) => ({ id, features });
+
 const alternates = (coverage: number[], sets: number[][]) => ({
   coverage: cov(...coverage),
   alternateSet: { get: (i: number) => sets[i] },
@@ -16,6 +17,7 @@ const run = (lookup: any, glyphs: any[], values: Record<string, number> = {}, lo
   p.table = { lookupList: { get: (i: number) => lookups[i] } };
   p.featureValues = values;
   p.applyLookups([{ features: ['test'], index: 0, lookup }], glyphs);
+
   return glyphs.map((g) => g.id);
 };
 
@@ -26,6 +28,7 @@ const staged = (features: Record<string, number[]>, lookupList: any[]) => {
   p.features = Object.fromEntries(
     Object.entries(features).map(([tag, lookupListIndexes]) => [tag, { lookupListIndexes }]),
   );
+
   return p;
 };
 
@@ -53,8 +56,10 @@ describe('a lookup several features of a stage reference', () => {
     const pick = (order: string[], features: object, values: Record<string, number>) => {
       const glyphs = [glyph(1, features)];
       staged({ aalt: [0], salt: [0] }, [alt]).applyFeatures(order, glyphs, undefined, values);
+
       return glyphs[0]!.id;
     };
+
     expect(pick(['aalt', 'salt'], { aalt: true, salt: true }, { aalt: 2, salt: 3 })).toBe(7);
     expect(pick(['salt', 'aalt'], { aalt: true, salt: true }, { aalt: 2, salt: 3 })).toBe(7);
     expect(pick(['aalt', 'salt'], { aalt: true, salt: true }, { salt: 2 })).toBe(6);
@@ -78,6 +83,7 @@ describe('GSUB alternate substitution', () => {
 
   it('leaves a contextual target that lacks the feature alone', () => {
     const lookups = [lookup];
+
     const context = {
       lookupType: 5,
       flags: {},
@@ -89,6 +95,7 @@ describe('GSUB alternate substitution', () => {
         },
       ],
     };
+
     expect(run(context, [glyph(2), glyph(1, {})], {}, lookups)).toEqual([2, 1]);
     expect(run(context, [glyph(2), glyph(1)], {}, lookups)).toEqual([2, 5]);
   });

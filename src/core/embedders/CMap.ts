@@ -21,6 +21,7 @@ export type ToUnicodeEntry = readonly [
  */
 export const createCmap = (entries: readonly ToUnicodeEntry[]) => {
   const bfChars: BfChar[] = new Array(entries.length);
+
   for (let idx = 0, len = entries.length; idx < len; idx++) {
     const [code, codePoints] = entries[idx]!;
     const id = cmapHexFormat(cmapHexString(code));
@@ -68,6 +69,7 @@ const cmapCodePointFormat = (codePoint: number) => {
   if (hasSurrogates(codePoint)) {
     const hs = highSurrogate(codePoint);
     const ls = lowSurrogate(codePoint);
+
     return `${cmapHexString(hs)}${cmapHexString(ls)}`;
   }
 

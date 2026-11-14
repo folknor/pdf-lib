@@ -29,6 +29,7 @@ import {
 
 const examplePngImageBase64 =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9TxaoVBzuIdMhQnSyIijhKFYtgobQVWnUwufQLmjQkKS6OgmvBwY/FqoOLs64OroIg+AHi5uak6CIl/i8ptIjx4Lgf7+497t4BQqPCVLNrAlA1y0jFY2I2tyr2vKIfAgLoRVhipp5IL2bgOb7u4ePrXZRneZ/7cwwoeZMBPpF4jumGRbxBPLNp6Zz3iUOsJCnE58TjBl2Q+JHrsstvnIsOCzwzZGRS88QhYrHYwXIHs5KhEk8TRxRVo3wh67LCeYuzWqmx1j35C4N5bSXNdZphxLGEBJIQIaOGMiqwEKVVI8VEivZjHv4Rx58kl0yuMhg5FlCFCsnxg//B727NwtSkmxSMAd0vtv0xCvTsAs26bX8f23bzBPA/A1da219tALOfpNfbWuQIGNwGLq7bmrwHXO4Aw0+6ZEiO5KcpFArA+xl9Uw4YugX61tzeWvs4fQAy1NXyDXBwCIwVKXvd492Bzt7+PdPq7wcdn3KFLu4iBAAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAlFJREFUeNrt289r02AYB/Dvk6Sl4EDKpllTlFKsnUdBHXgUBEHwqHj2IJ72B0zwKHhxJ08i/gDxX/AiRfSkBxELXTcVxTa2s2xTsHNN8ngQbQL70RZqG/Z9b29JnvflkydP37whghG3ZaegoxzfwB5vBCAAAQhAAAIQgAAEIAABCEAAAhCAAAQgwB5rstWPtnP0LqBX/vZNyLF6vVrpN/hucewhb4g+B2AyAwiwY7NGOXijviS9vBeYh6CEP4edBLDADCAAAQhAAAIQgAAEIAABCDAUAFF/GIN1DM+PBYCo/ohMXDQ1WPjoeUZH1mMBEEh0oqLGvsHCy0S4NzWVWotJBogbvZB+brDwQT7UWSmXy5sxyQB9HQEROdVv4HQ+vx+QmS4iXsWmCK7Usu8AhOqAXMzlcn3VgWTbugQgEYrxMkZ/gyUPgnuhe2C6/Stxvdeg2ezMJERvhOuoZ+JBrNYBRuDdBtDuXkDM25nCHLbZSv9X6A4VHU+DpwCcbvbjcetLtTaOANtuirrux08HM0euisjDEMKC7RQuq+C+pVJqpzx3NZ3+eeBza9I0rWJgyHnxg2sAJrqnaHUzFcyN60Jox13hprv8aNopZBS4GcqWWVHM+lAkN0zY7ncgkYBukRoKLPpiXVj9UFkfV4Bdl8Jf60u3IMZZAG/6iLuhkDvaSZ74VqtUx3kp3NN7gUZt8RmA43a2eEY1OCfQ04AcBpAGkAKwpkBLIG8BfQE/eNJsvG/G4VlARj0BfjDBx2ECEIAABCAAAQhAAAIQgAAE+P/tN8YvpvbTDBOlAAAAAElFTkSuQmCC';
+
 const examplePngImage = `data:image/png;base64,${examplePngImageBase64}`;
 
 const unencryptedPdfBytes = fs.readFileSync('assets/pdfs/normal.pdf');
@@ -41,14 +42,18 @@ const oldEncryptedPdfBytes1 = fs.readFileSync('assets/pdfs/encrypted_old.pdf');
 // const oldEncryptedPdfBytes2 = fs.readFileSync('pdf_specification.pdf');
 
 const newEncryptedPdfBytes = fs.readFileSync('assets/pdfs/encrypted_new.pdf');
+
 const invalidObjectsPdfBytes = fs.readFileSync(
   'assets/pdfs/with_invalid_objects.pdf',
 );
+
 const justMetadataPdfbytes = fs.readFileSync('assets/pdfs/just_metadata.pdf');
 const normalPdfBytes = fs.readFileSync('assets/pdfs/normal.pdf');
+
 const withViewerPrefsPdfBytes = fs.readFileSync(
   'assets/pdfs/with_viewer_prefs.pdf',
 );
+
 const hasAttachmentPdfBytes = fs.readFileSync(
   'assets/pdfs/examples/add_attachments.pdf',
 );
@@ -67,6 +72,7 @@ describe('PDFDocument', () => {
       const pdfDoc = await PDFDocument.load(input, { updateMetadata: false });
       const streams = rawStreamsOf(pdfDoc);
       expect(streams.length).toBeGreaterThan(0);
+
       for (const stream of streams) {
         expect(stream.getContents().buffer).not.toBe(input.buffer);
       }
@@ -74,12 +80,15 @@ describe('PDFDocument', () => {
 
     it('reads stream bodies as views into the input with copyStreams false', async () => {
       const input = new Uint8Array(normalPdfBytes);
+
       const pdfDoc = await PDFDocument.load(input, {
         updateMetadata: false,
         copyStreams: false,
       });
+
       const streams = rawStreamsOf(pdfDoc);
       expect(streams.length).toBeGreaterThan(0);
+
       for (const stream of streams) {
         expect(stream.getContents().buffer).toBe(input.buffer);
       }
@@ -91,14 +100,17 @@ describe('PDFDocument', () => {
           updateMetadata: false,
           parseSpeed: ParseSpeeds.Fastest,
         });
+
         const viewed = await PDFDocument.load(new Uint8Array(bytes), {
           updateMetadata: false,
           parseSpeed: ParseSpeeds.Fastest,
           copyStreams: false,
         });
+
         // Everything up to the trailer /ID, whose second half is fresh per save.
         const upToId = (out: Uint8Array) =>
           Buffer.from(out.subarray(0, Buffer.from(out).lastIndexOf('/ID [')));
+
         const a = upToId(await copied.save());
         expect(a.length).toBeGreaterThan(0);
         expect(Buffer.compare(a, upToId(await viewed.save()))).toBe(0);
@@ -121,6 +133,7 @@ describe('PDFDocument', () => {
       const ignoredWarnings = ['Invalid object '];
       console.warn = vi.fn((...args) => {
         const isIgnored = ignoredWarnings.some((iw) => args[0].includes(iw));
+
         if (!isIgnored) origConsoleWarn(...args);
       });
     });
@@ -137,6 +150,7 @@ describe('PDFDocument', () => {
       const pdfDoc = await PDFDocument.load(unencryptedPdfBytes, {
         parseSpeed: ParseSpeeds.Fastest,
       });
+
       expect(pdfDoc).toBeInstanceOf(PDFDocument);
       expect(pdfDoc.isEncrypted).toBe(false);
     });
@@ -170,6 +184,7 @@ describe('PDFDocument', () => {
         ignoreEncryption: true,
         parseSpeed: ParseSpeeds.Fastest,
       });
+
       expect(pdfDoc).toBeInstanceOf(PDFDocument);
       expect(pdfDoc.isEncrypted).toBe(true);
     });
@@ -188,6 +203,7 @@ describe('PDFDocument', () => {
         ignoreEncryption: true,
         parseSpeed: ParseSpeeds.Fastest,
       });
+
       expect(pdfDoc).toBeInstanceOf(PDFDocument);
       expect(pdfDoc.isEncrypted).toBe(true);
     });
@@ -200,14 +216,17 @@ describe('PDFDocument', () => {
       const bytes = await pdfDoc.save({ useObjectStreams: false });
 
       expect(new TextDecoder().decode(bytes.subarray(0, 8))).toBe('%PDF-1.7');
+
       const raw = await PDFDocument.load(bytes, {
         ignoreEncryption: true,
         updateMetadata: false,
       });
+
       const encryptDict = raw.context.lookup(
         raw.context.trailerInfo.Encrypt,
         PDFDict,
       );
+
       expect(encryptDict.get(PDFName.of('V'))).toEqual(PDFNumber.of(5));
       expect(encryptDict.get(PDFName.of('R'))).toEqual(PDFNumber.of(6));
 
@@ -216,13 +235,17 @@ describe('PDFDocument', () => {
           password,
           updateMetadata: false,
         });
+
         const contents = reopened.getPage(0).node.Contents();
+
         const stream = (
           contents instanceof PDFArray ? contents.lookup(0) : contents
         ) as PDFRawStream;
+
         const text = new TextDecoder().decode(
           decodePDFRawStream(stream).decode(),
         );
+
         expect(text).toContain('1 0 0 1 1 102 cm');
       }
     });
@@ -237,6 +260,7 @@ describe('PDFDocument', () => {
         page.node.set(PDFName.of('Note'), PDFString.of('page leaf string'));
         pdfDoc.setTitle(secret);
         pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'o', algorithm });
+
         return pdfDoc;
       };
 
@@ -247,10 +271,12 @@ describe('PDFDocument', () => {
           expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
             'page leaf string',
           );
+
           const reopened = await PDFDocument.load(bytes, {
             password: 'user',
             updateMetadata: false,
           });
+
           expect(reopened.getTitle()).toBe(secret);
           const note = reopened.getPage(0).node.get(PDFName.of('Note'));
           expect(note).toBeInstanceOf(PDFHexString);
@@ -265,14 +291,17 @@ describe('PDFDocument', () => {
           expect(new TextDecoder('latin1').decode(bytes)).not.toContain(
             'page leaf string',
           );
+
           const raw = await PDFDocument.load(bytes, {
             ignoreEncryption: true,
             updateMetadata: false,
           });
+
           const reopened = await PDFDocument.load(bytes, {
             password: 'user',
             updateMetadata: false,
           });
+
           // The cross-reference stream is read in clear, so its trailer
           // entries survive the decrypting parse.
           const { trailerInfo } = reopened.context;
@@ -298,35 +327,44 @@ describe('PDFDocument', () => {
         await pdfDoc.save({ useObjectStreams: false });
         expect(pdfDoc.getTitle()).toBe(secret);
         const bytes = await pdfDoc.save({ useObjectStreams: false });
+
         const reopened = await PDFDocument.load(bytes, {
           password: 'user',
           updateMetadata: false,
         });
+
         expect(reopened.getTitle()).toBe(secret);
         const contents = reopened.getPage(0).node.Contents();
+
         const stream = (
           contents instanceof PDFArray ? contents.lookup(0) : contents
         ) as PDFRawStream;
+
         const text = new TextDecoder().decode(
           decodePDFRawStream(stream).decode(),
         );
+
         expect(text).toContain('1 0 0 1 1 102 cm');
       });
 
       it('leaves signature /Contents in clear', async () => {
         const pdfDoc = await encryptedDoc('RC4-128');
+
         const sig = pdfDoc.context.obj({
           Type: 'Sig',
           Contents: PDFHexString.of('0badc0de'),
           Name: PDFString.of('signer'),
         });
+
         const sigRef = pdfDoc.context.register(sig);
         const bytes = await pdfDoc.save({ useObjectStreams: false });
         expect(new TextDecoder('latin1').decode(bytes)).toContain('<0badc0de>');
+
         const reopened = await PDFDocument.load(bytes, {
           password: 'user',
           updateMetadata: false,
         });
+
         const read = reopened.context.lookup(sigRef, PDFDict);
         expect(read.get(PDFName.of('Contents'))).toEqual(
           PDFHexString.of('0badc0de'),
@@ -346,9 +384,11 @@ describe('PDFDocument', () => {
         const pdfDoc = await PDFDocument.create({ updateMetadata: false });
         pdfDoc.addPage();
         pdfDoc.setTitle(title);
+
         const streamRef = pdfDoc.context.register(
           pdfDoc.context.stream(contents),
         );
+
         pdfDoc.catalog.set(PDFName.of('TestStream'), streamRef);
         pdfDoc.encrypt({ userPassword: 'user', ownerPassword: 'owner' });
 
@@ -358,28 +398,37 @@ describe('PDFDocument', () => {
           await pdfDoc.save({ useObjectStreams: false }),
           { ignoreEncryption: true, updateMetadata: false },
         );
+
         // Bypass the keyless-save check to author a ciphertext fixture.
         raw.context.baselineEncryption = undefined;
+
         const encryptDict = raw.context.lookup(
           raw.context.trailerInfo.Encrypt,
           PDFDict,
         );
+
         encryptDict.set(PDFName.of(identityFilter), PDFName.of('Identity'));
+
         if (identityFilter === 'StrF') {
           raw.setTitle(title);
         } else {
           raw.context.assign(streamRef, raw.context.stream(contents));
         }
+
         const bytes = await raw.save({ useObjectStreams: false });
+
         const reopened = await PDFDocument.load(bytes, {
           password: 'user',
           updateMetadata: false,
         });
+
         expect(reopened.getTitle()).toBe(title);
+
         const stream = reopened.catalog.lookup(
           PDFName.of('TestStream'),
           PDFRawStream,
         );
+
         expect(stream.getContentsString()).toBe(contents);
       },
     );
@@ -398,10 +447,12 @@ describe('PDFDocument', () => {
       // No object streams: a keyless load cannot read their members, so the
       // Info dictionary must be a top-level object to survive the edit.
       const original = await pdfDoc.save({ useObjectStreams: false });
+
       const encrypted = await PDFDocument.load(original, {
         ignoreEncryption: true,
         updateMetadata: false,
       });
+
       const { context } = encrypted;
       // Bypass the keyless-save check to author a ciphertext fixture.
       context.baselineEncryption = undefined;
@@ -416,12 +467,14 @@ describe('PDFDocument', () => {
         password: 'user',
         updateMetadata: false,
       });
+
       expect(reopened.getTitle()).toBe(secret);
     });
 
     describe('omitted password', () => {
       const algorithms = ['AES-256', 'AES-128', 'RC4-128', 'RC4-40'] as const;
       const title = 'Restricted title';
+
       const encryptedBytes = async (
         algorithm: (typeof algorithms)[number],
         userPassword: string,
@@ -430,6 +483,7 @@ describe('PDFDocument', () => {
         pdfDoc.addPage([300, 200]);
         pdfDoc.setTitle(title);
         pdfDoc.encrypt({ userPassword, ownerPassword: 'owner', algorithm });
+
         return pdfDoc.save({ useObjectStreams: false });
       };
 
@@ -437,19 +491,23 @@ describe('PDFDocument', () => {
         for (const ignoreEncryption of [false, true]) {
           it(`opens a ${algorithm} owner-only file with the empty user password (ignoreEncryption=${ignoreEncryption})`, async () => {
             const bytes = await encryptedBytes(algorithm, '');
+
             const pdfDoc = await PDFDocument.load(bytes, {
               ignoreEncryption,
               updateMetadata: false,
             });
+
             expect(pdfDoc.isEncrypted).toBe(false);
             expect(pdfDoc.context.isDecrypted).toBe(true);
             expect(pdfDoc.getTitle()).toBe(title);
 
             pdfDoc.setSubject('edited');
             const saved = await pdfDoc.save({ useObjectStreams: false });
+
             const reread = await PDFDocument.load(saved, {
               updateMetadata: false,
             });
+
             expect(reread.getSubject()).toBe('edited');
 
             const target = await PDFDocument.create();
@@ -461,10 +519,12 @@ describe('PDFDocument', () => {
 
       it('increments an owner-only file under its own encryption', async () => {
         const bytes = await encryptedBytes('AES-256', '');
+
         const pdfDoc = await PDFDocument.load(bytes, {
           forIncrementalUpdate: true,
           updateMetadata: false,
         });
+
         pdfDoc.setSubject('incremented');
         const saved = await pdfDoc.commit();
         const reread = await PDFDocument.load(saved, { updateMetadata: false });
@@ -483,10 +543,12 @@ describe('PDFDocument', () => {
         await expect(
           PDFDocument.load(bytes, { updateMetadata: false }),
         ).rejects.toThrow(EncryptedPDFError);
+
         const keyless = await PDFDocument.load(bytes, {
           ignoreEncryption: true,
           updateMetadata: false,
         });
+
         expect(keyless.isEncrypted).toBe(true);
         expect(keyless.context.baselineEncryption).toBe('keyless');
       });
@@ -517,6 +579,7 @@ describe('PDFDocument', () => {
       const expectedError = new Error(
         'Trying to parse invalid object: {"line":20,"column":13,"offset":126})',
       );
+
       await expect(
         PDFDocument.load(invalidObjectsPdfBytes, {
           ignoreEncryption: true,
@@ -544,6 +607,7 @@ describe('PDFDocument', () => {
 
       const withoutID = (bytes: Uint8Array) =>
         Buffer.from(bytes).toString('latin1').replace(/\/ID \[[^\]]*\]/g, '');
+
       expect(withoutID(savedDoc1)).toEqual(withoutID(savedDoc2));
     });
 
@@ -555,10 +619,12 @@ describe('PDFDocument', () => {
       const font = await pdfDoc.embedFont(customFont, {
         postscriptName: 'No-Such-Face',
       });
+
       const subset = await pdfDoc.embedFont(customFont, {
         subset: true,
         postscriptName: 'No-Such-Face',
       });
+
       expect(font.name).toContain('Ubuntu');
       expect(subset.name).toContain('Ubuntu');
       await expect(pdfDoc.save()).resolves.toBeInstanceOf(Uint8Array);
@@ -579,12 +645,15 @@ describe('PDFDocument', () => {
       const regular = fontkit.create(
         fs.readFileSync('assets/fonts/ubuntu/Ubuntu-R.ttf'),
       );
+
       const bold = fontkit.create(
         fs.readFileSync('assets/fonts/ubuntu/Ubuntu-B.ttf'),
       );
+
       const getFont = vi.fn((name: string) =>
         [regular, bold].find((f) => f.postscriptName === name) ?? null,
       );
+
       class FakeCollection {
         static probe(buffer: Uint8Array) {
           return buffer[0] === 0xfe && buffer[1] === 0xed;
@@ -594,10 +663,12 @@ describe('PDFDocument', () => {
         }
         getFont = getFont;
       }
+
       fontkit.registerFormat(FakeCollection as any);
 
       const pdfDoc = await PDFDocument.create();
       pdfDoc.registerFontkit(fontkit);
+
       const font = await pdfDoc.embedFont(Uint8Array.of(0xfe, 0xed, 0, 0), {
         postscriptName: bold.postscriptName!,
       });
@@ -769,14 +840,17 @@ describe('PDFDocument', () => {
     const pdfDoc = await PDFDocument.load(normalPdfBytes, {
       updateMetadata: false,
     });
+
     const savedBytes = await pdfDoc.save();
     const header = new TextDecoder().decode(savedBytes.slice(0, 8));
     // normalPdfBytes is a PDF 1.6 file
     expect(header).toContain('%PDF-1.');
+
     // Verify the version matches the original, not hardcoded 1.7
     const originalHeader = new TextDecoder().decode(
       (normalPdfBytes as Uint8Array).slice(0, 8),
     );
+
     expect(header).toBe(originalHeader);
   });
 
@@ -960,6 +1034,7 @@ describe('PDFDocument', () => {
       const Names = pdfDoc.catalog.lookup(PDFName.of('Names'), PDFDict);
       const Javascript = Names.lookup(PDFName.of('JavaScript'), PDFDict);
       const JSNames = Javascript.lookup(PDFName.of('Names'), PDFArray);
+
       const names = [0, 2, 4].map((idx) =>
         JSNames.lookup(idx, PDFHexString).decodeText(),
       );
@@ -980,6 +1055,7 @@ describe('PDFDocument', () => {
       const Javascript = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('JavaScript'), PDFDict);
+
       expect(Javascript.has(PDFName.of('Names'))).toBe(false);
       const leaf = Javascript.lookup(PDFName.of('Kids'), PDFArray).lookup(0, PDFDict);
       const keys = leaf.lookup(PDFName.of('Names'), PDFArray);
@@ -1176,6 +1252,7 @@ describe('PDFDocument', () => {
       const jpgAttachmentBytes = fs.readFileSync(
         'assets/images/cat_riding_unicorn.jpg',
       );
+
       const pdfAttachmentBytes = fs.readFileSync(
         'assets/pdfs/us_constitution.pdf',
       );
@@ -1213,6 +1290,7 @@ describe('PDFDocument', () => {
 
       const withoutID = (bytes: Uint8Array) =>
         Buffer.from(bytes).toString('latin1').replace(/\/ID \[[^\]]*\]/g, '');
+
       expect(withoutID(savedDoc1)).toEqual(withoutID(savedDoc2));
     });
 
@@ -1243,8 +1321,10 @@ describe('PDFDocument', () => {
 
       // Extract names in order from the array (names are at even indices)
       const names: string[] = [];
+
       for (let i = 0; i < EFNames.size(); i += 2) {
         const nameObj = EFNames.get(i);
+
         if (nameObj instanceof PDFHexString) {
           names.push(nameObj.decodeText());
         }
@@ -1271,8 +1351,10 @@ describe('PDFDocument', () => {
       const EFNames = EmbeddedFiles.lookup(PDFName.of('Names'), PDFArray);
 
       const names: string[] = [];
+
       for (let i = 0; i < EFNames.size(); i += 2) {
         const nameObj = EFNames.get(i);
+
         if (nameObj instanceof PDFHexString) {
           names.push(nameObj.decodeText());
         }
@@ -1288,13 +1370,17 @@ describe('PDFDocument', () => {
       await pdfDoc.flush();
       // Move the flat tree under a Kids root.
       const ctx = pdfDoc.context;
+
       const ef = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+
       const m = PDFHexString.fromText('m.txt');
+
       const leafRef = ctx.register(
         ctx.obj({ Names: ef.lookup(PDFName.of('Names'), PDFArray), Limits: [m, m] }),
       );
+
       pdfDoc.catalog.set(PDFName.of('Names'), ctx.obj({ EmbeddedFiles: { Kids: [leafRef] } }));
 
       await pdfDoc.attach(new Uint8Array([1, 2, 3]), 'new.txt');
@@ -1304,6 +1390,7 @@ describe('PDFDocument', () => {
       const EmbeddedFiles = reloaded.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+
       expect(EmbeddedFiles.has(PDFName.of('Kids'))).toBe(true);
       expect(EmbeddedFiles.has(PDFName.of('Names'))).toBe(false);
       expect(reloaded.getAttachments().map((a) => [a.name, [...a.data]])).toEqual([
@@ -1357,9 +1444,11 @@ describe('PDFDocument', () => {
       );
       await expect(pdfDoc.save()).rejects.toThrow(/empty/);
       expect(pdfDoc.catalog.has(PDFName.of('AF'))).toBe(false);
+
       const filespecs = pdfDoc.context
         .enumerateIndirectObjects()
         .filter(([, o]) => o instanceof PDFDict && o.has(PDFName.of('EF')));
+
       expect(filespecs).toHaveLength(0);
     });
   });
@@ -1369,12 +1458,15 @@ describe('PDFDocument', () => {
       const pdfDoc = await PDFDocument.load(hasAttachmentPdfBytes);
       const attachments = pdfDoc.getAttachments();
       expect(attachments.length).toEqual(2);
+
       const jpgAttachment = attachments.find(
         (attachment) => attachment.name === 'cat_riding_unicorn.jpg',
       )!;
+
       const pdfAttachment = attachments.find(
         (attachment) => attachment.name === 'us_constitution.pdf',
       )!;
+
       expect(pdfAttachment).toBeDefined();
       expect(jpgAttachment).toBeDefined();
       expect(jpgAttachment.description).toBe(
@@ -1387,21 +1479,26 @@ describe('PDFDocument', () => {
       expect(pdfAttachment.mimeType).toBe('application/pdf');
       expect(jpgAttachment.afRelationship).not.toBeDefined();
       expect(pdfAttachment.afRelationship).not.toBeDefined();
+
       const jpgAttachmentBytes = fs.readFileSync(
         'assets/images/cat_riding_unicorn.jpg',
       );
+
       const pdfAttachmentBytes = fs.readFileSync(
         'assets/pdfs/us_constitution.pdf',
       );
+
       expect(jpgAttachmentBytes).toEqual(Buffer.from(jpgAttachment.data));
       expect(pdfAttachmentBytes).toEqual(Buffer.from(pdfAttachment.data));
     });
 
     it('Can get saved and unsaved attachments', async () => {
       const pdfDoc = await PDFDocument.load(hasAttachmentPdfBytes);
+
       const haiku = `Cradled in silence,
       sunlight warms the fragile shell —
       breakfast is reborn.`;
+
       const creationDate = new Date(Date.now() - 60 * 60 * 1000);
       const modificationDate = new Date();
       await pdfDoc.attach(Buffer.from(haiku), 'haiku.txt', {
@@ -1421,18 +1518,23 @@ describe('PDFDocument', () => {
 
       const attachments = pdfDoc.getAttachments();
       expect(attachments.length).toEqual(4);
+
       const jpgAttachment = attachments.find(
         (attachment) => attachment.name === 'cat_riding_unicorn.jpg',
       )!;
+
       const pdfAttachment = attachments.find(
         (attachment) => attachment.name === 'us_constitution.pdf',
       )!;
+
       const txtAttachment = attachments.find(
         (attachment) => attachment.name === 'haiku.txt',
       )!;
+
       const pngAttachment = attachments.find(
         (attachment) => attachment.name === 'example.png',
       )!;
+
       expect(pdfAttachment).toBeDefined();
       expect(jpgAttachment).toBeDefined();
       expect(txtAttachment).toBeDefined();
@@ -1454,19 +1556,24 @@ describe('PDFDocument', () => {
       expect(pdfAttachment.afRelationship).not.toBeDefined();
       expect(txtAttachment.afRelationship).toBe(AFRelationship.Supplement);
       expect(pngAttachment.afRelationship).toBe(AFRelationship.Alternative);
+
       const jpgAttachmentBytes = fs.readFileSync(
         'assets/images/cat_riding_unicorn.jpg',
       );
+
       const pdfAttachmentBytes = fs.readFileSync(
         'assets/pdfs/us_constitution.pdf',
       );
+
       expect(jpgAttachmentBytes).toEqual(Buffer.from(jpgAttachment.data));
       expect(pdfAttachmentBytes).toEqual(Buffer.from(pdfAttachment.data));
       expect(new TextDecoder().decode(txtAttachment.data)).toBe(haiku);
+
       const expectedImageBytes = Uint8Array.from(
         atob(examplePngImageBase64),
         (c) => c.charCodeAt(0),
       );
+
       expect(pngAttachment.data).toEqual(expectedImageBytes);
       expect(jpgAttachment.creationDate).toBeDefined();
       expect(pdfAttachment.creationDate).toBeDefined();
@@ -1483,9 +1590,11 @@ describe('PDFDocument', () => {
       let pdfDoc: PDFDocument;
       const mimeType = 'text/plain';
       const description = '🥚 Haikus are short. So is the life of an egg. 🍳';
+
       const attachment = `Cradled in silence,
   sunlight warms the fragile shell —
   breakfast is reborn.`;
+
       const afRelationship = AFRelationship.Alternative;
       let attachments: PDFAttachment[];
 
@@ -1530,6 +1639,7 @@ describe('PDFDocument', () => {
         const stringAttachments = attachments.filter(
           (a) => a.name === 'string.txt',
         );
+
         expect(stringAttachments.length).toBe(1);
         const extracted = new TextDecoder().decode(stringAttachments[0].data);
         expect(extracted).toEqual(attachment);
@@ -1542,6 +1652,7 @@ describe('PDFDocument', () => {
         const stringAttachments = attachments.filter(
           (a) => a.name === 'uint8array.txt',
         );
+
         expect(stringAttachments.length).toBe(1);
         const extracted = new TextDecoder().decode(stringAttachments[0].data);
         expect(extracted).toEqual(attachment);
@@ -1554,6 +1665,7 @@ describe('PDFDocument', () => {
         const stringAttachments = attachments.filter(
           (a) => a.name === 'buffer.txt',
         );
+
         expect(stringAttachments.length).toBe(1);
         const extracted = new TextDecoder().decode(stringAttachments[0].data);
         expect(extracted).toEqual(attachment);
@@ -1606,27 +1718,35 @@ describe('PDFDocument', () => {
 
     const threeAttachments = async () => {
       const pdfDoc = await PDFDocument.create();
+
       for (const name of ['a.txt', 'b.txt', 'c.txt']) {
         await pdfDoc.attach(new Uint8Array([1, 2, 3]), name);
       }
+
       await pdfDoc.save();
+
       const ef = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+
       const names = ef.lookup(PDFName.of('Names'), PDFArray);
+
       const spec = (key: string) => {
         for (let i = 0; i < names.size(); i += 2) {
           if ((names.get(i) as PDFHexString).decodeText() === key) {
             return names.get(i + 1) as any;
           }
         }
+
         throw new Error(key);
       };
+
       const streamOf = (ref: any) =>
         pdfDoc.context
           .lookup(ref, PDFDict)
           .lookup(PDFName.of('EF'), PDFDict)
           .get(PDFName.of('F')) as any;
+
       return { pdfDoc, ef, names, spec, streamOf };
     };
 
@@ -1647,9 +1767,11 @@ describe('PDFDocument', () => {
       // The old containers, which another structure may share, are intact.
       expect(names.size()).toBe(6);
       expect(AF.size()).toBe(4);
+
       const newEf = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+
       expect(newEf.lookup(PDFName.of('Names'), PDFArray).size()).toBe(4);
       // A root may not carry /Limits (ISO 32000-1 7.9.6).
       expect(newEf.has(PDFName.of('Limits'))).toBe(false);
@@ -1695,6 +1817,7 @@ describe('PDFDocument', () => {
       specDict.set(PDFName.of('EF'), efRef);
       const streamRef = ctx.lookup(efRef, PDFDict).get(PDFName.of('F')) as any;
       ctx.lookup(streamRef, PDFRawStream).dict.set(PDFName.of('Back'), a);
+
       // b.txt cannot be decoded.
       const bStream = ctx.lookup(
         ctx
@@ -1703,6 +1826,7 @@ describe('PDFDocument', () => {
           .get(PDFName.of('F')) as any,
         PDFRawStream,
       );
+
       bStream.dict.set(PDFName.of('Filter'), PDFName.of('LZWDecode'));
       bStream.dict.set(PDFName.of('DecodeParms'), ctx.obj({ Predictor: 99 }));
 
@@ -1720,18 +1844,24 @@ describe('PDFDocument', () => {
     it('detaches from a Kids tree, pruning emptied leaves and keeping shared nodes', async () => {
       const pdfDoc = await PDFDocument.create();
       const ctx = pdfDoc.context;
+
       for (const n of ['a.txt', 'b.txt', 'c.txt']) {
         await pdfDoc.attach(new TextEncoder().encode(n), n);
       }
+
       await pdfDoc.flush();
+
       const names = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('EmbeddedFiles'), PDFDict)
         .lookup(PDFName.of('Names'), PDFArray);
+
       const k = (i: number) => names.get(i);
+
       const leaf1 = ctx.register(
         ctx.obj({ Names: [k(0), names.get(1), k(2), names.get(3)], Limits: [k(0), k(2)] }),
       );
+
       const leaf2 = ctx.register(ctx.obj({ Names: [k(4), names.get(5)], Limits: [k(4), k(4)] }));
       const aRef = names.get(1) as PDFRef;
       const cRef = names.get(5) as PDFRef;
@@ -2223,9 +2353,11 @@ describe('PDFDocument', () => {
 
         // Copy pages with a rename function
         const destDoc = await PDFDocument.create();
+
         const [copiedPage] = await destDoc.copyPages(srcDoc, [0], {
           renameFields: (name) => `doc1_${name}`,
         });
+
         destDoc.addPage(copiedPage);
 
         // The field should have been renamed
@@ -2259,11 +2391,13 @@ describe('PDFDocument', () => {
         const [copiedPage1] = await destDoc.copyPages(src1, [0], {
           renameFields: (name) => `src1_${name}`,
         });
+
         destDoc.addPage(copiedPage1);
 
         const [copiedPage2] = await destDoc.copyPages(src2, [0], {
           renameFields: (name) => `src2_${name}`,
         });
+
         destDoc.addPage(copiedPage2);
 
         // Both fields should exist with different names
@@ -2567,6 +2701,7 @@ describe('PDFDocument', () => {
       doc.setCreationDate(creationDate);
 
       const savedBytes = await doc.save();
+
       const loadedDoc = await PDFDocument.load(savedBytes, {
         updateMetadata: false,
       });
@@ -2580,6 +2715,7 @@ describe('PDFDocument', () => {
       doc.setModificationDate(modDate);
 
       const savedBytes = await doc.save();
+
       const loadedDoc = await PDFDocument.load(savedBytes, {
         updateMetadata: false,
       });
@@ -2608,6 +2744,7 @@ describe('PDFDocument', () => {
       doc.setModificationDate(modificationDate);
 
       const savedBytes = await doc.save();
+
       const loaded = await PDFDocument.load(savedBytes, {
         updateMetadata: false,
       });
@@ -2650,6 +2787,7 @@ describe('PDFDocument', () => {
       doc.setAuthor('Double Cycle Author');
 
       const bytes1 = await doc.save({ addDefaultPage: false });
+
       const loaded1 = await PDFDocument.load(bytes1, {
         updateMetadata: false,
       });
@@ -2664,6 +2802,7 @@ describe('PDFDocument', () => {
       loaded1.setTitle('Updated Double Cycle Title');
 
       const bytes2 = await loaded1.save({ addDefaultPage: false });
+
       const loaded2 = await PDFDocument.load(bytes2, {
         updateMetadata: false,
       });
@@ -2737,6 +2876,7 @@ describe('PDFDocument', () => {
       doc.setModificationDate(modDate);
 
       const bytes = await doc.save();
+
       const loaded = await PDFDocument.load(bytes, {
         updateMetadata: false,
       });
@@ -2870,6 +3010,7 @@ describe('PDFDocument', () => {
       doc.setModificationDate(modDate);
 
       const bytes = await doc.save({ addDefaultPage: false });
+
       const loaded = await PDFDocument.load(bytes, {
         updateMetadata: false,
       });

@@ -6,6 +6,7 @@ import { Feature } from './opentype.js';
  *******************/
 
 const F2DOT14 = new r.Fixed(16, 'BE', 14);
+
 const RegionAxisCoordinates = new r.Struct({
   startCoord: F2DOT14,
   peakCoord: F2DOT14,

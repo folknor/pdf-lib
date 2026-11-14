@@ -134,8 +134,10 @@ const UNICODE_SCRIPTS: Record<string, string | string[]> = {
 };
 
 const OPENTYPE_SCRIPTS: Record<string, string> = {};
+
 for (const script in UNICODE_SCRIPTS) {
   const tag = UNICODE_SCRIPTS[script];
+
   if (Array.isArray(tag)) {
     for (const t of tag) {
       OPENTYPE_SCRIPTS[t] = script;
@@ -156,6 +158,7 @@ export function fromOpenType(tag: string): string | undefined {
 export function forString(string: string): string | string[] {
   const len = string.length;
   let idx = 0;
+
   while (idx < len) {
     let code = string.charCodeAt(idx++);
 
@@ -171,6 +174,7 @@ export function forString(string: string): string | string[] {
     }
 
     const script = getScript(code);
+
     if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
       return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
     }
@@ -183,6 +187,7 @@ export function forCodePoints(codePoints: number[]): string | string[] {
   for (let i = 0; i < codePoints.length; i++) {
     const codePoint = codePoints[i]!;
     const script = getScript(codePoint);
+
     if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
       return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
     }
@@ -224,6 +229,7 @@ const RTL: Record<string, boolean> = {
 
 export function direction(script: string | string[]): 'ltr' | 'rtl' {
   const scriptKey = Array.isArray(script) ? script[0] : script;
+
   if (scriptKey && RTL[scriptKey]) {
     return 'rtl';
   }

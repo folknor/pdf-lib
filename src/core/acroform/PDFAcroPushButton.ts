@@ -14,7 +14,9 @@ class PDFAcroPushButton extends PDFAcroButton {
       Ff: AcroButtonFlags.PushButton,
       Kids: [],
     });
+
     const ref = context.register(dict);
+
     return new PDFAcroPushButton(dict, ref);
   };
 }

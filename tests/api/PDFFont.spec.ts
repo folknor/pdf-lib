@@ -163,9 +163,11 @@ describe('PDFFont', () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightWithDescender = font.heightAtSize(12);
+
       const heightWithoutDescender = font.heightAtSize(12, {
         descender: false,
       });
+
       expect(heightWithoutDescender).toBeLessThan(heightWithDescender);
     });
 
@@ -173,9 +175,11 @@ describe('PDFFont', () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightDefault = font.heightAtSize(12);
+
       const heightExplicitDescender = font.heightAtSize(12, {
         descender: true,
       });
+
       expect(heightDefault).toBe(heightExplicitDescender);
     });
 
@@ -243,6 +247,7 @@ describe('PDFFont', () => {
       const charSet = font.getCharacterSet();
       expect(Array.isArray(charSet)).toBe(true);
       expect(charSet.length).toBeGreaterThan(0);
+
       for (const codePoint of charSet) {
         expect(typeof codePoint).toBe('number');
       }

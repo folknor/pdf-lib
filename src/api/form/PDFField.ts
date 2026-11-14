@@ -60,12 +60,14 @@ export const assertFieldAppearanceOptions = (
   assertOrUndefined(options?.textColor, 'options.textColor', [
     [Object, 'Color'],
   ]);
+
   // backgroundColor accepts Color, null (transparent), or undefined
   if (options?.backgroundColor !== null) {
     assertOrUndefined(options?.backgroundColor, 'options.backgroundColor', [
       [Object, 'Color'],
     ]);
   }
+
   assertOrUndefined(options?.borderColor, 'options.borderColor', [
     [Object, 'Color'],
   ]);
@@ -179,6 +181,7 @@ export default class PDFField {
     const currentName = this.getName();
     const parent = this.acroField.getParent();
     const parentFullName = parent?.getFullyQualifiedName();
+
     const newFullName = parentFullName
       ? `${parentFullName}.${newPartialName}`
       : newPartialName;
@@ -190,6 +193,7 @@ export default class PDFField {
 
     // Check for conflict with existing terminal field
     const existingField = form.getFieldMaybe(newFullName);
+
     if (existingField) {
       throw new FieldAlreadyExistsError(newFullName);
     }
@@ -199,6 +203,7 @@ export default class PDFField {
     // name starts with the new name followed by a period.
     const prefix = `${newFullName}.`;
     const allFields = form.getFields();
+
     for (let i = 0, len = allFields.length; i < len; i++) {
       if (allFields[i]!.getName().startsWith(prefix)) {
         throw new FieldAlreadyExistsError(newFullName);
@@ -245,6 +250,7 @@ export default class PDFField {
   getWidgetPage(widgetIndex: number = 0): PDFPage | undefined {
     const widgets = this.acroField.getWidgets();
     const widget = widgets[widgetIndex];
+
     if (!widget) return;
 
     const pageRef = widget.P();
@@ -252,6 +258,7 @@ export default class PDFField {
 
     if (page === undefined) {
       const widgetRef = this.doc.context.getObjectRef(widget.dict);
+
       if (widgetRef === undefined) return;
       page = this.doc.findPageForAnnotationRef(widgetRef);
     }
@@ -276,7 +283,9 @@ export default class PDFField {
    */
   getWidgetPageIndex(widgetIndex: number = 0): number | undefined {
     const page = this.getWidgetPage(widgetIndex);
+
     if (!page) return;
+
     return this.doc.getPages().indexOf(page);
   }
 
@@ -471,22 +480,28 @@ export default class PDFField {
       borderWidth,
       degreesAngle,
     );
+
     widget.setRectangle(rect);
 
     if (pageRef) widget.setP(pageRef);
 
     const ac = widget.getOrCreateAppearanceCharacteristics();
+
     if (backgroundColor === null) {
       // Explicit null = transparent (no background)
       ac.clearBackgroundColor();
     } else if (backgroundColor) {
       ac.setBackgroundColor(colorToComponents(backgroundColor));
     }
+
     ac.setRotation(degreesAngle);
+
     if (caption) ac.setCaptions({ normal: caption });
+
     if (borderColor) ac.setBorderColor(colorToComponents(borderColor));
 
     const bs = widget.getOrCreateBorderStyle();
+
     if (borderWidth !== undefined) bs.setWidth(borderWidth);
 
     widget.setFlagTo(AnnotationFlags.Print, true);
@@ -589,11 +604,13 @@ export default class PDFField {
     // END TODO
 
     const Resources = font && { Font: { [font.name]: font.ref } };
+
     const stream = context.formXObject(appearance, {
       Resources,
       BBox: context.obj([0, 0, width, height]),
       Matrix: context.obj([1, 0, 0, 1, 0, 0]),
     });
+
     const streamRef = context.register(stream);
 
     return streamRef;
@@ -630,6 +647,7 @@ export default class PDFField {
     const rotate = rotateInPlace({ ...rectangle, rotation });
 
     const adj = adjustDimsForRotation(rectangle, rotation);
+
     const imageDims = image.scaleToFit(
       adj.width - borderWidth * 2,
       adj.height - borderWidth * 2,
@@ -660,6 +678,7 @@ export default class PDFField {
     ////////////
 
     const Resources = { XObject: { [imageName]: image.ref } };
+
     const stream = context.formXObject(appearance, {
       Resources,
       BBox: context.obj([0, 0, rectangle.width, rectangle.height]),

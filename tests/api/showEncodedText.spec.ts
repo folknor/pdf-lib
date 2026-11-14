@@ -43,6 +43,7 @@ describe('showEncodedText', () => {
       undefined,
       [{ start: 0, end: 2, text: 'é' }],
     );
+
     expect(show(text)).toEqual([
       '/Span <</ActualText <FEFF00E9>>> BDC',
       '[<00010002> 100] TJ',
@@ -66,6 +67,7 @@ describe('showEncodedText', () => {
       ['0002', 600, 600],
       ['0003', 600, 600],
     ]);
+
     // 70 thousandths narrower after the first glyph: +70 in TJ.
     expect(show(text)).toEqual(['[<0001> 70 <00020003>] TJ']);
   });
@@ -78,6 +80,7 @@ describe('showEncodedText', () => {
       ['0002', 0, 200, -300],
       ['0003', 500, 500],
     ]);
+
     // Before the mark: -(-300) = 300. After: 200 + (-300) - 0 = -100.
     expect(show(text)).toEqual(['[<0001> 300 <0002> -100 <0003>] TJ']);
   });
@@ -88,6 +91,7 @@ describe('showEncodedText', () => {
       ['0002', 0, 0, 0, 250],
       ['0003', 500, 500],
     ]);
+
     expect(show(text, 20, 3)).toEqual([
       '[<0001>] TJ',
       '8 Ts',
@@ -120,6 +124,7 @@ describe('drawing operations with positioned text', () => {
       x: 0,
       y: 0,
     }).map(String);
+
     const firstRise = ops.findIndex((op) => op.endsWith(' Ts'));
     expect(ops[firstRise]).toBe('0 Ts');
     expect(firstRise).toBeLessThan(ops.findIndex((op) => op.endsWith('TJ')));
@@ -135,6 +140,7 @@ describe('drawing operations with positioned text', () => {
       xSkew: { type: 'degrees', angle: 0 } as any,
       ySkew: { type: 'degrees', angle: 0 } as any,
     }).map(String);
+
     expect(ops.filter((op) => op.endsWith(' Ts'))).toEqual([
       '0 Ts',
       '1 Ts',
@@ -146,14 +152,17 @@ describe('drawing operations with positioned text', () => {
 const contentLines = (page: ReturnType<PDFDocument['addPage']>) => {
   const contents = page.node.Contents();
   let text = '';
+
   if (contents instanceof PDFArray) {
     for (let i = 0; i < contents.size(); i++) {
       const stream = contents.lookup(i);
+
       if (stream instanceof PDFContentStream) {
         text += stream.getContentsString();
       }
     }
   }
+
   return text.split('\n');
 };
 
@@ -171,9 +180,11 @@ describe('drawText with kerned fonts', () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
     const page = doc.addPage();
+
     const font = await doc.embedFont(
       fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
     );
+
     page.drawText('AVA', { font, size: 10 });
     const ops = contentLines(page);
     expect(ops.some((op) => /^\[<[0-9A-F]{4}> \d/.test(op))).toBe(true);

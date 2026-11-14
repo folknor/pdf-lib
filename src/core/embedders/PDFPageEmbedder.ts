@@ -98,6 +98,7 @@ class PDFPageEmbedder {
     const decodedContents = this.decodeContents(Contents);
 
     const { left, bottom, right, top } = this.boundingBox;
+
     const xObject = context.flateStream(decodedContents, {
       Type: 'XObject',
       Subtype: 'Form',
@@ -109,6 +110,7 @@ class PDFPageEmbedder {
 
     if (ref) {
       context.assign(ref, xObject);
+
       return ref;
     } else {
       return context.register(xObject);
@@ -125,6 +127,7 @@ class PDFPageEmbedder {
       const stream = contents.lookup(idx, PDFStream);
 
       let content: Uint8Array;
+
       if (stream instanceof PDFRawStream) {
         content = decodePDFRawStream(stream).decode();
       } else if (stream instanceof PDFContentStream) {

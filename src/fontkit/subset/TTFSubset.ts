@@ -47,6 +47,7 @@ export default class TTFSubset extends Subset {
   // not carried over.
   get _fromCFF2(): boolean {
     const tables = this.font.directory.tables;
+
     return !!tables.CFF2 && !tables.glyf;
   }
 
@@ -61,12 +62,14 @@ export default class TTFSubset extends Subset {
   // drawn either way, the same as embedding the whole font.
   get _outlineless(): boolean {
     const tables = this.font.directory.tables;
+
     return !tables.glyf && !tables['CFF '] && !tables.CFF2;
   }
 
   _addGlyph(gid: number): number {
     if (this._outlineless) {
       const glyph = this.font.getGlyph(gid);
+
       // Only CBDT stubs get metrics without outline tables; an sbix glyph
       // reads its bounding box from glyf.
       if (glyph?.type !== 'CBDT') {
@@ -74,7 +77,9 @@ export default class TTFSubset extends Subset {
           'Cannot subset a font with neither outlines nor CBDT/EBDT bitmaps',
         );
       }
+
       this._pushGlyph(glyph, new Uint8Array(0));
+
       return this.glyf.length - 1;
     }
 
@@ -84,17 +89,21 @@ export default class TTFSubset extends Subset {
 
     if (this._fromCFF2) {
       const outline = toTrueTypeOutline(glyph.path, this._cff2Tolerance);
+
       const buffer =
         outline.commands.length > 0
           ? this.glyphEncoder.encodeSimple(outline, { overlapping: true })
           : new Uint8Array(0);
+
       this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
+
       return this.glyf.length - 1;
     }
 
     const glyf = glyph._decode();
 
     let buffer: Uint8Array;
+
     if (this._flattenGlyphs) {
       // Composite glyphs are flattened into simple ones, so their components
       // need not be included. Hinting instructions are not preserved.
@@ -107,6 +116,7 @@ export default class TTFSubset extends Subset {
       // or for a static WOFF2 glyph whose hmtx lsb differs from its xMin,
       // the source lsb that FreeType would have placed it by.
       this._pushGlyph(glyph, buffer, TTFSubset._encodedXMin(buffer));
+
       return this.glyf.length - 1;
     }
 
@@ -123,6 +133,7 @@ export default class TTFSubset extends Subset {
     if (glyf.numberOfContours < 0) {
       buffer = new Uint8Array(buffer);
       const view = new DataView(buffer.buffer);
+
       for (const component of glyf.components) {
         gid = this.includeGlyph(component.glyphID);
         view.setUint16(component.pos, gid);
@@ -130,6 +141,7 @@ export default class TTFSubset extends Subset {
     }
 
     this._pushGlyph(glyph, buffer);
+
     return this.glyf.length - 1;
   }
 
@@ -143,19 +155,24 @@ export default class TTFSubset extends Subset {
   _updateMaxpForFlattenedGlyphs(maxp: any): void {
     let maxPoints = 0;
     let maxContours = 0;
+
     for (const buffer of this.glyf) {
       if (buffer.length < 10) continue;
+
       const view = new DataView(
         buffer.buffer,
         buffer.byteOffset,
         buffer.byteLength,
       );
+
       const contours = view.getInt16(0);
+
       if (contours <= 0) continue;
       const points = view.getUint16(10 + 2 * (contours - 1)) + 1;
       maxContours = Math.max(maxContours, contours);
       maxPoints = Math.max(maxPoints, points);
     }
+
     maxp.maxPoints = maxPoints;
     maxp.maxContours = maxContours;
     maxp.maxComponentPoints = 0;
@@ -181,6 +198,7 @@ export default class TTFSubset extends Subset {
     this.glyf.forEach((buffer, i) => {
       const { advance, bearing } = this.hmtx.metrics[i]!;
       advanceWidthMax = Math.max(advanceWidthMax, advance);
+
       if (buffer.length < 10) return;
       const view = new DataView(buffer.buffer, buffer.byteOffset, 10);
       const gxMin = view.getInt16(2);
@@ -205,6 +223,7 @@ export default class TTFSubset extends Subset {
     hhea.minLeftSideBearing = any ? minLeftSideBearing : 0;
     hhea.minRightSideBearing = any ? minRightSideBearing : 0;
     hhea.xMaxExtent = any ? xMaxExtent : 0;
+
     for (const key of [
       'minLeftSideBearing',
       'minRightSideBearing',
@@ -262,13 +281,17 @@ export default class TTFSubset extends Subset {
     // hmtx holds integers; a varied (HVAR or phantom point) advance can be
     // fractional, and the serializer would truncate it.
     const advance = Math.round(glyph.advanceWidth);
+
     if (advance < 0 || advance > 0xffff) {
       throw new Error(`Glyph advance ${advance} does not fit hmtx`);
     }
+
     const lsb = Math.round(bearing);
+
     if (lsb < -32768 || lsb > 32767) {
       throw new Error(`Glyph left side bearing ${lsb} does not fit hmtx`);
     }
+
     this.hmtx.metrics.push({ advance, bearing: lsb });
 
     this.offset += buffer.length;
@@ -304,18 +327,22 @@ export default class TTFSubset extends Subset {
     // not using a for loop because we need to support adding more
     // glyphs to the array as we go, and CoffeeScript caches the length.
     let i = 0;
+
     while (i < this.glyphs.length) {
       this._addGlyph(this.glyphs[i++]!);
     }
 
     const outlineless = this._outlineless;
+
     // Neither a bitmap-only nor a CFF2 font has a TrueType maxp to clone
     // (CFF fonts carry version 0.5).
     const maxp =
       outlineless || this._fromCFF2
         ? TTFSubset._emptyMaxp(this.glyf.length)
         : structuredClone(this.font.maxp);
+
     maxp.numGlyphs = this.glyf.length;
+
     if (this._flattenGlyphs) this._updateMaxpForFlattenedGlyphs(maxp);
 
     this.loca.offsets.push(this.offset);

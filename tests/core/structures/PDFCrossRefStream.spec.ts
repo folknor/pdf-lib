@@ -125,6 +125,7 @@ describe('PDFCrossRefStream', () => {
       0, 0, 0, 255, 255, 1, 1, 44, 0, 0, 2, 0, 10, 0, 0, 1, 2, 88, 0, 0, 2, 0,
       10, 0, 1,
     ]);
+
     const encodedEntries = zlibSync(expectedEntries);
 
     expect(stream.copyBytesInto(buffer, 2)).toBe(135);
@@ -142,9 +143,11 @@ describe('PDFCrossRefStream', () => {
     const inOrder = PDFCrossRefStream.create(dict, false);
     const shuffled = PDFCrossRefStream.create(dict, false);
     const nums = [5, 1, 9000, 3, 2, 9001, 4, 7];
+
     for (const n of [...nums].sort((a, b) => a - b)) {
       inOrder.addUncompressedEntry(PDFRef.of(n), n * 10);
     }
+
     for (const n of nums) shuffled.addUncompressedEntry(PDFRef.of(n), n * 10);
     expect(String(shuffled)).toBe(String(inOrder));
   });
@@ -155,9 +158,11 @@ describe('PDFCrossRefStream', () => {
     stream.addUncompressedEntry(PDFRef.of(2, 1), 21);
     stream.addUncompressedEntry(PDFRef.of(2, 2), 22);
     stream.addUncompressedEntry(PDFRef.of(1), 10);
+
     const entries = (
       stream as unknown as { entries: { ref: PDFRef }[] }
     ).entries.map((e) => e.ref.toString());
+
     expect(entries).toEqual(['0 65535 R', '1 0 R', '2 1 R', '2 2 R', '3 0 R']);
   });
 });

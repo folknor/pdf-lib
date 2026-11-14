@@ -111,6 +111,7 @@ describe('PDFWriter', () => {
       BaseFont: 'Helvetica',
       Encoding: 'MacRomanEncoding',
     });
+
     const fontDictRef = context.register(fontDict);
 
     const page = context.obj({
@@ -119,6 +120,7 @@ describe('PDFWriter', () => {
       Contents: contentStreamRef,
       Resources: { Font: { F1: fontDictRef } },
     });
+
     const pageRef = context.register(page);
 
     const pages = context.obj({
@@ -126,6 +128,7 @@ describe('PDFWriter', () => {
       Kids: [pageRef],
       Count: 1,
     });
+
     const pagesRef = context.register(pages);
     page.set(PDFName.of('Parent'), pagesRef);
 
@@ -133,6 +136,7 @@ describe('PDFWriter', () => {
       Type: 'Catalog',
       Pages: pagesRef,
     });
+
     context.trailerInfo.Root = context.register(catalog);
 
     const buffer = await PDFWriter.forContext(
@@ -194,9 +198,11 @@ describe('PDFWriter', () => {
     it('drops /DecodeParms that would apply to the new filter', async () => {
       const context = PDFContext.create();
       const content = 'Hello World! '.repeat(100);
+
       const stream = context.stream(content, {
         DecodeParms: { Predictor: 12, Columns: 4 },
       });
+
       context.trailerInfo.Root = context.register(
         context.obj({ Type: 'Catalog', Test: context.register(stream) }),
       );

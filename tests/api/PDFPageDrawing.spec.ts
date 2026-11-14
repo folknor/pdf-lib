@@ -24,14 +24,18 @@ function getLastContentStreamText(
   doc: PDFDocument,
 ): string {
   const contents = page.node.Contents();
+
   if (!contents || !(contents instanceof PDFArray)) {
     throw new Error('Page has no Contents array');
   }
+
   const lastIndex = contents.size() - 1;
   const stream = contents.lookup(lastIndex);
+
   if (stream instanceof PDFContentStream) {
     return stream.getContentsString();
   }
+
   throw new Error('Last content stream is not a PDFContentStream');
 }
 
@@ -43,16 +47,21 @@ function getAllContentStreamText(
   doc: PDFDocument,
 ): string {
   const contents = page.node.Contents();
+
   if (!contents || !(contents instanceof PDFArray)) {
     throw new Error('Page has no Contents array');
   }
+
   let result = '';
+
   for (let i = 0; i < contents.size(); i++) {
     const stream = contents.lookup(i);
+
     if (stream instanceof PDFContentStream) {
       result += stream.getContentsString();
     }
   }
+
   return result;
 }
 
@@ -1148,8 +1157,10 @@ describe('PDFPage Drawing Operations - Content Stream Verification', () => {
     it('handles complex SVG paths with multiple commands', async () => {
       const doc = await PDFDocument.create();
       const page = doc.addPage();
+
       const complexPath =
         'M 0,20 L 100,160 Q 130,200 150,120 C 190,-40 200,200 300,150 L 400,90';
+
       page.drawSvgPath(complexPath, {
         x: 0,
         y: 0,
@@ -1256,6 +1267,7 @@ describe('PDFPage Drawing Operations - Content Stream Verification', () => {
       // Verify the ExtGState was registered in page resources
       const extGState =
         page.node.normalizedEntries().ExtGState;
+
       expect(extGState.keys().length).toBeGreaterThan(0);
     });
 
@@ -1276,6 +1288,7 @@ describe('PDFPage Drawing Operations - Content Stream Verification', () => {
 
       const extGState =
         page.node.normalizedEntries().ExtGState;
+
       expect(extGState.keys().length).toBeGreaterThan(0);
     });
 
@@ -1767,6 +1780,7 @@ describe('PDFPage Drawing Operations - Content Stream Verification', () => {
       const found = fontKeys.some((key: PDFName) =>
         text.includes(`${key.toString()} `),
       );
+
       expect(found).toBe(true);
     });
   });

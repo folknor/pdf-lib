@@ -14,6 +14,7 @@ class PDFAcroForm {
 
   static create = (context: PDFContext) => {
     const dict = context.obj({ Fields: [] });
+
     return new PDFAcroForm(dict);
   };
 
@@ -23,7 +24,9 @@ class PDFAcroForm {
 
   Fields(): PDFArray | undefined {
     const fields = this.dict.lookup(PDFName.of('Fields'));
+
     if (fields instanceof PDFArray) return fields;
+
     return;
   }
 
@@ -31,9 +34,11 @@ class PDFAcroForm {
     const { Fields } = this.normalizedEntries();
 
     const fields: [PDFAcroField, PDFRef][] = [];
+
     for (let idx = 0, len = Fields.size(); idx < len; idx++) {
       const ref = Fields.get(idx);
       const dict = Fields.lookup(idx);
+
       if (ref instanceof PDFRef && dict instanceof PDFDict) {
         fields.push([createPDFAcroField(dict, ref), ref]);
       }
@@ -47,10 +52,12 @@ class PDFAcroForm {
 
     const pushFields = (fields?: [PDFAcroField, PDFRef][]) => {
       if (!fields) return;
+
       for (let idx = 0, len = fields.length; idx < len; idx++) {
         const field = fields[idx]!;
         allFields.push(field);
         const [fieldModel] = field;
+
         if (fieldModel instanceof PDFAcroNonTerminal) {
           pushFields(createPDFAcroFields(fieldModel.Kids()));
         }
@@ -69,10 +76,12 @@ class PDFAcroForm {
 
   removeField(field: PDFAcroField): void {
     const parent = field.getParent();
+
     const fields =
       parent === undefined ? this.normalizedEntries().Fields : parent.Kids();
 
     const index = fields?.indexOf(field.ref);
+
     if (fields === undefined || index === undefined) {
       throw new Error(
         `Tried to remove inexistent field ${field.getFullyQualifiedName()}`,

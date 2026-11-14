@@ -58,11 +58,13 @@ const parse = (path: string) => {
   for (const c of path) {
     if (parameters.has(c)) {
       params = parameters.get(c)!;
+
       if (cmd) {
         // save existing command
         if (curArg.length > 0) {
           args[args.length] = Number(curArg);
         }
+
         ret[ret.length] = { cmd, args };
 
         args = [];
@@ -89,6 +91,7 @@ const parse = (path: string) => {
         if (cmd === 'M') {
           cmd = 'L';
         }
+
         if (cmd === 'm') {
           cmd = 'l';
         }
@@ -112,6 +115,7 @@ const parse = (path: string) => {
       foundDecimal = false;
     } else {
       curArg += c;
+
       if (c === '.') {
         foundDecimal = true;
       }
@@ -129,6 +133,7 @@ const parse = (path: string) => {
       if (cmd === 'M') {
         cmd = 'L';
       }
+
       if (cmd === 'm') {
         cmd = 'l';
       }
@@ -148,10 +153,13 @@ const apply = (commands: Cmd[]) => {
 
   // run the commands
   let cmds: PDFOperator[] = [];
+
   for (let i = 0; i < commands.length; i++) {
     const c = commands[i]!;
+
     if (c.cmd && typeof runners[c.cmd] === 'function') {
       const cmd = runners[c.cmd]!(c.args);
+
       if (Array.isArray(cmd)) {
         cmds = cmds.concat(cmd);
       } else {
@@ -159,6 +167,7 @@ const apply = (commands: Cmd[]) => {
       }
     }
   }
+
   return cmds;
 };
 
@@ -173,6 +182,7 @@ const runners: CmdToOperatorsMap = {
     px = py = null;
     sx = cx;
     sy = cy;
+
     return moveTo(cx, cy);
   },
 
@@ -182,6 +192,7 @@ const runners: CmdToOperatorsMap = {
     px = py = null;
     sx = cx;
     sy = cy;
+
     return moveTo(cx, cy);
   },
 
@@ -190,6 +201,7 @@ const runners: CmdToOperatorsMap = {
     cy = a[5]!;
     px = a[2]!;
     py = a[3]!;
+
     return appendBezierCurve(a[0]!, a[1]!, a[2]!, a[3]!, a[4]!, a[5]!);
   },
 
@@ -202,10 +214,12 @@ const runners: CmdToOperatorsMap = {
       a[4]! + cx,
       a[5]! + cy,
     );
+
     px = cx + a[2]!;
     py = cy + a[3]!;
     cx += a[4]!;
     cy += a[5]!;
+
     return cmd;
   },
 
@@ -223,10 +237,12 @@ const runners: CmdToOperatorsMap = {
       a[2]!,
       a[3]!,
     );
+
     px = a[0]!;
     py = a[1]!;
     cx = a[2]!;
     cy = a[3]!;
+
     return cmd;
   },
 
@@ -244,10 +260,12 @@ const runners: CmdToOperatorsMap = {
       cx + a[2]!,
       cy + a[3]!,
     );
+
     px = cx + a[0]!;
     py = cy + a[1]!;
     cx += a[2]!;
     cy += a[3]!;
+
     return cmd;
   },
 
@@ -256,6 +274,7 @@ const runners: CmdToOperatorsMap = {
     py = a[1]!;
     cx = a[2]!;
     cy = a[3]!;
+
     return appendQuadraticCurve(a[0]!, a[1]!, cx, cy);
   },
 
@@ -266,10 +285,12 @@ const runners: CmdToOperatorsMap = {
       a[2]! + cx,
       a[3]! + cy,
     );
+
     px = cx + a[0]!;
     py = cy + a[1]!;
     cx += a[2]!;
     cy += a[3]!;
+
     return cmd;
   },
 
@@ -285,6 +306,7 @@ const runners: CmdToOperatorsMap = {
     const cmd = appendQuadraticCurve(px, py, a[0]!, a[1]!);
     cx = a[0]!;
     cy = a[1]!;
+
     return cmd;
   },
 
@@ -300,6 +322,7 @@ const runners: CmdToOperatorsMap = {
     const cmd = appendQuadraticCurve(px, py, cx + a[0]!, cy + a[1]!);
     cx += a[0]!;
     cy += a[1]!;
+
     return cmd;
   },
 
@@ -307,6 +330,7 @@ const runners: CmdToOperatorsMap = {
     const cmds = solveArc(cx, cy, a);
     cx = a[5]!;
     cy = a[6]!;
+
     return cmds;
   },
 
@@ -316,6 +340,7 @@ const runners: CmdToOperatorsMap = {
     const cmds = solveArc(cx, cy, a);
     cx = a[5]!;
     cy = a[6]!;
+
     return cmds;
   },
 
@@ -323,6 +348,7 @@ const runners: CmdToOperatorsMap = {
     cx = a[0]!;
     cy = a[1]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
@@ -330,30 +356,35 @@ const runners: CmdToOperatorsMap = {
     cx += a[0]!;
     cy += a[1]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
   H(a) {
     cx = a[0]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
   h(a) {
     cx += a[0]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
   V(a) {
     cy = a[0]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
   v(a) {
     cy += a[0]!;
     px = py = null;
+
     return lineTo(cx, cy);
   },
 
@@ -361,6 +392,7 @@ const runners: CmdToOperatorsMap = {
     const cmd = closePath();
     cx = sx;
     cy = sy;
+
     return cmd;
   },
 
@@ -368,6 +400,7 @@ const runners: CmdToOperatorsMap = {
     const cmd = closePath();
     cx = sx;
     cy = sy;
+
     return cmd;
   },
 };
@@ -382,17 +415,21 @@ const solveArc = (x: number, y: number, coords: number[]) => {
     number,
     number,
   ];
+
   const segs = arcToSegments(ex, ey, rx, ry, large, sweep, rot, x, y);
 
   const cmds: PDFOperator[] = [];
+
   for (const seg of segs) {
     const bez = segmentToBezier(...seg);
     cmds.push(appendBezierCurve(...bez));
   }
+
   return cmds;
 };
 
 type Segment = [number, number, number, number, number, number, number, number];
+
 type Bezier = [number, number, number, number, number, number];
 
 // from Inkscape svgtopdf, thanks!
@@ -415,6 +452,7 @@ const arcToSegments = (
   px = cosTh * (ox - x) * 0.5 + sinTh * (oy - y) * 0.5;
   py = cosTh * (oy - y) * 0.5 - sinTh * (ox - x) * 0.5;
   let pl = (px * px) / (rx * rx) + (py * py) / (ry * ry);
+
   if (pl > 1) {
     pl = Math.sqrt(pl);
     rx *= pl;
@@ -432,10 +470,13 @@ const arcToSegments = (
 
   const d = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
   let sfactorSq = 1 / d - 0.25;
+
   if (sfactorSq < 0) {
     sfactorSq = 0;
   }
+
   let sfactor = Math.sqrt(sfactorSq);
+
   if (sweep === large) {
     sfactor = -sfactor;
   }
@@ -447,6 +488,7 @@ const arcToSegments = (
   const th1 = Math.atan2(y1 - yc, x1 - xc);
 
   let thArc = th1 - th0;
+
   if (thArc < 0 && sweep === 1) {
     thArc += 2 * Math.PI;
   } else if (thArc > 0 && sweep === 0) {
@@ -481,9 +523,11 @@ const segmentToBezier = (
   const a11 = cosTh * ry;
 
   const thHalf = 0.5 * (th1 - th0);
+
   const t =
     ((8 / 3) * Math.sin(thHalf * 0.5) * Math.sin(thHalf * 0.5)) /
     Math.sin(thHalf);
+
   const x1 = cx1 + Math.cos(th0) - t * Math.sin(th0);
   const y1 = cy1 + Math.sin(th0) + t * Math.cos(th0);
   const x3 = cx1 + Math.cos(th1);
@@ -499,6 +543,7 @@ const segmentToBezier = (
     a00 * x3 + a01 * y3,
     a10 * x3 + a11 * y3,
   ];
+
   return result;
 };
 

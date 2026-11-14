@@ -22,6 +22,7 @@ export class Optional<T = unknown> extends Base<T | undefined> {
 
   decode(stream: DecodeStream, parent?: unknown): T | undefined {
     let condition = this.condition;
+
     if (typeof condition === 'function') {
       condition = condition.call(parent, parent);
     }
@@ -35,6 +36,7 @@ export class Optional<T = unknown> extends Base<T | undefined> {
 
   size(val?: T | null, parent?: unknown): number {
     let condition = this.condition;
+
     if (typeof condition === 'function') {
       condition = condition.call(parent, parent);
     }
@@ -48,6 +50,7 @@ export class Optional<T = unknown> extends Base<T | undefined> {
 
   encode(stream: EncodeStream, val: T | undefined, parent?: unknown): void {
     let condition = this.condition;
+
     if (typeof condition === 'function') {
       condition = condition.call(parent, parent);
     }

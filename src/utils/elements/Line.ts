@@ -27,12 +27,14 @@ export default class Line extends GraphElement {
   y(x: number) {
     const a = this.a();
     const b = this.b();
+
     return a * x + b;
   }
 
   /** The slope */
   a() {
     const dirVect = this.dirVect();
+
     return dirVect.y / dirVect.x;
   }
 
@@ -40,11 +42,13 @@ export default class Line extends GraphElement {
   b() {
     const O = this.origin().toCoords();
     const a = this.a();
+
     return O.y - a * O.x;
   }
 
   isEqual(element: GraphElement): boolean {
     const vect = this.dirVect();
+
     return (
       element instanceof Line &&
       isColinear(vect, element.dirVect()) &&
@@ -58,12 +62,14 @@ export default class Line extends GraphElement {
   /** Reversed line equation */
   x(y: number) {
     const dirVect = this.dirVect();
+
     return ((y - this.b()) * dirVect.x) / dirVect.y;
   }
 
   includes(P: Point) {
     const { x, y } = P.toCoords();
     const vect = this.dirVect();
+
     return isEqual(vect.x, 0)
       ? isEqual(this.origin().toCoords().x, x)
       : isEqual(this.y(x), y);
@@ -72,6 +78,7 @@ export default class Line extends GraphElement {
   /** This is used to standarsize type Segment | HalfLine | Line */
   getLine() {
     const line = new Line(this.origin(), this.B);
+
     return line;
   }
 
@@ -80,6 +87,7 @@ export default class Line extends GraphElement {
     const A = new Point(P.toCoords());
     const ortho = new Line(A, A.plus(vectOrtho));
     const H = intersectionLine(this, ortho)[0];
+
     return new Point(H);
   }
 }

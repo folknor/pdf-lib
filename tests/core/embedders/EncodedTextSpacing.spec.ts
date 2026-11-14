@@ -32,9 +32,11 @@ const text = (
 // Where each glyph is drawn, in thousandths of an em from the line start.
 const origins = (t: EncodedText) => {
   let pen = 0;
+
   return t.advances.map((advance, i) => {
     const origin = pen + t.xOffsets[i]!;
     pen += advance;
+
     return origin;
   });
 };
@@ -42,12 +44,15 @@ const origins = (t: EncodedText) => {
 const contentText = (page: ReturnType<PDFDocument['addPage']>) => {
   const contents = page.node.Contents();
   let out = '';
+
   if (contents instanceof PDFArray) {
     for (let i = 0; i < contents.size(); i++) {
       const stream = contents.lookup(i);
+
       if (stream instanceof PDFContentStream) out += stream.getContentsString();
     }
   }
+
   return out;
 };
 
@@ -66,6 +71,7 @@ describe('EncodedText.withSpacing', () => {
       [null, 0, 1, null],
       [0, -200, -150, 0],
     );
+
     const before = origins(t);
     const spaced = t.withSpacing(1, 0, 10);
     const after = origins(spaced);
@@ -81,6 +87,7 @@ describe('EncodedText.withSpacing', () => {
       [1, null, null],
       [300, 0, 0],
     );
+
     const before = origins(t);
     const after = origins(t.withSpacing(2, 0, 10));
     expect(after[0]! - after[1]!).toBe(before[0]! - before[1]!);
@@ -100,6 +107,7 @@ describe('EncodedText.withSpacing', () => {
       [0, 0, 0],
       [NO_SPACING, { characters: 3, spaces: 1 }, BASE_SPACING],
     );
+
     expect(t.withSpacing(1, 2, 10).advances).toEqual([600, 800, 700]);
     expect(() =>
       new EncodedText(['0001'], [1], [1], [0], [0], [{ characters: -1, spaces: 0 }]),
@@ -117,10 +125,12 @@ describe('spacing in fonts', () => {
   it('measures what it draws, for standard and custom fonts', async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
+
     const fonts = [
       await doc.embedFont(StandardFonts.Helvetica),
       await doc.embedFont(fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf')),
     ];
+
     for (const font of fonts) {
       const spaced = font.encodeText('a b c').withSpacing(1, 3, 12);
       // Five glyphs take 1pt, the two spaces 3pt more.
@@ -143,9 +153,11 @@ describe('spacing in fonts', () => {
   it('records GPOS mark attachment and keeps marks on their bases', async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
+
     const font = await doc.embedFont(
       fs.readFileSync('./assets/fonts/noto_sans_thai/NotoSansThai[wdth,wght].ttf'),
     );
+
     const t = font.encodeText('กิ่');
     expect(t.attachedTo.some((base) => base !== null)).toBe(true);
     const before = origins(t);
@@ -156,6 +168,7 @@ describe('spacing in fonts', () => {
     t.attachedTo.forEach((base, i) => {
       if (base === null) return;
       let root = base;
+
       while (t.attachedTo[root] !== null) root = t.attachedTo[root]!;
       expect(after[i]! - after[root]!).toBeCloseTo(before[i]! - before[root]!, 9);
     });
@@ -165,14 +178,17 @@ describe('spacing in fonts', () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
     const page = doc.addPage();
+
     const font = await doc.embedFont(
       fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
     );
+
     const options = {
       characterSpacing: 2,
       wordSpacing: 6,
       horizontalScaling: 120,
     };
+
     const words = 'the quick brown fox jumps over the lazy dog again';
     page.drawText(words, { font, size: 12, maxWidth: 150, ...options });
     const content = contentText(page);
@@ -182,12 +198,15 @@ describe('spacing in fonts', () => {
     const lines = content.split('\n').filter((op) => op.endsWith('TJ'));
     expect(lines.length).toBeGreaterThan(1);
     const { breakTextIntoLines } = await import('../../../src/utils/index');
+
     const broken = breakTextIntoLines(words, [' '], 150, (s: string) =>
       font.widthOfTextAtSize(s, 12, options),
     );
+
     for (const line of broken) {
       expect(font.widthOfTextAtSize(line, 12, options)).toBeLessThanOrEqual(150);
     }
+
     expect(broken.length).toBe(lines.length);
   });
 });

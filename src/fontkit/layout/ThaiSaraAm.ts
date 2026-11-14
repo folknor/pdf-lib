@@ -20,6 +20,7 @@ const isSaraAm = (cp: number) => cp === 0x0e33 || cp === 0x0eb3;
 
 const isAboveBaseMark = (cp: number) => {
   const u = cp & ~0x0080;
+
   return (
     u === 0x0e31 ||
     (u >= 0x0e34 && u <= 0x0e37) ||
@@ -47,10 +48,12 @@ export function decomposeSaraAm(
 ): { codePoints: number[]; clusters: number[] } {
   const out: number[] = [];
   const outClusters: number[] = [];
+
   for (let i = 0; i < codePoints.length; i++) {
     const cp = codePoints[i]!;
     const cluster = clusters[i]!;
     const lao = cp & 0x0080;
+
     if (
       !isSaraAm(cp) ||
       isVariationSelector(codePoints[i + 1]) ||
@@ -61,13 +64,16 @@ export function decomposeSaraAm(
       outClusters.push(cluster);
       continue;
     }
+
     // Only a NIKHAHIT generated here moves; a typed one stays where it is.
     let at = out.length;
+
     while (at > 0 && isAboveBaseMark(out[at - 1]!)) at--;
     out.splice(at, 0, 0x0e4d | lao);
     outClusters.splice(at, 0, cluster);
     out.push(0x0e32 | lao);
     outClusters.push(cluster);
   }
+
   return { codePoints: out, clusters: outClusters };
 }

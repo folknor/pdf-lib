@@ -39,9 +39,11 @@ const fixture = async (algorithm: EncryptionAlgorithm): Promise<Fixture> => {
   const { context } = doc;
   const plain = context.register(context.stream('ordinary body'));
   const attachment = context.register(context.stream('attachment body'));
+
   const pageMetadata = context.register(
     context.stream('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>', { Type: 'Metadata', Subtype: 'XML' }),
   );
+
   const filespec = context.register(
     context.obj({
       Type: 'Filespec',
@@ -49,18 +51,22 @@ const fixture = async (algorithm: EncryptionAlgorithm): Promise<Fixture> => {
       EF: { F: attachment },
     }),
   );
+
   doc.catalog.set(name('Plain'), plain);
   doc.catalog.set(name('Spec'), filespec);
   page.node.set(name('Metadata'), pageMetadata);
   doc.encrypt({ userPassword: 'user', ownerPassword: 'owner', algorithm });
+
   const raw = await PDFDocument.load(
     await doc.save({ useObjectStreams: false }),
     { ignoreEncryption: true, updateMetadata: false },
   );
+
   // Bypass the keyless-save check to author ciphertext fixtures; saves of
   // `raw` must stay full, uncompressed and without object streams.
   raw.context.baselineEncryption = undefined;
   const encryptDict = raw.context.lookup(raw.context.trailerInfo.Encrypt, PDFDict);
+
   return { raw, encryptDict, plain, attachment, pageMetadata };
 };
 
@@ -86,19 +92,23 @@ describe('per-stream crypt filter selection on read', () => {
 
   it('leaves only the catalog metadata clear under /EncryptMetadata false', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     try {
       const f = await fixture('AES-256');
       f.encryptDict.set(name('EncryptMetadata'), f.raw.context.obj(false));
+
       // Real XMP: unreadable catalog XMP may declare PDF/A, which refuses
       // writing a file that names /Encrypt.
       const xmp =
         '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>';
+
       const metadata = f.raw.context.register(
         f.raw.context.stream(xmp, {
           Type: 'Metadata',
           Subtype: 'XML',
         }),
       );
+
       f.raw.catalog.set(name('Metadata'), metadata);
       const doc = await open(await f.raw.save({ useObjectStreams: false }));
       expect(text(doc, metadata)).toBe(xmp);
@@ -115,13 +125,16 @@ describe('per-stream crypt filter selection on read', () => {
     const plainDict = context.lookup(f.plain, PDFRawStream).dict;
     plainDict.set(name('Filter'), context.obj(['Crypt']));
     plainDict.set(name('DecodeParms'), context.obj([{ Name: 'StdCF' }]));
+
     const identity = context.register(
       context.stream('identity body', { Filter: 'Crypt' }),
     );
+
     f.raw.catalog.set(name('Identity'), identity);
     const bytes = await f.raw.save({ useObjectStreams: false });
 
     const doc = await open(bytes);
+
     for (const [ref, body] of [
       [f.plain, 'ordinary body'],
       [identity, 'identity body'],
@@ -136,6 +149,7 @@ describe('per-stream crypt filter selection on read', () => {
     const rewritten = await PDFDocument.load(await doc.save(), {
       updateMetadata: false,
     });
+
     expect(text(rewritten, f.plain)).toBe('ordinary body');
   });
 });
@@ -145,6 +159,7 @@ describe('per-stream crypt filter selection on increments', () => {
     const f = await fixture('AES-128');
     f.encryptDict.set(name('EFF'), name('Identity'));
     f.raw.context.assign(f.attachment, f.raw.context.stream('attachment body'));
+
     return { f, bytes: await f.raw.save({ useObjectStreams: false }) };
   };
 
@@ -239,6 +254,7 @@ describe('per-stream crypt filter selection on increments', () => {
 
 describe('readCryptDeclaration', () => {
   const context = PDFContext.create();
+
   const dict = (value: Record<string, unknown>) =>
     context.obj(value as never) as PDFDict;
 
@@ -251,6 +267,7 @@ describe('readCryptDeclaration', () => {
       context,
       false,
     )!;
+
     expect(declaration.name).toBe(name('X'));
     expect(declaration.remainingFilter).toBe(name('FlateDecode'));
     expect(declaration.remainingParms).toBeInstanceOf(PDFDict);
@@ -262,6 +279,7 @@ describe('readCryptDeclaration', () => {
       context,
       false,
     )!;
+
     expect(declaration.name).toBe(name('X'));
     expect(declaration.remainingFilter).toBeUndefined();
   });
@@ -307,6 +325,7 @@ describe('readCryptDeclaration', () => {
       context,
       false,
     );
+
     expect(declaration).toBeUndefined();
     expect(
       readCryptDeclaration(dict({ Filter: 'Crypt' }), context, false)!.name,

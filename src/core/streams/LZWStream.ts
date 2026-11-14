@@ -37,6 +37,7 @@ class LZWStream extends DecodeStream {
     this.bitsCached = 0;
 
     const maxLzwDictionarySize = 4096;
+
     const lzwState = {
       earlyChange,
       codeLength: 9,
@@ -48,10 +49,12 @@ class LZWStream extends DecodeStream {
       currentSequenceLength: 0,
       prevCode: undefined,
     };
+
     for (let i = 0; i < 256; ++i) {
       lzwState.dictionaryValues[i] = i;
       lzwState.dictionaryLengths[i] = 1;
     }
+
     this.lzwState = lzwState;
   }
 
@@ -65,6 +68,7 @@ class LZWStream extends DecodeStream {
     let q;
 
     const lzwState = this.lzwState;
+
     if (!lzwState) {
       return; // eof was found
     }
@@ -85,19 +89,23 @@ class LZWStream extends DecodeStream {
 
     for (i = 0; i < blockSize; i++) {
       const code = this.readBits(codeLength);
+
       // End of input: readBits returned null. Without this, null would be
       // decoded as code 0 and pad the output with zero bytes.
       if (code === null) {
         delete this.lzwState;
         break;
       }
+
       const hasPrev = currentSequenceLength > 0;
+
       if (code < 256) {
         currentSequence[0] = code as number;
         currentSequenceLength = 1;
       } else if (code >= 258) {
         if (code < nextCode) {
           currentSequenceLength = dictionaryLengths[code]!;
+
           for (j = currentSequenceLength - 1, q = code; j >= 0; j--) {
             currentSequence[j] = dictionaryValues[q]!;
             q = dictionaryPrevCodes[q]!;
@@ -127,19 +135,24 @@ class LZWStream extends DecodeStream {
             ? codeLength
             : Math.min(Math.log(nextCode + earlyChange) / Math.LN2 + 1, 12) | 0;
       }
+
       prevCode = code;
 
       decodedLength += currentSequenceLength;
+
       if (estimatedDecodedSize < decodedLength) {
         do {
           estimatedDecodedSize += decodedSizeDelta;
         } while (estimatedDecodedSize < decodedLength);
+
         buffer = this.ensureBuffer(this.bufferLength + estimatedDecodedSize);
       }
+
       for (j = 0; j < currentSequenceLength; j++) {
         buffer[currentBufferLength++] = currentSequence[j]!;
       }
     }
+
     lzwState.nextCode = nextCode;
     lzwState.codeLength = codeLength;
     lzwState.prevCode = prevCode;
@@ -151,17 +164,23 @@ class LZWStream extends DecodeStream {
   private readBits(n: number) {
     let bitsCached = this.bitsCached;
     let cachedData = this.cachedData;
+
     while (bitsCached < n) {
       const c = this.stream.getByte();
+
       if (c === -1) {
         this.eof = true;
+
         return null;
       }
+
       cachedData = (cachedData << 8) | c;
       bitsCached += 8;
     }
+
     this.bitsCached = bitsCached -= n;
     this.cachedData = cachedData;
+
     return (cachedData >>> bitsCached) & ((1 << n) - 1);
   }
 }

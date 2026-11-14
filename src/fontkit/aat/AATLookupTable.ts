@@ -81,6 +81,7 @@ export default class AATLookupTable {
     if (!this._glyphsCache) {
       this._glyphsCache = new Map();
     }
+
     if (this._glyphsCache.has(classValue)) {
       return this._glyphsCache.get(classValue)!;
     }
@@ -132,6 +133,7 @@ export default class AATLookupTable {
     }
 
     this._glyphsCache.set(classValue, res);
+
     return res;
   }
 }

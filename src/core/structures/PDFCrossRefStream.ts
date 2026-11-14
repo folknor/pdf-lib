@@ -48,6 +48,7 @@ class PDFCrossRefStream extends PDFFlateStream {
   static create = (dict: PDFDict, encode = true) => {
     const stream = new PDFCrossRefStream(dict, [], encode);
     stream.addDeletedEntry(PDFRef.of(0, 65535), 0);
+
     return stream;
   };
 
@@ -77,17 +78,23 @@ class PDFCrossRefStream extends PDFFlateStream {
     const { entries } = this;
     const num = entry.ref.objectNumber;
     const lastEntry = entries[entries.length - 1];
+
     if (!lastEntry || lastEntry.ref.objectNumber <= num) {
       entries.push(entry);
+
       return;
     }
+
     let lo = 0;
     let hi = entries.length;
+
     while (lo < hi) {
       const mid = (lo + hi) >>> 1;
+
       if (entries[mid]!.ref.objectNumber > num) hi = mid;
       else lo = mid + 1;
     }
+
     entries.splice(lo, 0, entry);
   }
 
@@ -97,6 +104,7 @@ class PDFCrossRefStream extends PDFFlateStream {
    */
   addDeletedEntry(ref: PDFRef, nextFreeObjectNumber: number) {
     const head = this.entries[0];
+
     if (
       ref.objectNumber !== 0 &&
       head?.type === EntryType.Deleted &&
@@ -105,6 +113,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     ) {
       head.nextFreeObjectNumber = ref.objectNumber;
     }
+
     const type = EntryType.Deleted;
     this.appendEntry({ type, ref, nextFreeObjectNumber });
     this.entryTuplesCache.invalidate();
@@ -133,6 +142,7 @@ class PDFCrossRefStream extends PDFFlateStream {
 
   override clone(context?: PDFContext): PDFCrossRefStream {
     const { dict, entries, encode } = this;
+
     return PDFCrossRefStream.of(dict.clone(context), entries.slice(), encode);
   }
 
@@ -155,9 +165,11 @@ class PDFCrossRefStream extends PDFFlateStream {
       for (let idx = byteWidths[0]! - 1; idx >= 0; idx--) {
         value += (firstBytes[idx] || 0).toString(2);
       }
+
       for (let idx = byteWidths[1]! - 1; idx >= 0; idx--) {
         value += (secondBytes[idx] || 0).toString(2);
       }
+
       for (let idx = byteWidths[2]! - 1; idx >= 0; idx--) {
         value += (thirdBytes[idx] || 0).toString(2);
       }
@@ -172,6 +184,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     const buffer = new Uint8Array(this.getUnencodedContentsSize());
 
     let offset = 0;
+
     for (
       let entryIdx = 0, entriesLen = entryTuples.length;
       entryIdx < entriesLen;
@@ -186,9 +199,11 @@ class PDFCrossRefStream extends PDFFlateStream {
       for (let idx = byteWidths[0]! - 1; idx >= 0; idx--) {
         buffer[offset++] = firstBytes[idx] || 0;
       }
+
       for (let idx = byteWidths[1]! - 1; idx >= 0; idx--) {
         buffer[offset++] = secondBytes[idx] || 0;
       }
+
       for (let idx = byteWidths[2]! - 1; idx >= 0; idx--) {
         buffer[offset++] = thirdBytes[idx] || 0;
       }
@@ -200,6 +215,7 @@ class PDFCrossRefStream extends PDFFlateStream {
   getUnencodedContentsSize(): number {
     const byteWidths = this.maxByteWidthsCache.access();
     const entryWidth = sum(byteWidths);
+
     return entryWidth * this.entries.length;
   }
 
@@ -221,6 +237,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     const subsections: number[] = [];
 
     let subsectionLength = 0;
+
     for (let idx = 0, len = this.entries.length; idx < len; idx++) {
       const currEntry = this.entries[idx]!;
       const prevEntry = this.entries[idx - 1];
@@ -235,6 +252,7 @@ class PDFCrossRefStream extends PDFFlateStream {
 
       subsectionLength += 1;
     }
+
     subsections.push(subsectionLength);
 
     return subsections;
@@ -245,14 +263,17 @@ class PDFCrossRefStream extends PDFFlateStream {
 
     for (let idx = 0, len = this.entries.length; idx < len; idx++) {
       const entry = this.entries[idx]!;
+
       if (entry.type === EntryType.Deleted) {
         const { type, nextFreeObjectNumber, ref } = entry;
         entryTuples[idx] = [type, nextFreeObjectNumber, ref.generationNumber];
       }
+
       if (entry.type === EntryType.Uncompressed) {
         const { type, offset, ref } = entry;
         entryTuples[idx] = [type, offset, ref.generationNumber];
       }
+
       if (entry.type === EntryType.Compressed) {
         const { type, objectStreamRef, index } = entry;
         entryTuples[idx] = [type, objectStreamRef.objectNumber, index];
@@ -274,7 +295,9 @@ class PDFCrossRefStream extends PDFFlateStream {
       const thirdSize = sizeInBytes(third);
 
       if (firstSize > widths[0]) widths[0] = firstSize;
+
       if (secondSize > widths[1]) widths[1] = secondSize;
+
       if (thirdSize > widths[2]) widths[2] = thirdSize;
     }
 

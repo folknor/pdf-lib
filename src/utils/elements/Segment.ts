@@ -44,6 +44,7 @@ export default class Segment extends GraphElement {
     const dest = this.destination();
     const oE = element.origin();
     const destE = element.destination();
+
     return (
       element instanceof Segment &&
       ((o.isEqual(oE) && dest.isEqual(destE)) ||
@@ -54,12 +55,14 @@ export default class Segment extends GraphElement {
   /** Returns an equivalent line object */
   getLine() {
     const line = new Line(this.origin(), this.destination());
+
     return line;
   }
 
   includes(P: Point) {
     const vect = this.dirVect();
     const otherVect = vector(this.origin(), P);
+
     // The vectors are not even colinear
     if (!isColinear(vect, otherVect)) return false;
     // The point is behind the origin
@@ -73,6 +76,7 @@ export default class Segment extends GraphElement {
     const mid = new Point(
       plus(this.origin().toCoords(), times(this.dirVect(), 0.5)),
     );
+
     return mid;
   }
 
@@ -82,6 +86,7 @@ export default class Segment extends GraphElement {
     const origin = this.origin().toCoords();
     const destination = this.destination().toCoords();
     const otherVect = vector(this.origin(), H);
+
     // The point is before the origin
     if (scalar(vect, otherVect) < 0) return new Point(origin);
     // The point is after the destination

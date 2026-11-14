@@ -120,6 +120,7 @@ export default class PDFCheckBox extends PDFField {
    */
   isChecked(): boolean {
     const onValue = this.acroField.getOnValue();
+
     return Boolean(onValue) && onValue === this.acroField.getValue();
   }
 
@@ -156,8 +157,11 @@ export default class PDFCheckBox extends PDFField {
     if (!options) options = {};
 
     if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+
     if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+
     if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+
     if (!('borderWidth' in options)) options.borderWidth = 1;
 
     // Create a widget for this check box
@@ -174,6 +178,7 @@ export default class PDFCheckBox extends PDFField {
       ...(options.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
+
     const widgetRef = this.doc.context.register(widget.dict);
 
     // Add widget to this field
@@ -198,12 +203,14 @@ export default class PDFCheckBox extends PDFField {
    */
   override needsAppearancesUpdate(): boolean {
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       const state = widget.getAppearanceState();
       const normal = widget.getAppearances()?.normal;
 
       if (!(normal instanceof PDFDict)) return true;
+
       if (state && !normal.has(state)) return true;
     }
 
@@ -244,12 +251,15 @@ export default class PDFCheckBox extends PDFField {
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       const onValue = widget.getOnValue() ?? PDFName.of('Yes');
+
       if (!onValue) continue;
       this.updateWidgetAppearance(widget, onValue, provider);
     }
+
     this.markAsClean();
   }
 

@@ -52,19 +52,27 @@ const properties = (catalog: PDFCatalog): PDFDict | undefined =>
  */
 export const listOptionalContentGroups = (catalog: PDFCatalog): PDFRef[] => {
   const props = properties(catalog);
+
   if (!props) return [];
   const ocgs = props.lookupMaybe(OCGs, PDFArray);
+
   if (!ocgs) return [];
   const refs: PDFRef[] = [];
+
   for (let i = 0; i < ocgs.size(); i++) {
     const entry = ocgs.get(i);
+
     if (!(entry instanceof PDFRef)) continue;
+
     if (refs.some((r) => sameRef(r, entry))) continue;
     const dict = catalog.context.lookup(entry);
+
     if (!(dict instanceof PDFDict)) continue;
+
     if (dict.lookup(Type) !== OCG) continue;
     refs.push(entry);
   }
+
   return refs;
 };
 
@@ -74,11 +82,14 @@ export const optionalContentGroupName = (
   ref: PDFRef,
 ): string | undefined => {
   const dict = context.lookup(ref);
+
   if (!(dict instanceof PDFDict)) return undefined;
   const name = dict.lookup(Name);
+
   if (name instanceof PDFString || name instanceof PDFHexString) {
     return name.decodeText();
   }
+
   return undefined;
 };
 
@@ -97,14 +108,19 @@ export const isOptionalContentGroupOn = (
   ref: PDFRef,
 ): boolean => {
   const d = defaultConfig(catalog);
+
   if (!d) return true;
+
   const lists = (key: PDFName) =>
     d
       .lookupMaybe(key, PDFArray)
       ?.asArray()
       .some((e) => sameRef(e, ref)) ?? false;
+
   if (lists(OFF)) return false;
+
   if (lists(ON)) return true;
+
   return d.lookup(BaseState) !== OFF;
 };
 
@@ -133,11 +149,13 @@ export const setOptionalContentGroupOn = (
   on: boolean,
 ): PDFRef[] => {
   const { context } = catalog;
+
   if (!listOptionalContentGroups(catalog).some((r) => sameRef(r, ref))) {
     throw new Error(
       `${ref} is not an optional content group listed in this document's /OCProperties /OCGs`,
     );
   }
+
   const props = properties(catalog)!;
   const oldD = props.lookupMaybe(D, PDFDict);
   const oldOn = oldD?.lookupMaybe(ON, PDFArray);
@@ -145,30 +163,40 @@ export const setOptionalContentGroupOn = (
 
   const turnOff: PDFRef[] = [];
   const groups = oldD?.lookupMaybe(RBGroups, PDFArray);
+
   for (let i = 0; i < (groups?.size() ?? 0); i++) {
     const group = groups!.lookup(i);
+
     if (!(group instanceof PDFArray)) {
       throw new Error(
         'The default optional content configuration has an /RBGroups entry that is not an array',
       );
     }
+
     const members = group.asArray();
+
     if (!on || !members.some((m) => sameRef(m, ref))) continue;
+
     for (const m of members) {
       if (m instanceof PDFRef && !sameRef(m, ref)) turnOff.push(m);
     }
   }
 
   const affected = [ref, ...turnOff];
+
   const kept = (array: PDFArray | undefined) =>
     (array?.asArray() ?? []).filter(
       (e) => !affected.some((r) => sameRef(e, r)),
     );
+
   const newOn = PDFArray.withContext(context);
   const newOff = PDFArray.withContext(context);
+
   for (const e of kept(oldOn)) newOn.push(e);
+
   for (const e of kept(oldOff)) newOff.push(e);
   (on ? newOn : newOff).push(ref);
+
   for (const r of turnOff) {
     if (!newOff.asArray().some((e) => sameRef(e, r))) newOff.push(r);
   }
@@ -178,12 +206,17 @@ export const setOptionalContentGroupOn = (
   newD.set(OFF, newOff);
   const unlinked: PDFRef[] = [];
   const rawD = props.get(D);
+
   if (rawD instanceof PDFRef) unlinked.push(rawD);
+
   for (const key of [ON, OFF]) {
     const raw = oldD?.get(key);
+
     if (raw instanceof PDFRef) unlinked.push(raw);
   }
+
   props.set(D, newD);
+
   return unlinked;
 };
 
@@ -198,18 +231,23 @@ export const registerCopiedOptionalContentGroups = (
   copied: Map<PDFRef, PDFRef>,
 ): PDFRef[] => {
   const additions: { source: PDFRef; destination: PDFRef }[] = [];
+
   for (const [src, dest] of copied) {
     const dict = source.context.lookup(src);
+
     if (dict instanceof PDFDict && dict.lookup(Type) === OCG) {
       additions.push({ source: src, destination: dest });
     }
   }
+
   if (!additions.length) return [];
   const props = properties(destination);
   const oldGroups = props?.lookupMaybe(OCGs, PDFArray);
+
   const fresh = additions.filter(
     (a) => !oldGroups?.asArray().some((r) => sameRef(r, a.destination)),
   );
+
   if (!fresh.length) return [];
 
   const validate = (catalog: PDFCatalog) => {
@@ -218,17 +256,22 @@ export const registerCopiedOptionalContentGroups = (
     const off = d?.lookupMaybe(OFF, PDFArray);
     const radio = d?.lookupMaybe(RBGroups, PDFArray);
     const groups: PDFArray[] = [];
+
     for (const entry of radio?.asArray() ?? []) {
       const group = catalog.context.lookup(entry);
+
       if (!(group instanceof PDFArray)) {
         throw new Error(
           'The default optional content configuration has an /RBGroups entry that is not an array',
         );
       }
+
       groups.push(group);
     }
+
     return { d, on, off, radio, groups };
   };
+
   const src = validate(source);
   const dst = validate(destination);
   const states = fresh.map((a) => isOptionalContentGroupOn(source, a.source));
@@ -236,6 +279,7 @@ export const registerCopiedOptionalContentGroups = (
   const newGroups = oldGroups?.clone() ?? PDFArray.withContext(context);
   const newOn = dst.on?.clone() ?? PDFArray.withContext(context);
   const newOff = dst.off?.clone() ?? PDFArray.withContext(context);
+
   // A copied ref can already occur in state lists even when absent from /OCGs.
   for (const array of [newOn, newOff]) {
     for (let i = array.size() - 1; i >= 0; i--) {
@@ -243,15 +287,19 @@ export const registerCopiedOptionalContentGroups = (
         array.remove(i);
     }
   }
+
   fresh.forEach((a, i) => {
     newGroups.push(a.destination);
     (states[i] ? newOn : newOff).push(a.destination);
   });
   const newRadio = dst.radio?.clone() ?? PDFArray.withContext(context);
+
   for (const group of src.groups) {
     const members = PDFArray.withContext(context);
+
     for (const entry of group.asArray()) {
       const match = additions.find((a) => sameRef(entry, a.source));
+
       if (
         match &&
         !members.asArray().some((r) => sameRef(r, match.destination))
@@ -259,16 +307,20 @@ export const registerCopiedOptionalContentGroups = (
         members.push(match.destination);
       }
     }
+
     if (members.size() > 1) newRadio.push(members);
   }
+
   const newD = dst.d?.clone() ?? PDFDict.withContext(context);
   newD.set(ON, newOn);
   newD.set(OFF, newOff);
+
   if (newRadio.size()) newD.set(RBGroups, newRadio);
   const newProps = props?.clone() ?? PDFDict.withContext(context);
   newProps.set(OCGs, newGroups);
   newProps.set(D, newD);
   const unlinked: PDFRef[] = [];
+
   for (const raw of [
     destination.get(OCProperties),
     props?.get(OCGs),
@@ -279,6 +331,8 @@ export const registerCopiedOptionalContentGroups = (
   ]) {
     if (raw instanceof PDFRef) unlinked.push(raw);
   }
+
   destination.set(OCProperties, newProps);
+
   return unlinked;
 };

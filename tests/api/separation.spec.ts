@@ -16,10 +16,13 @@ import {
 const contentOf = (page: PDFPage): string => {
   const contents = page.node.Contents() as PDFArray;
   let text = '';
+
   for (let i = 0; i < contents.size(); i++) {
     const stream = contents.lookup(i);
+
     if (stream instanceof PDFContentStream) text += stream.getContentsString();
   }
+
   return text;
 };
 
@@ -164,7 +167,7 @@ describe('Separation colour spaces', () => {
     page.node.delete(PDFName.Resources);
     doc.catalog.Pages().set(PDFName.Resources, resources);
     // Re-normalize from the inherited state.
-    // biome-ignore lint/suspicious/noExplicitAny: test resets a private flag
+    // The test resets a private flag.
     (page.node as any).normalized = false;
     const spot = doc.embedSeparation('Brand', rgb(1, 0, 0));
     page.drawRectangle({ color: separation(spot, 1) });

@@ -73,6 +73,7 @@ describe('layoutMultilineText', () => {
       const width = font.widthOfTextAtSize(text, fontSize);
 
       const bounds = { x: 0, y: 0, width, height };
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         fontSize: undefined,
@@ -91,6 +92,7 @@ describe('layoutMultilineText', () => {
     const width = font.widthOfTextAtSize(text, fontSize) * 2;
 
     const bounds = { x: 0, y: 0, width, height };
+
     const result = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       fontSize: undefined,
@@ -109,6 +111,7 @@ describe('layoutMultilineText', () => {
       const width = font.widthOfTextAtSize(text, fontSize) / 2;
 
       const bounds = { x: 0, y: 0, width, height };
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         fontSize: undefined,
@@ -123,6 +126,7 @@ describe('layoutMultilineText', () => {
   it('should never exceed the maximum font size', () => {
     const text = 'Super Mario Bros.';
     const bounds = { x: 0, y: 0, width: Number.MAX_VALUE, height: Number.MAX_VALUE };
+
     const result = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       fontSize: undefined,
@@ -138,12 +142,14 @@ describe('layoutMultilineText', () => {
     const text = 'word '.repeat(2000).trim();
     const bounds = { x: 0, y: 0, width: 200, height: 10000 };
     const start = Date.now();
+
     const result = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: 12,
     });
+
     const elapsed = Date.now() - start;
 
     expect(result.lines.length).toBeGreaterThan(1);
@@ -159,6 +165,7 @@ describe('layoutMultilineText', () => {
       const width = font.widthOfTextAtSize(lines[0]!, fontSize);
 
       const bounds = { x: 0, y: 0, width, height };
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         fontSize: undefined,
@@ -222,6 +229,7 @@ describe('layoutMultilineText', () => {
         font,
         fontSize: 20,
       });
+
       expect(result.fontSize).toBe(20);
     });
 
@@ -232,6 +240,7 @@ describe('layoutMultilineText', () => {
         font,
         fontSize: undefined,
       });
+
       // auto-computed font size should be between MIN and MAX
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
@@ -244,6 +253,7 @@ describe('layoutMultilineText', () => {
         font,
         fontSize: 0,
       });
+
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
@@ -252,6 +262,7 @@ describe('layoutMultilineText', () => {
   describe('lineHeight computation', () => {
     it('lineHeight equals height * 1.2 for the given fontSize', () => {
       const fontSize = 16;
+
       const result = layoutMultilineText('Test text', {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -268,6 +279,7 @@ describe('layoutMultilineText', () => {
   describe('text content of lines', () => {
     it('preserves full text content when no wrapping occurs', () => {
       const text = 'Hello World';
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -284,6 +296,7 @@ describe('layoutMultilineText', () => {
       const fontSize = 12;
       // Make bounds narrow enough to force wrapping but wide enough for individual words
       const wordWidth = font.widthOfTextAtSize('The quick ', fontSize);
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: wordWidth, height: 500 },
@@ -308,6 +321,7 @@ describe('layoutMultilineText', () => {
       const singleCharWidth = font.widthOfTextAtSize('S', fontSize);
       // Make bounds narrow: only ~5 characters wide
       const narrowWidth = singleCharWidth * 5;
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: narrowWidth, height: 500 },
@@ -325,6 +339,7 @@ describe('layoutMultilineText', () => {
 
     it('handles text with explicit newlines as separate input lines', () => {
       const text = 'Line One\nLine Two\nLine Three';
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -340,6 +355,7 @@ describe('layoutMultilineText', () => {
 
     it('handles carriage return + newline (\\r\\n) as a single newline', () => {
       const text = 'First\r\nSecond';
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -354,6 +370,7 @@ describe('layoutMultilineText', () => {
 
     it('handles form feed character (\\f) as a line separator', () => {
       const text = 'Part A\fPart B';
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -368,6 +385,7 @@ describe('layoutMultilineText', () => {
 
     it('replaces tab characters with four spaces', () => {
       const text = 'Hello\tWorld';
+
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -411,6 +429,7 @@ describe('layoutMultilineText', () => {
     it('each line width equals font.widthOfTextAtSize for that line text', () => {
       const text = 'Hello World Foo Bar';
       const fontSize = 14;
+
       // Make the bounds narrow to force wrapping
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -427,6 +446,7 @@ describe('layoutMultilineText', () => {
 
     it('each line height equals font.heightAtSize for the fontSize', () => {
       const fontSize = 14;
+
       const result = layoutMultilineText('A\nB\nC', {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -435,6 +455,7 @@ describe('layoutMultilineText', () => {
       });
 
       const expectedHeight = font.heightAtSize(fontSize);
+
       for (const line of result.lines) {
         expect(line.height).toBeCloseTo(expectedHeight, 10);
       }
@@ -444,6 +465,7 @@ describe('layoutMultilineText', () => {
   describe('position (x, y) calculations', () => {
     it('left-aligned lines have x equal to bounds.x', () => {
       const boundsX = 10;
+
       const result = layoutMultilineText('Line1\nLine2', {
         alignment: TextAlignment.Left,
         bounds: { x: boundsX, y: 0, width: 500, height: 500 },
@@ -460,6 +482,7 @@ describe('layoutMultilineText', () => {
       const boundsX = 10;
       const boundsWidth = 500;
       const fontSize = 12;
+
       const result = layoutMultilineText('Hi\nWorld', {
         alignment: TextAlignment.Center,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
@@ -477,6 +500,7 @@ describe('layoutMultilineText', () => {
       const boundsX = 10;
       const boundsWidth = 500;
       const fontSize = 12;
+
       const result = layoutMultilineText('Hi\nWorld', {
         alignment: TextAlignment.Right,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
@@ -494,6 +518,7 @@ describe('layoutMultilineText', () => {
       const boundsY = 100;
       const boundsHeight = 500;
       const fontSize = 12;
+
       const result = layoutMultilineText('Line1\nLine2\nLine3', {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: boundsY, width: 500, height: boundsHeight },
@@ -537,6 +562,7 @@ describe('layoutMultilineText', () => {
     it('wraps at word boundaries to produce correct line count', () => {
       const fontSize = 12;
       const text = 'aaa bbb ccc ddd';
+
       // Compute width that fits exactly two words plus some slack
       const twoWordWidth =
         font.widthOfTextAtSize('aaa bbb ccc', fontSize) + 5;
@@ -603,6 +629,7 @@ describe('layoutSinglelineText', () => {
         font,
         fontSize: 18,
       });
+
       expect(result.fontSize).toBe(18);
     });
 
@@ -613,6 +640,7 @@ describe('layoutSinglelineText', () => {
         font,
         fontSize: undefined,
       });
+
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
@@ -624,6 +652,7 @@ describe('layoutSinglelineText', () => {
         font,
         fontSize: 0,
       });
+
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
@@ -631,17 +660,20 @@ describe('layoutSinglelineText', () => {
     it('auto-computed fontSize fits the text within bounds width', () => {
       const text = 'Some test text';
       const boundsWidth = 100;
+
       const result = layoutSinglelineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: boundsWidth, height: 50 },
         font,
         fontSize: undefined,
       });
+
       // The text width at the computed size should not exceed bounds width
       const textWidth = font.widthOfTextAtSize(
         text.replace(/[\n\f\r\u000B]/g, ' '),
         result.fontSize,
       );
+
       expect(textWidth).toBeLessThanOrEqual(boundsWidth + 1);
     });
   });
@@ -675,6 +707,7 @@ describe('layoutSinglelineText', () => {
     it('line width matches font.widthOfTextAtSize', () => {
       const text = 'TestString';
       const fontSize = 14;
+
       const result = layoutSinglelineText(text, {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -688,6 +721,7 @@ describe('layoutSinglelineText', () => {
 
     it('line height matches font.heightAtSize with descender=false', () => {
       const fontSize = 14;
+
       const result = layoutSinglelineText('X', {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -715,6 +749,7 @@ describe('layoutSinglelineText', () => {
   describe('alignment', () => {
     it('left alignment sets x to bounds.x', () => {
       const boundsX = 25;
+
       const result = layoutSinglelineText('Hello', {
         alignment: TextAlignment.Left,
         bounds: { x: boundsX, y: 0, width: 500, height: 500 },
@@ -728,6 +763,7 @@ describe('layoutSinglelineText', () => {
     it('center alignment centers the text within bounds', () => {
       const boundsX = 10;
       const boundsWidth = 500;
+
       const result = layoutSinglelineText('Hello', {
         alignment: TextAlignment.Center,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
@@ -742,6 +778,7 @@ describe('layoutSinglelineText', () => {
     it('right alignment positions text at right edge of bounds', () => {
       const boundsX = 10;
       const boundsWidth = 500;
+
       const result = layoutSinglelineText('Hello', {
         alignment: TextAlignment.Right,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
@@ -764,10 +801,12 @@ describe('layoutSinglelineText', () => {
         ...sharedOpts,
         alignment: TextAlignment.Left,
       });
+
       const center = layoutSinglelineText('Hello', {
         ...sharedOpts,
         alignment: TextAlignment.Center,
       });
+
       const right = layoutSinglelineText('Hello', {
         ...sharedOpts,
         alignment: TextAlignment.Right,
@@ -970,6 +1009,7 @@ describe('layoutCombedText', () => {
       });
 
       const firstY = result.cells[0]!.y;
+
       for (const cell of result.cells) {
         expect(cell.y).toBe(firstY);
       }
@@ -1007,6 +1047,7 @@ describe('layoutCombedText', () => {
 
       // First three cells correspond to characters W, i, M
       const chars = ['W', 'i', 'M'];
+
       for (let i = 0; i < chars.length; i++) {
         const expectedWidth = font.widthOfTextAtSize(chars[i]!, fontSize);
         expect(result.cells[i]!.width).toBeCloseTo(expectedWidth, 10);
@@ -1015,6 +1056,7 @@ describe('layoutCombedText', () => {
 
     it('each cell height is font.heightAtSize with descender=false', () => {
       const fontSize = 14;
+
       const result = layoutCombedText('AB', {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
@@ -1023,6 +1065,7 @@ describe('layoutCombedText', () => {
       });
 
       const expectedHeight = font.heightAtSize(fontSize, { descender: false });
+
       for (const cell of result.cells) {
         expect(cell.height).toBeCloseTo(expectedHeight, 10);
       }
@@ -1037,6 +1080,7 @@ describe('layoutCombedText', () => {
         fontSize: 16,
         cellCount: 5,
       });
+
       expect(result.fontSize).toBe(16);
     });
 
@@ -1047,6 +1091,7 @@ describe('layoutCombedText', () => {
         fontSize: undefined,
         cellCount: 5,
       });
+
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
@@ -1058,6 +1103,7 @@ describe('layoutCombedText', () => {
         fontSize: 0,
         cellCount: 5,
       });
+
       expect(result.fontSize).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
@@ -1224,6 +1270,7 @@ describe('Cross-function comparisons', () => {
     // corresponds to the character at that cell's index. The width of each
     // cell corresponds to the width of that individual character.
     const chars = ['A', 'B', 'C', 'D', 'E'];
+
     for (let i = 0; i < chars.length; i++) {
       const expectedWidth = font.widthOfTextAtSize(chars[i]!, fontSize);
       expect(result.cells[i]!.width).toBeCloseTo(expectedWidth, 10);
@@ -1245,6 +1292,7 @@ describe('Edge cases', () => {
 
     // "\n\n" is split into 3 lines: ["", "", ""]
     expect(result.lines.length).toBe(3);
+
     for (const line of result.lines) {
       expect(line.text).toBe('');
       expect(line.width).toBe(0);
@@ -1310,6 +1358,7 @@ describe('Edge cases', () => {
 
   it('layoutMultilineText with multiple spaces between words', () => {
     const text = 'Hello   World';
+
     const result = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
@@ -1433,63 +1482,83 @@ const linearLayout = (
   fontSize: number,
 ): string[] => {
   const out: string[] = [];
+
   for (const paragraph of lineSplit(cleanText(text))) {
     let rest: string | undefined = paragraph;
+
     while (rest !== undefined) {
       const input: string = rest;
+
       if (layoutFont.widthOfTextAtSize(input, fontSize) < maxWidth) {
         out.push(input);
         break;
       }
+
       const breaks: number[] = [];
+
       for (let i = 0; i < input.length; i++) {
         if (/\s/.test(input[i]!) && (i === 0 || !/\s/.test(input[i - 1]!))) {
           breaks.push(i);
         }
       }
+
       let cut: number | undefined;
+
       for (let k = breaks.length - 1; k >= 0; k--) {
         const prefix = input.substring(0, breaks[k]);
+
         if (layoutFont.widthOfTextAtSize(prefix, fontSize) < maxWidth) {
           cut = breaks[k];
           break;
         }
       }
+
       if (cut === undefined) {
         out.push(input);
         break;
       }
+
       out.push(input.substring(0, cut));
       let start = cut;
+
       while (start < input.length && /\s/.test(input[start]!)) start++;
       rest = input.substring(start).trim() || undefined;
     }
   }
+
   return out;
 };
 
 /** Deterministic pseudo-random text built from the given alphabet. */
 const randomText = (seed: number, words: number, alphabet: string) => {
   let state = seed;
+
   const next = () => {
     state = (state * 1103515245 + 12345) % 2147483648;
+
     return state;
   };
+
   const separators = [' ', ' ', ' ', '  ', '\t', ' \t '];
   let text = '';
+
   for (let w = 0; w < words; w++) {
     const length = 1 + (next() % 12);
+
     for (let c = 0; c < length; c++) {
       text += alphabet[next() % alphabet.length];
     }
+
     text += separators[next() % separators.length];
   }
+
   return text.trim();
 };
 
 describe('splitOutLines matches the linear reference', () => {
   const kerned = 'AVAWATAYTaToTyVaVoWaYoLTLVLYP.F,r.y.';
   const latin = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;-' + kerned;
+
   const inputs = [
     'The quick brown fox jumps over the lazy dog, then naps in the warm afternoon sun.',
     'AVAVAV To Ty Tw Yo Wa LT LY P. F, AWAY TOYS VAT WAVY',
@@ -1500,6 +1569,7 @@ describe('splitOutLines matches the linear reference', () => {
     'first paragraph wraps here\nsecond paragraph also wraps nicely',
     ...[1, 2, 3, 4, 5, 6, 7, 8].map((seed) => randomText(seed, 60, latin)),
   ];
+
   const widths = [20, 45, 73.5, 100, 150, 222.2, 400];
   const fontSizes = [8, 12, 17.5];
 
@@ -1513,6 +1583,7 @@ describe('splitOutLines matches the linear reference', () => {
             font: layoutFont,
             bounds: { x: 0, y: 0, width, height: 10000 },
           });
+
           expect(lines.map((l) => l.text)).toEqual(
             linearLayout(text, width, layoutFont, fontSize),
           );
@@ -1535,9 +1606,11 @@ describe('splitOutLines matches the linear reference', () => {
   it('with a custom font, including non-BMP characters', { timeout: 60_000 }, async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
+
     const ubuntu = await doc.embedFont(
       fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
     );
+
     check(ubuntu, [
       ...inputs,
       'émoji 😀😀 and 𝔘𝔫𝔦𝔠𝔬𝔡𝔢 text that wraps across 😀 several lines',
@@ -1553,18 +1626,21 @@ describe('splitOutLines matches the linear reference', () => {
     async (_name, paragraph, fontSize, width) => {
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const measure = vi.spyOn(helvetica, 'widthOfTextAtSize');
+
       const { lines } = layoutMultilineText(paragraph, {
         alignment: TextAlignment.Left,
         fontSize,
         font: helvetica,
         bounds: { x: 0, y: 0, width, height: 100000 },
       });
+
       expect(lines.length).toBeGreaterThan(100);
 
       const measuredChars = measure.mock.calls.reduce(
         (sum, [text]) => sum + text.length,
         0,
       );
+
       measure.mockRestore();
       // The forward scan measures each candidate of a line plus the first
       // overflowing one. Measuring the remaining paragraph once per line
@@ -1591,6 +1667,7 @@ describe('line breaking does not assume prefix widths grow', () => {
       font: fakeFont({ a: 100, 'a bb': 300, 'a bb c': 150, bb: 100 }),
       fontSize: 12,
     });
+
     expect(layout.lines.map((l) => l.text)).toEqual(['a', 'bb c']);
   });
 
@@ -1601,6 +1678,7 @@ describe('line breaking does not assume prefix widths grow', () => {
       font: fakeFont({ a: 300, 'a b': 150 }),
       fontSize: 12,
     });
+
     expect(layout.lines.map((l) => l.text)).toEqual(['a b']);
   });
 });
@@ -1608,15 +1686,18 @@ describe('line breaking does not assume prefix widths grow', () => {
 describe('auto font size fits the drawn lines', () => {
   it('shrinks until an unbreakable word fits the width', () => {
     const bounds = { x: 0, y: 0, width: 70, height: 100 };
+
     const layout = layoutMultilineText('Hello World', {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: undefined,
     });
+
     for (const line of layout.lines) {
       expect(line.width).toBeLessThan(bounds.width);
     }
+
     expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
       bounds.height,
     );
@@ -1629,21 +1710,25 @@ describe('auto font size fits the drawn lines', () => {
   it('counts the wrapped and empty lines it draws when height-limited', () => {
     const text = 'one  two   three\n\nfour five six seven';
     const bounds = { x: 0, y: 0, width: 400, height: 60 };
+
     const layout = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: undefined,
     });
+
     expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
       bounds.height,
     );
+
     const larger = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: layout.fontSize + 1,
     });
+
     expect(larger.lines.length * larger.lineHeight).toBeGreaterThan(
       bounds.height,
     );
@@ -1651,12 +1736,14 @@ describe('auto font size fits the drawn lines', () => {
 
   it('sizes a single line by its whole kerned width', () => {
     const bounds = { x: 0, y: 0, width: 50, height: 100 };
+
     const { fontSize } = layoutSinglelineText('A V', {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: undefined,
     });
+
     expect(font.widthOfTextAtSize('A V', fontSize)).toBeLessThan(50);
     expect(font.widthOfTextAtSize('A V', fontSize + 1)).toBeGreaterThanOrEqual(
       50,
@@ -1671,6 +1758,7 @@ describe('layout sizing boundaries and grapheme cells', () => {
     const result = layoutSinglelineText('Hi', {
       alignment: TextAlignment.Left, fontSize: undefined, font, bounds,
     });
+
     expect(result.line.height).toBeLessThanOrEqual(bounds.height);
     expect(font.heightAtSize(result.fontSize + 1, { descender: false }))
       .toBeGreaterThan(bounds.height);
@@ -1693,6 +1781,7 @@ describe('layout sizing boundaries and grapheme cells', () => {
       alignment: TextAlignment.Left, fontSize: undefined, font,
       bounds: { ...bounds, height: font.heightAtSize(499, { descender: false }) },
     });
+
     expect(result.fontSize).toBe(499);
   });
 
@@ -1700,15 +1789,22 @@ describe('layout sizing boundaries and grapheme cells', () => {
     const clusters = ['a\u0301', '😀', '👩‍👩‍👧‍👦', '🇳🇴'];
     const encoded: string[] = [];
     const measured: string[] = [];
+
     const mockFont = {
-      encodeText: (text: string) => { encoded.push(text); return font.encodeText(''); },
-      widthOfTextAtSize: (text: string, size: number) => { measured.push(text); return text ? size : 0; },
+      encodeText: (text: string) => { encoded.push(text);
+
+ return font.encodeText(''); },
+      widthOfTextAtSize: (text: string, size: number) => { measured.push(text);
+
+ return text ? size : 0; },
       heightAtSize: (size: number) => size,
     } as unknown as PDFFont;
+
     const result = layoutCombedText(clusters.join(''), {
       font: mockFont, fontSize: undefined, cellCount: 5,
       bounds: { x: 0, y: 0, width: 100, height: 100 },
     });
+
     expect(encoded).toEqual([...clusters, '']);
     expect(measured.every((text) => text === '' || clusters.includes(text))).toBe(true);
     expect(result.fontSize).toBe(15);

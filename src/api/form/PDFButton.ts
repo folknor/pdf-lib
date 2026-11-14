@@ -84,13 +84,16 @@ export default class PDFButton extends PDFField {
   setImage(image: PDFImage, alignment = ImageAlignment.Center) {
     this.doc.getForm().prepareForMutation();
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const streamRef = this.createImageAppearanceStream(
         widget,
         image,
         alignment,
       );
+
       this.updateWidgetAppearances(widget, { normal: streamRef });
     }
 
@@ -168,6 +171,7 @@ export default class PDFButton extends PDFField {
       options && 'backgroundColor' in options
         ? options.backgroundColor
         : rgb(0.75, 0.75, 0.75);
+
     const widget = this.createWidget({
       x: (options?.x ?? 0) - (options?.borderWidth ?? 0) / 2,
       y: (options?.y ?? 0) - (options?.borderWidth ?? 0) / 2,
@@ -184,6 +188,7 @@ export default class PDFButton extends PDFField {
       ...(options?.hidden !== undefined && { hidden: options.hidden }),
       page: page.ref,
     });
+
     const widgetRef = this.doc.context.register(widget.dict);
 
     // Add widget to this field
@@ -210,10 +215,13 @@ export default class PDFButton extends PDFField {
     if (this.isDirty()) return true;
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
+
       const hasAppearances =
         widget.getAppearances()?.normal instanceof PDFStream;
+
       if (!hasAppearances) return true;
     }
 
@@ -263,6 +271,7 @@ export default class PDFButton extends PDFField {
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
+
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
       this.updateWidgetAppearance(widget, font, provider);

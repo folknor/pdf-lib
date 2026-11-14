@@ -22,11 +22,13 @@ export function* syllableRuns(
   categories: number[],
 ): Generator<SyllableRun> {
   let last = 0;
+
   for (const [start, end, tags] of machine.match(categories)) {
     if (start > last) yield { start: last, end: start, tags: null };
     yield { start, end: end + 1, tags };
     last = end + 1;
   }
+
   if (last < categories.length) {
     yield { start: last, end: categories.length, tags: null };
   }

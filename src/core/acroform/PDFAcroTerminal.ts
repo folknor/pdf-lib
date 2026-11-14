@@ -11,6 +11,7 @@ class PDFAcroTerminal extends PDFAcroField {
 
   FT(): PDFName {
     const nameOrRef = this.getInheritableAttribute(PDFName.of('FT'));
+
     return this.dict.context.lookup(nameOrRef, PDFName);
   }
 
@@ -23,8 +24,10 @@ class PDFAcroTerminal extends PDFAcroField {
     // This field's kids are its widgets
     // Skip invalid/null entries gracefully
     const widgets: PDFWidgetAnnotation[] = [];
+
     for (let idx = 0, len = kidDicts.size(); idx < len; idx++) {
       const dict = kidDicts.lookupMaybe(idx, PDFDict);
+
       if (dict) {
         widgets.push(PDFWidgetAnnotation.fromDict(dict));
       }
@@ -50,6 +53,7 @@ class PDFAcroTerminal extends PDFAcroField {
       if (idx < 0 || idx > kidDicts.size()) {
         throw new IndexOutOfBoundsError(idx, 0, kidDicts.size());
       }
+
       kidDicts.remove(idx);
     }
   }

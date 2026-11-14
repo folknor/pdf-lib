@@ -164,6 +164,7 @@ export default class PDFForm {
     const raw = this.acroForm.dict.get(XFA);
     this.acroForm.dict.delete(XFA);
     this.doc.catalog.delete(PDFName.of('NeedsRendering'));
+
     if (raw === undefined) return;
     // The raw value is the root, so an indirect packet array goes too.
     const roots: PDFRef[] = [];
@@ -192,9 +193,11 @@ export default class PDFForm {
     const allFields = this.acroForm.getAllFields();
 
     const fields: PDFField[] = [];
+
     for (let idx = 0, len = allFields.length; idx < len; idx++) {
       const [acroField, ref] = allFields[idx]!;
       const field = convertToPDFField(acroField, ref, this.doc);
+
       if (field) fields.push(field);
     }
 
@@ -217,12 +220,16 @@ export default class PDFForm {
     // than converting every field via getFields(). Same order and name rule
     // as getFields() + PDFField.getName(), so first-match is unchanged.
     const allFields = this.acroForm.getAllFields();
+
     for (let idx = 0, len = allFields.length; idx < len; idx++) {
       const [acroField, ref] = allFields[idx]!;
+
       if ((acroField.getFullyQualifiedName() ?? '') !== name) continue;
       const field = convertToPDFField(acroField, ref, this.doc);
+
       if (field) return field;
     }
+
     return;
   }
 
@@ -239,6 +246,7 @@ export default class PDFForm {
   getField(name: string): PDFField {
     assertIs(name, 'name', ['string']);
     const field = this.getFieldMaybe(name);
+
     if (field) return field;
     throw new NoSuchFieldError(name);
   }
@@ -257,6 +265,7 @@ export default class PDFForm {
   getButton(name: string): PDFButton {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFButton) return field;
     throw new UnexpectedFieldTypeError(name, PDFButton, field);
   }
@@ -277,6 +286,7 @@ export default class PDFForm {
   getCheckBox(name: string): PDFCheckBox {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFCheckBox) return field;
     throw new UnexpectedFieldTypeError(name, PDFCheckBox, field);
   }
@@ -298,6 +308,7 @@ export default class PDFForm {
   getDropdown(name: string): PDFDropdown {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFDropdown) return field;
     throw new UnexpectedFieldTypeError(name, PDFDropdown, field);
   }
@@ -319,6 +330,7 @@ export default class PDFForm {
   getOptionList(name: string): PDFOptionList {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFOptionList) return field;
     throw new UnexpectedFieldTypeError(name, PDFOptionList, field);
   }
@@ -340,6 +352,7 @@ export default class PDFForm {
   getRadioGroup(name: string): PDFRadioGroup {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFRadioGroup) return field;
     throw new UnexpectedFieldTypeError(name, PDFRadioGroup, field);
   }
@@ -359,6 +372,7 @@ export default class PDFForm {
   getSignature(name: string): PDFSignature {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFSignature) return field;
     throw new UnexpectedFieldTypeError(name, PDFSignature, field);
   }
@@ -379,6 +393,7 @@ export default class PDFForm {
   getTextField(name: string): PDFTextField {
     assertIs(name, 'name', ['string']);
     const field = this.getField(name);
+
     if (field instanceof PDFTextField) return field;
     throw new UnexpectedFieldTypeError(name, PDFTextField, field);
   }
@@ -422,10 +437,12 @@ export default class PDFForm {
   getOrCreateButton(name: string): PDFButton {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFButton) return existing;
       throw new UnexpectedFieldTypeError(name, PDFButton, existing);
     }
+
     return this.createButton(name);
   }
 
@@ -468,10 +485,12 @@ export default class PDFForm {
   getOrCreateCheckBox(name: string): PDFCheckBox {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFCheckBox) return existing;
       throw new UnexpectedFieldTypeError(name, PDFCheckBox, existing);
     }
+
     return this.createCheckBox(name);
   }
 
@@ -514,10 +533,12 @@ export default class PDFForm {
   getOrCreateDropdown(name: string): PDFDropdown {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFDropdown) return existing;
       throw new UnexpectedFieldTypeError(name, PDFDropdown, existing);
     }
+
     return this.createDropdown(name);
   }
 
@@ -560,10 +581,12 @@ export default class PDFForm {
   getOrCreateOptionList(name: string): PDFOptionList {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFOptionList) return existing;
       throw new UnexpectedFieldTypeError(name, PDFOptionList, existing);
     }
+
     return this.createOptionList(name);
   }
 
@@ -611,10 +634,12 @@ export default class PDFForm {
   getOrCreateRadioGroup(name: string): PDFRadioGroup {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFRadioGroup) return existing;
       throw new UnexpectedFieldTypeError(name, PDFRadioGroup, existing);
     }
+
     return this.createRadioGroup(name);
   }
 
@@ -677,10 +702,12 @@ export default class PDFForm {
   getOrCreateTextField(name: string): PDFTextField {
     assertIs(name, 'name', ['string']);
     const existing = this.getFieldMaybe(name);
+
     if (existing) {
       if (existing instanceof PDFTextField) return existing;
       throw new UnexpectedFieldTypeError(name, PDFTextField, existing);
     }
+
     return this.createTextField(name);
   }
 
@@ -730,11 +757,15 @@ export default class PDFForm {
     // Retain those displaced containers as collection roots until all unlinks
     // are complete, so their old entries cannot keep flattened widgets alive.
     const displaced: PDFRef[] = [];
+
     for (const page of this.doc.getPages()) {
       const raw = page.node.get(PDFName.Annots);
+
       if (raw instanceof PDFRef) displaced.push(raw);
     }
+
     const co = this.acroForm.dict.get(PDFName.of('CO'));
+
     if (co) forEachRef(co, (ref) => displaced.push(ref));
     const markDirty = options.markFieldsAsDirty ?? true;
 
@@ -744,10 +775,12 @@ export default class PDFForm {
       // filled by external applications that may not have updated appearances
       if (markDirty) {
         const fields = this.getFields();
+
         for (let idx = 0, len = fields.length; idx < len; idx++) {
           this.markFieldAsDirty(fields[idx]!.ref);
         }
       }
+
       this.updateFieldAppearances();
     }
 
@@ -799,18 +832,23 @@ export default class PDFForm {
   removeField(field: PDFField) {
     this.prepareForMutation();
     const { context } = this.doc;
+
     const removed = new Set<PDFDict>([
       field.acroField.dict,
       ...field.acroField.getWidgets().map((widget) => widget.dict),
     ]);
+
     const roots: PDFRef[] = [field.ref];
     // Empty ancestors are pruned as well, including unregistered parents.
     let parent = field.acroField.getParent();
+
     while (parent && !removed.has(parent.dict)) {
       const kids = parent.Kids();
+
       if (
         !kids?.asArray().every((entry) => {
           const dict = context.lookup(entry);
+
           return dict instanceof PDFDict && removed.has(dict);
         })
       )
@@ -819,6 +857,7 @@ export default class PDFForm {
       roots.push(parent.ref);
       parent = parent.getParent();
     }
+
     this.unlinkRemovedFormObjects(removed, roots);
     this.dirtyFields.delete(field.ref);
     collectUnreferenced(context, roots);
@@ -862,6 +901,7 @@ export default class PDFForm {
 
     for (let idx = 0, len = fields.length; idx < len; idx++) {
       const field = fields[idx]!;
+
       if (field.needsAppearancesUpdate()) {
         field.defaultUpdateAppearances(font);
       }
@@ -911,6 +951,7 @@ export default class PDFForm {
    */
   fieldIsDirty(fieldRef: PDFRef): boolean {
     assertOrUndefined(fieldRef, 'fieldRef', [[PDFRef, 'PDFRef']]);
+
     return this.dirtyFields.has(fieldRef);
   }
 
@@ -920,46 +961,67 @@ export default class PDFForm {
 
   private unlinkRemovedFormObjects(removed: Set<PDFDict>, roots: PDFRef[]) {
     const { context } = this.doc;
+
     for (const dict of removed) forEachRef(dict, (ref) => roots.push(ref));
+
     const filter = (owner: PDFDict, key: PDFName) => {
       const array = owner.lookupMaybe(key, PDFArray);
+
       if (!array) return;
+
       const kept = array.asArray().filter((entry) => {
         const dict = context.lookup(entry);
+
         if (!(dict instanceof PDFDict && removed.has(dict))) return true;
+
         if (entry instanceof PDFRef) roots.push(entry);
+
         return false;
       });
+
       if (kept.length === array.size()) return;
       const raw = owner.get(key);
+
       if (raw instanceof PDFRef) roots.push(raw);
       owner.set(key, context.obj(kept));
     };
+
     const visited = new Set<PDFDict>();
+
     const visit = (dict: PDFDict) => {
       if (visited.has(dict)) return;
       visited.add(dict);
       const kids = dict.lookupMaybe(PDFName.of('Kids'), PDFArray);
+
       for (const entry of kids?.asArray() ?? []) {
         const child = context.lookup(entry);
+
         if (child instanceof PDFDict) visit(child);
       }
+
       const parent = context.lookup(dict.get(PDFName.of('Parent')));
+
       if (parent instanceof PDFDict) visit(parent);
+
       if (!removed.has(dict)) filter(dict, PDFName.of('Kids'));
     };
+
     // Direct and unnamed containers in the registered tree count too.
     for (const entry of this.acroForm.Fields()?.asArray() ?? []) {
       const dict = context.lookup(entry);
+
       if (dict instanceof PDFDict) visit(dict);
     }
+
     for (const dict of removed) visit(dict);
     filter(this.acroForm.dict, PDFName.of('Fields'));
     filter(this.acroForm.dict, PDFName.of('CO'));
+
     // Visit every field container, including duplicate memberships and parents
     // outside the registered tree. Other references (actions, OBJR) stay live.
     for (const [ref, object] of context.enumerateIndirectObjects()) {
       if (object instanceof PDFDict && removed.has(object)) roots.push(ref);
+
       if (
         object instanceof PDFDict &&
         !removed.has(object) &&
@@ -968,17 +1030,21 @@ export default class PDFForm {
         visit(object);
       }
     }
+
     for (const page of this.doc.getPages()) filter(page.node, PDFName.Annots);
   }
 
   private findWidgetPage(widget: PDFWidgetAnnotation): PDFPage | undefined {
     const pageRef = widget.P();
     let page = this.doc.getPages().find((x) => x.ref === pageRef);
+
     if (page === undefined) {
       const widgetRef = this.doc.context.getObjectRef(widget.dict);
+
       if (widgetRef === undefined) return;
       page = this.doc.findPageForAnnotationRef(widgetRef);
     }
+
     return page;
   }
 
@@ -988,12 +1054,14 @@ export default class PDFForm {
     appearanceRef: PDFRef,
   ) {
     this.ensureFormXObject(appearanceRef);
+
     const xObjectKey = page.node.getOrCreateXObject(
       'FlatWidget',
       appearanceRef,
     );
 
     const rectangle = widget.getRectangle();
+
     const operators = [
       pushGraphicsState(),
       translate(rectangle.x, rectangle.y),
@@ -1013,11 +1081,14 @@ export default class PDFForm {
    */
   private ensureFormXObject(appearanceRef: PDFRef) {
     const appearance = this.doc.context.lookup(appearanceRef);
+
     if (!(appearance instanceof PDFStream)) return;
     const { dict } = appearance;
+
     if (!dict.has(PDFName.of('Type'))) {
       dict.set(PDFName.of('Type'), PDFName.of('XObject'));
     }
+
     if (!dict.has(PDFName.of('Subtype'))) {
       dict.set(PDFName.of('Subtype'), PDFName.of('Form'));
     }
@@ -1031,12 +1102,14 @@ export default class PDFForm {
     const chain: PDFDict[] = [];
     const seen = new Set<PDFDict>();
     let node: PDFDict | undefined = dict;
+
     while (node && !seen.has(node)) {
       seen.add(node);
       chain.push(node);
       const parent: unknown = node.lookup(PDFName.of('Parent'));
       node = parent instanceof PDFDict ? parent : undefined;
     }
+
     return chain;
   }
 
@@ -1047,9 +1120,11 @@ export default class PDFForm {
   private lookupInherited(dict: PDFDict, key: string): PDFObject | undefined {
     const name = PDFName.of(key);
     const chain = this.selfAndAncestors(dict);
+
     for (let i = 0, len = chain.length; i < len; i++) {
       if (chain[i]!.has(name)) return chain[i]!.lookup(name);
     }
+
     return;
   }
 
@@ -1065,17 +1140,24 @@ export default class PDFForm {
     const refs = new Set<PDFObject | undefined>();
     const stack: PDFObject[] = [];
     const fields = this.acroForm.dict.lookup(PDFName.of('Fields'));
+
     if (fields instanceof PDFArray) stack.push(...fields.asArray());
+
     while (stack.length > 0) {
       const item = stack.pop()!;
+
       if (item instanceof PDFRef) refs.add(item);
+
       const dict =
         item instanceof PDFRef ? this.doc.context.lookup(item) : item;
+
       if (!(dict instanceof PDFDict) || dicts.has(dict)) continue;
       dicts.add(dict);
       const kids = dict.lookup(PDFName.of('Kids'));
+
       if (kids instanceof PDFArray) stack.push(...kids.asArray());
     }
+
     return { dicts, refs };
   }
 
@@ -1109,24 +1191,32 @@ export default class PDFForm {
    */
   removeOrphanWidgets(): number {
     const { context } = this.doc;
+
     const orphans = this.findUnreachableWidgets(
       this.collectReachableFieldDicts(),
     );
+
     const orphanDicts = new Set<PDFDict>();
+
     for (const orphan of orphans) orphanDicts.add(orphan.dict);
+
     if (orphanDicts.size === 0) return 0;
 
     const roots: PDFRef[] = [];
     const replacements: [PDFPage, PDFArray][] = [];
     const pages = new Set<PDFPage>();
+
     for (const orphan of orphans) pages.add(orphan.page);
+
     for (const page of pages) {
       const raw = page.node.get(PDFName.Annots);
       const annots = page.node.Annots()!;
       const kept = context.obj([]);
+
       for (let i = 0, len = annots.size(); i < len; i++) {
         const entry = annots.get(i);
         const dict = entry instanceof PDFRef ? context.lookup(entry) : entry;
+
         if (!(dict instanceof PDFDict && orphanDicts.has(dict))) {
           kept.push(entry);
         } else if (entry instanceof PDFRef) {
@@ -1135,14 +1225,19 @@ export default class PDFForm {
           forEachRef(dict, (ref) => roots.push(ref));
         }
       }
+
       if (raw instanceof PDFRef) roots.push(raw);
       replacements.push([page, kept]);
     }
+
     this.prepareForMutation();
+
     for (const [page, kept] of replacements) {
       page.node.set(PDFName.Annots, kept);
     }
+
     collectUnreferenced(context, roots);
+
     return orphanDicts.size;
   }
 
@@ -1159,22 +1254,30 @@ export default class PDFForm {
   }): { page: PDFPage; entry: PDFObject; dict: PDFDict }[] {
     const found: { page: PDFPage; entry: PDFObject; dict: PDFDict }[] = [];
     const pages = this.doc.getPages();
+
     for (let p = 0, pageCount = pages.length; p < pageCount; p++) {
       const page = pages[p]!;
       const annots = page.node.Annots();
+
       if (!annots) continue;
+
       for (let i = 0, len = annots.size(); i < len; i++) {
         const entry = annots.get(i);
+
         const dict =
           entry instanceof PDFRef ? this.doc.context.lookup(entry) : entry;
+
         if (!(dict instanceof PDFDict)) continue;
+
         if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
           continue;
         }
+
         if (reachable.refs.has(entry) || reachable.dicts.has(dict)) continue;
         found.push({ page, entry, dict });
       }
     }
+
     return found;
   }
 
@@ -1197,6 +1300,7 @@ export default class PDFForm {
     for (const { page, entry: annotRef, dict } of orphans) {
       if (!(annotRef instanceof PDFRef)) continue;
       const chain = this.selfAndAncestors(dict);
+
       // An ancestor in the AcroForm.Fields tree (handled, or deliberately
       // left alone, by the main pass): not flattened here. Also check raw
       // /Parent refs, since the main pass may have deleted a reachable
@@ -1210,23 +1314,27 @@ export default class PDFForm {
       ) {
         continue;
       }
+
       // Only field widgets: /FT on the widget or inherited via /Parent.
       if (!chain.some((d) => d.has(PDFName.of('FT')))) continue;
 
       const widget = PDFWidgetAnnotation.fromDict(dict);
       // A malformed /AP on one orphan must not abort the whole flatten.
       let appearanceRef: PDFRef | undefined;
+
       try {
         appearanceRef = this.findOrphanWidgetAppearanceRef(widget);
       } catch {
         continue;
       }
+
       if (!appearanceRef) continue;
 
       this.flattenWidgetOntoPage(page, widget, appearanceRef);
       removed.add(dict);
       roots.push(annotRef);
     }
+
     if (removed.size > 0) {
       this.prepareForMutation();
       this.unlinkRemovedFormObjects(removed, roots);
@@ -1243,28 +1351,35 @@ export default class PDFForm {
     widget: PDFWidgetAnnotation,
   ): PDFRef | undefined {
     let refOrDict = widget.getNormalAppearance();
+
     if (!refOrDict) return;
 
     if (refOrDict instanceof PDFRef) {
       const lookedUp = this.doc.context.lookup(refOrDict);
+
       if (lookedUp instanceof PDFDict) refOrDict = lookedUp;
     }
 
     let ref: PDFObject | undefined = refOrDict;
+
     // An appearance stream is not a PDFDict (it's a PDFStream), so a dict
     // here means a state-keyed subdictionary (checkbox / radio).
     if (refOrDict instanceof PDFDict) {
       // /V is inheritable, so resolve it up the /Parent chain.
       const value = this.lookupInherited(widget.dict, 'V');
+
       const state =
         widget.getAppearanceState() ??
         (value instanceof PDFName ? value : undefined) ??
         PDFName.of('Off');
+
       ref = refOrDict.get(state) ?? refOrDict.get(PDFName.of('Off'));
     }
 
     if (!(ref instanceof PDFRef)) return;
+
     if (!(this.doc.context.lookup(ref) instanceof PDFStream)) return;
+
     return ref;
   }
 
@@ -1273,14 +1388,17 @@ export default class PDFForm {
     widget: PDFWidgetAnnotation,
   ): PDFRef | undefined {
     let refOrDict = widget.getNormalAppearance();
+
     if (!refOrDict) return;
 
     if (field instanceof PDFCheckBox || field instanceof PDFRadioGroup) {
       if (refOrDict instanceof PDFRef) {
         const lookedUp = this.doc.context.lookupMaybe(refOrDict, PDFDict);
+
         if (!lookedUp) return;
         refOrDict = lookedUp;
       }
+
       if (refOrDict instanceof PDFDict) {
         // Use the widget's appearance state (/AS) if available, otherwise
         // fall back to the field value (/V). The /AS value is the key in
@@ -1289,6 +1407,7 @@ export default class PDFForm {
         // might have different values (e.g., /V=/Yes but /AS=/1)
         const appearanceState = widget.getAppearanceState();
         const fieldValue = field.acroField.getValue();
+
         const ref =
           (appearanceState && refOrDict.get(appearanceState)) ??
           refOrDict.get(fieldValue) ??
@@ -1309,8 +1428,10 @@ export default class PDFForm {
     let nonTerminal: [PDFAcroForm] | [PDFAcroNonTerminal, PDFRef] = [
       this.acroForm,
     ];
+
     for (let idx = 0, len = partialNames.length; idx < len; idx++) {
       const namePart = partialNames[idx]!;
+
       if (!namePart) throw new InvalidFieldNamePartError(namePart);
       const [parent, parentRef] = nonTerminal;
       const res = this.findNonTerminal(namePart, parent);
@@ -1326,6 +1447,7 @@ export default class PDFForm {
         nonTerminal = [node, nodeRef];
       }
     }
+
     return nonTerminal;
   }
 
@@ -1340,6 +1462,7 @@ export default class PDFForm {
 
     for (let idx = 0, len = fields.length; idx < len; idx++) {
       const [field, ref] = fields[idx]!;
+
       if (field.getPartialName() === partialName) {
         if (field instanceof PDFAcroNonTerminal) return [field, ref];
         throw new FieldAlreadyExistsError(partialName);
@@ -1359,16 +1482,23 @@ const convertToPDFField = (
   doc: PDFDocument,
 ): PDFField | undefined => {
   if (field instanceof PDFAcroPushButton) return PDFButton.of(field, ref, doc);
+
   if (field instanceof PDFAcroCheckBox) return PDFCheckBox.of(field, ref, doc);
+
   if (field instanceof PDFAcroComboBox) return PDFDropdown.of(field, ref, doc);
+
   if (field instanceof PDFAcroListBox) return PDFOptionList.of(field, ref, doc);
+
   if (field instanceof PDFAcroText) return PDFTextField.of(field, ref, doc);
+
   if (field instanceof PDFAcroRadioButton) {
     return PDFRadioGroup.of(field, ref, doc);
   }
+
   if (field instanceof PDFAcroSignature) {
     return PDFSignature.of(field, ref, doc);
   }
+
   return;
 };
 
@@ -1401,14 +1531,17 @@ const addFieldToParent = (
   partialName: string,
 ) => {
   const entries = parent.normalizedEntries();
+
   const fields = createPDFAcroFields(
     'Kids' in entries ? entries.Kids : entries.Fields,
   );
+
   for (let idx = 0, len = fields.length; idx < len; idx++) {
     if (fields[idx]![0].getPartialName() === partialName) {
       throw new FieldAlreadyExistsError(partialName);
     }
   }
+
   parent.addField(fieldRef);
   field.setParent(parentRef);
 };

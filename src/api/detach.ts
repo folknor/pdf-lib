@@ -47,29 +47,37 @@ export const collectUnreferenced = (
 ): void => {
   const candidates = new Set<PDFRef>();
   const pending = [...roots];
+
   while (pending.length > 0) {
     const ref = pending.pop()!;
+
     if (candidates.has(ref)) continue;
     const object = context.lookup(ref);
+
     if (object === undefined) continue;
     candidates.add(ref);
     forEachRef(object, (r) => pending.push(r));
   }
 
   const live: PDFRef[] = [];
+
   const keep = (r: PDFRef) => {
     if (candidates.has(r)) live.push(r);
   };
+
   for (const value of Object.values(context.trailerInfo)) {
     if (value) forEachRef(value, keep);
   }
+
   for (const [ref, object] of context.enumerateIndirectObjects()) {
     if (!candidates.has(ref)) forEachRef(object, keep);
   }
 
   const kept = new Set<PDFRef>();
+
   while (live.length > 0) {
     const ref = live.pop()!;
+
     if (kept.has(ref)) continue;
     kept.add(ref);
     forEachRef(context.lookup(ref)!, keep);
@@ -103,35 +111,43 @@ export const detachSavedAttachments = (
   name: string,
 ): void => {
   const matches = (key: NameTreeKey) => key.decodeText() === name;
+
   // /AF is checked before the tree is published, so a refusal changes
   // nothing; and only when there is something to detach.
   if (readCatalogNameTree(catalog, EmbeddedFiles).some((e) => matches(e.key))) {
     checkCatalogAF(catalog);
   }
+
   const edit = removeFromCatalogNameTree(
     context,
     catalog,
     EmbeddedFiles,
     matches,
   );
+
   if (!edit) return;
   const { removed, displaced } = edit;
 
   const AF = PDFName.of('AF');
   const removedRefs = removed.filter((v): v is PDFRef => v instanceof PDFRef);
   const oldAF = catalog.lookupMaybe(AF, PDFArray);
+
   if (oldAF) {
     const rawAF = catalog.get(AF);
+
     if (rawAF instanceof PDFRef) displaced.push(rawAF);
+
     const kept = oldAF
       .asArray()
       .filter((e) => !(e instanceof PDFRef && removedRefs.includes(e)));
+
     catalog.set(AF, context.obj(kept));
   }
 
   // A direct file specification has no object of its own; what it refers
   // to is collected in its place.
   const roots: PDFRef[] = [...displaced];
+
   for (const value of removed) forEachRef(value, (r) => roots.push(r));
   collectUnreferenced(context, roots);
 };

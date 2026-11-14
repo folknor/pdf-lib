@@ -157,6 +157,7 @@ describe('PDFOptionList', () => {
         PDFName.of('I'),
         PDFArray,
       );
+
       expect(indices.asArray().map((n) => (n as PDFNumber).asNumber())).toEqual(
         [2, 10],
       );

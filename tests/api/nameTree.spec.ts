@@ -18,12 +18,15 @@ import {
 
 const decodeNameKeys = (names: PDFArray): string[] => {
   const keys: string[] = [];
+
   for (let idx = 0, len = names.size(); idx < len; idx += 2) {
     const key = names.get(idx);
+
     if (key instanceof PDFString || key instanceof PDFHexString) {
       keys.push(key.decodeText());
     }
   }
+
   return keys;
 };
 
@@ -101,20 +104,26 @@ describe('nameTree helpers', () => {
 
   describe('insertIntoNameTree()', () => {
     const key = (k: string) => PDFHexString.fromText(k);
+
     const leaf = (keys: string[]) => {
       const names: any[] = [];
+
       for (const k of keys) names.push(key(k), context.register(context.obj({})));
+
       return context.register(
         context.obj({ Names: names, Limits: [key(keys[0]!), key(keys[keys.length - 1]!)] }),
       );
     };
+
     const keysOf = (root: PDFDict) => readNameTree(root).map((e) => e.key.decodeText());
 
     it('creates Names, appends, and keeps entries sorted', () => {
       let root = context.obj({}) as PDFDict;
+
       for (const name of ['2.jpg', '10.jpg', '1.jpg']) {
         root = insertIntoNameTree(context, root, key(name), context.register(context.obj({}))).root;
       }
+
       expect(decodeNameKeys(root.lookup(PDFName.of('Names'), PDFArray))).toEqual([
         '1.jpg',
         '10.jpg',
@@ -143,9 +152,11 @@ describe('nameTree helpers', () => {
     it('inserts into the right leaf of a Kids tree and widens Limits copy-on-write', () => {
       const l1 = leaf(['b', 'd']);
       const l2 = leaf(['m', 'p']);
+
       const mid = context.register(
         context.obj({ Kids: [l1, l2], Limits: [key('b'), key('p')] }),
       );
+
       const root = context.obj({ Kids: [mid] }) as PDFDict;
 
       const below = insertIntoNameTree(context, root, key('a'), context.obj({}));
@@ -167,9 +178,11 @@ describe('nameTree helpers', () => {
 
     it('refuses malformed Kids trees before changing anything', () => {
       const good = leaf(['b']);
+
       const stale = context.register(
         context.obj({ Names: [key('b'), context.obj({})], Limits: [key('a'), key('c')] }),
       );
+
       const bad = [
         context.obj({ Kids: [stale] }),
         context.obj({ Kids: [good], Names: [] }),
@@ -178,6 +191,7 @@ describe('nameTree helpers', () => {
         context.obj({ Kids: [context.register(context.obj({ Names: [], Limits: [] }))] }),
         context.obj({ Kids: [PDFName.of('X')] }),
       ] as PDFDict[];
+
       for (const root of bad) {
         expect(() => insertIntoNameTree(context, root, key('x'), context.obj({}))).toThrow(
           UnwritableNameTreeError,
@@ -188,9 +202,12 @@ describe('nameTree helpers', () => {
 
   describe('removeFromNameTree()', () => {
     const key = (k: string) => PDFHexString.fromText(k);
+
     const leaf = (keys: string[]) => {
       const names: any[] = [];
+
       for (const k of keys) names.push(key(k), context.register(context.obj({})));
+
       return context.register(
         context.obj({ Names: names, Limits: [key(keys[0]!), key(keys[keys.length - 1]!)] }),
       );
@@ -223,6 +240,7 @@ describe('nameTree helpers', () => {
       const leafRef = context.register(
         context.obj({ Names: [PDFHexString.fromText('a'), 1, PDFName.of('bad'), 2] }),
       );
+
       const loop = context.nextRef();
       context.assign(loop, context.obj({ Kids: [leafRef, loop, 7] }));
       const root = context.obj({ Kids: [loop, leafRef] }) as PDFDict;

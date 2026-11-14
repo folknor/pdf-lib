@@ -49,6 +49,7 @@ export default class DFont {
     const stream = new r.DecodeStream(buffer);
 
     let header;
+
     try {
       header = DFontHeader.decode(stream);
     } catch {
@@ -94,6 +95,7 @@ export default class DFont {
       const stream = new r.DecodeStream(this.stream.buffer.slice(pos));
       const font = new TTFFont(stream);
       const psName: unknown = font.postscriptName;
+
       if (
         psName === name ||
         (psName instanceof Uint8Array &&
@@ -110,6 +112,7 @@ export default class DFont {
 
   get fonts() {
     const fonts: TTFFont[] = [];
+
     if (!this.sfnt) {
       return fonts;
     }

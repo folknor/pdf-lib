@@ -39,9 +39,11 @@ export default class Subset {
   // This provides compatibility with code expecting Node.js stream interface
   encodeStream(): SubsetStream {
     const handlers: Record<string, (data?: unknown) => void> = {};
+
     const stream: SubsetStream = {
       on(event: string, handler: (data?: unknown) => void) {
         handlers[event] = handler;
+
         return stream;
       },
     };
@@ -50,9 +52,11 @@ export default class Subset {
     void resolved.then(() => {
       try {
         const data = this.encode();
+
         if (handlers['data']) {
           handlers['data'](data);
         }
+
         if (handlers['end']) {
           handlers['end']();
         }
