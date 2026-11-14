@@ -49,6 +49,7 @@ import {
 } from '../core/metadata/facturx.js';
 import {
   assertMayEncrypt,
+  assertPDFAAttachment,
   assertPDFAWrite,
   type DeclarePDFAOptions,
   declarePDFA,
@@ -1267,6 +1268,16 @@ export default class PDFDocument {
    * })
    * ```
    *
+   * On a document that declares PDF/A (see [[declarePDFA]]), checked now and
+   * again when the file is written at save, against the declaration then
+   * present: PDF/A-1, an unreadable declaration and an unknown part or
+   * PDF/A-4 conformance throw, since embedded files are forbidden or the
+   * rules unknown; PDF/A-3 and PDF/A-4 (4, 4E, 4F) throw unless `mimeType`
+   * (a concrete `type/subtype`), `afRelationship` and `modificationDate` are
+   * given. PDF/A-2 and base PDF/A-4 allow only files that are themselves
+   * PDF/A; that is not checked. Attachments already in the document, or
+   * already written by an earlier save, are never checked.
+   *
    * @param attachment The input data containing the file to be attached.
    * @param name The name of the file to be attached, unique among the
    *   document's attachments: a name already in the catalog's attachments
@@ -1294,6 +1305,14 @@ export default class PDFDocument {
       'options.afRelationship',
       AFRelationship,
     );
+    for (const key of ['creationDate', 'modificationDate'] as const) {
+      const year = options[key]?.getUTCFullYear();
+      if (year !== undefined && !(year >= 0 && year <= 9999)) {
+        throw new Error(
+          `options.${key} must be a valid date with a year from 0 to 9999`,
+        );
+      }
+    }
 
     checkAttachable(this.catalog, name);
     for (const file of this.embeddedFiles) {
@@ -1304,6 +1323,7 @@ export default class PDFDocument {
 
     const bytes = toUint8Array(attachment);
     const embedder = FileEmbedder.for(bytes, name, options);
+    assertPDFAAttachment(this.context, name, embedder.options);
 
     const ref = this.context.nextRef();
     const embeddedFile = PDFEmbeddedFile.of(ref, this, embedder);

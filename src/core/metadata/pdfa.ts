@@ -242,6 +242,77 @@ export const assertPDFAWrite = (
   }
 };
 
+/** A concrete media type, `type/subtype` in RFC 6838 restricted-name form. */
+const MEDIA_TYPE =
+  /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$/;
+
+/**
+ * Refuse an attachment, about to be written by [[PDFDocument.attach]], that
+ * the document's PDF/A declaration forbids, judged against the declaration
+ * present when it is checked (at `attach()` and again when it is written at
+ * save). Attachments already in the document are not checked.
+ *
+ * - PDF/A-1 forbids embedded files (ISO 19005-1 6.1.11); so does every
+ *   declaration this library cannot read or does not know.
+ * - PDF/A-2 and base PDF/A-4 allow only embedded files that are themselves
+ *   PDF/A files (PDF/A-1 or -2; for PDF/A-4 also -4). That is about the
+ *   bytes, which are not checked: it is the caller's to ensure.
+ * - PDF/A-3, and PDF/A-4 (all of 4, 4E and 4F), require the stream's MIME
+ *   /Subtype and the filespec's /AFRelationship; a /Params dictionary, which
+ *   is always written, must hold /ModDate. All three are required from the
+ *   caller rather than defaulted, since none can be known here.
+ */
+export const assertPDFAAttachment = (
+  context: PDFContext,
+  name: string,
+  options: {
+    mimeType?: string;
+    modificationDate?: Date;
+    afRelationship?: string;
+  },
+): void => {
+  const state = getPDFAState(context);
+  if (state.kind === 'none') return;
+  const refuse = (why: string): never => {
+    throw new Error(
+      `Cannot attach ${JSON.stringify(name)}: the document ${describe(state)}, ${why}.`,
+    );
+  };
+  if (state.kind === 'unreadable') {
+    refuse('and PDF/A-1 forbids embedded files');
+    return;
+  }
+  const { part } = state.declaration;
+  const conformance = state.declaration.conformance?.toUpperCase();
+  if (part === '2') return;
+  const structured =
+    part === '3' ||
+    (part === '4' &&
+      (conformance === undefined ||
+        conformance === 'E' ||
+        conformance === 'F'));
+  if (!structured) {
+    refuse(
+      part === '4'
+        ? `a PDF/A-4 conformance level this library does not know`
+        : part === '1'
+          ? 'and PDF/A-1 forbids embedded files'
+          : 'a PDF/A part this library does not know, held to PDF/A-1, which forbids embedded files',
+    );
+  }
+  const missing: string[] = [];
+  if (options.mimeType === undefined || !MEDIA_TYPE.test(options.mimeType)) {
+    missing.push('mimeType (a concrete type/subtype)');
+  }
+  if (options.afRelationship === undefined) missing.push('afRelationship');
+  if (options.modificationDate === undefined) missing.push('modificationDate');
+  if (missing.length > 0) {
+    refuse(
+      `which requires every embedded file to state its ${missing.join(', ')}`,
+    );
+  }
+};
+
 /** The Info entries with an XMP counterpart, and how each maps. */
 type InfoMapping = {
   read: (p: XmpPacket) => XmpRead;

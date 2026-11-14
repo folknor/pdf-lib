@@ -1413,12 +1413,13 @@ describe('PDFDocument', () => {
       expect(pngAttachment.data).toEqual(expectedImageBytes);
       expect(jpgAttachment.creationDate).toBeDefined();
       expect(pdfAttachment.creationDate).toBeDefined();
-      expect(txtAttachment.creationDate).toBe(creationDate);
-      expect(pngAttachment.creationDate).toBe(creationDate);
+      // Unsaved attachments report copies of the dates given.
+      expect(txtAttachment.creationDate).toEqual(creationDate);
+      expect(pngAttachment.creationDate).toEqual(creationDate);
       expect(jpgAttachment.modificationDate).toBeDefined();
       expect(pdfAttachment.modificationDate).toBeDefined();
-      expect(txtAttachment.modificationDate).toBe(modificationDate);
-      expect(pngAttachment.modificationDate).toBe(modificationDate);
+      expect(txtAttachment.modificationDate).toEqual(modificationDate);
+      expect(pngAttachment.modificationDate).toEqual(modificationDate);
     });
 
     describe('allow attachment data to be passed in different formats', () => {

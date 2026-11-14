@@ -20,11 +20,14 @@ needs a pending item that can be cancelled, embeds that are shared per item
 rather than repeated, and iteration over a snapshot, or a refusal of
 mutation while a flush is in progress.
 
-## attach() knows nothing of PDF/A
+## Embedded files that do not come through attach() skip the PDF/A check
 
-PDF/A-1 forbids embedded files, PDF/A-2 allows only PDF/A files, and PDF/A-3
-requires each to carry a MIME type and an `/AFRelationship` (with a
-`/Params /ModDate` expected as well; check ISO 19005-3 6.8 before relying on
-the exact list). `attach()` writes whatever it is given on a document that
-declares PDF/A, so the result can contradict the declaration. It could refuse
-on PDF/A-1, and on PDF/A-3 default or require the missing entries.
+`attach()` checks each new attachment against the document's PDF/A
+declaration (`assertPDFAAttachment` in `src/core/metadata/pdfa.ts`), but
+other ways of putting an `/EF` file into a declared document do not:
+`copyPages()` copies file-attachment annotations and page `/AF` entries
+with the files they reach, a direct `FileEmbedder.embedIntoContext()` call
+writes one, and `declarePDFA({ part: 1 })` declares a document that already
+holds `/EmbeddedFiles` or attachments already flushed. Whether copying and
+declaring should refuse, as library writes contradicting a declaration, or
+stay unchecked like other existing content, is undecided.

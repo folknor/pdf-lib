@@ -27,6 +27,23 @@ export interface EmbeddedFileOptions {
   afRelationship?: AFRelationship;
 }
 
+/**
+ * The options as taken when the embedder was made: dates held as
+ * timestamps, so that what is checked before the file is written is what
+ * gets written, whatever the caller later does to its own objects.
+ */
+interface FixedOptions {
+  readonly mimeType: string | undefined;
+  readonly description: string | undefined;
+  readonly creationDate: number | undefined;
+  readonly modificationDate: number | undefined;
+  readonly afRelationship: AFRelationship | undefined;
+}
+
+const timestamp = (date: Date | undefined) => date?.getTime();
+const toDate = (time: number | undefined) =>
+  time === undefined ? undefined : new Date(time);
+
 class FileEmbedder {
   static for(
     bytes: Uint8Array,
@@ -38,7 +55,7 @@ class FileEmbedder {
 
   private readonly fileData: Uint8Array;
   readonly fileName: string;
-  readonly options: EmbeddedFileOptions;
+  private readonly fixed: FixedOptions;
 
   private constructor(
     fileData: Uint8Array,
@@ -47,7 +64,29 @@ class FileEmbedder {
   ) {
     this.fileData = fileData;
     this.fileName = fileName;
-    this.options = options;
+    this.fixed = Object.freeze({
+      mimeType: options.mimeType,
+      description: options.description,
+      creationDate: timestamp(options.creationDate),
+      modificationDate: timestamp(options.modificationDate),
+      afRelationship: options.afRelationship,
+    });
+  }
+
+  /** A fresh copy of the options this file is written with. */
+  get options(): EmbeddedFileOptions {
+    const f = this.fixed;
+    const options: EmbeddedFileOptions = {};
+    if (f.mimeType !== undefined) options.mimeType = f.mimeType;
+    if (f.description !== undefined) options.description = f.description;
+    const creationDate = toDate(f.creationDate);
+    if (creationDate) options.creationDate = creationDate;
+    const modificationDate = toDate(f.modificationDate);
+    if (modificationDate) options.modificationDate = modificationDate;
+    if (f.afRelationship !== undefined) {
+      options.afRelationship = f.afRelationship;
+    }
+    return options;
   }
 
   async embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {

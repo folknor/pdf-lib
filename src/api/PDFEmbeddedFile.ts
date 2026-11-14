@@ -6,6 +6,7 @@ import {
   PDFName,
   PDFRef,
 } from '../core/index.js';
+import { assertPDFAAttachment } from '../core/metadata/pdfa.js';
 import { collectUnreferenced } from './detach.js';
 import type Embeddable from './Embeddable.js';
 import {
@@ -75,14 +76,17 @@ export default class PDFEmbeddedFile implements Embeddable {
   async embed(): Promise<void> {
     if (this.alreadyEmbedded) return;
     const { catalog, context } = this.doc;
-    const { fileName } = this.embedder;
+    const { fileName, options } = this.embedder;
     checkAttachable(catalog, fileName);
+    assertPDFAAttachment(context, fileName, options);
     const ref = await this.embedder.embedIntoContext(context, this.ref);
 
-    // The catalog may have changed during the await; check again, and on
-    // refusal take back the objects just made so nothing is left behind.
+    // The catalog, and its PDF/A declaration, may have changed during the
+    // await; check again, and on refusal take back the objects just made so
+    // nothing is left behind. The embedder's options cannot change.
     try {
       checkAttachable(catalog, fileName);
+      assertPDFAAttachment(context, fileName, options);
     } catch (error) {
       collectUnreferenced(context, [ref]);
       throw error;

@@ -33,6 +33,13 @@ const metadataText = (doc: PDFDocument) =>
 const packet = (doc: PDFDocument) =>
   XmpPacket.parse(new TextEncoder().encode(metadataText(doc)));
 
+// What PDF/A-3 requires of every other attachment.
+const pdfa3File = {
+  mimeType: 'application/octet-stream',
+  afRelationship: AFRelationship.Unspecified,
+  modificationDate: new Date('2026-01-01T00:00:00Z'),
+};
+
 const newDoc = async () => {
   const doc = await PDFDocument.create({ updateMetadata: false });
   doc.addPage([100, 100]);
@@ -84,7 +91,7 @@ describe('embedFacturX', () => {
   it('replaces an earlier invoice and keeps one schema on a rerun', async () => {
     const doc = await newDoc();
     doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Data });
-    await doc.attach(new Uint8Array([1]), 'other.bin');
+    await doc.attach(new Uint8Array([1]), 'other.bin', pdfa3File);
     const loaded = await roundTrip(doc);
     loaded.embedFacturX(BASIC_WL, { conformanceLevel: 'BASIC_WL' });
     const again = await roundTrip(loaded);
@@ -183,9 +190,9 @@ describe('embedFacturX', () => {
     'inserts or replaces an invoice in a /Kids leaf (replace: %s)',
     async (replace) => {
       const doc = await newDoc();
-      await doc.attach(new Uint8Array([1]), 'a.bin');
+      await doc.attach(new Uint8Array([1]), 'a.bin', pdfa3File);
       if (replace) doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Data });
-      await doc.attach(new Uint8Array([2]), 'z.bin');
+      await doc.attach(new Uint8Array([2]), 'z.bin', pdfa3File);
       await doc.flush();
       const ctx = doc.context;
       const names = doc.catalog.lookup(PDFName.of('Names'), PDFDict);
@@ -250,7 +257,7 @@ describe('embedFacturX', () => {
       }));
       const lastKey = invalid === 'duplicate' ? 'factur-x.xml' : 'z.bin';
       const lastSpec = invalid === 'non-filespec' ? ctx.register(ctx.obj(42))
-        : spec(invalid === 'xrechnung' ? 'xrechnung.xml' : 'z.bin');
+        : spec(invalid === 'xrechnung' ? 'xrechnung.xml' : 'z.bin', pdfa3File);
       const last = ctx.register(ctx.obj({
         Names: [key(lastKey), lastSpec],
         Limits: invalid === 'limits' ? [key(lastKey)] : [key(lastKey), key(lastKey)],

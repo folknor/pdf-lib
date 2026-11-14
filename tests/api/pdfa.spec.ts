@@ -3,6 +3,7 @@ import { checkOutputProfile } from '../../src/core/metadata/icc';
 import { XmpPacket } from '../../src/core/metadata/xmp';
 import { parseXml, serializeXml } from '../../src/core/metadata/xml';
 import {
+  AFRelationship,
   decodePDFRawStream,
   getSRGBProfile,
   PDFArray,
@@ -417,5 +418,94 @@ describe('Info setters on a PDF/A document', () => {
     const doc = await PDFDocument.create({ updateMetadata: false });
     expect(doc.getTitle()).toBeUndefined();
     expect(doc.context.trailerInfo.Info).toBeUndefined();
+  });
+});
+
+describe('attach() on a PDF/A document', () => {
+  const declared = (attributes: string) =>
+    withXmp(
+      rdf(`<rdf:Description rdf:about="" xmlns:pdfaid="${AID}" ${attributes}/>`),
+    );
+  const full = {
+    mimeType: 'text/plain',
+    afRelationship: AFRelationship.Unspecified,
+    modificationDate: new Date('2026-01-01T00:00:00Z'),
+  };
+  const bytes = new Uint8Array([1]);
+
+  it('refuses PDF/A-1, unreadable XMP, unknown parts and PDF/A-4 levels', async () => {
+    for (const attributes of [
+      'pdfaid:part="1" pdfaid:conformance="B"',
+      'pdfaid:part="5"',
+      'pdfaid:part="4" pdfaid:conformance="X"',
+      'pdfaid:conformance="B"',
+    ]) {
+      const doc = await declared(attributes);
+      await expect(doc.attach(bytes, 'a.txt', full)).rejects.toThrow(
+        /Cannot attach/,
+      );
+      expect(doc.getAttachments()).toHaveLength(0);
+    }
+  });
+
+  it('requires a MIME type, relationship and date on PDF/A-3 and -4', async () => {
+    for (const attributes of [
+      'pdfaid:part="3" pdfaid:conformance="B"',
+      'pdfaid:part="4"',
+      'pdfaid:part="4" pdfaid:conformance="F"',
+      'pdfaid:part="4" pdfaid:conformance="E"',
+    ]) {
+      const doc = await declared(attributes);
+      await expect(doc.attach(bytes, 'a.txt')).rejects.toThrow(
+        /mimeType.*afRelationship, modificationDate/,
+      );
+      for (const mimeType of ['', 'text', 'text/*', 'text/plain; charset=x']) {
+        await expect(
+          doc.attach(bytes, 'a.txt', { ...full, mimeType }),
+        ).rejects.toThrow(/mimeType/);
+      }
+      await doc.attach(bytes, 'a.txt', full);
+      const [saved] = (await PDFDocument.load(await doc.save())).getAttachments();
+      expect(saved!.mimeType).toBe('text/plain');
+      expect(saved!.afRelationship).toBe('Unspecified');
+      expect(saved!.modificationDate).toEqual(full.modificationDate);
+    }
+  });
+
+  it('allows PDF/A-2 without options', async () => {
+    const doc = await declared('pdfaid:part="2" pdfaid:conformance="B"');
+    await doc.attach(bytes, 'a.pdf');
+    await doc.save();
+    expect(doc.getAttachments()).toHaveLength(1);
+  });
+
+  it('checks a pending attachment against a later declaration at save', async () => {
+    const doc = await PDFDocument.create({ updateMetadata: false });
+    doc.addPage([100, 100]);
+    await doc.attach(bytes, 'a.txt');
+    doc.declarePDFA({ part: 1, conformance: 'B' });
+    await expect(doc.save()).rejects.toThrow(/PDF\/A-1 forbids embedded files/);
+    expect(doc.catalog.get(PDFName.of('Names'))).toBeUndefined();
+  });
+
+  it('writes the options as given at attach()', async () => {
+    const doc = await declared('pdfaid:part="3" pdfaid:conformance="B"');
+    const options = { ...full, modificationDate: new Date(full.modificationDate) };
+    await doc.attach(bytes, 'a.txt', options);
+    options.modificationDate.setTime(Number.NaN);
+    options.mimeType = 'bad';
+    const [saved] = (await PDFDocument.load(await doc.save())).getAttachments();
+    expect(saved!.mimeType).toBe('text/plain');
+    expect(saved!.modificationDate).toEqual(full.modificationDate);
+  });
+
+  it('refuses invalid dates on any document', async () => {
+    const doc = await PDFDocument.create();
+    await expect(
+      doc.attach(bytes, 'a.txt', { creationDate: new Date(Number.NaN) }),
+    ).rejects.toThrow(/creationDate/);
+    await expect(
+      doc.attach(bytes, 'a.txt', { modificationDate: new Date('+010000-01-01') }),
+    ).rejects.toThrow(/modificationDate/);
   });
 });
