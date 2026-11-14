@@ -28,42 +28,37 @@ each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 draw their outlines, not their colour images or layers, for the same reason;
 `COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
-## No mark reordering before shaping
+## Mark reordering covers neither Hebrew/Arabic nor split vowels
 
-`LayoutEngine.layout` now picks a canonically equivalent spelling the font
-can draw (`CanonicalCompose.ts`: decompose what the font lacks, compose marks
-onto bases when the font has the composite), but nothing reorders marks, so
-canonically equivalent spellings with marks in different orders still shape
-differently. A sort by Unicode combining class is not the fix: HarfBuzz sorts
-by its own shaping ranks (Arabic shadda before the vowels, Hebrew dagesh and
-shin/sin dots before the vowels with the vowel classes permuted, Telugu length
-marks and Thai SARA U/UU before the virama/PHINTHU, Tibetan AA then U then
-the other vowels, TSA -PHRU before the vowels, PADMA GDAN and Tai Tham SAKOT
-last), and a plain canonical sort would break spellings that shape correctly
-as typed (shadda + damma, Tibetan U + E). The stage needs that rank data,
-versioned like the USE data, plus its contextual exceptions: the Hebrew swap
-of a patah/qamats + sheva/hiriq + meteg run (only meaningful after the sort),
-Arabic modifier-mark promotion (UTR #53), and the Hebrew FB1D-FB4F
-presentation-form composition for fonts with no GPOS `mark` (those forms are
-composition exclusions, so `CanonicalCompose` never produces them). A Hebrew
-shaper class (as the cantoo fontkit fork added) was refused for that reason:
-the reorder without the sort fires only on one input order, and composition
-inside a `hebr` shaper is unreachable for fonts with no `hebr` script record
-(selection follows the font's script list, GSUB's choice overriding GPOS's)
-and fonts with no layout tables at all (no OT engine). The split-vowel
-decompositions `UniversalShaper` and `IndicShaper` do ad hoc belong in the
-same code-point stage, since they run after it and can expand a character
-the font maps, or one a variation selector addresses.
+`composeCanonical` now sorts each run of nonzero-class marks by shaping rank
+(`MarkOrder.ts`) before composing, but three parts remain (plan and rulings
+in notes/mark-reorder-design.md):
 
-Tibetan needs it too. U+0F71 (AA) is a nukta (CMBlw) in the USE category
-trie, so AA must precede any vowel sign: canonical order works, but a
-vowel sign typed before AA (KA + I + AA) is a broken cluster. A sort by
-shaping rank would cure that and, with TSA -PHRU ranked before the vowels,
-KA + AA + U+0F39, which is already canonical yet B CMBlw CMAbv, a broken
-cluster in the grammar (font-tools issue 22); a plain canonical sort would
-cure the first and keep the second broken. The specification's Tibetan positional overrides (I/E/O below,
-U above) were left out of `scripts/gen-use-trie.mjs` because they break
-canonical U + E; with a reorder stage in place they can be reconsidered.
+- Hebrew and Arabic runs are frozen as typed. They need their own ranks
+  (Hebrew dagesh and shin/sin dots before the vowels; Arabic shadda first
+  and modifier-mark promotion per UTR #53, whose mark set postdates the
+  Unicode 8 data), the Hebrew patah/qamats + sheva/hiriq + meteg swap on the
+  sorted order, UTR #53's ban on composing across marks, and the Hebrew
+  FB1D-FB4F presentation-form composition for fonts with no GPOS `mark`
+  (those forms are composition exclusions). A `hebr` shaper class (as the
+  cantoo fontkit fork added) was refused: it is unreachable for fonts with
+  no `hebr` script record or no layout tables.
+- The split-vowel decompositions `UniversalShaper` and `IndicShaper` do ad
+  hoc run after the stage, so their parts are never sorted (KA + a mapped
+  U+0F73 + TSA -PHRU is still a broken cluster), they skip the glyph check,
+  and they can expand a character a variation selector addresses.
+- Tibetan U keeps its class (after the other vowels), because the trie's
+  categories accept only canonical KA E U; ranking U first goes together
+  with the specification's positional overrides (I/E/O below, U above) left
+  out of `scripts/gen-use-trie.mjs`.
+
+## USE shaper crashes on a glyph outside every syllable
+
+`UniversalShaper.reorder` and `nextSyllable` read `shaperInfo` of every
+glyph, but `setupSyllables` only sets it on glyphs the cluster state machine
+matched. Noto Serif Tibetan with KA + I + CGJ + AA throws "Cannot read
+properties of null (reading 'syllable')" from `nextSyllable`. Unmatched
+glyphs need a shaper info of their own (a non-cluster).
 
 ## The USE data and grammar are fontkit-era
 

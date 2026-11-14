@@ -7,26 +7,28 @@
 //   decomposition, taking at each level the shortest form whose parts the font
 //   maps (an unmapped A WITH RING ABOVE AND ACUTE becomes A-WITH-RING + acute
 //   when the font has those). If no form is fully mapped it stays as typed.
-//   A code point the font maps is never decomposed.
-// - A combining mark is composed onto the preceding starter (a non-mark with
-//   combining class 0) when the pair has a primary composite outside
-//   Full_Composition_Exclusion, the font maps that composite, and no mark in
-//   between has class 0 or a class at least the candidate's (so CGJ blocks).
-//   Marks with class 0 never compose, and nothing composes onto a mark, which
-//   keeps Indic and USE split vowels apart for the shapers.
+//   A code point the font maps is never decomposed, so marks inside a mapped
+//   composite stay out of the reorder below.
+// - Each run of code points with nonzero combining class is then stably
+//   sorted by shaping rank (MarkOrder.ts), not by plain class: fonts and the
+//   USE grammar expect some marks out of canonical order. Class-0 code points
+//   (CGJ, Indic matras, a mapped U+0F73) bound runs and keep typed order, so
+//   CGJ is the way to force an order. Runs with Hebrew or Arabic marks or
+//   base are frozen (left as typed) until those scripts get their ranks.
+// - A combining mark is then composed onto the preceding starter (a non-mark
+//   with combining class 0) when the pair has a primary composite outside
+//   Full_Composition_Exclusion, the font maps that composite, and no class-0
+//   mark is in between (so CGJ blocks), nor any mark of the candidate's own
+//   class: it commutes past the others. Frozen runs keep the classic rule,
+//   blocked also by a higher class. Sorting before composing makes every
+//   spelling with the same exposed marks compose alike. Marks with class 0
+//   never compose, and nothing composes onto a mark, which keeps Indic and
+//   USE split vowels apart for the shapers.
 // - A cluster (non-mark plus following marks) containing a variation selector
 //   is left exactly as typed, since the selector addresses its base.
 //
-// Deliberately NOT done: reordering marks. A sort by Unicode combining class
-// is not the order fonts are built for: HarfBuzz sorts by its own shaping
-// ranks (shadda before Arabic vowels, Hebrew dagesh and shin dots before
-// vowels, Tibetan TSA -PHRU before and U before the other vowels) and adds
-// contextual Hebrew and Arabic reorders, so a plain canonical sort would
-// break sequences that shape correctly as typed. That stage, with its own
-// versioned rank data, is open in notes/fontkit-findings.md.
-//
 // This is not NFC: supported characters are never decomposed to find a
-// "more composed" form, and nothing is reordered. Hangul syllables have no
+// "more composed" form, and marks are ordered by rank. Hangul syllables have no
 // table decomposition and are left to HangulShaper. Data is Unicode 8, the
 // version of the vendored unicode-properties (scripts/gen-canonical-data.mjs).
 //
@@ -40,6 +42,7 @@ import {
   COMPOSITION_EXCLUSIONS,
   DECOMPOSITIONS,
 } from './canonicalData.js';
+import { isFrozenRun, shapingRank } from './MarkOrder.js';
 
 interface Tables {
   decompositions: Map<number, number[]>;
@@ -146,11 +149,43 @@ export function composeCanonical(
     }
   }
 
+  // Sort each run of unlocked nonzero-class code points by shaping rank
+  // (MarkOrder.ts), stably, unless the run is frozen. Decided once here, on
+  // the decomposed sequence, before anything composes.
+  const frozen = new Array<boolean>(cps.length).fill(false);
+  for (let start = 0; start < cps.length; ) {
+    if (locked[start] || combiningClass(cps[start]!) === 0) {
+      start++;
+      continue;
+    }
+    let end = start + 1;
+    while (
+      end < cps.length &&
+      !locked[end] &&
+      combiningClass(cps[end]!) !== 0
+    ) {
+      end++;
+    }
+    if (isFrozenRun(cps, start, end)) {
+      frozen.fill(true, start, end);
+    } else if (end - start > 1) {
+      const run = [];
+      for (let i = start; i < end; i++) run.push([cps[i]!, cpClusters[i]!]);
+      run.sort(([a], [b]) => shapingRank(a!) - shapingRank(b!));
+      run.forEach(([cp, cluster], k) => {
+        cps[start + k] = cp!;
+        cpClusters[start + k] = cluster!;
+      });
+    }
+    start = end;
+  }
+
   const out: number[] = [];
   const outClusters: number[] = [];
   let starter = -1; // index in out of the open starter, -1 if none
   let blockedByZero = false;
-  let highestBetween = 0;
+  let highestBetween = 0; // highest class left between starter and here
+  const classesBetween = new Set<number>();
   for (let i = 0; i < cps.length; i++) {
     const cp = cps[i]!;
     const mark = isMark(cp);
@@ -161,13 +196,11 @@ export function composeCanonical(
       starter = -1;
       continue;
     }
-    if (
-      mark &&
-      cls !== 0 &&
-      starter >= 0 &&
-      !blockedByZero &&
-      highestBetween < cls
-    ) {
+    // A mark reaches the starter if it commutes past every mark left in
+    // between (all nonzero classes other than its own). Frozen runs keep the
+    // classic rule, which also blocks on a higher class.
+    const reaches = frozen[i] ? highestBetween < cls : !classesBetween.has(cls);
+    if (mark && cls !== 0 && starter >= 0 && !blockedByZero && reaches) {
       const composite = compositions.get(out[starter]!)?.get(cp);
       if (composite !== undefined && hasGlyph(composite)) {
         out[starter] = composite;
@@ -181,10 +214,12 @@ export function composeCanonical(
       starter = out.length - 1;
       blockedByZero = false;
       highestBetween = 0;
+      classesBetween.clear();
     } else if (cls === 0) {
       blockedByZero = true;
-    } else if (cls > highestBetween) {
-      highestBetween = cls;
+    } else {
+      highestBetween = Math.max(highestBetween, cls);
+      classesBetween.add(cls);
     }
   }
   return { codePoints: out, clusters: outClusters };

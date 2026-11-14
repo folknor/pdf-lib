@@ -25,15 +25,66 @@ describe('canonical composition', () => {
     expect(composeCanonical([0x65, 0x301], font(0x65, 0x301))).toEqual([0x65, 0x301]);
   });
 
-  it('is blocked by any earlier mark of equal or higher class', () => {
-    // a + acute (230) + dot below (220) + ring (230): the acute blocks the
-    // ring even though the dot below right before it has a lower class.
+  it('is blocked by an earlier mark of the same class only', () => {
+    // a + acute (230) + dot below (220) + ring (230): sorted to a + dot
+    // below + acute + ring, where the acute blocks the ring.
     const hasGlyph = font(0x61, 0x301, 0x323, 0x30a, 0xe5);
     expect(composeCanonical([0x61, 0x301, 0x323, 0x30a], hasGlyph)).toEqual([
-      0x61, 0x301, 0x323, 0x30a,
+      0x61, 0x323, 0x301, 0x30a,
     ]);
-    // A lower-class mark in between does not block.
+    // A mark of another class in between does not block.
     expect(composeCanonical([0x61, 0x323, 0x30a], hasGlyph)).toEqual([0xe5, 0x323]);
+    // A + U+0315 (232) + acute composes like A + acute + U+0315.
+    const acute = font(0x41, 0x301, 0x315, 0xc1);
+    expect(composeCanonical([0x41, 0x315, 0x301], acute)).toEqual([0xc1, 0x315]);
+    expect(composeCanonical([0x41, 0x301, 0x315], acute)).toEqual([0xc1, 0x315]);
+  });
+
+  it('orders marks by shaping rank, stably, within class-0 bounds', () => {
+    const all = () => true;
+    // Plain class order elsewhere: dot below (220) before acute (230); two
+    // marks of one class keep their typed order.
+    // (q has no precomposed forms, so nothing composes.)
+    expect(composeCanonical([0x71, 0x301, 0x323], all)).toEqual([0x71, 0x323, 0x301]);
+    expect(composeCanonical([0x71, 0x30a, 0x301], all)).toEqual([0x71, 0x30a, 0x301]);
+    // CGJ bounds a run: the typed order across it stays.
+    expect(composeCanonical([0x71, 0x301, 0x34f, 0x323], all)).toEqual([
+      0x71, 0x301, 0x34f, 0x323,
+    ]);
+    // Thai SARA U before PHINTHU; Telugu length mark before virama.
+    expect(composeCanonical([0x0e01, 0x0e3a, 0x0e38], all)).toEqual([0x0e01, 0x0e38, 0x0e3a]);
+    expect(composeCanonical([0x0c15, 0x0c4d, 0x0c56], all)).toEqual([0x0c15, 0x0c56, 0x0c4d]);
+    // Tibetan: AA before a vowel, TSA -PHRU before AA, PADMA GDAN last.
+    expect(composeCanonical([0x0f40, 0x0f72, 0x0f71], all)).toEqual([0x0f40, 0x0f71, 0x0f72]);
+    expect(composeCanonical([0x0f40, 0x0f71, 0x0f39], all)).toEqual([0x0f40, 0x0f39, 0x0f71]);
+    expect(composeCanonical([0x0f40, 0x0fc6, 0x0f72], all)).toEqual([0x0f40, 0x0f72, 0x0fc6]);
+    // Tai Tham SAKOT last.
+    expect(composeCanonical([0x1a20, 0x1a60, 0x1a75], all)).toEqual([0x1a20, 0x1a75, 0x1a60]);
+  });
+
+  it('leaves Hebrew and Arabic runs as typed', () => {
+    const all = () => true;
+    // Hebrew BET + patah (17) + dagesh (21) stays; so does a generic mark on
+    // a Hebrew base, past CGJ.
+    expect(composeCanonical([0x05d1, 0x05bc, 0x05b7], all)).toEqual([0x05d1, 0x05bc, 0x05b7]);
+    expect(composeCanonical([0x05d1, 0x34f, 0x301, 0x323], all)).toEqual([
+      0x05d1, 0x34f, 0x301, 0x323,
+    ]);
+    // Arabic shadda (33) + damma (31), also with no base and on a dotted
+    // circle (the marks are Script=Inherited).
+    expect(composeCanonical([0x0628, 0x0651, 0x064f], all)).toEqual([0x0628, 0x0651, 0x064f]);
+    expect(composeCanonical([0x0651, 0x064f], all)).toEqual([0x0651, 0x064f]);
+    expect(composeCanonical([0x25cc, 0x0651, 0x064f], all)).toEqual([0x25cc, 0x0651, 0x064f]);
+    // Frozen runs compose by the classic rule: U+0315 (232) blocks hamza.
+    const alef = font(0x0627, 0x0315, 0x0654, 0x0623);
+    expect(composeCanonical([0x0627, 0x0315, 0x0654], alef)).toEqual([0x0627, 0x0315, 0x0654]);
+  });
+
+  it('leaves a variation-selector cluster unsorted', () => {
+    const all = () => true;
+    expect(composeCanonical([0x71, 0x301, 0x323, 0xfe00], all)).toEqual([
+      0x71, 0x301, 0x323, 0xfe00,
+    ]);
   });
 
   it('is blocked by CGJ', () => {

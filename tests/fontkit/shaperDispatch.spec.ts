@@ -89,19 +89,22 @@ describe('USE Tibetan clusters', () => {
     expect(dotted(0x0f40, 0x0f81)).toBe(false);
   });
 
-  // Known cost, until a pre-shaping mark reorder exists: the
-  // non-canonical spelling with the vowel before AA is now broken.
-  it('breaks a vowel sign before AA', () => {
-    expect(dotted(0x0f40, 0x0f72, 0x0f71)).toBe(true);
+  // The mark reorder (CanonicalCompose.ts) puts AA first, and TSA -PHRU
+  // (a CMAbv) before AA (a CMBlw), as the grammar takes them.
+  it('reorders a vowel sign or TSA -PHRU typed around AA', () => {
+    expect(dotted(0x0f40, 0x0f72, 0x0f71)).toBe(false);
+    expect(dotted(0x0f40, 0x0f71, 0x0f39)).toBe(false);
+    expect(dotted(0x0f40, 0x0f39, 0x0f71)).toBe(false);
   });
 
   // The inserted dotted circle is shaped as U+25CC but stands for no
-  // typed character, so it contributes nothing to the run's text.
+  // typed character, so it contributes nothing to the run's text. A vowel
+  // sign with no base is a broken cluster.
   it('keeps an inserted dotted circle out of the text', () => {
-    const run = font.layout(String.fromCodePoint(0x0f40, 0x0f72, 0x0f71));
+    const run = font.layout(String.fromCodePoint(0x0f72, 0x0f40));
     const all = (arrays: number[][]) => arrays.flat();
     expect(all(run.codePoints)).toContain(0x25cc);
     expect(all(run.text)).not.toContain(0x25cc);
-    expect(all(run.text).sort()).toEqual([0x0f40, 0x0f71, 0x0f72].sort());
+    expect(all(run.text).sort()).toEqual([0x0f40, 0x0f72].sort());
   });
 });

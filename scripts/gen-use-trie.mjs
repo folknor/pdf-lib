@@ -131,7 +131,7 @@ const TIBETAN_UISC_OVERRIDE = {
   // AA as a nukta (CMBlw) so it precedes any vowel sign in the cluster, as
   // in Unicode canonical order (ccc 129 before 130/132) and in the
   // decompositions of U+0F73, U+0F75 and U+0F81 that UniversalShaper makes.
-  // Non-canonical I or U before AA becomes a broken cluster instead.
+  // The mark reorder in CanonicalCompose.ts puts a typed I or U after AA.
   0x0f71: 'Nukta',
   0x0f86: 'Tone_Mark',
   0x0f87: 'Tone_Mark',
@@ -142,8 +142,8 @@ const TIBETAN_UISC_OVERRIDE = {
 //   broken cluster (font-tools issue 19).
 // - The positional overrides U+0F72, U+0F7A-0F7D, U+0F80 -> Bottom and
 //   U+0F74 -> Top: they only swap which order of U plus an above vowel is
-//   accepted, breaking the canonical one (KA E U). Choosing belongs to a
-//   pre-shaping reorder, which does not exist yet.
+//   accepted, breaking the canonical one (KA E U). They come back only
+//   together with ranking U before the other vowels in MarkOrder.ts.
 
 // --- gen-use.js's own override tables (verbatim, plus the Tibetan entries) --
 const UISC_OVERRIDE = {
