@@ -398,53 +398,44 @@ export default class TTFFont {
     glyphs: (Glyph | null)[];
     codePoints: number[][];
   } {
+    return this._glyphsForCodePoints(
+      Array.from(string, (c) => c.codePointAt(0)!),
+    );
+  }
+
+  /**
+   * The glyphs for a code point sequence, with the code points of each and
+   * `sources[i]`, the index in `input` of glyph i's first code point. A
+   * variation selector that follows no base is dropped.
+   */
+  _glyphsForCodePoints(input: number[]): {
+    glyphs: (Glyph | null)[];
+    codePoints: number[][];
+    sources: number[];
+  } {
     const glyphs: (Glyph | null)[] = [];
     const codePoints: number[][] = [];
-    const len = string.length;
-    let idx = 0;
-    let last = -1;
-    let state = -1;
+    const sources: number[] = [];
+    const isSelector = (code: number) =>
+      (0xfe00 <= code && code <= 0xfe0f) ||
+      (0xe0100 <= code && code <= 0xe01ef);
 
-    while (idx <= len) {
-      let code = 0;
-      let nextState = 0;
-
-      if (idx < len) {
-        // Decode the next codepoint from UTF 16
-        code = string.charCodeAt(idx++);
-        if (0xd800 <= code && code <= 0xdbff && idx < len) {
-          const next = string.charCodeAt(idx);
-          if (0xdc00 <= next && next <= 0xdfff) {
-            idx++;
-            code = ((code & 0x3ff) << 10) + (next & 0x3ff) + 0x10000;
-          }
-        }
-
-        // Compute the next state: 1 if the next codepoint is a variation selector, 0 otherwise.
-        nextState =
-          (0xfe00 <= code && code <= 0xfe0f) ||
-          (0xe0100 <= code && code <= 0xe01ef)
-            ? 1
-            : 0;
-      } else {
-        idx++;
-      }
-
-      if (state === 0 && nextState === 1) {
+    for (let i = 0; i < input.length; i++) {
+      const code = input[i]!;
+      if (isSelector(code)) continue;
+      const next = input[i + 1];
+      if (next !== undefined && isSelector(next)) {
         // Variation selector following normal codepoint.
-        glyphs.push(this.getGlyph(this._cmapProcessor.lookup(last, code)));
-        codePoints.push([last, code]);
-      } else if (state === 0 && nextState === 0) {
-        // Normal codepoint following normal codepoint.
-        glyphs.push(this.glyphForCodePoint(last));
-        codePoints.push([last]);
+        glyphs.push(this.getGlyph(this._cmapProcessor.lookup(code, next)));
+        codePoints.push([code, next]);
+      } else {
+        glyphs.push(this.glyphForCodePoint(code));
+        codePoints.push([code]);
       }
-
-      last = code;
-      state = nextState;
+      sources.push(i);
     }
 
-    return { glyphs, codePoints };
+    return { glyphs, codePoints, sources };
   }
 
   get _layoutEngine() {

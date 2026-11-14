@@ -7,8 +7,12 @@ export { default as PDFTrailerDict } from './document/PDFTrailerDict.js';
 export { default as CustomFontEmbedder } from './embedders/CustomFontEmbedder.js';
 export { default as CustomFontSubsetEmbedder } from './embedders/CustomFontSubsetEmbedder.js';
 export {
+  type ActualTextSpan,
+  BASE_SPACING,
   default as EncodedText,
   type GlyphSpacing,
+  NO_SPACING,
+  SPACE_SPACING,
   type TextSpacing,
 } from './embedders/EncodedText.js';
 export {

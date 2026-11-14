@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import fontkit from '../../src/fontkit.js';
-import { composeCanonical } from '../../src/fontkit/layout/CanonicalCompose.js';
+import { composeCanonical as compose } from '../../src/fontkit/layout/CanonicalCompose.js';
+
+const composeCanonical = (codePoints: number[], hasGlyph: (cp: number) => boolean) =>
+  compose(codePoints, hasGlyph).codePoints;
 
 const font = (...mapped: number[]) => {
   const set = new Set(mapped);
@@ -90,6 +93,11 @@ describe('canonical composition', () => {
 
   it('leaves Hangul syllables alone', () => {
     expect(composeCanonical([0xac00], font(0x1100, 0x1161))).toEqual([0xac00]);
+  });
+
+  it('carries clusters: parts keep their own, a composite takes the smaller', () => {
+    expect(compose([0x1fa, 0x62], font(0x41, 0x30a, 0x301, 0x62), [3, 7]).clusters).toEqual([3, 3, 3, 7]);
+    expect(compose([0x61, 0x323, 0x30a], font(0x61, 0x323, 0x30a, 0xe5), [0, 1, 2]).clusters).toEqual([0, 1]);
   });
 
   it('reaches fonts through layout', () => {

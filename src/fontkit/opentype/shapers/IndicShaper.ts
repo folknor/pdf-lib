@@ -3,6 +3,7 @@ import { unzlibSync } from 'fflate';
 import StateMachine from '../../../vendors/dfa/index.js';
 import { getCategory } from '../../../vendors/unicode-properties/index.js';
 import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
+import { inserted, mapped, piece } from '../../layout/Occurrence.js';
 import * as Script from '../../layout/Script.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
@@ -109,9 +110,15 @@ export default class IndicShaper extends DefaultShaper {
         (INDIC_DECOMPOSITIONS as Record<number, number[]>)[codepoint] ||
         decompositions[String(codepoint)];
       if (d) {
+        const parent = glyphs[i]!;
         const decomposed = d.map((c: number) => {
           const g = plan.font.glyphForCodePoint(c);
-          return new GlyphInfo(plan.font, g.id, [c], glyphs[i]!.features);
+          return new GlyphInfo(
+            plan.font,
+            g.id,
+            piece(parent, [c]),
+            parent.features,
+          );
         });
 
         glyphs.splice(i, 1, ...decomposed);
@@ -249,7 +256,8 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
   const dottedCircle = font.glyphForCodePoint(0x25cc).id;
   const virama = font.glyphForCodePoint(indicConfig.virama).id;
   if (virama) {
-    const info = new GlyphInfo(font, virama, [indicConfig.virama]);
+    // A probe for consonantPosition, never part of the run.
+    const info = new GlyphInfo(font, virama, mapped([indicConfig.virama], 0));
     for (let i = 0; i < glyphs.length; i++) {
       if (glyphs[i].shaperInfo.position === POSITIONS.Base_C) {
         glyphs[i].shaperInfo.position = consonantPosition(
@@ -277,7 +285,11 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
     if (syllableType === 'broken_cluster' && dottedCircle) {
       // Inserted, so it stands for no character in extracted text.
-      const g = new GlyphInfo(font, dottedCircle, [0x25cc], undefined, []);
+      const g = new GlyphInfo(
+        font,
+        dottedCircle,
+        inserted([0x25cc], glyphs[start].cluster),
+      );
       g.shaperInfo = new IndicInfo(
         1 << indicCategory(g),
         indicPosition(g),

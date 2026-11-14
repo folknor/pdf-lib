@@ -1,3 +1,4 @@
+import { ligated, piece } from '../layout/Occurrence.js';
 import GlyphInfo from './GlyphInfo.js';
 import OTProcessor, { backtrackOrder } from './OTProcessor.js';
 
@@ -58,7 +59,12 @@ export default class GSUBProcessor extends OTProcessor {
           const replacement = sequence
             .slice(1)
             .map((gid: number, i: number) => {
-              const glyph = new GlyphInfo(this.font, gid, undefined, features);
+              const glyph = new GlyphInfo(
+                this.font,
+                gid,
+                piece(curGlyph, []),
+                features,
+              );
               glyph.shaperInfo = curGlyph.shaperInfo;
               glyph.isLigated = curGlyph.isLigated;
               glyph.ligatureComponent = i + 1;
@@ -109,21 +115,29 @@ export default class GSUBProcessor extends OTProcessor {
 
           const curGlyph = this.glyphIterator.cur!;
 
-          // Concatenate all of the characters the new ligature will represent
-          const characters = curGlyph.codePoints.slice();
-          const text = curGlyph.text.slice();
-          for (const matchedIndex of matched) {
-            characters.push(...this.glyphs[matchedIndex]!.codePoints);
-            text.push(...this.glyphs[matchedIndex]!.text);
+          // The ligature stands for all of its components.
+          const occurrence = ligated([
+            curGlyph,
+            ...matched.map((matchedIndex) => this.glyphs[matchedIndex]!),
+          ]);
+          // Glyphs skipped between the components join its cluster.
+          const lastMatched = matched[matched.length - 1]!;
+          for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
+            occurrence.cluster = Math.min(
+              occurrence.cluster,
+              this.glyphs[i]!.cluster,
+            );
+          }
+          for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
+            this.glyphs[i]!.cluster = occurrence.cluster;
           }
 
           // Create the replacement ligature glyph
           const ligatureGlyph = new GlyphInfo(
             this.font,
             ligature.glyph,
-            characters,
+            occurrence,
             curGlyph.features,
-            text,
           );
           ligatureGlyph.shaperInfo = curGlyph.shaperInfo;
           ligatureGlyph.isLigated = true;
@@ -161,7 +175,7 @@ export default class GSUBProcessor extends OTProcessor {
           ligatureGlyph.ligatureID = isMarkLigature ? null : this.ligatureID++;
 
           let lastLigID = curGlyph.ligatureID;
-          let lastNumComps = curGlyph.codePoints.length;
+          let lastNumComps = curGlyph.components;
           let curComps = lastNumComps;
           let idx = this.glyphIterator.index + 1;
 
@@ -187,7 +201,7 @@ export default class GSUBProcessor extends OTProcessor {
             }
 
             lastLigID = this.glyphs[idx]!.ligatureID;
-            lastNumComps = this.glyphs[idx]!.codePoints.length;
+            lastNumComps = this.glyphs[idx]!.components;
             curComps += lastNumComps;
             idx++; // skip base glyph
           }

@@ -1,7 +1,8 @@
 import { isMark } from '../../vendors/unicode-properties/index.js';
+import { copyOccurrence, type Occurrence } from '../layout/Occurrence.js';
 import OTProcessor from './OTProcessor.js';
 
-export default class GlyphInfo {
+export default class GlyphInfo implements Occurrence {
   _font: any;
   _id!: number;
   /** The code points this occurrence is shaped as (see GlyphRun.codePoints). */
@@ -9,9 +10,12 @@ export default class GlyphInfo {
   /**
    * The code points it contributes to extracted text (GlyphRun.text):
    * `codePoints` minus what inserted glyphs (dotted circles) brought in.
-   * Every substitution carries it exactly as it carries `codePoints`.
    */
   text: number[];
+  /** Source cluster (see Clusters.ts). */
+  cluster: number;
+  /** Ligature component count (see Occurrence). */
+  components: number;
   features: Record<string, boolean>;
   ligatureID: number | null;
   ligatureComponent: number | null;
@@ -26,16 +30,18 @@ export default class GlyphInfo {
   isMark!: boolean;
   markAttachmentType!: number;
 
+  // Every occurrence is built by one of the rules in Occurrence.ts.
   constructor(
     font: any,
     id: number,
-    codePoints: number[] = [],
+    occurrence: Occurrence,
     features?: string[] | Record<string, boolean>,
-    text: number[] = [...codePoints],
   ) {
     this._font = font;
-    this.codePoints = codePoints;
-    this.text = text;
+    this.codePoints = occurrence.codePoints;
+    this.text = occurrence.text;
+    this.cluster = occurrence.cluster;
+    this.components = occurrence.components;
     this.id = id;
 
     this.features = {};
@@ -79,7 +85,7 @@ export default class GlyphInfo {
     } else {
       this.isMark = this.codePoints.length > 0 && this.codePoints.every(isMark);
       this.isBase = !this.isMark;
-      this.isLigature = this.codePoints.length > 1;
+      this.isLigature = this.components > 1;
       this.markAttachmentType = 0;
     }
   }
@@ -88,9 +94,8 @@ export default class GlyphInfo {
     return new GlyphInfo(
       this._font,
       this.id,
-      [...this.codePoints],
+      copyOccurrence(this),
       this.features,
-      [...this.text],
     );
   }
 }

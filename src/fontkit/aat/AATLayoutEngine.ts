@@ -20,6 +20,9 @@ export default class AATLayoutEngine {
     const records: MorxGlyph[] = glyphRun.glyphs.map((glyph, i) => ({
       id: glyph.id,
       codePoints: [...glyphRun.codePoints[i]!],
+      text: [...glyphRun.text[i]!],
+      cluster: glyphRun.clusters[i]!,
+      components: glyphRun.components[i]!,
     }));
     if (glyphRun.direction === 'rtl') {
       records.reverse();
@@ -31,8 +34,14 @@ export default class AATLayoutEngine {
     );
     glyphRun.glyphs = out.map((record) => this.font.getGlyph(record.id));
     glyphRun.codePoints = out.map((record) => record.codePoints);
-    // morx inserts no placeholder characters, so all of it is text.
-    glyphRun.text = out.map((record) => [...record.codePoints]);
+    glyphRun.text = out.map((record) => record.text);
+    glyphRun.clusters = out.map((record) => record.cluster);
+    glyphRun.components = out.map((record) => record.components);
+  }
+
+  /** morx output stays in the order it was processed in: visual for RTL. */
+  reversesBeforeSubstitution(glyphRun: GlyphRun): boolean {
+    return glyphRun.direction === 'rtl';
   }
 
   getAvailableFeatures(_script: string, _language?: string): string[] {

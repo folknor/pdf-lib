@@ -1,6 +1,11 @@
 import AATLayoutEngine from '../aat/AATLayoutEngine.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
 import { composeCanonical } from './CanonicalCompose.js';
+import {
+  initialClusters,
+  isDefaultIgnorable,
+  mergeClusters,
+} from './Clusters.js';
 import type { FeatureValue } from './FeatureValues.js';
 import GlyphPosition from './GlyphPosition.js';
 import GlyphRun from './GlyphRun.js';
@@ -56,16 +61,13 @@ export default class LayoutEngine {
     // script above was detected from the typed text.
     const hasGlyph = (cp: number): boolean =>
       this.font.hasGlyphForCodePoint(cp);
-    {
-      const typed = Array.from(string, (c) => c.codePointAt(0)!);
-      const chosen = composeCanonical(typed, hasGlyph);
-      if (
-        chosen.length !== typed.length ||
-        chosen.some((cp, i) => cp !== typed[i])
-      ) {
-        string = chosen.map((cp) => String.fromCodePoint(cp)).join('');
-      }
-    }
+    // Every rewrite below carries each code point's source cluster.
+    const initial = initialClusters(string);
+    let { codePoints: input, clusters } = composeCanonical(
+      initial.codePoints,
+      hasGlyph,
+      initial.clusters,
+    );
 
     // morx fonts carry their own Thai processing, so AAT is left alone.
     const first = Array.isArray(script) ? script[0] : script;
@@ -73,14 +75,15 @@ export default class LayoutEngine {
       (first === 'thai' || first === 'lao ') &&
       !(this.engine instanceof AATLayoutEngine)
     ) {
-      const codePoints = Array.from(string, (c) => c.codePointAt(0)!);
-      const rewritten = decomposeSaraAm(codePoints, hasGlyph);
-      if (rewritten.length !== codePoints.length) {
-        string = rewritten.map((cp) => String.fromCodePoint(cp)).join('');
-      }
+      ({ codePoints: input, clusters } = decomposeSaraAm(
+        input,
+        hasGlyph,
+        clusters,
+      ));
     }
 
-    const { glyphs, codePoints } = this.font._glyphsForString(string);
+    const { glyphs, codePoints, sources } =
+      this.font._glyphsForCodePoints(input);
 
     // Normalize script to a string
     const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
@@ -92,6 +95,8 @@ export default class LayoutEngine {
       language ?? null,
       direction ?? null,
     );
+    glyphRun.clusters = sources.map((source: number) => clusters[source]!);
+    glyphRun.characters = initial.characters;
 
     // Return early if there are no glyphs
     if (glyphs.length === 0) {
@@ -104,8 +109,15 @@ export default class LayoutEngine {
       this.engine.setup(glyphRun);
     }
 
-    // Substitute and position the glyphs
+    // Substitute and position the glyphs. Clusters are made monotone once
+    // nothing reorders any more, in the order the engine left the glyphs
+    // (morx works on right-to-left runs already reversed).
     this.substitute(glyphRun);
+    mergeClusters(
+      glyphRun.clusters,
+      this.engine instanceof AATLayoutEngine &&
+        this.engine.reversesBeforeSubstitution(glyphRun),
+    );
     this.position(glyphRun);
 
     this.hideDefaultIgnorables(glyphRun);
@@ -149,6 +161,7 @@ export default class LayoutEngine {
         glyphRun.glyphs,
         glyphRun.codePoints,
         glyphRun.positions,
+        glyphRun.components,
       );
     }
 
@@ -185,49 +198,7 @@ export default class LayoutEngine {
   }
 
   isDefaultIgnorable(ch: number): boolean {
-    // From DerivedCoreProperties.txt in the Unicode database,
-    // minus U+115F, U+1160, U+3164 and U+FFA0, which is what
-    // Harfbuzz and Uniscribe do.
-    const plane = ch >> 16;
-    if (plane === 0) {
-      // BMP
-      switch (ch >> 8) {
-        case 0x00:
-          return ch === 0x00ad;
-        case 0x03:
-          return ch === 0x034f;
-        case 0x06:
-          return ch === 0x061c;
-        case 0x17:
-          return 0x17b4 <= ch && ch <= 0x17b5;
-        case 0x18:
-          return 0x180b <= ch && ch <= 0x180e;
-        case 0x20:
-          return (
-            (0x200b <= ch && ch <= 0x200f) ||
-            (0x202a <= ch && ch <= 0x202e) ||
-            (0x2060 <= ch && ch <= 0x206f)
-          );
-        case 0xfe:
-          return (0xfe00 <= ch && ch <= 0xfe0f) || ch === 0xfeff;
-        case 0xff:
-          return 0xfff0 <= ch && ch <= 0xfff8;
-        default:
-          return false;
-      }
-    } else {
-      // Other planes
-      switch (plane) {
-        case 0x01:
-          return (
-            (0x1bca0 <= ch && ch <= 0x1bca3) || (0x1d173 <= ch && ch <= 0x1d17a)
-          );
-        case 0x0e:
-          return 0xe0000 <= ch && ch <= 0xe0fff;
-        default:
-          return false;
-      }
-    }
+    return isDefaultIgnorable(ch);
   }
 
   getAvailableFeatures(script: string, language?: string): string[] {

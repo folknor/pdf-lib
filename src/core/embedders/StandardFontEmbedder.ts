@@ -8,7 +8,9 @@ import {
 import type PDFRef from '../objects/PDFRef.js';
 import type PDFContext from '../PDFContext.js';
 import EncodedText, {
+  BASE_SPACING,
   type GlyphSpacing,
+  SPACE_SPACING,
   type TextSpacing,
 } from './EncodedText.js';
 
@@ -64,7 +66,7 @@ class StandardFontEmbedder {
     for (let idx = 0; idx < count; idx++) {
       const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
-      spacing[idx] = characters[idx] === ' ' ? 'space' : 'base';
+      spacing[idx] = characters[idx] === ' ' ? SPACE_SPACING : BASE_SPACING;
       codes[idx] = toHexString(glyphs[idx]!.code);
       widths[idx] = this.widthOfGlyph(left);
       advances[idx] =

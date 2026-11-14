@@ -1,6 +1,7 @@
 import { unzlibSync } from 'fflate';
 import StateMachine from '../../../vendors/dfa/index.js';
 import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
+import { inserted, piece } from '../../layout/Occurrence.js';
 import { decodeBase64 } from '../../utils.js';
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
@@ -61,7 +62,12 @@ export default class UniversalShaper extends DefaultShaper {
         const decomposed = decompositions[String(codepoint)].map(
           (c: number) => {
             const g = plan.font.glyphForCodePoint(c);
-            return new GlyphInfo(plan.font, g.id, [c], glyph.features);
+            return new GlyphInfo(
+              plan.font,
+              g.id,
+              piece(glyph, [c]),
+              glyph.features,
+            );
           },
         );
 
@@ -160,7 +166,11 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
     // Insert a dotted circle glyph in broken clusters.
     if (type === 'broken_cluster' && dottedCircle) {
       // Inserted, so it stands for no character in extracted text.
-      const g = new GlyphInfo(font, dottedCircle, [0x25cc], undefined, []);
+      const g = new GlyphInfo(
+        font,
+        dottedCircle,
+        inserted([0x25cc], glyphs[start]!.cluster),
+      );
       g.shaperInfo = info;
 
       // Insert after possible Repha.

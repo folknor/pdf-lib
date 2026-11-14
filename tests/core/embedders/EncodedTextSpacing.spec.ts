@@ -1,17 +1,21 @@
 import fs from 'fs';
 import fontkit from 'src/fontkit.js';
 import {
+  BASE_SPACING,
   EncodedText,
-  type GlyphSpacing,
+  NO_SPACING,
+  SPACE_SPACING,
   PDFArray,
   PDFContentStream,
   PDFDocument,
   StandardFonts,
 } from '../../../src/index';
 
+const kinds = { base: BASE_SPACING, space: SPACE_SPACING, none: NO_SPACING };
+
 const text = (
   advances: number[],
-  spacing: GlyphSpacing[],
+  spacing: (keyof typeof kinds)[],
   attachedTo: (number | null)[],
   xOffsets = advances.map(() => 0),
 ) =>
@@ -21,7 +25,7 @@ const text = (
     advances.slice(),
     xOffsets,
     advances.map(() => 0),
-    spacing,
+    spacing.map((kind) => kinds[kind]),
     attachedTo,
   );
 
@@ -87,6 +91,21 @@ describe('EncodedText.withSpacing', () => {
     expect(() => text([0], ['none'], [3])).toThrow();
   });
 
+  it('adds a cluster\'s spacing after its last glyph, counted per character', () => {
+    const t = new EncodedText(
+      ['0001', '0002', '0003'],
+      [600, 300, 600],
+      [600, 300, 600],
+      [0, 0, 0],
+      [0, 0, 0],
+      [NO_SPACING, { characters: 3, spaces: 1 }, BASE_SPACING],
+    );
+    expect(t.withSpacing(1, 2, 10).advances).toEqual([600, 800, 700]);
+    expect(() =>
+      new EncodedText(['0001'], [1], [1], [0], [0], [{ characters: -1, spaces: 0 }]),
+    ).toThrow();
+  });
+
   it('refuses spacing at font size 0', () => {
     const t = text([500], ['base'], [null]);
     expect(() => t.withSpacing(1, 0, 0)).toThrow();
@@ -121,7 +140,7 @@ describe('spacing in fonts', () => {
     }
   });
 
-  it('records GPOS mark attachment and gives marks no spacing', async () => {
+  it('records GPOS mark attachment and keeps marks on their bases', async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
     const font = await doc.embedFont(
@@ -131,9 +150,11 @@ describe('spacing in fonts', () => {
     expect(t.attachedTo.some((base) => base !== null)).toBe(true);
     const before = origins(t);
     const after = origins(t.withSpacing(5, 0, 10));
+    // One cluster: its one character's spacing comes after its last glyph.
+    expect(t.spacing.slice(0, -1).every((k) => k.characters === 0)).toBe(true);
+    expect(t.spacing[t.spacing.length - 1]).toEqual({ characters: 1, spaces: 0 });
     t.attachedTo.forEach((base, i) => {
       if (base === null) return;
-      expect(t.spacing[i]).toBe('none');
       let root = base;
       while (t.attachedTo[root] !== null) root = t.attachedTo[root]!;
       expect(after[i]! - after[root]!).toBeCloseTo(before[i]! - before[root]!, 9);

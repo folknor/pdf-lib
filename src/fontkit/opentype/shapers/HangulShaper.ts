@@ -1,3 +1,9 @@
+import {
+  composed,
+  inserted,
+  type Occurrence,
+  piece,
+} from '../../layout/Occurrence.js';
 import GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
 import DefaultShaper from './DefaultShaper.js';
@@ -196,8 +202,14 @@ function getGlyph(
   font: any,
   code: number,
   features: Record<string, boolean>,
+  occurrence: Occurrence,
 ): GlyphInfo {
-  return new GlyphInfo(font, font.glyphForCodePoint(code).id, [code], features);
+  return new GlyphInfo(
+    font,
+    font.glyphForCodePoint(code).id,
+    occurrence,
+    features,
+  );
 }
 
 function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
@@ -221,16 +233,16 @@ function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
 
   // Replace the current glyph with decomposed L, V, and T glyphs,
   // and apply the proper OpenType features to each component.
-  const ljmo = getGlyph(font, l, glyph.features);
+  const ljmo = getGlyph(font, l, glyph.features, piece(glyph, [l]));
   ljmo.features['ljmo'] = true;
 
-  const vjmo = getGlyph(font, v, glyph.features);
+  const vjmo = getGlyph(font, v, glyph.features, piece(glyph, [v]));
   vjmo.features['vjmo'] = true;
 
   const insert = [ljmo, vjmo];
 
   if (t > T_BASE) {
-    const tjmo = getGlyph(font, t, glyph.features);
+    const tjmo = getGlyph(font, t, glyph.features, piece(glyph, [t]));
     tjmo.features['tjmo'] = true;
     insert.push(tjmo);
   }
@@ -285,7 +297,12 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
     // otherwise apply the proper OpenType features to each component.
     if (font.hasGlyphForCodePoint(s)) {
       const del = prevType === V ? 3 : 2;
-      glyphs.splice(i - del + 1, del, getGlyph(font, s, glyph.features));
+      const parts = glyphs.slice(i - del + 1, i + 1);
+      glyphs.splice(
+        i - del + 1,
+        del,
+        getGlyph(font, s, glyph.features, composed(parts, [s])),
+      );
       return i - del + 1;
     }
   }
@@ -347,9 +364,13 @@ function insertDottedCircle(glyphs: GlyphInfo[], i: number, font: any): number {
   const code = glyphs[i]!.codePoints[0]!;
 
   if (font.hasGlyphForCodePoint(DOTTED_CIRCLE)) {
-    const dottedCircle = getGlyph(font, DOTTED_CIRCLE, glyph.features);
     // Inserted, so it stands for no character in extracted text.
-    dottedCircle.text = [];
+    const dottedCircle = getGlyph(
+      font,
+      DOTTED_CIRCLE,
+      glyph.features,
+      inserted([DOTTED_CIRCLE], glyph.cluster),
+    );
 
     // If the tone mark is zero width, insert the dotted circle before, otherwise after
     const idx = font.glyphForCodePoint(code).advanceWidth === 0 ? i : i + 1;

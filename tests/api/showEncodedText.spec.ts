@@ -32,6 +32,30 @@ describe('showEncodedText', () => {
     ]);
   });
 
+  it('wraps ActualText spans around exactly their glyphs', () => {
+    const text = new EncodedText(
+      ['0001', '0002', '0003'],
+      [500, 400, 600],
+      [500, 500, 600],
+      [0, 0, 0],
+      [0, 0, 0],
+      undefined,
+      undefined,
+      [{ start: 0, end: 2, text: 'é' }],
+    );
+    expect(show(text)).toEqual([
+      '/Span <</ActualText <FEFF00E9>>> BDC',
+      '[<00010002> 100] TJ',
+      'EMC',
+      '[<0003>] TJ',
+    ]);
+    expect(() =>
+      new EncodedText(['0001'], [1], [1], [0], [0], undefined, undefined, [
+        { start: 0, end: 2, text: 'x' },
+      ]),
+    ).toThrow();
+  });
+
   it('shows empty text as an empty Tj', () => {
     expect(show(glyphs([]))).toEqual(['<> Tj']);
   });

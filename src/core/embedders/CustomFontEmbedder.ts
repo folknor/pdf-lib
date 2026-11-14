@@ -12,7 +12,11 @@ import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import { createCmap, type ToUnicodeEntry } from './CMap.js';
 import EncodedText, {
+  type ActualTextSpan,
+  BASE_SPACING,
   type GlyphSpacing,
+  NO_SPACING,
+  SPACE_SPACING,
   spacingExtras,
   type TextSpacing,
 } from './EncodedText.js';
@@ -78,13 +82,17 @@ class CustomFontEmbedder {
    * Encode the JavaScript string into this font. (JavaScript encodes strings in
    * Unicode, but embedded fonts use their own custom encodings)
    */
+  //
+  // Where the text the glyphs' ToUnicode mappings spell is not the text
+  // given (shaping split, reordered, composed, ligated or repeated it, a glyph
+  // stands for two characters, a default-ignorable is drawn as a space), the
+  // cluster's glyphs are wrapped in /ActualText with the given text. The
+  // promise is per cluster and in the order clusters are drawn: a
+  // right-to-left run is drawn reversed, and how a reader orders its clusters
+  // is the reader's.
   encodeText(text: string): EncodedText {
-    const {
-      glyphs,
-      positions,
-      codePoints,
-      text: glyphText,
-    } = this.positionedLayout(text);
+    const layout = this.positionedLayout(text);
+    const { glyphs, positions, text: glyphText } = layout;
     const { scale } = this;
     const count = glyphs.length;
     const codes = new Array<string>(count);
@@ -92,10 +100,12 @@ class CustomFontEmbedder {
     const widths = new Array<number>(count);
     const xOffsets = new Array<number>(count);
     const yOffsets = new Array<number>(count);
+    const glyphCodes = new Array<number>(count);
     for (let idx = 0; idx < count; idx++) {
       const glyph = glyphs[idx]!;
       const position = positions[idx]!;
       const code = this.codeForGlyph(glyph);
+      glyphCodes[idx] = code;
       codes[idx] = toHexStringOfMinLength(code, 4);
       this.recordText(code, glyphText[idx]!, position);
       advances[idx] = position.xAdvance * scale;
@@ -103,15 +113,49 @@ class CustomFontEmbedder {
       xOffsets[idx] = position.xOffset * scale;
       yOffsets[idx] = position.yOffset * scale;
     }
+    const groups = clusterGroups(layout.clusters, count, text.length);
     return new EncodedText(
       codes,
       advances,
       widths,
       xOffsets,
       yOffsets,
-      this.glyphSpacing(glyphs, positions, codePoints),
+      this.glyphSpacing(layout, text, groups),
       positions.map((position) => position.attachedTo ?? null),
+      this.actualTextSpans(glyphCodes, text, groups),
     );
+  }
+
+  /**
+   * The clusters whose extracted text would differ from `text`. Called
+   * after the line's occurrences voted (recordText), so a code's mapping in
+   * firstText is final; a code with none yet is unknown unless it is 0
+   * (never mapped), and a cluster holding an unknown one is wrapped too.
+   */
+  private actualTextSpans(
+    glyphCodes: readonly number[],
+    text: string,
+    groups: readonly ClusterGroup[],
+  ): ActualTextSpan[] {
+    const spans: ActualTextSpan[] = [];
+    for (const group of groups) {
+      const typed = text.slice(group.from, group.to);
+      let extracted: string | null = '';
+      for (let idx = group.start; idx < group.end; idx++) {
+        const code = glyphCodes[idx]!;
+        if (code === 0) continue;
+        const mapping = this.firstText.get(code);
+        if (mapping === undefined) {
+          extracted = null;
+          break;
+        }
+        extracted += String.fromCodePoint(...mapping);
+      }
+      if (extracted !== typed) {
+        spans.push({ start: group.start, end: group.end, text: typed });
+      }
+    }
+    return spans;
   }
 
   /**
@@ -131,26 +175,51 @@ class CustomFontEmbedder {
     if (!this.firstText.has(code)) this.firstText.set(code, [...text]);
   }
 
-  // Marks and hidden default-ignorables take no spacing; an occurrence of
-  // U+0020 takes word spacing, so U+00A0 drawn with the same glyph does not.
-  // A fontkit that reports no per-occurrence code points falls back to the
-  // identity of the font's glyph for U+0020.
+  // With source clusters, a cluster's spacing goes after its last glyph:
+  // one character spacing per character it holds, one word spacing per
+  // U+0020, so a base and its marks (attached or not) and the parts of a
+  // ligature never move apart, and the total does not depend on shaping.
+  // A fontkit without clusters gets it per glyph: marks and hidden
+  // default-ignorables none, an occurrence of U+0020 (or, with no
+  // per-occurrence code points, the font's glyph for it) word spacing.
   private glyphSpacing(
-    glyphs: Glyph[],
-    positions: GlyphPosition[],
-    codePoints: readonly (readonly number[])[] | undefined,
+    layout: {
+      glyphs: Glyph[];
+      positions: GlyphPosition[];
+      codePoints: readonly (readonly number[])[] | undefined;
+      clusters: readonly number[] | undefined;
+      characters: readonly number[] | undefined;
+    },
+    text: string,
+    groups: readonly ClusterGroup[],
   ): GlyphSpacing[] {
+    const { glyphs, positions, codePoints, clusters, characters } = layout;
+    if (clusters !== undefined && characters !== undefined) {
+      const spacing = glyphs.map(() => NO_SPACING);
+      for (const group of groups) {
+        let count = 0;
+        for (const at of characters) {
+          if (at >= group.from && at < group.to) count++;
+        }
+        let spaces = 0;
+        for (let at = group.from; at < group.to; at++) {
+          if (text.charCodeAt(at) === 0x20) spaces++;
+        }
+        spacing[group.end - 1] = { characters: count, spaces };
+      }
+      return spacing;
+    }
     const spaceId =
       codePoints === undefined && this.font.hasGlyphForCodePoint(0x20)
         ? this.font.glyphForCodePoint(0x20).id
         : -1;
     return glyphs.map((glyph, idx) => {
       const position = positions[idx]!;
-      if (position.isMark || position.hidden) return 'none';
+      if (position.isMark || position.hidden) return NO_SPACING;
       const isSpace = codePoints
         ? codePoints[idx]!.length === 1 && codePoints[idx]![0] === 0x20
         : glyph.id === spaceId;
-      return isSpace ? 'space' : 'base';
+      return isSpace ? SPACE_SPACING : BASE_SPACING;
     });
   }
 
@@ -167,7 +236,8 @@ class CustomFontEmbedder {
     size: number,
     spacing: TextSpacing = {},
   ): number {
-    const { glyphs, positions, codePoints } = this.positionedLayout(text);
+    const layout = this.positionedLayout(text);
+    const { positions } = layout;
     let total = 0;
     for (let idx = 0, len = positions.length; idx < len; idx++) {
       total += positions[idx]!.xAdvance;
@@ -176,7 +246,11 @@ class CustomFontEmbedder {
     const { characterSpacing = 0, wordSpacing = 0 } = spacing;
     if (characterSpacing !== 0 || wordSpacing !== 0) {
       for (const extra of spacingExtras(
-        this.glyphSpacing(glyphs, positions, codePoints),
+        this.glyphSpacing(
+          layout,
+          text,
+          clusterGroups(layout.clusters, positions.length, text.length),
+        ),
         characterSpacing,
         wordSpacing,
         size,
@@ -200,6 +274,10 @@ class CustomFontEmbedder {
     codePoints: number[][] | undefined;
     /** Per-occurrence text for ToUnicode. */
     text: readonly (readonly number[])[];
+    /** Source clusters (GlyphRun.clusters); undefined if the fontkit has none. */
+    clusters: readonly number[] | undefined;
+    /** Character starts (GlyphRun.characters), with clusters. */
+    characters: readonly number[] | undefined;
   } {
     const run = this.font.layout(text, this.fontFeatures);
     const glyphs = run.glyphs as (Glyph | null | undefined)[];
@@ -228,6 +306,8 @@ class CustomFontEmbedder {
       }
     }
     const { codePoints } = run;
+    const clusters = validClusters(run.clusters, glyphs.length, text.length);
+    const characters = clusters === undefined ? undefined : run.characters;
     // Another fontkit build may report no per-occurrence text; its glyph
     // objects' codePoints are then the best there is.
     const occurrenceText =
@@ -243,6 +323,8 @@ class CustomFontEmbedder {
       positions: positions as GlyphPosition[],
       codePoints,
       text: occurrenceText,
+      clusters,
+      characters,
     };
   }
 
@@ -463,9 +545,10 @@ class CustomFontEmbedder {
    * glyph only shaping reaches (ligature, joining form, Thai small tone mark)
    * is mapped, as its characters rather than as a presentation form the cmap
    * may also map to it - and a code emitted only without text gets none.
-   * What one string per code cannot say is lost: a second meaning of the
-   * same glyph (U+0020 and U+00A0), and the typed order and spelling where
-   * shaping split or reordered characters (SARA AM, reph).
+   * What one string per code cannot say - a second meaning of the same
+   * glyph (U+0020 and U+00A0), the typed order and spelling where shaping
+   * split or reordered characters (SARA AM, reph) - encodeText writes as
+   * /ActualText around the cluster instead.
    */
   protected recordedEntries(): ToUnicodeEntry[] {
     return [...this.firstText].sort(([a], [b]) => a - b);
@@ -689,3 +772,74 @@ export const compressWidths = (
 };
 
 export default CustomFontEmbedder;
+
+/** Glyphs `start` to `end - 1`, drawn for `text.slice(from, to)`. */
+interface ClusterGroup {
+  start: number;
+  end: number;
+  from: number;
+  to: number;
+}
+
+/**
+ * A run's source clusters, if they keep GlyphRun's promise (one per glyph,
+ * whole offsets within the text, monotone, starting at 0 or ending there);
+ * anything else is treated as having none.
+ */
+const validClusters = (
+  clusters: readonly number[] | undefined,
+  count: number,
+  length: number,
+): readonly number[] | undefined => {
+  if (clusters === undefined || clusters.length !== count) return undefined;
+  let up = true;
+  let down = true;
+  for (let idx = 0; idx < count; idx++) {
+    const value = clusters[idx]!;
+    if (!Number.isInteger(value) || value < 0 || value >= Math.max(length, 1)) {
+      return undefined;
+    }
+    if (idx > 0) {
+      if (value < clusters[idx - 1]!) up = false;
+      if (value > clusters[idx - 1]!) down = false;
+    }
+  }
+  return up || down ? clusters : undefined;
+};
+
+/**
+ * The run's clusters as glyph ranges with their source text: adjacent glyphs
+ * with one value form a cluster, whose text runs to the next larger value
+ * (or the end); text before the smallest value goes to its cluster. Without
+ * clusters the whole line is one.
+ */
+const clusterGroups = (
+  clusters: readonly number[] | undefined,
+  count: number,
+  length: number,
+): ClusterGroup[] => {
+  if (count === 0) return [];
+  if (clusters === undefined) {
+    return [{ start: 0, end: count, from: 0, to: length }];
+  }
+  const values = [...new Set(clusters)].sort((a, b) => a - b);
+  const next = new Map<number, number>();
+  for (let idx = 0; idx < values.length; idx++) {
+    next.set(values[idx]!, values[idx + 1] ?? length);
+  }
+  const smallest = values[0]!;
+  const groups: ClusterGroup[] = [];
+  for (let start = 0; start < count; ) {
+    const value = clusters[start]!;
+    let end = start + 1;
+    while (end < count && clusters[end] === value) end++;
+    groups.push({
+      start,
+      end,
+      from: value === smallest ? 0 : value,
+      to: next.get(value)!,
+    });
+    start = end;
+  }
+  return groups;
+};

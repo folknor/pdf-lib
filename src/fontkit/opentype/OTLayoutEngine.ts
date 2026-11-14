@@ -38,13 +38,12 @@ export default class OTLayoutEngine {
     // starts from its occurrence's code points, never from the glyph.
     this.glyphInfos = glyphRun.glyphs.map(
       (glyph, i) =>
-        new GlyphInfo(
-          this.font,
-          glyph.id,
-          [...glyphRun.codePoints[i]!],
-          undefined,
-          [...glyphRun.text[i]!],
-        ),
+        new GlyphInfo(this.font, glyph.id, {
+          codePoints: [...glyphRun.codePoints[i]!],
+          text: [...glyphRun.text[i]!],
+          cluster: glyphRun.clusters[i]!,
+          components: glyphRun.components[i]!,
+        }),
     );
 
     // Select a script based on what is available in GSUB/GPOS.
@@ -99,6 +98,8 @@ export default class OTLayoutEngine {
       );
       glyphRun.codePoints = this.glyphInfos.map((info) => [...info.codePoints]);
       glyphRun.text = this.glyphInfos.map((info) => [...info.text]);
+      glyphRun.clusters = this.glyphInfos.map((info) => info.cluster);
+      glyphRun.components = this.glyphInfos.map((info) => info.components);
     }
   }
 
@@ -144,6 +145,8 @@ export default class OTLayoutEngine {
       glyphRun.glyphs.reverse();
       glyphRun.codePoints.reverse();
       glyphRun.text.reverse();
+      glyphRun.clusters.reverse();
+      glyphRun.components.reverse();
       glyphRun.positions.reverse();
     }
 

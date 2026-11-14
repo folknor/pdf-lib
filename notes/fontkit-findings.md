@@ -153,15 +153,3 @@ read the glyf table. In an sbix font with no glyf table, layout and width
 measurement fail, and `TTFSubset` refuses such fonts with an error. Fixing it
 means giving `SBIXGlyph` hmtx-based metrics when glyf is absent, as `CBDTGlyph`
 has, after which `TTFSubset._outlineless` can accept it.
-
-## Ligature component counts are code point counts
-
-GSUB ligature substitution (`GSUBProcessor`, the `lastNumComps` bookkeeping)
-and GPOS mark-to-ligature attachment (`GPOSProcessor`, `ligGlyph.codePoints
-.length`) take the number of components a ligature glyph has from the
-length of its `GlyphInfo.codePoints`. That is the number of code points, not
-of glyphs: a base with a variation selector is one glyph with two code
-points, and the second and later pieces of a multiple substitution have
-none, so a ligature built from either picks the wrong component for its
-marks. The count needs to be its own per-occurrence field, set to 1 for a
-glyph from the cmap and carried through substitution.

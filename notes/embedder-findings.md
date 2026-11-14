@@ -36,39 +36,29 @@ page's resources). A fix detaches the resources dictionary and the category
 being written on first write, whatever caused the sharing, rather than only
 for inheritance.
 
-## Character spacing is per glyph, not per cluster or character
+## Form field layout and drawSvg apply no character or word spacing
 
-`drawText` spacing is drawn as `EncodedText.withSpacing` positions (no
-`Tc`/`Tw`), which keeps only GPOS-attached marks on their bases: a mark the
-layout did not attach (a font without mark positioning, or an AAT or
-non-OpenType engine, which set no `isMark`/`attachedTo` on positions) takes
-no spacing itself but moves with the pen, so it lands the base's spacing to
-the right of where the font put it. A ligature takes character spacing once,
-not once per character it stands for, and one standing for several spaces
-takes word spacing once. Word spacing already follows occurrences of U+0020
-(`GlyphRun.codePoints`), not the glyph. The rest needs source clusters out of
-`layout()` - which glyphs came from which typed characters, carried through
-the code-point rewrites and shapers - the same provenance ToUnicode needs to
-spell typed text (below). Form field layout and `drawSvg` apply no character
-or word spacing at all.
+`drawText` takes `characterSpacing`/`wordSpacing` and draws them per source
+cluster (`EncodedText.withSpacing`), but form field appearances
+(`src/api/text/layout.ts`) and `drawSvg` have no spacing options at all.
 
-## ToUnicode holds one string per code, in shaping order
+## ActualText recovers typed text per cluster, not line order or every reader
 
-ToUnicode maps each glyph a font draws to the text of its first encoded
-occurrence (`CustomFontEmbedder.toUnicodeEntries`). One string per code
-cannot say everything: a glyph drawn for two characters (U+0020 and U+00A0
-in fonts that share it) extracts as whichever was encoded first, a multiple
-substitution that repeats a glyph (a -> x x) extracts the text once per
-copy, and the text is the spelling the font was shaped from in glyph order,
-so where shaping split or moved characters the typed text is not recovered:
-SARA AM (U+0E33) extracts as U+0E4D U+0E32 around the tone mark, a reph or
-pre-base matra extracts where it is drawn, and an RTL run is in visual
-order. Fixing
-it needs per-glyph source clusters (indices into the typed text, mapped
-through `composeCanonical`, `decomposeSaraAm` and the shapers' splits and
-insertions) and then `/ActualText` spans for clusters whose glyph mappings
-do not spell their text, or separate PDF codes per meaning for a subset
-(full embeds keep code = glyph id through `CIDToGIDMap /Identity`).
+`CustomFontEmbedder.encodeText` wraps each source cluster whose glyphs'
+ToUnicode mappings do not spell its text in a `/Span` with `/ActualText`.
+What that does not cover:
+- Order between clusters is the drawing order. A right-to-left run is drawn
+  whole-run reversed (no bidi), so a reader that concatenates in content
+  order gets its clusters reversed, digits inside RTL text included; only
+  readers that reorder by position recover the line.
+- Provenance ends at the string given to `encodeText`: what `drawText` and
+  field layout clean before that (tabs, CRLF, trimmed wrap whitespace, comb
+  cells encoded one scalar at a time) is not recoverable.
+- A string whose glyphs shaping deletes entirely draws nothing and carries
+  no span, so its text is lost.
+- Readers that ignore marked-content ActualText (pdf.js text extraction,
+  going by its open issue 12237) still read the ToUnicode mappings, one
+  string per code.
 
 ## Embedded files that do not come through attach() skip the PDF/A check
 

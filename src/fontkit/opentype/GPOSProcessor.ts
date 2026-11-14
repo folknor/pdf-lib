@@ -247,15 +247,16 @@ export default class GPOSProcessor extends OTProcessor {
         const ligAttach = table.ligatureArray[ligIndex];
         const markGlyph = this.glyphIterator.cur!;
         const ligGlyph = this.glyphs[baseGlyphIndex]!;
+        // The font's LigatureAttach record count bounds the component and
+        // is the fallback (last component), whatever built the glyph: a
+        // cmap-mapped ligature has the same anchors as a shaped one.
+        const componentCount = ligAttach.length;
         const compIndex =
           ligGlyph.ligatureID &&
           ligGlyph.ligatureID === markGlyph.ligatureID &&
           (markGlyph.ligatureComponent ?? 0) > 0
-            ? Math.min(
-                markGlyph.ligatureComponent!,
-                ligGlyph.codePoints.length,
-              ) - 1
-            : ligGlyph.codePoints.length - 1;
+            ? Math.min(markGlyph.ligatureComponent!, componentCount) - 1
+            : componentCount - 1;
 
         const markRecord = table.markArray[markIndex];
         const baseAnchor = ligAttach[compIndex]?.[markRecord.class];

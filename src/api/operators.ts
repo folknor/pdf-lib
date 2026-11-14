@@ -1,7 +1,7 @@
 import {
   type EncodedText,
   PDFOperatorNames as Ops,
-  type PDFHexString,
+  PDFHexString,
   type PDFName,
   type PDFNumber,
   PDFOperator,
@@ -238,13 +238,20 @@ const roundPosition = (value: number) => {
  * them, which is why the font size is needed, and set it back to `rise`
  * after them. `rise` must therefore be the text rise in effect when this is
  * shown; callers that do not know it set it first.
+ *
+ * Glyph ranges with `actualText` are wrapped in `/Span <</ActualText ..>>
+ * BDC ... EMC`, which nests inside the caller's `BT ... ET` (and any marked
+ * content around it).
  */
 export const showEncodedText = (
   text: EncodedText,
   fontSize: number | PDFNumber,
   rise: number | PDFNumber = 0,
 ): PDFOperator[] => {
-  if (text.isUnpositioned()) return [showText(text.toHexString())];
+  const spans = text.actualText;
+  if (spans.length === 0 && text.isUnpositioned()) {
+    return [showText(text.toHexString())];
+  }
 
   const size = asNumber(fontSize);
   const baseRise = asNumber(rise);
@@ -269,12 +276,20 @@ export const showEncodedText = (
   const flushArray = () => {
     flushAdjust();
     flushCodes();
-    if (parts.length > 0)
+    if (parts.length > 0) {
       operators.push(showTextAdjusted(`[${parts.join(' ')}]`));
+    }
     parts = [];
   };
 
+  // Each /ActualText span holds exactly its glyphs: the shows are split at
+  // its edges, with the adjustment after its last glyph inside it.
+  let span = 0;
   for (let idx = 0, len = text.codes.length; idx < len; idx++) {
+    if (spans[span] !== undefined && spans[span]!.start === idx) {
+      flushArray();
+      operators.push(beginActualText(spans[span]!.text));
+    }
     const xOffset = text.xOffsets[idx]!;
     const glyphRise = roundPosition(
       baseRise + (text.yOffsets[idx]! * size) / 1000,
@@ -289,6 +304,11 @@ export const showEncodedText = (
     flushAdjust();
     pendingCodes += text.codes[idx]!;
     pendingAdjust += text.widths[idx]! + xOffset - text.advances[idx]!;
+    if (spans[span] !== undefined && spans[span]!.end === idx + 1) {
+      flushArray();
+      operators.push(endMarkedContent());
+      span++;
+    }
   }
   flushArray();
   if (currentRise !== roundPosition(baseRise)) {
@@ -470,3 +490,14 @@ export const beginMarkedContent = (tag: string | PDFName) =>
   PDFOperator.of(Ops.BeginMarkedContent, [asPDFName(tag)]);
 
 export const endMarkedContent = () => PDFOperator.of(Ops.EndMarkedContent);
+
+/**
+ * `/Span <</ActualText ...>> BDC`: what follows, up to the matching `EMC`,
+ * extracts as `text` (ISO 32000-1 14.9.4), written as a UTF-16BE text
+ * string.
+ */
+export const beginActualText = (text: string) =>
+  PDFOperator.of(Ops.BeginMarkedContentSequence, [
+    asPDFName('Span'),
+    `<</ActualText ${PDFHexString.fromText(text).toString()}>>`,
+  ]);

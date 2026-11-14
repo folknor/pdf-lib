@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import fontkit from '../../src/fontkit.js';
-import { decomposeSaraAm } from '../../src/fontkit/layout/ThaiSaraAm.js';
+import { decomposeSaraAm as decompose } from '../../src/fontkit/layout/ThaiSaraAm.js';
 import UnicodeLayoutEngine from '../../src/fontkit/layout/UnicodeLayoutEngine.js';
+
+const decomposeSaraAm = (codePoints: number[], hasGlyph: (cp: number) => boolean) =>
+  decompose(codePoints, hasGlyph).codePoints;
 
 const all = () => true;
 
@@ -17,6 +20,10 @@ describe('SARA AM decomposition', () => {
     expect(decomposeSaraAm([0x0e19, 0x0e49, 0x0e33, 0x0e19, 0x0e49, 0x0e33], all)).toEqual([
       0x0e19, 0x0e4d, 0x0e49, 0x0e32, 0x0e19, 0x0e4d, 0x0e49, 0x0e32,
     ]);
+  });
+
+  it('gives both parts the cluster of the SARA AM', () => {
+    expect(decompose([0x0e14, 0x0e4b, 0x0e33], all, [0, 0, 2]).clusters).toEqual([0, 2, 0, 2]);
   });
 
   it('handles Lao the same way', () => {

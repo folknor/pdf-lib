@@ -29,9 +29,34 @@ export default class GlyphRun {
    * text: `codePoints` without the contributions of glyphs the shaper
    * inserted (dotted circles), which stand for no character. Its order and
    * spelling are those of `codePoints`, so it is not the typed text where
-   * shaping reordered or split characters.
+   * shaping reordered or split characters (`clusters` recovers that).
    */
   text: number[][];
+
+  /**
+   * For each glyph, where its source cluster starts: a UTF-16 offset into
+   * the string given to layout(). Values are monotone in glyph order
+   * (decreasing for a right-to-left run drawn reversed), glyphs of one
+   * cluster are adjacent and share the value, and a cluster's typed text
+   * runs from its value to the next larger value in the run, or the end of
+   * the string. A cluster is a character with what continues it (marks,
+   * joiners, selectors; see Clusters.ts), widened to everything a ligature,
+   * composition or reordering joined it with.
+   */
+  clusters: number[];
+
+  /**
+   * Offsets in the string where a character that takes character spacing
+   * starts (see initialClusters): one per character, none for
+   * default-ignorables. Each cluster's count is the number in its range.
+   */
+  characters: number[];
+
+  /**
+   * For each glyph, its ligature component count: 1 unless GSUB ligated it
+   * (then the sum of its components' counts).
+   */
+  components: number[];
 
   /**
    * An array of GlyphPosition objects for each glyph in the run
@@ -74,6 +99,9 @@ export default class GlyphRun {
     this.glyphs = glyphs;
     this.codePoints = codePoints;
     this.text = codePoints.map((cps) => [...cps]);
+    this.clusters = codePoints.map(() => 0);
+    this.characters = [];
+    this.components = codePoints.map(() => 1);
     this.positions = null;
     this.script = script;
     this.language = language || null;

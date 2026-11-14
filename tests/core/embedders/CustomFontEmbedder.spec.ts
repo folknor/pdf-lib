@@ -275,13 +275,41 @@ describe('CustomFontEmbedder', () => {
     const encoded = embedder.encodeText('a b c');
     // Source Han draws both with one glyph.
     expect(encoded.codes[1]).toBe(encoded.codes[3]);
+    const base = { characters: 1, spaces: 0 };
     expect(encoded.spacing).toEqual([
-      'base',
-      'space',
-      'base',
-      'base',
-      'base',
+      base,
+      { characters: 1, spaces: 1 },
+      base,
+      base,
+      base,
     ]);
+    // The no-break space extracts as the space its glyph is mapped to, so
+    // it gets /ActualText; nothing else does.
+    expect(encoded.actualText).toEqual([{ start: 3, end: 4, text: '\u00a0' }]);
+  });
+
+  it('writes the typed text as ActualText where shaping changed it', async () => {
+    for (const Embedder of [CustomFontEmbedder, CustomFontSubsetEmbedder]) {
+      const embedder = await Embedder.for(fontkit, notoSansThai);
+      // SARA AM is drawn as NIKHAHIT, tone mark, SARA AA: one cluster.
+      const encoded = embedder.encodeText('กน้ำ');
+      expect(encoded.actualText).toEqual([
+        { start: 1, end: encoded.codes.length, text: 'น้ำ' },
+      ]);
+      expect(encoded.spacing.map((k) => k.characters)).toEqual([
+        1,
+        ...encoded.codes.slice(2).map(() => 0),
+        2,
+      ]);
+    }
+  });
+
+  it('wraps a hidden default-ignorable whose drawn glyph may map to a space', async () => {
+    const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
+    embedder.encodeText(' ');
+    const encoded = embedder.encodeText('a\u00adb');
+    expect(encoded.actualText).toEqual([{ start: 0, end: 2, text: 'a\u00ad' }]);
+    expect(encoded.spacing.map((k) => k.characters)).toEqual([0, 1, 1]);
   });
 
   it('skips code points whose glyph lookup returns null', async () => {

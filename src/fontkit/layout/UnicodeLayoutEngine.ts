@@ -26,6 +26,7 @@ export default class UnicodeLayoutEngine {
     glyphs: Glyph[],
     codePoints: number[][],
     positions: GlyphPosition[],
+    components: number[] = codePoints.map(() => 1),
   ): GlyphPosition[] {
     // find each base + mark cluster, and position the marks relative to the base
     let clusterStart = 0;
@@ -41,6 +42,7 @@ export default class UnicodeLayoutEngine {
             glyphs,
             codePoints,
             positions,
+            components,
             clusterStart,
             clusterEnd,
           );
@@ -55,6 +57,7 @@ export default class UnicodeLayoutEngine {
         glyphs,
         codePoints,
         positions,
+        components,
         clusterStart,
         clusterEnd,
       );
@@ -67,12 +70,15 @@ export default class UnicodeLayoutEngine {
     glyphs: Glyph[],
     codePoints: number[][],
     positions: GlyphPosition[],
+    componentCounts: number[],
     clusterStart: number,
     clusterEnd: number,
   ): void {
     const base = glyphs[clusterStart]!;
     const baseBox = base.cbox.copy();
-    const components = codePoints[clusterStart]!.length;
+    // Ligature components, not code points (a base with a variation
+    // selector is one component).
+    const components = componentCounts[clusterStart] ?? 1;
 
     // adjust bounding box for ligature glyphs
     if (components > 1) {

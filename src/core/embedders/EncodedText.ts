@@ -15,9 +15,12 @@ import PDFHexString from '../objects/PDFHexString.js';
  * measures the text with, so a line is drawn at the positions it was
  * measured with.
  *
- * `spacing[i]` says what character and word spacing glyph `i` takes (see
- * [[withSpacing]]), and `attachedTo[i]` the index of the glyph the layout
- * attached it to (mark positioning), whose placement its offsets follow.
+ * `spacing[i]` says how much character and word spacing is added after
+ * glyph `i` (see [[withSpacing]]), and `attachedTo[i]` the index of the glyph
+ * the layout attached it to (mark positioning), whose placement its offsets
+ * follow. `actualText` lists the glyph ranges whose extracted text (through
+ * the font's ToUnicode) would not be the text they were encoded from, with
+ * that text; they are shown as /Span marked content with /ActualText.
  */
 export default class EncodedText {
   readonly codes: readonly string[];
@@ -27,6 +30,7 @@ export default class EncodedText {
   readonly yOffsets: readonly number[];
   readonly spacing: readonly GlyphSpacing[];
   readonly attachedTo: readonly (number | null)[];
+  readonly actualText: readonly ActualTextSpan[];
   /** Sum of `advances`. */
   readonly advance: number;
 
@@ -36,12 +40,11 @@ export default class EncodedText {
     widths: number[],
     xOffsets: number[],
     yOffsets: number[],
-    spacing: GlyphSpacing[] = new Array<GlyphSpacing>(codes.length).fill(
-      'base',
-    ),
+    spacing: GlyphSpacing[] = codes.map(() => BASE_SPACING),
     attachedTo: (number | null)[] = new Array<number | null>(codes.length).fill(
       null,
     ),
+    actualText: ActualTextSpan[] = [],
   ) {
     const count = codes.length;
     if (
@@ -55,6 +58,33 @@ export default class EncodedText {
       throw new Error('EncodedText: per-glyph arrays differ in length');
     }
     attachmentRoots(attachedTo);
+    let previousEnd = 0;
+    for (const span of actualText) {
+      if (
+        !Number.isInteger(span.start) ||
+        !Number.isInteger(span.end) ||
+        span.start < previousEnd ||
+        span.end <= span.start ||
+        span.end > count
+      ) {
+        throw new Error(
+          'EncodedText: actual text spans overlap or are out of range',
+        );
+      }
+      previousEnd = span.end;
+    }
+    for (const kind of spacing) {
+      if (
+        !Number.isInteger(kind.characters) ||
+        !Number.isInteger(kind.spaces) ||
+        kind.characters < 0 ||
+        kind.spaces < 0
+      ) {
+        throw new Error(
+          'EncodedText: spacing counts must be whole and not negative',
+        );
+      }
+    }
     let advance = 0;
     for (let idx = 0; idx < count; idx++) {
       for (const value of [
@@ -76,21 +106,25 @@ export default class EncodedText {
     this.yOffsets = yOffsets;
     this.spacing = spacing;
     this.attachedTo = attachedTo;
+    this.actualText = actualText;
     this.advance = advance;
   }
 
   /**
-   * This text drawn with extra spacing, in PDF points at `fontSize`: every
-   * `base` glyph advances `characterSpacing` further, every `space` glyph
-   * `characterSpacing + wordSpacing` further, and `none` glyphs (marks,
-   * hidden default-ignorables) take none. A glyph attached to another keeps
+   * This text drawn with extra spacing, in PDF points at `fontSize`: glyph
+   * `i` advances `spacing[i].characters` times `characterSpacing` plus
+   * `spacing[i].spaces` times `wordSpacing` further. A glyph attached to another keeps
    * its place relative to the glyph its attachment chain ends at, whatever
    * spacing lies between them.
    *
    * This is the drawing counterpart of the PDF's `Tc` and `Tw`, which cannot
    * be used for it: `Tc` moves an attached mark off its anchor and `Tw` acts
    * only on the single-byte code 32, so not at all in a two-byte encoding.
-   * Spacing is applied per glyph, so a ligature takes it once.
+   * A custom font with source clusters puts a cluster's whole spacing after
+   * its last glyph (one character spacing per character it holds, one word
+   * spacing per U+0020), so nothing inside a cluster - a base and its marks,
+   * a ligature - moves apart, and the total does not depend on how the font
+   * shaped the text.
    */
   withSpacing(
     characterSpacing: number,
@@ -125,6 +159,7 @@ export default class EncodedText {
       [...this.yOffsets],
       [...this.spacing],
       [...this.attachedTo],
+      [...this.actualText],
     );
   }
 
@@ -154,11 +189,39 @@ export default class EncodedText {
 }
 
 /**
- * What spacing a glyph takes: `base` character spacing, `space` character
- * and word spacing (an occurrence of U+0020), `none` neither (marks and
- * hidden default-ignorables).
+ * What spacing is added after a glyph: `characters` times the character
+ * spacing and `spaces` times the word spacing.
  */
-export type GlyphSpacing = 'base' | 'space' | 'none';
+export interface GlyphSpacing {
+  readonly characters: number;
+  readonly spaces: number;
+}
+
+/** One character. */
+export const BASE_SPACING: GlyphSpacing = Object.freeze({
+  characters: 1,
+  spaces: 0,
+});
+/** One U+0020. */
+export const SPACE_SPACING: GlyphSpacing = Object.freeze({
+  characters: 1,
+  spaces: 1,
+});
+/** Nothing (a mark, a hidden default-ignorable, inside a cluster). */
+export const NO_SPACING: GlyphSpacing = Object.freeze({
+  characters: 0,
+  spaces: 0,
+});
+
+/**
+ * Glyphs `start` to `end - 1` stand for `text`, which their ToUnicode
+ * mappings do not spell.
+ */
+export interface ActualTextSpan {
+  readonly start: number;
+  readonly end: number;
+  readonly text: string;
+}
 
 /** Extra spacing applied to text, in PDF points. */
 export interface TextSpacing {
@@ -184,10 +247,9 @@ export const spacingExtras = (
     throw new Error('Text spacing cannot be applied at font size 0');
   }
   const perEm = 1000 / (fontSize || 1);
-  return spacing.map((kind) =>
-    kind === 'none'
-      ? 0
-      : (characterSpacing + (kind === 'space' ? wordSpacing : 0)) * perEm,
+  return spacing.map(
+    (kind) =>
+      (kind.characters * characterSpacing + kind.spaces * wordSpacing) * perEm,
   );
 };
 

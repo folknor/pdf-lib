@@ -30,8 +30,9 @@
 // table decomposition and are left to HangulShaper. Data is Unicode 8, the
 // version of the vendored unicode-properties (scripts/gen-canonical-data.mjs).
 //
-// Composed glyphs carry the composite code point, so text extraction yields
-// a canonically equivalent spelling, not necessarily the typed one.
+// Composed glyphs carry the composite code point, so their ToUnicode mapping
+// is a canonically equivalent spelling; the clusters carried through here let
+// the embedder write the typed one as /ActualText where they differ.
 
 import { isMark } from '../../vendors/unicode-properties/index.js';
 import {
@@ -91,11 +92,15 @@ const isVariationSelector = (cp: number) =>
 /**
  * Rewrites `codePoints` into the canonically equivalent sequence the font
  * draws best by the rules above. `hasGlyph` is the font's cmap test.
+ * `clusters` (one per code point, see Clusters.ts) is carried along: a
+ * decomposition's parts keep their code point's cluster, a composite takes
+ * the smaller of its starter's and mark's.
  */
 export function composeCanonical(
   codePoints: number[],
   hasGlyph: (cp: number) => boolean,
-): number[] {
+  clusters: number[] = codePoints.map((_, i) => i),
+): { codePoints: number[]; clusters: number[] } {
   const { decompositions, compositions } = load();
 
   // Clusters holding a variation selector, judged on the typed sequence.
@@ -126,6 +131,7 @@ export function composeCanonical(
   };
 
   const cps: number[] = [];
+  const cpClusters: number[] = [];
   const locked: boolean[] = [];
   for (let i = 0; i < codePoints.length; i++) {
     const cp = codePoints[i]!;
@@ -135,11 +141,13 @@ export function composeCanonical(
         : decompose(cp);
     for (const part of parts ?? [cp]) {
       cps.push(part);
+      cpClusters.push(clusters[i]!);
       locked.push(protectedAt[i]!);
     }
   }
 
   const out: number[] = [];
+  const outClusters: number[] = [];
   let starter = -1; // index in out of the open starter, -1 if none
   let blockedByZero = false;
   let highestBetween = 0;
@@ -149,6 +157,7 @@ export function composeCanonical(
     const cls = combiningClass(cp);
     if (locked[i]) {
       out.push(cp);
+      outClusters.push(cpClusters[i]!);
       starter = -1;
       continue;
     }
@@ -162,10 +171,12 @@ export function composeCanonical(
       const composite = compositions.get(out[starter]!)?.get(cp);
       if (composite !== undefined && hasGlyph(composite)) {
         out[starter] = composite;
+        outClusters[starter] = Math.min(outClusters[starter]!, cpClusters[i]!);
         continue;
       }
     }
     out.push(cp);
+    outClusters.push(cpClusters[i]!);
     if (!mark && cls === 0) {
       starter = out.length - 1;
       blockedByZero = false;
@@ -176,5 +187,5 @@ export function composeCanonical(
       highestBetween = cls;
     }
   }
-  return out;
+  return { codePoints: out, clusters: outClusters };
 }

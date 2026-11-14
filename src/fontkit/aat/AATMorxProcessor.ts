@@ -3,13 +3,18 @@
  * the occurrence stands for. morx works on these rather than on the font's
  * shared Glyph objects, which carry no text (see Glyph).
  */
-export interface MorxGlyph {
+export interface MorxGlyph extends Occurrence {
   id: number;
-  codePoints: number[];
 }
 
 type Glyph = MorxGlyph;
 
+import {
+  inserted,
+  ligated,
+  mapped,
+  type Occurrence,
+} from '../layout/Occurrence.js';
 import AATLookupTable from './AATLookupTable.js';
 import AATStateMachine from './AATStateMachine.js';
 
@@ -211,10 +216,7 @@ export default class AATMorxProcessor {
       glyph = this.glyphs[this.markedGlyph]!;
       const gid = lookupTable.lookup(glyph.id);
       if (gid) {
-        this.glyphs[this.markedGlyph] = {
-          id: gid,
-          codePoints: glyph.codePoints,
-        };
+        this.glyphs[this.markedGlyph] = { ...glyph, id: gid };
       }
     }
 
@@ -224,7 +226,7 @@ export default class AATMorxProcessor {
       glyph = this.glyphs[index]!;
       const gid2 = lookupTable.lookup(glyph.id);
       if (gid2) {
-        this.glyphs[index] = { id: gid2, codePoints: glyph.codePoints };
+        this.glyphs[index] = { ...glyph, id: gid2 };
       }
     }
 
@@ -250,12 +252,12 @@ export default class AATMorxProcessor {
       let actionIndex = entry.action!;
       let last = false;
       let ligatureIndex = 0;
-      let codePoints: number[] = [];
+      let parts: Occurrence[] = [];
       const ligatureGlyphs: number[] = [];
 
       while (!last) {
         const componentGlyph = this.ligatureStack.pop()!;
-        codePoints.unshift(...this.glyphs[componentGlyph]!.codePoints);
+        parts.unshift(this.glyphs[componentGlyph]!);
 
         const action = actions.getItem(actionIndex++);
         last = !!(action & LAST_MASK);
@@ -268,12 +270,19 @@ export default class AATMorxProcessor {
 
         if (last || store) {
           const ligatureEntry = ligatureList.getItem(ligatureIndex);
-          this.glyphs[componentGlyph] = { id: ligatureEntry, codePoints };
+          this.glyphs[componentGlyph] = {
+            ...ligated(parts),
+            id: ligatureEntry,
+          };
           ligatureGlyphs.push(componentGlyph);
           ligatureIndex = 0;
-          codePoints = [];
+          parts = [];
         } else {
-          this.glyphs[componentGlyph] = { id: 0xffff, codePoints: [] };
+          // Deleted later; its text is in the ligature.
+          this.glyphs[componentGlyph] = {
+            ...inserted([], this.glyphs[componentGlyph]!.cluster),
+            id: 0xffff,
+          };
         }
       }
 
@@ -295,7 +304,7 @@ export default class AATMorxProcessor {
         const gid = lookupTable.lookup(glyph.id);
         if (gid) {
           // 0 means do nothing
-          glyphs[i] = { id: gid, codePoints: glyph.codePoints };
+          glyphs[i] = { ...glyph, id: gid };
         }
       }
     }
@@ -308,12 +317,14 @@ export default class AATMorxProcessor {
     isBefore: boolean,
   ): void {
     const insertions: Glyph[] = [];
+    // Inserted glyphs stand for no character and join the cluster of the
+    // glyph they are inserted at.
+    const cluster = this.glyphs[glyphIndex]?.cluster ?? 0;
     while (count--) {
       const gid = this.subtable.table.insertionActions.getItem(
         insertionActionIndex++,
       );
-      // Inserted glyphs stand for no character.
-      insertions.push({ id: gid, codePoints: [] });
+      insertions.push({ ...inserted([], cluster), id: gid });
     }
 
     if (!isBefore) {
@@ -413,7 +424,7 @@ export default class AATMorxProcessor {
         });
 
         // Add glyph to input and glyphs to process.
-        const g: Glyph = { id: glyph, codePoints: [] };
+        const g: Glyph = { ...mapped([], 0), id: glyph };
         input.push(g);
         glyphs.push(input[input.length - 1]!);
 

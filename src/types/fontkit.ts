@@ -204,6 +204,20 @@ export interface GlyphRun {
   text?: number[][];
 
   /**
+   * For each glyph, the UTF-16 offset in the laid-out string where its
+   * source cluster starts; monotone in glyph order, so a cluster's typed text
+   * runs from its value to the next larger one in the run (or the end). Set
+   * by the bundled fontkit.
+   */
+  clusters?: number[];
+
+  /**
+   * Offsets in the laid-out string where a character that takes character
+   * spacing starts. Set by the bundled fontkit, with `clusters`.
+   */
+  characters?: number[];
+
+  /**
    * An array of GlyphPosition objects for each glyph in the run
    */
   positions: GlyphPosition[];
