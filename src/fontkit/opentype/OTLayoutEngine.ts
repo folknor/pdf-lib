@@ -67,9 +67,12 @@ export default class OTLayoutEngine {
     );
     this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
 
-    // Assign chosen features to output glyph run
+    // Report chosen features on the run, keeping a requested alternate
+    // number (a planned key never holds a user `false`: overrides unplan it).
     for (const key in this.plan.allFeatures) {
-      glyphRun.features[key] = true;
+      if (typeof glyphRun.features[key] !== 'number') {
+        glyphRun.features[key] = true;
+      }
     }
   }
 

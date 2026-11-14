@@ -1,4 +1,5 @@
 import { isDigit } from '../../../vendors/unicode-properties/index.js';
+import type { FeatureRequest } from '../../layout/FeatureValues.js';
 import type GlyphInfo from '../GlyphInfo.js';
 import type ShapingPlan from '../ShapingPlan.js';
 
@@ -25,7 +26,7 @@ export default class DefaultShaper {
   static plan(
     plan: ShapingPlan,
     glyphs: GlyphInfo[],
-    features: string[] | Record<string, boolean>,
+    features: FeatureRequest,
   ): void {
     // Every hook is dispatched through `this`, the shaper class choose()
     // selected, so subclass overrides (Arabic joining features, Indic and
@@ -62,7 +63,7 @@ export default class DefaultShaper {
 
   static planPostprocessing(
     plan: ShapingPlan,
-    userFeatures: string[] | Record<string, boolean>,
+    userFeatures: FeatureRequest,
   ): void {
     plan.add([...COMMON_FEATURES, ...HORIZONTAL_FEATURES]);
     plan.setFeatureOverrides(userFeatures);

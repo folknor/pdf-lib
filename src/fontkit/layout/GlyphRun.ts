@@ -1,5 +1,6 @@
 import BBox from '../glyph/BBox.js';
 import type Glyph from '../glyph/Glyph.js';
+import { type FeatureRequest, normalizeFeatures } from './FeatureValues.js';
 import type GlyphPosition from './GlyphPosition.js';
 import * as Script from './Script.js';
 
@@ -37,13 +38,15 @@ export default class GlyphRun {
 
   /**
    * The features requested during shaping. This is a combination of user
-   * specified features and features chosen by the shaper.
+   * specified features and features chosen by the shaper. User values are
+   * kept as normalized (see normalizeFeatures), so an alternate number
+   * survives; shaper-chosen features are `true`.
    */
-  features: Record<string, boolean>;
+  features: FeatureRequest;
 
   constructor(
     glyphs: Glyph[],
-    features: string[] | Record<string, boolean>,
+    features: string[] | Record<string, unknown>,
     script: string,
     language: string | null,
     direction: string | null,
@@ -53,16 +56,9 @@ export default class GlyphRun {
     this.script = script;
     this.language = language || null;
     this.direction = direction || Script.direction(script);
-    this.features = {};
-
-    // Convert features to an object
-    if (Array.isArray(features)) {
-      for (const tag of features) {
-        this.features[tag] = true;
-      }
-    } else if (typeof features === 'object') {
-      this.features = features;
-    }
+    // A normalized copy: the caller's object (an embedder keeps one for
+    // every layout call) is never aliased, so shaping cannot write into it.
+    this.features = normalizeFeatures(features);
   }
 
   /**

@@ -61,3 +61,15 @@ writes one, and `declarePDFA({ part: 1 })` declares a document that already
 holds `/EmbeddedFiles` or attachments already flushed. Whether copying and
 declaring should refuse, as library writes contradicting a declaration, or
 stay unchecked like other existing content, is undecided.
+
+## heightOfFontAtSize mixes scaled and unscaled descent
+
+`CustomFontEmbedder.heightOfFontAtSize` computes `yTop - yBottom` in
+1000-unit space (`* this.scale`), but with `descender: false` subtracts
+`Math.abs(descent)` in font units, so the result is wrong whenever
+unitsPerEm is not 1000 (and when hhea descent is 0 the bbox fallback was
+used for the height but nothing is subtracted). It also substitutes
+`bbox.maxY`/`bbox.minY` per field when ascent or descent is individually
+zero, so a font with a legitimate zero descent measures to its bbox depth.
+`sizeOfFontAtHeight` shares the second issue. Which span the method means
+(ascent to descent, line advance, or ink extent) is not stated anywhere.

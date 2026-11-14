@@ -381,8 +381,9 @@ export default class GPOSProcessor extends OTProcessor {
     userFeatures: string[],
     glyphs: GlyphInfo[],
     advances?: GlyphPosition[],
+    featureValues?: Record<string, number>,
   ): void {
-    super.applyFeatures(userFeatures, glyphs, advances);
+    super.applyFeatures(userFeatures, glyphs, advances, featureValues);
 
     for (let i = 0; i < this.glyphs.length; i++) {
       this.fixCursiveAttachment(i);

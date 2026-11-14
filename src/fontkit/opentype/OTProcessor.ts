@@ -28,6 +28,7 @@ export default class OTProcessor {
   positions: GlyphPosition[];
   ligatureID: number;
   currentFeature: string | null;
+  featureValues: Record<string, number> = {};
   glyphIterator!: GlyphIterator;
 
   constructor(font: any, table: any) {
@@ -220,13 +221,33 @@ export default class OTProcessor {
     });
   }
 
+  /**
+   * `featureValues` is the plan's alternate numbers for this execution
+   * (ShapingPlan.featureValues); omitted, every enabled feature has value 1.
+   */
   applyFeatures(
     userFeatures: string[],
     glyphs: GlyphInfo[],
     advances?: GlyphPosition[],
+    featureValues: Record<string, number> = {},
   ): void {
     const lookups = this.lookupsForFeatures(userFeatures);
+    this.featureValues = featureValues;
     this.applyLookups(lookups, glyphs, advances);
+  }
+
+  /**
+   * The value of the feature being applied on `glyph`: 0 where the glyph is
+   * not eligible for it (a contextual rule can reach such a glyph, and
+   * HarfBuzz's glyph mask then gives 0), else the requested alternate
+   * number, default 1.
+   */
+  currentFeatureValue(glyph: GlyphInfo): number {
+    const feature = this.currentFeature;
+    if (feature == null || !(feature in glyph.features)) {
+      return 0;
+    }
+    return this.featureValues[feature] ?? 1;
   }
 
   applyLookups(

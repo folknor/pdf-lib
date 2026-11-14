@@ -499,9 +499,11 @@ for (const ot in OTMapping) {
 }
 
 // Maps an array of OpenType features to AAT features
-// in the form of {featureType:{featureSetting:true}}
+// in the form of {featureType:{featureSetting:true}}. An OpenType alternate
+// number only switches the mapped setting on: AAT selectors are not numbered
+// alternates, so `{ salt: 2 }` reaches morx as plain `salt`.
 export function mapOTToAAT(
-  inputFeatures: Record<string, boolean>,
+  inputFeatures: Record<string, boolean | number>,
 ): MorxFeatures {
   const res: MorxFeatures = {};
   for (const k in inputFeatures) {
@@ -511,7 +513,7 @@ export function mapOTToAAT(
         res[r[0]] = {};
       }
 
-      res[r[0]]![r[1]] = inputFeatures[k]!;
+      res[r[0]]![r[1]] = Boolean(inputFeatures[k]);
     }
   }
 

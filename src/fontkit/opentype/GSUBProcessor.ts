@@ -77,14 +77,21 @@ export default class GSUBProcessor extends OTProcessor {
       case 3: {
         // Alternate Substitution
         const index = this.coverageIndex(table.coverage);
-        if (index !== -1) {
-          const USER_INDEX = 0; // TODO
-          this.glyphIterator.cur!.id =
-            table.alternateSet.get(index)[USER_INDEX];
-          return true;
+        if (index === -1) {
+          return false;
         }
 
-        return false;
+        // The feature value picks the alternate, 1-based (`{ aalt: 2 }` is
+        // the second). Value 0 (target not eligible) or one beyond the set
+        // substitutes nothing, as in HarfBuzz; the next subtable is tried.
+        const glyph = this.glyphIterator.cur!;
+        const value = this.currentFeatureValue(glyph);
+        const alternates = table.alternateSet.get(index);
+        if (value === 0 || value > alternates.length) {
+          return false;
+        }
+        glyph.id = alternates[value - 1];
+        return true;
       }
 
       case 4: {

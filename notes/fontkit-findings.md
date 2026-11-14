@@ -128,7 +128,7 @@ extraction needs care: the PUA glyphs are cmap-mapped to PUA code points, so
 under the current ToUnicode policy (notes/embedder-findings.md) the swapped
 marks would extract as private-use characters.
 
-## Lookup mark filtering sets and alternate choice are ignored
+## Lookup mark filtering sets are ignored
 
 `tables/opentype.ts` decodes a lookup's `useMarkFilteringSet` and
 `markFilteringSet`, but `GlyphIterator` has no notion of them: a lookup that
@@ -136,8 +136,28 @@ should skip every mark outside a GDEF mark glyph set sees all marks instead,
 so contextual and mark lookups in fonts that rely on filtering sets can miss
 or misfire. Fixing it means `OTProcessor.applyLookups` and `applyLookupList`
 passing the set to the iterator and `shouldIgnore` consulting GDEF
-`markGlyphSetsDef`. Separately, GSUB type 3 (`GSUBProcessor`) always picks
-the first alternate; there is no caller-facing way to choose another.
+`markGlyphSetsDef`.
+
+## A lookup shared by two features runs once per feature
+
+`OTProcessor.lookupsForFeatures` emits one entry per feature and lookup
+pair, so a lookup that two enabled features of one stage both reference
+(common for `aalt` and `salt`) is applied twice, the second pass seeing the
+first pass's output. HarfBuzz applies each lookup once per stage with the
+union of its features' glyph masks. With numeric feature values the two
+passes may even pick different alternates (`{ aalt: 2, salt: 3 }`). Fixing it
+means compiling one application per lookup per stage, with a defined rule
+for which contributing feature's value an alternate substitution uses.
+
+## OS/2 version 0 tables decode without typo and win metrics
+
+`tables/OS2.ts` gives version 0 an empty tail, but a full Microsoft version 0
+table carries `sTypoAscender` through `usWinDescent` (only Apple's shortened
+legacy table ends early, which needs a length check rather than the version).
+So `typoAscender`, `winAscent` and friends are undefined on such fonts, and
+`Glyph._getDefaultMetrics` already falls back to hhea for them. Any future
+line-metric rule (fsSelection `useTypoMetrics`, a zero-hhea fallback) needs
+this decoded first.
 
 ## sbix fonts without glyf have no usable glyphs
 

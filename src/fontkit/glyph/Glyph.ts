@@ -105,7 +105,15 @@ export default class Glyph {
     const { advance: advanceWidth, bearing: leftBearing } =
       this._getTableMetrics(this._font.hmtx);
 
-    // For vertical metrics, use vmtx if available, or fall back to global data from OS/2 or hhea
+    // For vertical metrics, use vmtx if available, or fall back to global data from OS/2 or hhea.
+    // The fallback is synthetic and its policy unresolved: it takes typo
+    // metrics whenever OS/2 version > 0, ignoring fsSelection useTypoMetrics
+    // (defined from version 4), so it can disagree with TTFFont.ascent (hhea).
+    // The cantoo fontkit fork routed it through useTypoMetrics-aware font
+    // metrics; not adopted, since nothing in pdf-lib consumes vertical
+    // metrics and a correct rule also needs the OS/2 version 0 decoder to
+    // read typo/win fields. Phantom points read this too, so any new rule
+    // must stay on unvaried table values.
     let advanceHeight;
     let topBearing;
     if (this._font.vmtx) {
@@ -168,6 +176,10 @@ export default class Glyph {
     const scale = (1 / this._font.unitsPerEm) * size;
     return this.path.scale(scale);
   }
+
+  // The cantoo fontkit fork also adds width/height and left/top/right/bottom
+  // bearing getters (and font.lineHeight). Not adopted: nothing in pdf-lib
+  // reads them and each is cbox or _getMetrics() arithmetic a caller can do.
 
   /**
    * The glyph's advance width.

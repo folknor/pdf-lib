@@ -11,6 +11,7 @@ import type Glyph from './glyph/Glyph.js';
 import GlyphVariationProcessor from './glyph/GlyphVariationProcessor.js';
 import SBIXGlyph from './glyph/SBIXGlyph.js';
 import TTFGlyph from './glyph/TTFGlyph.js';
+import type { FeatureValue } from './layout/FeatureValues.js';
 import type GlyphRun from './layout/GlyphRun.js';
 import LayoutEngine from './layout/LayoutEngine.js';
 import CFFSubset from './subset/CFFSubset.js';
@@ -230,6 +231,15 @@ export default class TTFFont {
    * The font's [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
    * @type {number}
    */
+  // hhea, deliberately not OS/2 typo metrics under fsSelection
+  // useTypoMetrics (the cantoo fontkit fork switched to those; refused).
+  // That bit chooses default line spacing, while this getter feeds the PDF
+  // descriptor /Ascent /Descent (a max glyph height/depth contract), the
+  // capHeight fallback, and the embedder's heightOfFontAtSize and
+  // sizeOfFontAtHeight. Do not route preferred line metrics through here
+  // without first giving those consumers their own metric each. hhea is the
+  // existing choice, not a validated descriptor policy. Note also that the
+  // OS/2 decoder reads no typo/win fields for version 0 tables.
   get ascent() {
     return this['hhea'].ascent;
   }
@@ -434,7 +444,8 @@ export default class TTFFont {
    * Returns a GlyphRun object, which includes an array of Glyphs and GlyphPositions for the given string.
    *
    * @param {string} string
-   * @param {string[]} [userFeatures]
+   * @param userFeatures Tags to enable, or a map of tag to `true`/`false`, or
+   *   to a 1-based alternate number (`{ aalt: 2 }`) for GSUB alternates.
    * @param {string} [script]
    * @param {string} [language]
    * @param {string} [direction]
@@ -442,7 +453,7 @@ export default class TTFFont {
    */
   layout(
     string: string,
-    userFeatures?: string[] | Record<string, boolean>,
+    userFeatures?: string[] | Record<string, FeatureValue | undefined>,
     script?: string,
     language?: string,
     direction?: string,

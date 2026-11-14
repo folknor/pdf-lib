@@ -2,6 +2,7 @@ import AATLayoutEngine from '../aat/AATLayoutEngine.js';
 import type Glyph from '../glyph/Glyph.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
 import { composeCanonical } from './CanonicalCompose.js';
+import type { FeatureValue } from './FeatureValues.js';
 import GlyphPosition from './GlyphPosition.js';
 import GlyphRun from './GlyphRun.js';
 import KernProcessor from './KernProcessor.js';
@@ -31,7 +32,7 @@ export default class LayoutEngine {
 
   layout(
     string: string | Glyph[],
-    features?: string[] | Record<string, boolean> | string,
+    features?: string[] | Record<string, FeatureValue | undefined> | string,
     script?: string | string[] | null,
     language?: string | null,
     direction?: string | null,
