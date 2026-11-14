@@ -136,6 +136,9 @@ class PDFParser extends PDFObjectParser {
   private effective: Map<number, XRefDisposition> | undefined;
   /** An encrypted file parsed without its key: members are not read. */
   private keyless = false;
+  /** Separate xref loader: scan assignments must never override length targets. */
+  private lengthResolver: PDFParser | undefined;
+  private readonly knownStreamExtents = new Map<number, number>();
   private readonly loaded = new Set<number>();
   private readonly loading = new Set<number>();
   private readonly preparedContainers = new Map<
@@ -235,6 +238,24 @@ class PDFParser extends PDFObjectParser {
             false,
             'index',
           );
+          const resolver = new PDFParser(
+            this.pdfBytes,
+            Infinity,
+            false,
+            this.capNumbers,
+            this.cryptoFactory,
+            false,
+            this.context.maxDecodedStreamSize,
+            this.encryptRef,
+            false,
+            'xref',
+            new Map(),
+          );
+          resolver.context.onWarning = silentWarningHandler;
+          resolver.effective = this.effective;
+          resolver.keyless = this.keyless;
+          resolver.context.trailerInfo = this.context.trailerInfo;
+          indexer.lengthResolver = resolver;
           await indexer.parseDocument();
           return this.restart('xref', indexer.bodyIndex);
         }
@@ -442,8 +463,8 @@ class PDFParser extends PDFObjectParser {
    * An entry that does not lead to its object is recovered for that number
    * alone, never by borrowing what the xref did not select:
    * - in use, `num G`: the last top-level `num G obj` header the scan index
-   *   met (same generation only); a wrong guess is possible when such a
-   *   header sits where the scan could not tell it was inside a stream;
+   *   met (same generation only); unresolved stream lengths still require
+   *   a best-effort endstream search;
    * - compressed: only from its own object stream, by number when the
    *   index is wrong (see PDFObjectStreamParser.readMember); never a
    *   top-level body, which is what the compressed entry replaced, and
@@ -658,7 +679,30 @@ class PDFParser extends PDFObjectParser {
     this.decryptStream(ref, stream, noStreamRoles, true);
   }
 
+  protected override noteStreamExtent(start: number, end: number): void {
+    if (this.mode === 'index') this.knownStreamExtents.set(start, end);
+  }
+
+  private skipKnownStreamExtent(): boolean {
+    if (this.mode !== 'index') return false;
+    const at = this.bytes.offset();
+    for (const [start, end] of this.knownStreamExtents) {
+      if (at >= start && at < end) {
+        this.bytes.moveTo(end);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  protected override get preserveKnownStreamExtent(): boolean {
+    return this.mode === 'index';
+  }
+
   protected override lookupStreamLength(ref: PDFRef): PDFObject | undefined {
+    if (this.lengthResolver) {
+      return this.lengthResolver.lookupStreamLength(ref);
+    }
     if (this.effective) this.load(ref.objectNumber);
     return this.context.lookup(ref);
   }
@@ -910,11 +954,13 @@ class PDFParser extends PDFObjectParser {
 
     let failed = true;
     while (!this.bytes.done()) {
+      if (this.skipKnownStreamExtent()) continue;
       if (this.matchKeyword(Keywords.endobj)) {
         failed = false;
       }
       if (!failed) break;
-      this.bytes.next();
+      if (this.mode === 'index') this.skipIndexData();
+      else this.bytes.next();
     }
 
     if (failed) {
@@ -1068,6 +1114,7 @@ class PDFParser extends PDFObjectParser {
   private skipJibberish(): void {
     this.skipWhitespaceAndComments();
     while (!this.bytes.done()) {
+      if (this.skipKnownStreamExtent()) continue;
       const initialOffset = this.bytes.offset();
       const byte = this.bytes.peek();
       const isAlphaNumeric = byte >= CharCodes.Space && byte <= CharCodes.Tilde;
@@ -1082,7 +1129,29 @@ class PDFParser extends PDFObjectParser {
           break;
         }
       }
+      if (this.mode === 'index') this.skipIndexData();
+      else this.bytes.next();
+    }
+  }
+
+  /** Skip lexical data during recovery, including dictionaries with streams. */
+  private skipIndexData(): void {
+    const start = this.bytes.offset();
+    this.skipWhitespaceAndComments();
+    if (this.bytes.offset() !== start) return;
+    try {
+      this.parseObject();
+    } catch (e) {
+      if (isFatal(e)) throw e;
+      // Retry at the next token, not at the failure position: a damaged
+      // dictionary may still contain strings or a nested stream to skip.
+      this.bytes.moveTo(start);
       this.bytes.next();
+      while (!this.bytes.done()) {
+        const byte = this.bytes.peek();
+        if (IsWhitespace[byte] || IsDelimiter[byte]) break;
+        this.bytes.next();
+      }
     }
   }
 

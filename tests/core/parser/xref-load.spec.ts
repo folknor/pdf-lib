@@ -363,6 +363,39 @@ describe('loading through the cross-reference chain', () => {
   });
 
   describe('an entry that does not lead to its object', () => {
+    it.each(['later', 'compressed', 'missing marker', 'invalid body', 'jibberish', 'string', 'fallback'])(
+      'does not recover headers inside data (%s)',
+      async (variant) => {
+        const f = new FileBuilder();
+        const o1 = f.add(catalog(1));
+        const o2 = f.add(pages(2));
+        f.add('3 0 obj\n(real)\nendobj\n');
+        const data = 'endstream\nendobj\n3 0 obj\n(fake)\nendobj\n';
+        if (variant === 'string') {
+          f.add('garbage (3 0 obj\n(fake)\nendobj)\n');
+        } else {
+          const prefix = variant === 'invalid body' ? '4 0 obj\nBROKEN ' :
+            variant === 'jibberish' ? 'garbage ' : '4 0 obj\n';
+          const payload = variant === 'fallback' ? '3 0 obj\n(fake)\nendobj\n' : data;
+          const length = variant === 'fallback' ? '99 0 R' : '5 0 R';
+          f.add(`${prefix}<< /Length ${length} >>\nstream\n${payload}\n${variant === 'missing marker' ? 'damaged ' : ''}endstream\nendobj\n`);
+        }
+        const o5 = variant === 'compressed' ? 0 : f.add(`5 0 obj\n${data.length}\nendobj\n`);
+        const o6 = variant === 'compressed' ? f.add(objectStream(6, [[5, String(data.length)]])) : 0;
+        const x = f.offset;
+        f.add(xrefStream(7, 8, [
+          [0, 0, 65535], [1, o1, 0], [1, o2, 0],
+          [1, o2, 0], [0, 0, 0],
+          variant === 'compressed' ? [2, 6, 0] : [1, o5, 0],
+          o6 ? [1, o6, 0] : [0, 0, 0], [1, x, 0],
+        ], ' /Root 1 0 R'));
+        f.add(`startxref\n${x}\n%%EOF\n`);
+        const context = await parse(f.bytes());
+        expect(context.lookup(PDFRef.of(3))).toEqual(PDFString.of('real'));
+        expect(context.lookup(PDFRef.of(4))).toBeUndefined();
+      },
+    );
+
     it('loads nothing when no body has the generation it names', async () => {
       const f = new FileBuilder();
       const o1 = f.add(catalog(1));

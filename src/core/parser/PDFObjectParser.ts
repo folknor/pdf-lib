@@ -311,10 +311,14 @@ class PDFObjectParser extends BaseParser {
     const length = this.resolveStreamLength(Length);
     if (length !== undefined) {
       end = start.offset + length;
+      this.noteStreamExtent(start.offset, end);
       this.bytes.moveTo(end);
       this.skipWhitespaceAndComments();
       if (!this.matchKeyword(Keywords.endstream)) {
-        this.bytes.restorePosition(start);
+        // Index scans must never revisit bytes covered by a known length,
+        // even when the terminator itself is damaged.
+        if (this.preserveKnownStreamExtent) this.bytes.moveTo(end);
+        else this.bytes.restorePosition(start);
         end = this.findEndOfStreamFallback(startPos);
       }
     } else {
@@ -383,6 +387,12 @@ class PDFObjectParser extends BaseParser {
    * before it has parsed them (PDFParser, loading through the xref) loads it
    * here, so the length is known before the stream's end is searched for.
    */
+  protected noteStreamExtent(_start: number, _end: number): void {}
+
+  protected get preserveKnownStreamExtent(): boolean {
+    return false;
+  }
+
   protected lookupStreamLength(ref: PDFRef): PDFObject | undefined {
     return this.context.lookup(ref);
   }
