@@ -32,6 +32,13 @@ const SHAPERS: Record<string, ShaperClass> = {
   // although they need it as much as any. Both belong in a
   // normalisation stage before shaping; see notes/fontkit-findings.md.
 
+  // No thai or 'lao ' entry, deliberately. Their one table-independent rule,
+  // the SARA AM decomposition, is a code-point rewrite in LayoutEngine.layout
+  // (layout/ThaiSaraAm.ts): as a shaper class it would miss fonts with no
+  // thai script record (the selection follows the font's script list) and
+  // fonts with no GSUB/GPOS. The HarfBuzz PUA fallback is not implemented;
+  // see notes/fontkit-findings.md.
+
   bng2: IndicShaper, // Bengali
   beng: IndicShaper, // Bengali
   dev2: IndicShaper, // Devanagari

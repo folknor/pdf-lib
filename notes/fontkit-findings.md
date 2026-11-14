@@ -99,6 +99,25 @@ Mixed Hebrew or Arabic with Latin or digits comes out with the left-to-right
 parts reversed too, and fonts with no GSUB/GPOS (no OT engine) are never
 reversed. Proper output needs bidi resolution into runs before shaping.
 
+The same one-script choice limits the Thai/Lao SARA AM decomposition
+(`layout/ThaiSaraAm.ts`): it runs only when the whole string is detected as
+Thai or Lao, so Thai after Latin in one string ("Latin น้ำ") is not
+decomposed, and shaping then depends on where a caller splits runs.
+
+## Thai fonts without Thai GSUB get no PUA fallback
+
+HarfBuzz shapes Thai for fonts that have no Thai GSUB by swapping marks (and
+the descenders of YO YING and THO THAN) for the Windows or Mac private-use
+variants such fonts carry, chosen by small state machines over each cluster's
+stack of above and below marks. fontkit does not, so legacy Thai fonts draw
+every tone and vowel mark at its default height. Most of those fonts have no
+layout tables at all, so this cannot be an OpenType shaper class (no OT
+engine runs for them); it belongs next to the SARA AM rewrite in
+`LayoutEngine.layout`, as a glyph-level step after cmap mapping. PDF text
+extraction needs care: the PUA glyphs are cmap-mapped to PUA code points, so
+under the current ToUnicode policy (notes/embedder-findings.md) the swapped
+marks would extract as private-use characters.
+
 ## sbix fonts without glyf have no usable glyphs
 
 `SBIXGlyph` extends `TTFGlyph`, so its metrics (`_getMetrics` -> `_getCBox`)

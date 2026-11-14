@@ -10,6 +10,8 @@ const files = [
   ['ofl/notosanssharada/OFL.txt', 'noto_sans_sharada/OFL.txt'],
   ['ofl/notoseriftibetan/NotoSerifTibetan[wght].ttf', 'noto_serif_tibetan/NotoSerifTibetan[wght].ttf'],
   ['ofl/notoseriftibetan/OFL.txt', 'noto_serif_tibetan/OFL.txt'],
+  ['ofl/notosansthai/NotoSansThai[wdth,wght].ttf', 'noto_sans_thai/NotoSansThai[wdth,wght].ttf'],
+  ['ofl/notosansthai/OFL.txt', 'noto_sans_thai/OFL.txt'],
 ];
 for (const [src, dst] of files) {
   const body = execFileSync(

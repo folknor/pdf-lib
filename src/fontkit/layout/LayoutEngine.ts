@@ -5,6 +5,7 @@ import GlyphPosition from './GlyphPosition.js';
 import GlyphRun from './GlyphRun.js';
 import KernProcessor from './KernProcessor.js';
 import * as Script from './Script.js';
+import { decomposeSaraAm } from './ThaiSaraAm.js';
 import UnicodeLayoutEngine from './UnicodeLayoutEngine.js';
 
 export default class LayoutEngine {
@@ -48,6 +49,21 @@ export default class LayoutEngine {
       // Attempt to detect the script from the string if not provided.
       if (script == null) {
         script = Script.forString(string);
+      }
+
+      // morx fonts carry their own Thai processing, so AAT is left alone.
+      const first = Array.isArray(script) ? script[0] : script;
+      if (
+        (first === 'thai' || first === 'lao ') &&
+        !(this.engine instanceof AATLayoutEngine)
+      ) {
+        const codePoints = Array.from(string, (c) => c.codePointAt(0)!);
+        const rewritten = decomposeSaraAm(codePoints, (cp) =>
+          this.font.hasGlyphForCodePoint(cp),
+        );
+        if (rewritten.length !== codePoints.length) {
+          string = rewritten.map((cp) => String.fromCodePoint(cp)).join('');
+        }
       }
 
       glyphs = this.font.glyphsForString(string);

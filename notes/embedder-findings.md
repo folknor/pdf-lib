@@ -32,6 +32,24 @@ longest fitting one, or an overflowing paragraph. Not reproduced with a
 real font. A fix is a search that does not rely on monotonicity (or that
 detects a non-monotonic step and falls back to a linear scan of the line).
 
+## Shaped glyphs outside the cmap get no ToUnicode mapping
+
+`CustomFontEmbedder.embedUnicodeCmap` (full embed) maps only the glyphs the
+font's cmap reaches, so any glyph that only shaping produces - Arabic joining
+forms, ligatures, Noto Sans Thai's small tone marks chosen after the SARA AM
+decomposition - has no explicit ToUnicode entry and may drop out of extracted
+text. Thai is the knowing trade: decomposing SARA AM improves the drawn
+stacking and costs the tone mark in full-embed extraction. Recording the Glyph
+objects `layout()` returns does not fix it: fontkit caches glyphs by id and
+the first construction fixes `codePoints` (`glyphsForWidths` builds every glyph
+with none), so those code points are not the occurrence's; the subset embedder,
+which maps its emitted Glyph objects, has the same weakness. A fix needs
+per-occurrence code-point provenance out of `layout()` (`GlyphInfo.codePoints`
+through the OT writeback), cmap mappings taken from code point -> gid pairs,
+and a contract for one gid with several meanings (best-effort single mapping,
+separate PDF codes per meaning, or `ActualText`); neither restores logical
+order after a reorder by itself.
+
 ## Embedded files that do not come through attach() skip the PDF/A check
 
 `attach()` checks each new attachment against the document's PDF/A
