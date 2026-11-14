@@ -600,6 +600,142 @@ describe('PDFForm', () => {
     expect(page.node.Annots()!.asArray()).toContain(widgetRef);
   });
 
+  describe('removeOrphanWidgets (cantoo #154)', () => {
+    it('removes unreachable widgets without drawing and keeps registered ones', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const page2 = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const { context } = pdfDoc;
+
+      const live = form.createTextField('live');
+      live.addToPage(page);
+      const liveWidgetRef = page.node.Annots()!.get(0);
+
+      // Registered field with a page widget that points at it via /Parent
+      // but is missing from its /Kids: downward unreachable.
+      const strayRef = context.register(
+        context.obj({
+          Type: 'Annot',
+          Subtype: 'Widget',
+          Parent: live.ref,
+          Rect: [0, 0, 10, 10],
+        }),
+      );
+      page.node.addAnnot(strayRef);
+
+      // Unregistered parent field with an exclusively owned appearance,
+      // listed twice on one page and once on another.
+      const apRef = context.register(
+        context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
+      );
+      const parentRef = context.nextRef();
+      const orphanRef = context.register(
+        context.obj({
+          Type: 'Annot',
+          Subtype: 'Widget',
+          Parent: parentRef,
+          Rect: [0, 0, 10, 10],
+          AP: { N: apRef },
+        }),
+      );
+      context.assign(
+        parentRef,
+        context.obj({ FT: 'Tx', T: PDFString.of('gone'), Kids: [orphanRef] }),
+      );
+      page.node.addAnnot(orphanRef);
+      page.node.addAnnot(orphanRef);
+      page2.node.addAnnot(orphanRef);
+
+      // No /FT anywhere, kept alive through /DR by a shared appearance.
+      const sharedApRef = context.register(
+        context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
+      );
+      form.acroForm.dict.set(
+        PDFName.of('DR'),
+        context.obj({ XObject: { Shared: sharedApRef } }),
+      );
+      const bareRef = context.register(
+        context.obj({
+          Type: 'Annot',
+          Subtype: 'Widget',
+          Rect: [0, 0, 10, 10],
+          AP: { N: sharedApRef },
+        }),
+      );
+      page2.node.addAnnot(bareRef);
+
+      // A non-widget annotation stays.
+      const linkRef = context.register(
+        context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [0, 0, 1, 1] }),
+      );
+      page2.node.addAnnot(linkRef);
+
+      const contentsBefore = page.node.Contents();
+      expect(form.removeOrphanWidgets()).toBe(3);
+
+      expect(page.node.Annots()!.asArray()).toEqual([liveWidgetRef]);
+      expect(page2.node.Annots()!.asArray()).toEqual([linkRef]);
+      for (const ref of [strayRef, orphanRef, parentRef, apRef, bareRef]) {
+        expect(context.lookup(ref)).toBe(undefined);
+      }
+      expect(context.lookup(sharedApRef)).toBeInstanceOf(PDFStream);
+      expect(context.lookup(live.ref)).toBeInstanceOf(PDFDict);
+      expect(page.node.Contents()).toBe(contentsBefore);
+      expect(form.getFields().map((f) => f.getName())).toEqual(['live']);
+      expect(form.removeOrphanWidgets()).toBe(0);
+    });
+
+    it('collects what a direct widget entry used and a displaced indirect /Annots', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage();
+      const form = pdfDoc.getForm();
+      const { context } = pdfDoc;
+
+      const apRef = context.register(
+        context.formXObject([], { BBox: context.obj([0, 0, 10, 10]) }),
+      );
+      const annotsRef = context.register(
+        context.obj([
+          context.obj({
+            Type: 'Annot',
+            Subtype: 'Widget',
+            Rect: [0, 0, 10, 10],
+            AP: { N: apRef },
+          }),
+        ]),
+      );
+      page.node.set(PDFName.of('Annots'), annotsRef);
+
+      expect(form.removeOrphanWidgets()).toBe(1);
+      expect(page.node.Annots()!.size()).toBe(0);
+      expect(context.lookup(apRef)).toBe(undefined);
+      expect(context.lookup(annotsRef)).toBe(undefined);
+
+      const saved = await PDFDocument.load(await pdfDoc.save());
+      expect(saved.getPage(0).node.Annots()!.size()).toBe(0);
+    });
+
+    it('leaves the issue repro with no stale widget before re-creating fields', async () => {
+      const template = await PDFDocument.create();
+      template.addPage();
+      template.getForm().createTextField('orphan_a').addToPage(template.getPage(0));
+      const reloaded = await PDFDocument.load(await template.save());
+      reloaded.catalog
+        .lookup(PDFName.of('AcroForm'), PDFDict)
+        .set(PDFName.of('Fields'), reloaded.context.obj([]));
+      const pdfDoc = await PDFDocument.load(await reloaded.save());
+
+      const form = pdfDoc.getForm();
+      const page = pdfDoc.getPage(0);
+      expect(form.getFields()).toHaveLength(0);
+      expect(page.node.Annots()!.size()).toBe(1);
+      expect(form.removeOrphanWidgets()).toBe(1);
+      form.createTextField('orphan_a').addToPage(page);
+      expect(page.node.Annots()!.size()).toBe(1);
+    });
+  });
+
   it('resolves inherited /V when flattening orphaned checkbox widgets', async () => {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage();

@@ -1009,67 +1009,156 @@ export default class PDFForm {
   }
 
   /**
-   * Flatten Widget annotations that carry field properties (/FT), either on
-   * the annot dict or inherited via /Parent, but are not reachable via
-   * AcroForm.Fields (neither the widget nor any ancestor is in `reachable`).
-   * Widgets without a usable normal appearance are left untouched.
+   * Remove every widget annotation on this document's pages that the field
+   * tree does not reach: a `/Subtype /Widget` entry in a page's /Annots that
+   * is neither listed in AcroForm /Fields nor reachable from it through
+   * /Kids. [[PDFForm.getFields]] cannot see such widgets, so
+   * [[PDFForm.removeField]] cannot remove them. Nothing is drawn onto page
+   * content (compare [[PDFForm.flatten]], which draws orphans that carry
+   * /FT and a usable appearance).
+   *
+   * Reachability is downward only: a widget whose /Parent is a live field
+   * but which is missing from that field's /Kids is an orphan, and so is a
+   * widget without /FT anywhere on its /Parent chain.
+   *
+   * Every occurrence of each orphan is unlinked from every page (each
+   * affected /Annots array is replaced, never edited in place), then the
+   * objects only the orphans used - the widgets, unregistered parent fields,
+   * appearance streams - are deleted. Anything still referenced from
+   * elsewhere (AcroForm /DR, /CO, another annotation) is kept.
+   *
+   * For example:
+   * ```js
+   * const form = pdfDoc.getForm();
+   * for (const field of form.getFields()) form.removeField(field);
+   * form.removeOrphanWidgets();
+   * ```
+   *
+   * @returns The number of distinct widgets unlinked.
+   */
+  removeOrphanWidgets(): number {
+    const { context } = this.doc;
+    const orphans = this.findUnreachableWidgets(
+      this.collectReachableFieldDicts(),
+    );
+    const orphanDicts = new Set<PDFDict>();
+    for (const orphan of orphans) orphanDicts.add(orphan.dict);
+    if (orphanDicts.size === 0) return 0;
+
+    const roots: PDFRef[] = [];
+    const replacements: [PDFPage, PDFArray][] = [];
+    const pages = new Set<PDFPage>();
+    for (const orphan of orphans) pages.add(orphan.page);
+    for (const page of pages) {
+      const raw = page.node.get(PDFName.Annots);
+      const annots = page.node.Annots()!;
+      const kept = context.obj([]);
+      for (let i = 0, len = annots.size(); i < len; i++) {
+        const entry = annots.get(i);
+        const dict = entry instanceof PDFRef ? context.lookup(entry) : entry;
+        if (!(dict instanceof PDFDict && orphanDicts.has(dict))) {
+          kept.push(entry);
+        } else if (entry instanceof PDFRef) {
+          roots.push(entry);
+        } else {
+          forEachRef(dict, (ref) => roots.push(ref));
+        }
+      }
+      if (raw instanceof PDFRef) roots.push(raw);
+      replacements.push([page, kept]);
+    }
+    for (const [page, kept] of replacements) {
+      page.node.set(PDFName.Annots, kept);
+    }
+    collectUnreferenced(context, roots);
+    return orphanDicts.size;
+  }
+
+  /**
+   * Every widget entry in a document page's /Annots, as a ref or a direct
+   * dict, that `reachable` does not contain: neither the entry's ref nor
+   * its dict is reached from AcroForm /Fields through /Kids. This is the
+   * one definition of an unreachable widget; `removeOrphanWidgets` removes
+   * all of them, `flattenOrphanWidgets` filters further for drawing.
+   */
+  private findUnreachableWidgets(reachable: {
+    dicts: Set<PDFDict>;
+    refs: Set<PDFObject | undefined>;
+  }): { page: PDFPage; entry: PDFObject; dict: PDFDict }[] {
+    const found: { page: PDFPage; entry: PDFObject; dict: PDFDict }[] = [];
+    const pages = this.doc.getPages();
+    for (let p = 0, pageCount = pages.length; p < pageCount; p++) {
+      const page = pages[p]!;
+      const annots = page.node.Annots();
+      if (!annots) continue;
+      for (let i = 0, len = annots.size(); i < len; i++) {
+        const entry = annots.get(i);
+        const dict =
+          entry instanceof PDFRef ? this.doc.context.lookup(entry) : entry;
+        if (!(dict instanceof PDFDict)) continue;
+        if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
+          continue;
+        }
+        if (reachable.refs.has(entry) || reachable.dicts.has(dict)) continue;
+        found.push({ page, entry, dict });
+      }
+    }
+    return found;
+  }
+
+  /**
+   * Flatten the unreachable widgets (see `findUnreachableWidgets`) that are
+   * eligible for drawing: listed in /Annots by ref, carrying field
+   * properties (/FT, on the annot dict or inherited via /Parent), with no
+   * ancestor in `reachable` either (such a widget is left to the main pass,
+   * unlike in `removeOrphanWidgets`), and with a usable normal appearance.
+   * The rest are left untouched.
    */
   private flattenOrphanWidgets(reachable: {
     dicts: Set<PDFDict>;
     refs: Set<PDFObject | undefined>;
   }): void {
-    const pages = this.doc.getPages();
+    const orphans = this.findUnreachableWidgets(reachable);
+    const toRemove = new Map<PDFPage, PDFRef[]>();
 
-    for (let p = 0, pageCount = pages.length; p < pageCount; p++) {
-      const page = pages[p]!;
-      const annots = page.node.Annots();
-      if (!annots) continue;
-
-      const annotsToRemove: PDFRef[] = [];
-
-      for (let i = 0, len = annots.size(); i < len; i++) {
-        const annotRef = annots.get(i);
-        if (!(annotRef instanceof PDFRef)) continue;
-
-        const dict = this.doc.context.lookup(annotRef);
-        if (!(dict instanceof PDFDict)) continue;
-        if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
-          continue;
-        }
-        const chain = this.selfAndAncestors(dict);
-        // Part of the AcroForm.Fields tree (handled, or deliberately left
-        // alone, by the main pass): not an orphan. Also check raw /Parent
-        // refs, since the main pass may have deleted a reachable ancestor
-        // and its ref no longer resolves.
-        if (
-          reachable.refs.has(annotRef) ||
-          chain.some(
-            (d) =>
-              reachable.dicts.has(d) ||
-              reachable.refs.has(d.get(PDFName.of('Parent'))),
-          )
-        ) {
-          continue;
-        }
-        // Only field widgets: /FT on the widget or inherited via /Parent.
-        if (!chain.some((d) => d.has(PDFName.of('FT')))) continue;
-
-        const widget = PDFWidgetAnnotation.fromDict(dict);
-        // A malformed /AP on one orphan must not abort the whole flatten.
-        let appearanceRef: PDFRef | undefined;
-        try {
-          appearanceRef = this.findOrphanWidgetAppearanceRef(widget);
-        } catch {
-          continue;
-        }
-        if (!appearanceRef) continue;
-
-        this.flattenWidgetOntoPage(page, widget, appearanceRef);
-        annotsToRemove.push(annotRef);
+    for (const { page, entry: annotRef, dict } of orphans) {
+      if (!(annotRef instanceof PDFRef)) continue;
+      const chain = this.selfAndAncestors(dict);
+      // An ancestor in the AcroForm.Fields tree (handled, or deliberately
+      // left alone, by the main pass): not flattened here. Also check raw
+      // /Parent refs, since the main pass may have deleted a reachable
+      // ancestor and its ref no longer resolves.
+      if (
+        chain.some(
+          (d) =>
+            reachable.dicts.has(d) ||
+            reachable.refs.has(d.get(PDFName.of('Parent'))),
+        )
+      ) {
+        continue;
       }
+      // Only field widgets: /FT on the widget or inherited via /Parent.
+      if (!chain.some((d) => d.has(PDFName.of('FT')))) continue;
 
-      for (let i = 0, len = annotsToRemove.length; i < len; i++) {
-        const ref = annotsToRemove[i]!;
+      const widget = PDFWidgetAnnotation.fromDict(dict);
+      // A malformed /AP on one orphan must not abort the whole flatten.
+      let appearanceRef: PDFRef | undefined;
+      try {
+        appearanceRef = this.findOrphanWidgetAppearanceRef(widget);
+      } catch {
+        continue;
+      }
+      if (!appearanceRef) continue;
+
+      this.flattenWidgetOntoPage(page, widget, appearanceRef);
+      const refs = toRemove.get(page) ?? [];
+      refs.push(annotRef);
+      toRemove.set(page, refs);
+    }
+
+    for (const [page, refs] of toRemove) {
+      for (let i = 0, len = refs.length; i < len; i++) {
+        const ref = refs[i]!;
         page.node.removeAnnot(ref);
         this.doc.context.delete(ref);
       }

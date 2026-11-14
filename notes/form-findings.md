@@ -19,6 +19,20 @@ That set is wider than field setters (adding or removing fields, flatten,
 that change XFA presentation), and low-level dictionary edits bypass any
 such hook, so the contract needs designing before it changes.
 
+## flatten() and removeField() delete objects other structures still use
+
+`PDFForm.removeField()` deletes the field ref and its direct /Kids refs, and
+`flatten()`'s orphan pass deletes each flattened widget ref, with plain
+`context.delete`. Anything else that refers to those objects (AcroForm /CO,
+another page's /Annots for a widget listed twice, a structure-tree /OBJR, an
+action) is left pointing at a deleted object, and objects only they used
+(appearance streams, unregistered parents) stay behind. The rest of the
+library unlinks first and then runs `collectUnreferenced`
+(`src/api/detach.ts`), which keeps what is still referenced and collects
+what is not; `removeOrphanWidgets()` does. Converting these two needs each
+one's unlink step made complete first (every occurrence, every structure
+that should drop the ref), or the collector simply keeps the objects alive.
+
 ## copyPages() does not carry the source's optional content groups
 
 `copyPages()` copies page objects with everything they reach, so optional
