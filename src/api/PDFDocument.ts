@@ -228,6 +228,7 @@ export default class PDFDocument {
       password,
       forIncrementalUpdate = false,
       maxDecodedStreamSize,
+      copyStreams = true,
     } = options;
 
     assertIs(pdf, 'pdf', ['string', Uint8Array, ArrayBuffer]);
@@ -241,6 +242,7 @@ export default class PDFDocument {
     assertIs(warnOnInvalidObjects, 'warnOnInvalidObjects', ['boolean']);
     assertIs(password, 'password', ['string', 'undefined']);
     assertIs(forIncrementalUpdate, 'forIncrementalUpdate', ['boolean']);
+    assertIs(copyStreams, 'copyStreams', ['boolean']);
 
     const bytes = toUint8Array(pdf);
     const context = await PDFParser.forBytesWithOptions(
@@ -252,6 +254,8 @@ export default class PDFDocument {
       undefined,
       forIncrementalUpdate,
       maxDecodedStreamSize,
+      undefined,
+      copyStreams,
     ).parseDocument();
     const encrypted = Boolean(context.lookup(context.trailerInfo.Encrypt));
     const keyFor = (pw: string | undefined) => {
@@ -298,6 +302,7 @@ export default class PDFDocument {
         context.trailerInfo.Encrypt instanceof PDFRef
           ? context.trailerInfo.Encrypt
           : undefined,
+        copyStreams,
       );
       const decryptedContext = await decryptingParser.parseDocument();
       // Increments onto this file stay under its own handler, taken from the

@@ -107,6 +107,23 @@ export interface LoadOptions {
    * (bundled fontkit only; WOFF2's brotli decoding itself is not bounded).
    */
   maxDecodedStreamSize?: number;
+  /**
+   * Copy each stream's bytes out of the input while parsing (the default).
+   * With `false`, stream bodies are views into the input instead, so a large
+   * PDF is held in memory once rather than twice. The input is then
+   * borrowed from the call to `load` on: it must not be modified, reused or
+   * detached (for example by transferring its `ArrayBuffer`) while the
+   * document is in use, and its whole backing allocation stays in memory as
+   * long as any loaded stream does, also after [[PDFDocument.commit]]. A
+   * `Uint8Array` or `ArrayBuffer` input is aliased, not copied; a string
+   * input is decoded into a private array. Writing into a stream's
+   * `getContents()` or into attachment data from
+   * [[PDFDocument.getSavedAttachments]] writes into the input, and with
+   * `forIncrementalUpdate` into the original revision that incremental
+   * saves emit, which can break its signatures. Streams decrypted on load
+   * are fresh arrays either way, except under the /Identity crypt filter.
+   */
+  copyStreams?: boolean;
 }
 
 export interface CreateOptions {

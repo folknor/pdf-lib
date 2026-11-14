@@ -102,7 +102,9 @@ class PDFXRefChainReader extends PDFObjectParser {
   };
 
   private constructor(bytes: Uint8Array, context: PDFContext) {
-    super(ByteStream.of(bytes), context);
+    // Views, not copies: the xref streams read here are decoded and
+    // dropped, never kept in the context.
+    super(ByteStream.of(bytes, false), context);
   }
 
   private readChain(startXRef: number): EffectiveXRef {

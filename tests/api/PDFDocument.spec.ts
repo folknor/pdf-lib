@@ -54,6 +54,66 @@ const hasAttachmentPdfBytes = fs.readFileSync(
 );
 
 describe('PDFDocument', () => {
+  describe('load() copyStreams option', () => {
+    const rawStreamsOf = (pdfDoc: PDFDocument) =>
+      pdfDoc.context
+        .enumerateIndirectObjects()
+        .map(([, object]) => object)
+        .filter((object): object is PDFRawStream => object instanceof PDFRawStream);
+
+    // A Node Buffer, whose own slice() is a view: the default must still copy.
+    it('copies stream bytes out of a Buffer input by default', async () => {
+      const input = Buffer.from(normalPdfBytes);
+      const pdfDoc = await PDFDocument.load(input, { updateMetadata: false });
+      const streams = rawStreamsOf(pdfDoc);
+      expect(streams.length).toBeGreaterThan(0);
+      for (const stream of streams) {
+        expect(stream.getContents().buffer).not.toBe(input.buffer);
+      }
+    });
+
+    it('reads stream bodies as views into the input with copyStreams false', async () => {
+      const input = new Uint8Array(normalPdfBytes);
+      const pdfDoc = await PDFDocument.load(input, {
+        updateMetadata: false,
+        copyStreams: false,
+      });
+      const streams = rawStreamsOf(pdfDoc);
+      expect(streams.length).toBeGreaterThan(0);
+      for (const stream of streams) {
+        expect(stream.getContents().buffer).toBe(input.buffer);
+      }
+    });
+
+    it('saves the same bytes either way', async () => {
+      for (const bytes of [normalPdfBytes, invalidObjectsPdfBytes]) {
+        const copied = await PDFDocument.load(new Uint8Array(bytes), {
+          updateMetadata: false,
+          parseSpeed: ParseSpeeds.Fastest,
+        });
+        const viewed = await PDFDocument.load(new Uint8Array(bytes), {
+          updateMetadata: false,
+          parseSpeed: ParseSpeeds.Fastest,
+          copyStreams: false,
+        });
+        // Everything up to the trailer /ID, whose second half is fresh per save.
+        const upToId = (out: Uint8Array) =>
+          Buffer.from(out.subarray(0, Buffer.from(out).lastIndexOf('/ID [')));
+        const a = upToId(await copied.save());
+        expect(a.length).toBeGreaterThan(0);
+        expect(Buffer.compare(a, upToId(await viewed.save()))).toBe(0);
+      }
+    });
+
+    it('rejects a non-boolean copyStreams', async () => {
+      await expect(
+        PDFDocument.load(normalPdfBytes, {
+          copyStreams: 'no' as unknown as boolean,
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
   describe('load() method', () => {
     const origConsoleWarn = console.warn;
 

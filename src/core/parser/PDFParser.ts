@@ -103,6 +103,7 @@ class PDFParser extends PDFObjectParser {
     forIncrementalUpdate?: boolean,
     maxDecodedStreamSize?: number,
     encryptRef?: PDFRef,
+    copyStreams?: boolean,
   ) =>
     new PDFParser(
       pdfBytes,
@@ -114,6 +115,7 @@ class PDFParser extends PDFObjectParser {
       forIncrementalUpdate,
       maxDecodedStreamSize,
       encryptRef,
+      copyStreams,
     );
 
   private readonly objectsPerTick: number;
@@ -122,6 +124,8 @@ class PDFParser extends PDFObjectParser {
   private readonly encryptRef: PDFRef | undefined;
   private readonly pdfBytes: Uint8Array;
   private readonly forIncrementalUpdate: boolean;
+  /** False: stream bodies are views into `pdfBytes` (LoadOptions.copyStreams). */
+  private readonly copyStreams: boolean;
   private readonly mode: LoadMode;
   /**
    * Where the scan met the last top-level header of each `num gen`, keyed
@@ -167,11 +171,12 @@ class PDFParser extends PDFObjectParser {
     forIncrementalUpdate = false,
     maxDecodedStreamSize?: number,
     encryptRef?: PDFRef,
+    copyStreams = true,
     mode: LoadMode = 'xref',
     bodyIndex?: Map<string, number>,
   ) {
     super(
-      ByteStream.of(pdfBytes),
+      ByteStream.of(pdfBytes, copyStreams),
       PDFContext.create(),
       capNumbers,
       cryptoFactory,
@@ -182,6 +187,7 @@ class PDFParser extends PDFObjectParser {
     this.encryptRef = encryptRef;
     this.pdfBytes = pdfBytes;
     this.forIncrementalUpdate = forIncrementalUpdate;
+    this.copyStreams = copyStreams;
     this.mode = mode;
     this.bodyIndex = mode === 'index' ? new Map() : bodyIndex;
     this.context.isDecrypted = Boolean(cryptoFactory?.encryptionKey);
@@ -225,6 +231,8 @@ class PDFParser extends PDFObjectParser {
             false,
             this.context.maxDecodedStreamSize,
             undefined,
+            // The index keeps no streams; views cost nothing.
+            false,
             'index',
           );
           await indexer.parseDocument();
@@ -291,6 +299,7 @@ class PDFParser extends PDFObjectParser {
       this.forIncrementalUpdate,
       this.context.maxDecodedStreamSize,
       this.encryptRef,
+      this.copyStreams,
       mode,
       bodyIndex,
     );
