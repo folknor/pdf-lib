@@ -10,7 +10,7 @@ import { collectUnreferenced } from './detach.js';
 import type Embeddable from './Embeddable.js';
 import {
   checkCatalogAF,
-  checkCatalogNameTree,
+  checkCatalogNameUnused,
   insertIntoCatalogNameTree,
 } from './nameTree.js';
 import type PDFDocument from './PDFDocument.js';
@@ -19,13 +19,14 @@ const EmbeddedFiles = PDFName.of('EmbeddedFiles');
 const AF = PDFName.of('AF');
 
 /**
- * Throw unless an attachment can be added to `catalog`: its attachments
- * name tree (absent, flat or /Kids) must be strictly well formed, and its
- * /AF absent or an array. Called by [[PDFDocument.attach]] and again when
- * the file is embedded, before anything changes.
+ * Throw unless an attachment named `name` can be added to `catalog`: its
+ * attachments name tree (absent, flat or /Kids) must be strictly well
+ * formed and hold no entry of that name, and its /AF absent or an array.
+ * Called by [[PDFDocument.attach]] and again when the file is embedded,
+ * before anything changes.
  */
-export const checkAttachable = (catalog: PDFDict): void => {
-  checkCatalogNameTree(catalog, EmbeddedFiles);
+export const checkAttachable = (catalog: PDFDict, name: string): void => {
+  checkCatalogNameUnused(catalog, EmbeddedFiles, name);
   checkCatalogAF(catalog);
 };
 
@@ -74,13 +75,14 @@ export default class PDFEmbeddedFile implements Embeddable {
   async embed(): Promise<void> {
     if (this.alreadyEmbedded) return;
     const { catalog, context } = this.doc;
-    checkAttachable(catalog);
+    const { fileName } = this.embedder;
+    checkAttachable(catalog, fileName);
     const ref = await this.embedder.embedIntoContext(context, this.ref);
 
     // The catalog may have changed during the await; check again, and on
     // refusal take back the objects just made so nothing is left behind.
     try {
-      checkAttachable(catalog);
+      checkAttachable(catalog, fileName);
     } catch (error) {
       collectUnreferenced(context, [ref]);
       throw error;
@@ -92,7 +94,7 @@ export default class PDFEmbeddedFile implements Embeddable {
       context,
       catalog,
       EmbeddedFiles,
-      PDFHexString.fromText(this.embedder.fileName),
+      PDFHexString.fromText(fileName),
       ref,
     );
 

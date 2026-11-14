@@ -318,7 +318,8 @@ const rebuild = (
 const original = (node: TreeNode): PDFObject => node.ref ?? node.dict;
 
 /**
- * Insert `key` / `value`, after any equal keys. The leaf is the kid whose
+ * Insert `key` / `value`, after any equal keys (refusing a duplicate name
+ * is the caller's policy: see [[checkCatalogNameUnused]]). The leaf is the kid whose
  * range holds the key, else the last kid starting below it, else the first
  * kid. Throws [[UnwritableNameTreeError]] before changing anything when
  * the tree is not strictly well formed. Nothing is changed in place: the
@@ -504,6 +505,45 @@ export const checkCatalogAF = (catalog: PDFDict): void => {
 export const checkCatalogNameTree = (catalog: PDFDict, tree: PDFName): void => {
   const root = catalogTreeRoot(catalog, tree);
   if (root) checkNameTree(root);
+};
+
+/** A name already used by an entry of the name tree it would be added to. */
+export class DuplicateNameError extends Error {
+  constructor(tree: PDFName, name: string) {
+    super(`${tree} already has an entry named ${JSON.stringify(name)}`);
+    this.name = 'DuplicateNameError';
+  }
+}
+
+/**
+ * Whether the key `key` names `name`: decoded text equal (how
+ * [[PDFDocument.getAttachments]] and [[PDFDocument.detach]] see names), or
+ * bytes equal to the key [[PDFHexString.fromText]] would write (which
+ * catches names, such as ones holding a lone surrogate, that do not survive
+ * decoding). This is the library's notion of a name, not ISO 32000's: the
+ * standard compares keys byte by byte, so `(a)` and `<FEFF0061>` are
+ * distinct keys to it and one name here.
+ */
+export const keyNames = (key: NameTreeKey, name: string): boolean =>
+  key.decodeText() === name ||
+  compareKeys(key, PDFHexString.fromText(name)) === 0;
+
+/**
+ * Like [[checkCatalogNameTree]], and also throws [[DuplicateNameError]]
+ * when an entry of the tree already has the name `name` (see [[keyNames]]).
+ * Entries already present twice in a loaded document are left alone; only
+ * adding another is refused.
+ */
+export const checkCatalogNameUnused = (
+  catalog: PDFDict,
+  tree: PDFName,
+  name: string,
+): void => {
+  checkCatalogNameTree(catalog, tree);
+  // The strict check just passed, so the tolerant read skips nothing.
+  if (readCatalogNameTree(catalog, tree).some((e) => keyNames(e.key, name))) {
+    throw new DuplicateNameError(tree, name);
+  }
 };
 
 /**

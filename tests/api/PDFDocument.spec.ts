@@ -16,6 +16,7 @@ import {
   PDFHeader,
   PDFHexString,
   PDFName,
+  PDFNull,
   PDFNumber,
   PDFPage,
   PDFRawStream,
@@ -937,6 +938,32 @@ describe('PDFDocument', () => {
       );
       expect(() => pdfDoc.addJavaScript('s', 'x')).toThrow(/empty/);
     });
+
+    it('refuses a name already used by a pending or saved script', async () => {
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.addJavaScript('main', 'a');
+      expect(() => pdfDoc.addJavaScript('main', 'b')).toThrow(/already has/);
+      await pdfDoc.save();
+      expect(() => pdfDoc.addJavaScript('main', 'c')).toThrow(/already has/);
+
+      // A saved key written as a literal string is the same name.
+      const other = await PDFDocument.create();
+      other.catalog.set(
+        PDFName.of('Names'),
+        other.context.obj({ JavaScript: { Names: [PDFString.of('main'), PDFNull] } }),
+      );
+      expect(() => other.addJavaScript('main', 'x')).toThrow(/already has/);
+    });
+
+    it('refuses at save a script whose name a saved one took after the call', async () => {
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.addJavaScript('main', 'a');
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        pdfDoc.context.obj({ JavaScript: { Names: [PDFHexString.fromText('main'), PDFNull] } }),
+      );
+      await expect(pdfDoc.save()).rejects.toThrow(/already has/);
+    });
   });
 
   describe('embedPng() method', () => {
@@ -1242,6 +1269,25 @@ describe('PDFDocument', () => {
       const other = await PDFDocument.create();
       other.catalog.set(PDFName.of('AF'), other.context.obj({}));
       await expect(other.attach(new Uint8Array([1]), 'a.txt')).rejects.toThrow(/AF/);
+    });
+
+    it('refuses a name already used by a pending or saved attachment', async () => {
+      const pdfDoc = await PDFDocument.create();
+      await pdfDoc.attach(new Uint8Array([1]), 'a.txt');
+      await expect(pdfDoc.attach(new Uint8Array([2]), 'a.txt')).rejects.toThrow(/already has/);
+      await pdfDoc.save();
+      await expect(pdfDoc.attach(new Uint8Array([3]), 'a.txt')).rejects.toThrow(/already has/);
+      // A lone surrogate does not survive decoding; the key bytes still match.
+      await pdfDoc.attach(new Uint8Array([4]), '\ud800');
+      await pdfDoc.save();
+      await expect(pdfDoc.attach(new Uint8Array([5]), '\ud800')).rejects.toThrow(/already has/);
+
+      // detach() then attach() replaces it.
+      pdfDoc.detach('a.txt');
+      await pdfDoc.attach(new Uint8Array([6]), 'a.txt');
+      await pdfDoc.save();
+      const a = pdfDoc.getAttachments().filter((x) => x.name === 'a.txt');
+      expect(a.map((x) => [...x.data])).toEqual([[6]]);
     });
 
     it('refuses at save, leaving nothing behind, when the tree broke after attach()', async () => {

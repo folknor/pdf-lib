@@ -97,7 +97,11 @@ import {
   planFacturXAttachment,
 } from './facturx.js';
 import PDFForm from './form/PDFForm.js';
-import { checkCatalogNameTree, readCatalogNameTree } from './nameTree.js';
+import {
+  checkCatalogNameUnused,
+  DuplicateNameError,
+  readCatalogNameTree,
+} from './nameTree.js';
 import {
   type AttachmentOptions,
   type Base64SaveOptions,
@@ -1186,14 +1190,24 @@ export default class PDFDocument {
    * ```
    * See the [JavaScript for Acrobat API Reference](https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/js_api_reference.pdf)
    * for details.
-   * @param name The name of the script. Must be unique per document.
+   * @param name The name of the script, unique among the document's
+   *   document-level scripts: a name already in the catalog's JavaScript
+   *   name tree, or given to a script added and not yet saved, throws
+   *   `DuplicateNameError`, now or when the document is saved. Names are
+   *   compared as text (as decoded from the tree), not as PDF string bytes.
    * @param script The JavaScript to execute.
    */
   addJavaScript(name: string, script: string) {
     assertIs(name, 'name', ['string']);
     assertIs(script, 'script', ['string']);
 
-    checkCatalogNameTree(this.catalog, PDFName.of('JavaScript'));
+    const JavaScript = PDFName.of('JavaScript');
+    checkCatalogNameUnused(this.catalog, JavaScript, name);
+    for (const js of this.javaScripts) {
+      if (!js.getAlreadyEmbedded() && js.getEmbedder().scriptName === name) {
+        throw new DuplicateNameError(JavaScript, name);
+      }
+    }
 
     const embedder = JavaScriptEmbedder.for(script, name);
 
@@ -1254,7 +1268,12 @@ export default class PDFDocument {
    * ```
    *
    * @param attachment The input data containing the file to be attached.
-   * @param name The name of the file to be attached.
+   * @param name The name of the file to be attached, unique among the
+   *   document's attachments: a name already in the catalog's attachments
+   *   name tree, or given to an attachment added and not yet saved, throws
+   *   `DuplicateNameError`, now or when the document is saved. Names are
+   *   compared as [[getAttachments]] reports them; to replace an
+   *   attachment, [[detach]] it first.
    * @returns Resolves when the attachment is complete.
    */
   async attach(
@@ -1276,7 +1295,12 @@ export default class PDFDocument {
       AFRelationship,
     );
 
-    checkAttachable(this.catalog);
+    checkAttachable(this.catalog, name);
+    for (const file of this.embeddedFiles) {
+      if (!file.getAlreadyEmbedded() && file.getEmbedder().fileName === name) {
+        throw new DuplicateNameError(PDFName.of('EmbeddedFiles'), name);
+      }
+    }
 
     const bytes = toUint8Array(attachment);
     const embedder = FileEmbedder.for(bytes, name, options);

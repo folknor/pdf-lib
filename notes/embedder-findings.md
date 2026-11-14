@@ -5,14 +5,20 @@ API built on them (`attach`, `detach`, `PDFEmbeddedFile`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Duplicate names are appended, not refused
+## Mutating a document while its save is suspended is unguarded
 
-`attach()` and `addJavaScript()` both append a pair whose key equals an
-existing one (the name tree writer in `src/api/nameTree.ts` inserts after
-equal keys). A reader that binary-searches the tree may then find either
-entry, so which same-named attachment a viewer shows is reader-dependent.
-`addJavaScript()` documents its name as "unique per document" but does not
-enforce it, against saved or pending scripts.
+`flush()` awaits each embeddable in turn (`PDFDocument.embedAll`), and an
+embed awaits its embedder before publishing. A `detach()`, `embedFacturX()`,
+`attach()` or second `save()` made during that await is not coordinated
+with it: a suspended attachment that `detach()` or `embedFacturX()` dropped
+from the pending list still publishes itself (or, now that duplicate names
+are refused at embed time, throws out of the save); two overlapping saves
+both embed the same pending item; and `embedAll` reads the live array by
+an index bounded by its starting length, so a splice during the await can
+skip an item or reach past the end. Sequential use is unaffected. A fix
+needs a pending item that can be cancelled, embeds that are shared per item
+rather than repeated, and iteration over a snapshot, or a refusal of
+mutation while a flush is in progress.
 
 ## attach() knows nothing of PDF/A
 
