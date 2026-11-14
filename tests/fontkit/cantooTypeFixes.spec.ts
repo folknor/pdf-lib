@@ -67,6 +67,28 @@ describe('cmap subtables', () => {
     toArray: () => values,
   });
 
+  it.each([0, 2])('reverse-maps wrapping format 4 deltas with range offset %i', (rangeOffset) => {
+    const cmap = new CmapProcessor({
+      tables: [{
+        platformID: 3,
+        encodingID: 1,
+        table: {
+          version: 4,
+          segCount: 1,
+          startCode: lazy([0xfffe]),
+          endCode: lazy([0xffff]),
+          idDelta: lazy([3]),
+          idRangeOffset: lazy([rangeOffset]),
+          glyphIndexArray: lazy([0xfffe, 0]),
+        },
+      }],
+    });
+    expect(cmap.lookup(0xfffe)).toBe(1);
+    expect(cmap.codePointsForGlyph(1)).toEqual([0xfffe]);
+    expect(cmap.lookup(0xffff)).toBe(rangeOffset === 0 ? 2 : 0);
+    expect(cmap.codePointsForGlyph(rangeOffset === 0 ? 2 : 0)).toEqual([0xffff]);
+  });
+
   it('skips unreadable formats and reverse-maps format 10', () => {
     const cmap = new CmapProcessor({
       tables: [

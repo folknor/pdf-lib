@@ -165,11 +165,3 @@ points, and the second and later pieces of a multiple substitution have
 none, so a ligature built from either picks the wrong component for its
 marks. The count needs to be its own per-occurrence field, set to 1 for a
 glyph from the cmap and carried through substitution.
-
-## codePointsForGlyph misses format 4 mappings whose delta wraps
-
-`CmapProcessor.lookup` takes a format 4 glyph id modulo 65536 (`& 0xffff`
-after adding `idDelta`, decoded as int16); `codePointsForGlyph` compares the
-unwrapped sum, so a segment where code + delta passes 65535 (high code
-points with a positive delta) yields no code points for its glyphs. `stringsForGlyph` reads it; the
-embedders do not.

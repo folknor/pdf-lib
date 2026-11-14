@@ -305,7 +305,7 @@ export default class CmapProcessor {
               }
             }
 
-            if (g === gid) {
+            if ((g & 0xffff) === gid) {
               res.push(c);
             }
           }
