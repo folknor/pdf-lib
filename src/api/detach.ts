@@ -34,7 +34,10 @@ const forEachRef = (object: PDFObject, visit: (ref: PDFRef) => void): void => {
  * This is conservative: an orphan already in the document that points at a
  * candidate keeps it alive.
  */
-const collectUnreferenced = (context: PDFContext, roots: PDFRef[]): void => {
+export const collectUnreferenced = (
+  context: PDFContext,
+  roots: PDFRef[],
+): void => {
   const candidates = new Set<PDFRef>();
   const pending = [...roots];
   while (pending.length > 0) {

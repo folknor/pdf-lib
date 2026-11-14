@@ -24,13 +24,6 @@ nothing. `getAttachments()` also decodes every attachment, so one
 unreadable stream makes the whole call throw (`detach()` no longer depends
 on it).
 
-## embedFacturX() keeps a replaced invoice's objects
-
-`embedFacturX()` unlinks an earlier invoice but never deletes its objects,
-so a full save still writes the old invoice's bytes. `detach()` now deletes
-what only the removed attachment used (`collectUnreferenced` in
-`src/api/detach.ts`); the replacement could do the same.
-
 ## attach() knows nothing of PDF/A
 
 PDF/A-1 forbids embedded files, PDF/A-2 allows only PDF/A files, and PDF/A-3

@@ -8,7 +8,7 @@ import {
   PDFDocument,
   PDFHexString,
   PDFName,
-  type PDFRawStream,
+  PDFRawStream,
 } from '../../src/index';
 
 const FX = 'urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#';
@@ -131,9 +131,52 @@ describe('embedFacturX', () => {
     const af = doc.catalog.lookup(PDFName.of('AF'), PDFArray);
     expect(af.size()).toBe(1);
     expect(af.get(0)).toBe(names.get(1));
-    // The old objects are kept.
-    expect(ctx.lookup(aliased)).toBeInstanceOf(PDFDict);
+    expect(ctx.lookup(aliased)).toBeUndefined();
+    expect(ctx.lookup(afOnly)).toBeUndefined();
   });
+
+  it.each([false, true])(
+    'collects replaced invoice bytes unless an annotation references its spec (%s)',
+    async (shared) => {
+      const doc = await newDoc();
+      doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Data });
+      const loaded = await roundTrip(doc);
+      const ctx = loaded.context;
+      const oldRef = loaded.catalog.lookup(PDFName.of('AF'), PDFArray).get(0);
+      const oldSpec = ctx.lookup(oldRef, PDFDict);
+      const oldStream = oldSpec.lookup(PDFName.of('EF'), PDFDict).get(PDFName.of('F'));
+      // Exercise indirect replaced containers as well as a loaded invoice.
+      const names = loaded.catalog.lookup(PDFName.of('Names'), PDFDict);
+      const ef = names.lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      ef.set(PDFName.of('Names'), ctx.register(ef.lookup(PDFName.of('Names'), PDFArray)));
+      names.set(PDFName.of('EmbeddedFiles'), ctx.register(ef));
+      loaded.catalog.set(PDFName.of('Names'), ctx.register(names));
+      loaded.catalog.set(PDFName.of('AF'), ctx.register(ctx.obj([oldRef])));
+      if (shared) {
+        const annotation = ctx.register(ctx.obj({
+          Type: 'Annot', Subtype: 'FileAttachment', Rect: [0, 0, 10, 10], FS: oldRef,
+        }));
+        loaded.getPages()[0]!.node.set(PDFName.of('Annots'), ctx.obj([annotation]));
+      }
+      loaded.embedFacturX(BASIC_WL);
+      expect(ctx.lookup(oldRef) !== undefined).toBe(shared);
+      expect(ctx.lookup(oldStream) !== undefined).toBe(shared);
+      const saved = await roundTrip(loaded);
+      const embeddedContents = saved.context.enumerateIndirectObjects()
+        .map(([, object]) => object)
+        .filter((object): object is PDFRawStream => object instanceof PDFRawStream &&
+          object.dict.get(PDFName.of('Type')) === PDFName.of('EmbeddedFile'))
+        .map((stream) => new TextDecoder().decode(decodePDFRawStream(stream).decode()));
+      expect(embeddedContents.includes(EN16931)).toBe(shared);
+      expect(embeddedContents).toContain(BASIC_WL);
+      if (shared) {
+        const annotation = saved.getPages()[0]!.node.lookup(PDFName.of('Annots'), PDFArray).lookup(0, PDFDict);
+        const spec = annotation.lookup(PDFName.of('FS'), PDFDict);
+        const stream = spec.lookup(PDFName.of('EF'), PDFDict).lookup(PDFName.of('F'), PDFRawStream);
+        expect(new TextDecoder().decode(decodePDFRawStream(stream).decode())).toBe(EN16931);
+      }
+    },
+  );
 
   it('completes an existing fx schema and keeps an existing 3U declaration', async () => {
     const doc = await newDoc();

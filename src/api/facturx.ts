@@ -12,6 +12,7 @@ import {
   FACTUR_X_FILE_NAME,
   type FacturXProfile,
 } from '../core/metadata/facturx.js';
+import { collectUnreferenced } from './detach.js';
 import { isWritableFlatNameTree, sortNameTreeNames } from './nameTree.js';
 
 export interface EmbedFacturXOptions {
@@ -90,9 +91,9 @@ const refusal = (reason: string) =>
  * Plan putting the invoice in the document's catalog-level attachments:
  * the /EmbeddedFiles name tree and the catalog /AF array. A previous
  * invoice (an entry whose key, /F or /UF is factur-x.xml) is unlinked from
- * both, under every key and every /AF occurrence; its objects are kept,
- * as other structures may refer to them, and references from annotations
- * or pages are left alone. The containers are replaced rather than edited,
+ * both, under every key and every /AF occurrence. Objects only the old
+ * invoice used are deleted; references from annotations or pages keep them
+ * alive. The containers are replaced rather than edited,
  * since they may be shared. Every check runs before the returned function
  * changes anything.
  */
@@ -202,6 +203,9 @@ export const planFacturXAttachment = (
     AFRelationship: relationship,
   });
 
+  const catalogNames = catalog.get(Names);
+  const catalogAF = catalog.get(AF);
+
   return () => {
     spec.set(PDFName.of('EF'), context.obj({ F: context.register(stream) }));
     const specRef = context.register(spec);
@@ -227,5 +231,18 @@ export const planFacturXAttachment = (
     const af = context.obj(afRefs.filter((r) => !invoices.has(r)));
     af.push(specRef);
     catalog.set(AF, af);
+
+    // Replaced indirect containers can otherwise keep an unlinked invoice
+    // alive. Collect them too, while preserving any shared container graph.
+    const roots = [...invoices];
+    for (const value of [
+      catalogNames,
+      namesValue?.get(EmbeddedFiles),
+      efValue?.get(Names),
+      catalogAF,
+    ]) {
+      if (value instanceof PDFRef) roots.push(value);
+    }
+    collectUnreferenced(context, roots);
   };
 };
