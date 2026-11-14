@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // PCL 5 Table
 // NOTE: The PCLT table is strongly discouraged for OpenType fonts with TrueType outlines

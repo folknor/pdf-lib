@@ -1,23 +1,16 @@
-import { parseContentStream } from '../../core/content/ContentStreamParser.js';
-import type { TextSpacing } from '../../core/embedders/EncodedText.js';
-import type { PDFOperator, PDFWidgetAnnotation } from '../../core/index.js';
-import { findLastMatch } from '../../utils/index.js';
-import {
-  type Color,
-  cmyk,
-  componentsToColor,
-  grayscale,
-  rgb,
-  setFillingColor,
-} from '../colors.js';
-import type PDFButton from '../form/PDFButton.js';
-import type PDFCheckBox from '../form/PDFCheckBox.js';
-import type PDFDropdown from '../form/PDFDropdown.js';
-import type PDFField from '../form/PDFField.js';
-import type PDFOptionList from '../form/PDFOptionList.js';
-import type PDFRadioGroup from '../form/PDFRadioGroup.js';
-import type PDFSignature from '../form/PDFSignature.js';
-import type PDFTextField from '../form/PDFTextField.js';
+import { parseContentStream } from "../../core/content/ContentStreamParser.js";
+import type { TextSpacing } from "../../core/embedders/EncodedText.js";
+import type { PDFOperator, PDFWidgetAnnotation } from "../../core/index.js";
+import { findLastMatch } from "../../utils/index.js";
+import { type Color, cmyk, componentsToColor, grayscale, rgb, setFillingColor } from "../colors.js";
+import type PDFButton from "../form/PDFButton.js";
+import type PDFCheckBox from "../form/PDFCheckBox.js";
+import type PDFDropdown from "../form/PDFDropdown.js";
+import type PDFField from "../form/PDFField.js";
+import type PDFOptionList from "../form/PDFOptionList.js";
+import type PDFRadioGroup from "../form/PDFRadioGroup.js";
+import type PDFSignature from "../form/PDFSignature.js";
+import type PDFTextField from "../form/PDFTextField.js";
 import {
   drawButton,
   drawCheckBox,
@@ -25,17 +18,17 @@ import {
   drawRadioButton,
   drawTextField,
   rotateInPlace,
-} from '../operations.js';
-import { setFontAndSize } from '../operators.js';
-import type PDFFont from '../PDFFont.js';
-import { adjustDimsForRotation, reduceRotation } from '../rotations.js';
-import { TextAlignment } from '../text/alignment.js';
+} from "../operations.js";
+import { setFontAndSize } from "../operators.js";
+import type PDFFont from "../PDFFont.js";
+import { adjustDimsForRotation, reduceRotation } from "../rotations.js";
+import { TextAlignment } from "../text/alignment.js";
 import {
   layoutCombedText,
   layoutMultilineText,
   layoutSinglelineText,
   type TextPosition,
-} from '../text/layout.js';
+} from "../text/layout.js";
 
 /*********************** Appearance Provider Types ****************************/
 
@@ -113,7 +106,7 @@ export type AppearanceProviderFor<T extends PDFField> = T extends PDFCheckBox
 export const normalizeAppearance = <T extends object>(
   appearance: T | AppearanceMapping<T>,
 ): AppearanceMapping<T> => {
-  if ('normal' in appearance) return appearance;
+  if ("normal" in appearance) return appearance;
 
   return { normal: appearance };
 };
@@ -131,13 +124,12 @@ const getDefaultSpacing = (field: {
     Uint8Array.from(da, (char) => char.charCodeAt(0)),
   ).operations) {
     if (
-      (operator === 'Tc' || operator === 'Tw') &&
+      (operator === "Tc" || operator === "Tw") &&
       operands.length === 1 &&
-      typeof operands[0] === 'number'
+      typeof operands[0] === "number"
     ) {
       spacing ??= {};
-      spacing[operator === 'Tc' ? 'characterSpacing' : 'wordSpacing'] =
-        operands[0];
+      spacing[operator === "Tc" ? "characterSpacing" : "wordSpacing"] = operands[0];
     }
   }
 
@@ -157,13 +149,10 @@ const fieldSpacing = (
 // Examples:
 //   `/Helv 12 Tf` -> ['/Helv 12 Tf', 'Helv', '12']
 //   `/HeBo 8.00 Tf` -> ['/HeBo 8 Tf', 'HeBo', '8.00']
-const tfRegex =
-  /\/([^\0\t\n\f\r ]+)[\0\t\n\f\r ]+(\d*\.\d+|\d+)[\0\t\n\f\r ]+Tf/;
+const tfRegex = /\/([^\0\t\n\f\r ]+)[\0\t\n\f\r ]+(\d*\.\d+|\d+)[\0\t\n\f\r ]+Tf/;
 
-const getDefaultFontSize = (field: {
-  getDefaultAppearance(): string | undefined;
-}) => {
-  const da = field.getDefaultAppearance() ?? '';
+const getDefaultFontSize = (field: { getDefaultAppearance(): string | undefined }) => {
+  const da = field.getDefaultAppearance() ?? "";
   const daMatch = findLastMatch(da, tfRegex).match ?? [];
   const defaultFontSize = Number(daMatch[2]);
 
@@ -177,23 +166,21 @@ const getDefaultFontSize = (field: {
 const colorRegex =
   /(\d*\.\d+|\d+)[\0\t\n\f\r ]*(\d*\.\d+|\d+)?[\0\t\n\f\r ]*(\d*\.\d+|\d+)?[\0\t\n\f\r ]*(\d*\.\d+|\d+)?[\0\t\n\f\r ]+(g|rg|k)/;
 
-const getDefaultColor = (field: {
-  getDefaultAppearance(): string | undefined;
-}) => {
-  const da = field.getDefaultAppearance() ?? '';
+const getDefaultColor = (field: { getDefaultAppearance(): string | undefined }) => {
+  const da = field.getDefaultAppearance() ?? "";
   const daMatch = findLastMatch(da, colorRegex).match;
 
   const [, c1, c2, c3, c4, colorSpace] = daMatch ?? [];
 
-  if (colorSpace === 'g' && c1) {
+  if (colorSpace === "g" && c1) {
     return grayscale(Number(c1));
   }
 
-  if (colorSpace === 'rg' && c1 && c2 && c3) {
+  if (colorSpace === "rg" && c1 && c2 && c3) {
     return rgb(Number(c1), Number(c2), Number(c3));
   }
 
-  if (colorSpace === 'k' && c1 && c2 && c3 && c4) {
+  if (colorSpace === "k" && c1 && c2 && c3 && c4) {
     return cmyk(Number(c1), Number(c2), Number(c3), Number(c4));
   }
 
@@ -212,22 +199,19 @@ const updateDefaultAppearance = (
   const spacing = getDefaultSpacing(field);
 
   const da = [
-    ...(spacing?.characterSpacing !== undefined
-      ? [`${spacing.characterSpacing} Tc`]
-      : []),
-    ...(spacing?.wordSpacing !== undefined
-      ? [`${spacing.wordSpacing} Tw`]
-      : []),
+    ...(spacing?.characterSpacing !== undefined ? [`${spacing.characterSpacing} Tc`] : []),
+    ...(spacing?.wordSpacing !== undefined ? [`${spacing.wordSpacing} Tw`] : []),
     setFillingColor(color).toString(),
-    setFontAndSize(font?.name ?? 'dummy__noop', fontSize).toString(),
-  ].join('\n');
+    setFontAndSize(font?.name ?? "dummy__noop", fontSize).toString(),
+  ].join("\n");
 
   field.setDefaultAppearance(da);
 };
 
-export const defaultCheckBoxAppearanceProvider: AppearanceProviderFor<
-  PDFCheckBox
-> = (checkBox, widget) => {
+export const defaultCheckBoxAppearanceProvider: AppearanceProviderFor<PDFCheckBox> = (
+  checkBox,
+  widget,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(checkBox.acroField);
@@ -307,9 +291,10 @@ export const defaultCheckBoxAppearanceProvider: AppearanceProviderFor<
   };
 };
 
-export const defaultRadioGroupAppearanceProvider: AppearanceProviderFor<
-  PDFRadioGroup
-> = (radioGroup, widget) => {
+export const defaultRadioGroupAppearanceProvider: AppearanceProviderFor<PDFRadioGroup> = (
+  radioGroup,
+  widget,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(radioGroup.acroField);
@@ -388,9 +373,11 @@ export const defaultRadioGroupAppearanceProvider: AppearanceProviderFor<
   };
 };
 
-export const defaultButtonAppearanceProvider: AppearanceProviderFor<
-  PDFButton
-> = (button, widget, font) => {
+export const defaultButtonAppearanceProvider: AppearanceProviderFor<PDFButton> = (
+  button,
+  widget,
+  font,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(button.acroField);
@@ -402,8 +389,8 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
   const ap = widget.getAppearanceCharacteristics();
   const bs = widget.getBorderStyle();
   const captions = ap?.getCaptions();
-  const normalText = captions?.normal ?? '';
-  const downText = captions?.down ?? normalText ?? '';
+  const normalText = captions?.normal ?? "";
+  const downText = captions?.down ?? normalText ?? "";
 
   const borderWidth = bs?.getWidth() ?? 0;
   const rotation = reduceRotation(ap?.getRotation());
@@ -482,9 +469,11 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
   };
 };
 
-export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
-  PDFTextField
-> = (textField, widget, font) => {
+export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<PDFTextField> = (
+  textField,
+  widget,
+  font,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(textField.acroField);
@@ -495,10 +484,10 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
   const bs = widget.getBorderStyle();
-  const text = textField.getText() ?? '';
+  const text = textField.getText() ?? "";
 
   const borderWidth = bs?.getWidth() ?? 0;
-  const borderStyle = bs?.getStyle() ?? 'S';
+  const borderStyle = bs?.getStyle() ?? "S";
   const borderDashPattern = bs?.getDashPattern();
   const rotation = reduceRotation(ap?.getRotation());
   const { width, height } = adjustDimsForRotation(rectangle, rotation);
@@ -573,7 +562,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
     height: height - borderWidth,
     borderWidth: borderWidth ?? 0,
     borderColor,
-    borderStyle: borderStyle as 'S' | 'D' | 'B' | 'I' | 'U',
+    borderStyle: borderStyle as "S" | "D" | "B" | "I" | "U",
     ...(borderDashPattern && { borderDashArray: borderDashPattern }),
     textColor,
     font: font.name,
@@ -586,9 +575,11 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   return [...rotate, ...drawTextField(options)];
 };
 
-export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
-  PDFDropdown
-> = (dropdown, widget, font) => {
+export const defaultDropdownAppearanceProvider: AppearanceProviderFor<PDFDropdown> = (
+  dropdown,
+  widget,
+  font,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(dropdown.acroField);
@@ -599,10 +590,10 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
   const bs = widget.getBorderStyle();
-  const text = dropdown.getSelected()[0] ?? '';
+  const text = dropdown.getSelected()[0] ?? "";
 
   const borderWidth = bs?.getWidth() ?? 0;
-  const borderStyle = bs?.getStyle() ?? 'S';
+  const borderStyle = bs?.getStyle() ?? "S";
   const borderDashPattern = bs?.getDashPattern();
   const rotation = reduceRotation(ap?.getRotation());
   const { width, height } = adjustDimsForRotation(rectangle, rotation);
@@ -647,7 +638,7 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
     height: height - borderWidth,
     borderWidth: borderWidth ?? 0,
     borderColor,
-    borderStyle: borderStyle as 'S' | 'D' | 'B' | 'I' | 'U',
+    borderStyle: borderStyle as "S" | "D" | "B" | "I" | "U",
     ...(borderDashPattern && { borderDashArray: borderDashPattern }),
     textColor,
     font: font.name,
@@ -660,9 +651,11 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   return [...rotate, ...drawTextField(options)];
 };
 
-export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
-  PDFOptionList
-> = (optionList, widget, font) => {
+export const defaultOptionListAppearanceProvider: AppearanceProviderFor<PDFOptionList> = (
+  optionList,
+  widget,
+  font,
+) => {
   // The `/DA` entry can be at the widget or field level - so we handle both
   const widgetColor = getDefaultColor(widget);
   const fieldColor = getDefaultColor(optionList.acroField);
@@ -690,12 +683,12 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
 
   if (optionList.isSorted()) options.sort();
 
-  let text = '';
+  let text = "";
 
   for (let idx = 0, len = options.length; idx < len; idx++) {
     text += options[idx];
 
-    if (idx < len - 1) text += '\n';
+    if (idx < len - 1) text += "\n";
   }
 
   const padding = 1;

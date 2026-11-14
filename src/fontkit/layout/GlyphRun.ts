@@ -1,8 +1,8 @@
-import BBox from '../glyph/BBox.js';
-import type Glyph from '../glyph/Glyph.js';
-import { type FeatureRequest, normalizeFeatures } from './FeatureValues.js';
-import type GlyphPosition from './GlyphPosition.js';
-import * as Script from './Script.js';
+import BBox from "../glyph/BBox.js";
+import type Glyph from "../glyph/Glyph.js";
+import { type FeatureRequest, normalizeFeatures } from "./FeatureValues.js";
+import type GlyphPosition from "./GlyphPosition.js";
+import * as Script from "./Script.js";
 
 /**
  * Represents a run of Glyph and GlyphPosition objects.

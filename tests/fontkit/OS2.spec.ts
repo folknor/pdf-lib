@@ -1,7 +1,7 @@
-import OS2 from '../../src/fontkit/tables/OS2.js';
-import { DecodeStream } from '../../src/vendors/restructure/index.js';
+import OS2 from "../../src/fontkit/tables/OS2.js";
+import { DecodeStream } from "../../src/vendors/restructure/index.js";
 
-describe('OS/2 version 0 metrics', () => {
+describe("OS/2 version 0 metrics", () => {
   const bytes = () => {
     const buffer = new Uint8Array(78);
     const view = new DataView(buffer.buffer);
@@ -16,7 +16,7 @@ describe('OS/2 version 0 metrics', () => {
     return buffer;
   };
 
-  it('decodes signed typo and unsigned win metrics in the 78-byte layout', () => {
+  it("decodes signed typo and unsigned win metrics in the 78-byte layout", () => {
     const stream = new DecodeStream(bytes());
     const table = OS2.decode(stream, undefined, 78);
 
@@ -32,7 +32,7 @@ describe('OS/2 version 0 metrics', () => {
     expect(stream.pos).toBe(78);
   });
 
-  it('leaves metrics undefined in the 68-byte layout without reading the next table', () => {
+  it("leaves metrics undefined in the 68-byte layout without reading the next table", () => {
     // Keep trailing bytes in the font stream: the table length is the boundary.
     for (const buffer of [bytes().subarray(0, 68), bytes()]) {
       const stream = new DecodeStream(buffer);

@@ -41,14 +41,10 @@
 // is a canonically equivalent spelling; the clusters carried through here let
 // the embedder write the typed one as /ActualText where they differ.
 
-import { isMark } from '../../vendors/unicode-properties/index.js';
-import {
-  COMBINING_CLASSES,
-  COMPOSITION_EXCLUSIONS,
-  DECOMPOSITIONS,
-} from './canonicalData.js';
-import { arabicKeys, isArabicRun, shapingRank } from './MarkOrder.js';
-import { SPLIT_VOWELS } from './SplitVowels.js';
+import { isMark } from "../../vendors/unicode-properties/index.js";
+import { COMBINING_CLASSES, COMPOSITION_EXCLUSIONS, DECOMPOSITIONS } from "./canonicalData.js";
+import { arabicKeys, isArabicRun, shapingRank } from "./MarkOrder.js";
+import { SPLIT_VOWELS } from "./SplitVowels.js";
 
 interface Tables {
   decompositions: Map<number, number[]>;
@@ -65,28 +61,26 @@ const load = (): Tables => {
   if (tables) return tables;
   const decompositions = new Map<number, number[]>();
 
-  for (const entry of DECOMPOSITIONS.split(';')) {
-    const [cp, parts] = entry.split(':') as [string, string];
+  for (const entry of DECOMPOSITIONS.split(";")) {
+    const [cp, parts] = entry.split(":") as [string, string];
     decompositions.set(
       parseInt(cp, 16),
-      parts.split(',').map((h) => parseInt(h, 16)),
+      parts.split(",").map((h) => parseInt(h, 16)),
     );
   }
 
   const classes = new Map<number, number>();
 
-  for (const entry of COMBINING_CLASSES.split(';')) {
-    const [range, cls] = entry.split(':') as [string, string];
-    const [a, b = a] = range.split('-') as [string, string?];
+  for (const entry of COMBINING_CLASSES.split(";")) {
+    const [range, cls] = entry.split(":") as [string, string];
+    const [a, b = a] = range.split("-") as [string, string?];
 
     for (let cp = parseInt(a, 16); cp <= parseInt(b!, 16); cp++) {
       classes.set(cp, Number(cls));
     }
   }
 
-  const excluded = new Set(
-    COMPOSITION_EXCLUSIONS.split(',').map((h) => parseInt(h, 16)),
-  );
+  const excluded = new Set(COMPOSITION_EXCLUSIONS.split(",").map((h) => parseInt(h, 16)));
 
   const compositions = new Map<number, Map<number, number>>();
   const hebrewForms = new Map<number, Map<number, number>>();
@@ -114,8 +108,7 @@ const load = (): Tables => {
 };
 
 /** Canonical combining class (Unicode 8). */
-export const combiningClass = (cp: number): number =>
-  load().classes.get(cp) ?? 0;
+export const combiningClass = (cp: number): number => load().classes.get(cp) ?? 0;
 
 const isVariationSelector = (cp: number) =>
   (cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef);
@@ -138,7 +131,7 @@ export function composeCanonical(
   // Clusters holding a variation selector, judged on the typed sequence.
   const protectedAt = new Array<boolean>(codePoints.length).fill(false);
 
-  for (let start = 0; start < codePoints.length; ) {
+  for (let start = 0; start < codePoints.length;) {
     let end = start + 1;
 
     while (end < codePoints.length && isMark(codePoints[end]!)) end++;
@@ -181,9 +174,7 @@ export function composeCanonical(
     const cp = codePoints[i]!;
 
     const parts =
-      protectedAt[i] ||
-      hasGlyph(cp) ||
-      (!decompositions.has(cp) && !SPLIT_VOWELS.has(cp))
+      protectedAt[i] || hasGlyph(cp) || (!decompositions.has(cp) && !SPLIT_VOWELS.has(cp))
         ? null
         : decompose(cp);
 
@@ -199,7 +190,7 @@ export function composeCanonical(
   // here, on the decomposed sequence, before anything composes.
   const arabic = new Array<boolean>(cps.length).fill(false);
 
-  for (let start = 0; start < cps.length; ) {
+  for (let start = 0; start < cps.length;) {
     if (locked[start] || combiningClass(cps[start]!) === 0) {
       start++;
       continue;
@@ -207,11 +198,7 @@ export function composeCanonical(
 
     let end = start + 1;
 
-    while (
-      end < cps.length &&
-      !locked[end] &&
-      combiningClass(cps[end]!) !== 0
-    ) {
+    while (end < cps.length && !locked[end] && combiningClass(cps[end]!) !== 0) {
       end++;
     }
 
@@ -261,9 +248,7 @@ export function composeCanonical(
     // between (all nonzero classes other than its own). In an Arabic run it
     // must follow the starter directly: consumed marks are gone from out,
     // and any mark left there blocks.
-    const reaches = arabic[i]
-      ? starter === out.length - 1
-      : !classesBetween.has(cls);
+    const reaches = arabic[i] ? starter === out.length - 1 : !classesBetween.has(cls);
 
     if (mark && cls !== 0 && starter >= 0 && !blockedByZero && reaches) {
       const base = out[starter]!;

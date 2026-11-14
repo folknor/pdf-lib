@@ -4,11 +4,11 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import { NumberT } from './Number.js';
-import * as utils from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import { NumberT } from "./Number.js";
+import * as utils from "./utils.js";
 
 type LengthType = number | string | NumberT | ((parent: unknown) => number);
 

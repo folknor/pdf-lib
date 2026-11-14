@@ -1,36 +1,25 @@
-import { isDigit } from '../../../vendors/unicode-properties/index.js';
-import type { FeatureRequest } from '../../layout/FeatureValues.js';
-import type GlyphInfo from '../GlyphInfo.js';
-import type ShapingPlan from '../ShapingPlan.js';
+import { isDigit } from "../../../vendors/unicode-properties/index.js";
+import type { FeatureRequest } from "../../layout/FeatureValues.js";
+import type GlyphInfo from "../GlyphInfo.js";
+import type ShapingPlan from "../ShapingPlan.js";
 
-const VARIATION_FEATURES: string[] = ['rvrn'];
-const COMMON_FEATURES: string[] = ['ccmp', 'locl', 'rlig', 'mark', 'mkmk'];
-const FRACTIONAL_FEATURES: string[] = ['frac', 'numr', 'dnom'];
+const VARIATION_FEATURES: string[] = ["rvrn"];
+const COMMON_FEATURES: string[] = ["ccmp", "locl", "rlig", "mark", "mkmk"];
+const FRACTIONAL_FEATURES: string[] = ["frac", "numr", "dnom"];
 
-const HORIZONTAL_FEATURES: string[] = [
-  'calt',
-  'clig',
-  'liga',
-  'rclt',
-  'curs',
-  'kern',
-];
+const HORIZONTAL_FEATURES: string[] = ["calt", "clig", "liga", "rclt", "curs", "kern"];
 
 // @ts-ignore - Reserved for future vertical feature support
-const _VERTICAL_FEATURES: string[] = ['vert'];
+const _VERTICAL_FEATURES: string[] = ["vert"];
 
 const DIRECTIONAL_FEATURES: Record<string, string[]> = {
-  ltr: ['ltra', 'ltrm'],
-  rtl: ['rtla', 'rtlm'],
+  ltr: ["ltra", "ltrm"],
+  rtl: ["rtla", "rtlm"],
 };
 
 export default class DefaultShaper {
-  static zeroMarkWidths = 'AFTER_GPOS';
-  static plan(
-    plan: ShapingPlan,
-    glyphs: GlyphInfo[],
-    features: FeatureRequest,
-  ): void {
+  static zeroMarkWidths = "AFTER_GPOS";
+  static plan(plan: ShapingPlan, glyphs: GlyphInfo[], features: FeatureRequest): void {
     // Every hook is dispatched through `this`, the shaper class choose()
     // selected, so subclass overrides (Arabic joining features, Indic and
     // USE reordering, Hangul composition) run. Naming DefaultShaper here
@@ -48,10 +37,7 @@ export default class DefaultShaper {
 
   static planPreprocessing(plan: ShapingPlan): void {
     plan.add({
-      global: [
-        ...VARIATION_FEATURES,
-        ...(DIRECTIONAL_FEATURES[plan.direction] || []),
-      ],
+      global: [...VARIATION_FEATURES, ...(DIRECTIONAL_FEATURES[plan.direction] || [])],
       local: FRACTIONAL_FEATURES,
     });
   }
@@ -60,10 +46,7 @@ export default class DefaultShaper {
     // Do nothing by default. Let subclasses override this.
   }
 
-  static planPostprocessing(
-    plan: ShapingPlan,
-    userFeatures: FeatureRequest,
-  ): void {
+  static planPostprocessing(plan: ShapingPlan, userFeatures: FeatureRequest): void {
     plan.add([...COMMON_FEATURES, ...HORIZONTAL_FEATURES]);
     plan.setFeatureOverrides(userFeatures);
   }
@@ -85,20 +68,20 @@ export default class DefaultShaper {
 
         // Apply numerator
         while (start > 0 && isDigit(glyphs[start - 1]!.codePoints[0]!)) {
-          glyphs[start - 1]!.features['numr'] = true;
-          glyphs[start - 1]!.features['frac'] = true;
+          glyphs[start - 1]!.features["numr"] = true;
+          glyphs[start - 1]!.features["frac"] = true;
           start--;
         }
 
         // Apply denominator
         while (end < glyphs.length && isDigit(glyphs[end]!.codePoints[0]!)) {
-          glyphs[end]!.features['dnom'] = true;
-          glyphs[end]!.features['frac'] = true;
+          glyphs[end]!.features["dnom"] = true;
+          glyphs[end]!.features["frac"] = true;
           end++;
         }
 
         // Apply fraction slash
-        glyph.features['frac'] = true;
+        glyph.features["frac"] = true;
         i = end - 1;
       }
     }

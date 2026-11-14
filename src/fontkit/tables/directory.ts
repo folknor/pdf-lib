@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import Tables from './index.js';
+import * as r from "../../vendors/restructure/index.js";
+import Tables from "./index.js";
 
 interface TableEntryData {
   tag: string;
@@ -20,7 +20,7 @@ interface DirectoryData {
 const TableEntry = new r.Struct({
   tag: new r.String(4),
   checkSum: r.uint32,
-  offset: new r.Pointer(r.uint32, 'void', { type: 'global' }),
+  offset: new r.Pointer(r.uint32, "void", { type: "global" }),
   length: r.uint32,
 });
 
@@ -30,7 +30,7 @@ const Directory = new r.Struct({
   searchRange: r.uint16,
   entrySelector: r.uint16,
   rangeShift: r.uint16,
-  tables: new r.Array(TableEntry, 'numTables'),
+  tables: new r.Array(TableEntry, "numTables"),
 });
 
 Directory.process = function (this: Record<string, unknown>) {
@@ -46,15 +46,15 @@ Directory.process = function (this: Record<string, unknown>) {
 
 /** The tables `encodeSfnt` writes: the TrueType set PDF embedding needs. */
 const ENCODABLE_TAGS = new Set([
-  'head',
-  'hhea',
-  'loca',
-  'maxp',
-  'cvt ',
-  'prep',
-  'glyf',
-  'hmtx',
-  'fpgm',
+  "head",
+  "hhea",
+  "loca",
+  "maxp",
+  "cvt ",
+  "prep",
+  "glyf",
+  "hmtx",
+  "fpgm",
 ]);
 
 /**
@@ -95,7 +95,7 @@ export const encodeSfnt = (tables: Record<string, unknown>): Uint8Array => {
     const bytes = (Tables[tag] as r.Base<unknown>).toBuffer(tables[tag]);
 
     // checkSumAdjustment is computed over the file with this field zero.
-    if (tag === 'head') bytes.fill(0, 8, 12);
+    if (tag === "head") bytes.fill(0, 8, 12);
 
     return bytes;
   });
@@ -130,7 +130,7 @@ export const encodeSfnt = (tables: Record<string, unknown>): Uint8Array => {
     const offset = offsets[i]!;
     out.set(bytes, offset);
 
-    if (tag === 'head') headOffset = offset;
+    if (tag === "head") headOffset = offset;
 
     const record = 12 + 16 * i;
 

@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PDFDocument, PDFName, type PDFWarning } from '../../src/index';
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { PDFDocument, PDFName, type PDFWarning } from "../../src/index";
 
-const MARK = 'MARKXXXXXXXXXXXX'; // with its slash, as long as BIG
-const BIG = '90071992547409930'; // above Number.MAX_SAFE_INTEGER
+const MARK = "MARKXXXXXXXXXXXX"; // with its slash, as long as BIG
+const BIG = "90071992547409930"; // above Number.MAX_SAFE_INTEGER
 
 /**
  * A valid file whose catalog holds `[1 BIG]`: the parser reads BIG once as
@@ -10,10 +10,7 @@ const BIG = '90071992547409930'; // above Number.MAX_SAFE_INTEGER
  */
 const fileWithOversizedNumber = async () => {
   const doc = await PDFDocument.create();
-  doc.catalog.set(
-    PDFName.of('Big'),
-    doc.context.obj([1, PDFName.of(MARK)]),
-  );
+  doc.catalog.set(PDFName.of("Big"), doc.context.obj([1, PDFName.of(MARK)]));
   const bytes = await doc.save({ useObjectStreams: false });
   const text = asText(bytes);
   expect(text).toContain(`/${MARK}`);
@@ -22,19 +19,17 @@ const fileWithOversizedNumber = async () => {
 };
 
 /** One char per byte, both ways (TextDecoder 'latin1' is windows-1252). */
-const asText = (bytes: Uint8Array) =>
-  Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+const asText = (bytes: Uint8Array) => Array.from(bytes, (b) => String.fromCharCode(b)).join("");
 
-const asBytes = (text: string) =>
-  Uint8Array.from(text, (c) => c.charCodeAt(0));
+const asBytes = (text: string) => Uint8Array.from(text, (c) => c.charCodeAt(0));
 
-describe('warning handler', () => {
+describe("warning handler", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('receives load warnings once each, and the console gets none', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("receives load warnings once each, and the console gets none", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const warnings: PDFWarning[] = [];
 
     const doc = await PDFDocument.load(await fileWithOversizedNumber(), {
@@ -43,7 +38,7 @@ describe('warning handler', () => {
 
     expect(warnings).toEqual([
       {
-        code: 'number-too-large',
+        code: "number-too-large",
         message: `Parsed number that is too large for some PDF readers: ${BIG}, not capping.`,
       },
     ]);
@@ -53,8 +48,8 @@ describe('warning handler', () => {
     expect(warnings).toHaveLength(1);
   });
 
-  it('defaults to console.warn', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("defaults to console.warn", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await PDFDocument.load(await fileWithOversizedNumber(), {
       capNumbers: true,
     });
@@ -63,55 +58,53 @@ describe('warning handler', () => {
     );
   });
 
-  it('propagates a throwing handler from load', async () => {
+  it("propagates a throwing handler from load", async () => {
     const bytes = await fileWithOversizedNumber();
     await expect(
       PDFDocument.load(bytes, {
         onWarning: () => {
-          throw new Error('handler');
+          throw new Error("handler");
         },
       }),
-    ).rejects.toThrow('handler');
+    ).rejects.toThrow("handler");
   });
 
-  it('receives warnings of later operations, also on copies', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("receives warnings of later operations, also on copies", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const warnings: PDFWarning[] = [];
     const onWarning = (w: PDFWarning) => warnings.push(w);
     const doc = await PDFDocument.create({ onWarning });
     doc.addPage();
-    doc.getForm().createTextField('a').enableCombing();
-    expect(warnings.map((w) => w.code)).toEqual(['comb-without-max-length']);
+    doc.getForm().createTextField("a").enableCombing();
+    expect(warnings.map((w) => w.code)).toEqual(["comb-without-max-length"]);
 
     const copy = await doc.copy();
-    copy.getForm().createTextField('b').enableCombing();
+    copy.getForm().createTextField("b").enableCombing();
     expect(warnings).toHaveLength(2);
     expect(consoleWarn).not.toHaveBeenCalled();
   });
 
-  it('receives the /Perms inconsistency of a decrypting load', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("receives the /Perms inconsistency of a decrypting load", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const doc = await PDFDocument.create();
     doc.addPage();
-    doc.encrypt({ userPassword: 'u', ownerPassword: 'o' });
+    doc.encrypt({ userPassword: "u", ownerPassword: "o" });
     const text = asText(await doc.save());
     // Change one digit of /P, keeping every offset: /Perms then disagrees.
-    const tampered = text.replace(/\/P -(\d)/, (_, d) => `/P -${d === '1' ? '2' : '1'}`);
+    const tampered = text.replace(/\/P -(\d)/, (_, d) => `/P -${d === "1" ? "2" : "1"}`);
     expect(tampered).not.toEqual(text);
     const warnings: PDFWarning[] = [];
-    await PDFDocument.load(
-      asBytes(tampered),
-      { password: 'u', onWarning: (w) => warnings.push(w) },
-    );
-    expect(warnings.map((w) => w.code)).toEqual([
-      'encryption-perms-inconsistent',
-    ]);
+    await PDFDocument.load(asBytes(tampered), {
+      password: "u",
+      onWarning: (w) => warnings.push(w),
+    });
+    expect(warnings.map((w) => w.code)).toEqual(["encryption-perms-inconsistent"]);
     expect(consoleWarn).not.toHaveBeenCalled();
   });
 
-  it('rejects a handler that is not a function', async () => {
+  it("rejects a handler that is not a function", async () => {
     await expect(
-      PDFDocument.create({ onWarning: 'no' as unknown as () => void }),
+      PDFDocument.create({ onWarning: "no" as unknown as () => void }),
     ).rejects.toThrow();
   });
 });

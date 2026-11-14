@@ -1,4 +1,4 @@
-import { range } from '../utils.js';
+import { range } from "../utils.js";
 
 export default class AATLookupTable {
   table: any;

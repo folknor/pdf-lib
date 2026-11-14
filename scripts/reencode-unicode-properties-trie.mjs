@@ -30,18 +30,18 @@
 // script). Run from the repo root:
 //   node scripts/reencode-unicode-properties-trie.mjs
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { inflateSync, unzlibSync, zlibSync } from 'fflate';
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { inflateSync, unzlibSync, zlibSync } from "fflate";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const vendorDir = join(root, 'src/vendors/unicode-properties');
-const triePath = join(vendorDir, 'trie.json');
-const fixturePath = join(root, 'tests/vendors/unicodeProperties.fixture.json');
-const ucdRef = process.argv[2] ?? 'd34dd5abd4';
-const ucdDir = join(root, 'scripts/ucd-cache', ucdRef);
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const vendorDir = join(root, "src/vendors/unicode-properties");
+const triePath = join(vendorDir, "trie.json");
+const fixturePath = join(root, "tests/vendors/unicodeProperties.fixture.json");
+const ucdRef = process.argv[2] ?? "d34dd5abd4";
+const ucdDir = join(root, "scripts/ucd-cache", ucdRef);
 
 function fail(msg) {
   console.error(`reencode-unicode-properties-trie: ${msg}`);
@@ -55,12 +55,12 @@ function ucd(name) {
     mkdirSync(ucdDir, { recursive: true });
 
     const body = execFileSync(
-      'gh',
+      "gh",
       [
-        'api',
+        "api",
         `repos/devongovett/codepoints/contents/data/${name}?ref=${ucdRef}`,
-        '--header',
-        'Accept: application/vnd.github.raw',
+        "--header",
+        "Accept: application/vnd.github.raw",
       ],
       { maxBuffer: 64 << 20 },
     );
@@ -68,7 +68,7 @@ function ucd(name) {
     writeFileSync(p, body);
   }
 
-  return readFileSync(p, 'utf8');
+  return readFileSync(p, "utf8");
 }
 
 // --- reference lookup (the unicode-trie algorithm, own copy) ---------------
@@ -107,7 +107,7 @@ function makeTrie(highStart, errorValue, data) {
 }
 
 function u32le(bytes) {
-  if (bytes.length % 4 !== 0) fail('payload not 4-byte aligned');
+  if (bytes.length % 4 !== 0) fail("payload not 4-byte aligned");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const out = new Uint32Array(bytes.length / 4);
 
@@ -117,14 +117,14 @@ function u32le(bytes) {
 }
 
 function loadOld(b64) {
-  const outer = unzlibSync(Buffer.from(b64, 'base64'));
+  const outer = unzlibSync(Buffer.from(b64, "base64"));
   const view = new DataView(outer.buffer, outer.byteOffset, outer.byteLength);
   const highStart = view.getUint32(0, false);
   const errorValue = view.getUint32(4, false);
   const length = view.getUint32(8, false);
 
   if (highStart > 0x110000 || length % 4 !== 0) {
-    fail('trie.json is not a unicode-trie 0.3 blob (already converted?)');
+    fail("trie.json is not a unicode-trie 0.3 blob (already converted?)");
   }
 
   // The 0.3 builder deflated the data twice.
@@ -145,11 +145,11 @@ function encodeNew(t) {
 
   for (let i = 0; i < t.data.length; i++) view.setUint32(8 + i * 4, t.data[i], true);
 
-  return Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
+  return Buffer.from(zlibSync(bytes, { level: 9 })).toString("base64");
 }
 
 function loadNew(b64) {
-  const raw = unzlibSync(Buffer.from(b64, 'base64'));
+  const raw = unzlibSync(Buffer.from(b64, "base64"));
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
 
   return makeTrie(view.getUint32(0, true), view.getUint32(4, true), u32le(raw.subarray(8)));
@@ -158,8 +158,10 @@ function loadNew(b64) {
 // --- field layout, as in src/vendors/unicode-properties/index.ts -----------
 const data = JSON.parse(
   Buffer.from(
-    unzlibSync(Buffer.from(JSON.parse(readFileSync(join(vendorDir, 'data.json'), 'utf8')), 'base64')),
-  ).toString('latin1'),
+    unzlibSync(
+      Buffer.from(JSON.parse(readFileSync(join(vendorDir, "data.json"), "utf8")), "base64"),
+    ),
+  ).toString("latin1"),
 );
 
 const bits = (n) => (Math.log2(n) + 1) | 0;
@@ -180,7 +182,7 @@ const decode = (v) => ({
 // --- UCD reference ---------------------------------------------------------
 const cccName = new Map();
 
-for (const line of ucd('PropertyValueAliases.txt').split('\n')) {
+for (const line of ucd("PropertyValueAliases.txt").split("\n")) {
   const m = /^ccc;\s*(\d+);\s*[^;]+;\s*([A-Za-z_0-9]+)/.exec(line);
 
   if (m) cccName.set(Number(m[1]), m[2]);
@@ -192,9 +194,9 @@ const refCcc = new Map();
 {
   let first = -1;
 
-  for (const line of ucd('UnicodeData.txt').split('\n')) {
+  for (const line of ucd("UnicodeData.txt").split("\n")) {
     if (!line) continue;
-    const f = line.split(';');
+    const f = line.split(";");
     const cp = parseInt(f[0], 16);
 
     const set = (c) => {
@@ -206,7 +208,7 @@ const refCcc = new Map();
     if (first >= 0) {
       for (let c = first; c <= cp; c++) set(c);
       first = -1;
-    } else if (f[1].endsWith(', First>')) first = cp;
+    } else if (f[1].endsWith(", First>")) first = cp;
     else set(cp);
   }
 }
@@ -214,12 +216,12 @@ const refCcc = new Map();
 function rangeFile(name) {
   const map = new Map();
 
-  for (const raw of ucd(name).split('\n')) {
-    const line = raw.replace(/#.*$/, '').trim();
+  for (const raw of ucd(name).split("\n")) {
+    const line = raw.replace(/#.*$/, "").trim();
 
     if (!line) continue;
     const [range, value] = line.split(/\s*;\s*/);
-    const [lo, hi] = range.split('..').map((h) => parseInt(h, 16));
+    const [lo, hi] = range.split("..").map((h) => parseInt(h, 16));
 
     for (let c = lo; c <= (hi ?? lo); c++) map.set(c, value);
   }
@@ -227,11 +229,11 @@ function rangeFile(name) {
   return map;
 }
 
-const refScript = rangeFile('Scripts.txt');
-const refEaw = rangeFile('EastAsianWidth.txt');
+const refScript = rangeFile("Scripts.txt");
+const refEaw = rangeFile("EastAsianWidth.txt");
 
 // --- decode, verify, write -------------------------------------------------
-const oldTrie = loadOld(JSON.parse(readFileSync(triePath, 'utf8')));
+const oldTrie = loadOld(JSON.parse(readFileSync(triePath, "utf8")));
 
 console.log(
   `old trie: highStart 0x${oldTrie.highStart.toString(16)}, ${oldTrie.data.length} words`,
@@ -248,24 +250,25 @@ for (let cp = 0; cp <= 0x10ffff; cp++) {
   const d = decode(oldTrie.get(cp));
 
   if (refCategory.has(cp)) {
-    if (d.category !== refCategory.get(cp)) note('category', cp, d.category, refCategory.get(cp));
+    if (d.category !== refCategory.get(cp)) note("category", cp, d.category, refCategory.get(cp));
 
-    if (d.ccc !== refCcc.get(cp)) note('ccc', cp, d.ccc, refCcc.get(cp));
+    if (d.ccc !== refCcc.get(cp)) note("ccc", cp, d.ccc, refCcc.get(cp));
   }
 
   if (refScript.has(cp) && d.script !== refScript.get(cp)) {
-    note('script', cp, d.script, refScript.get(cp));
+    note("script", cp, d.script, refScript.get(cp));
   }
 
   // The original builder only stored EAW for assigned code points.
-  if (refCategory.has(cp) && refEaw.has(cp) && d.eaw !== refEaw.get(cp)) note('eaw', cp, d.eaw, refEaw.get(cp));
+  if (refCategory.has(cp) && refEaw.has(cp) && d.eaw !== refEaw.get(cp))
+    note("eaw", cp, d.eaw, refEaw.get(cp));
 }
 
-console.log('mismatches vs UCD', ucdRef, JSON.stringify(mismatches));
+console.log("mismatches vs UCD", ucdRef, JSON.stringify(mismatches));
 
 for (const [k, s] of Object.entries(samples)) for (const line of s) console.log(`  ${k}: ${line}`);
 
-if (Object.values(mismatches).some((n) => n > 0)) fail('decoded trie disagrees with the UCD');
+if (Object.values(mismatches).some((n) => n > 0)) fail("decoded trie disagrees with the UCD");
 
 const newB64 = encodeNew(oldTrie);
 const newTrie = loadNew(newB64);

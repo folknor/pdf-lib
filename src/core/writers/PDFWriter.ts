@@ -1,37 +1,31 @@
-import { zlibSync } from 'fflate';
-import type { DocumentSnapshot } from '../../api/snapshot/index.js';
-import {
-  DefaultDocumentSnapshot,
-  defaultDocumentSnapshot,
-} from '../../api/snapshot/index.js';
-import { copyStringIntoBuffer, waitForTick } from '../../utils/index.js';
-import PDFCrossRefSection from '../document/PDFCrossRefSection.js';
-import type PDFHeader from '../document/PDFHeader.js';
-import PDFTrailer from '../document/PDFTrailer.js';
-import PDFTrailerDict from '../document/PDFTrailerDict.js';
-import { assertPDFAWrite, isCatalogMetadata } from '../metadata/pdfa.js';
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
+import { zlibSync } from "fflate";
+import type { DocumentSnapshot } from "../../api/snapshot/index.js";
+import { DefaultDocumentSnapshot, defaultDocumentSnapshot } from "../../api/snapshot/index.js";
+import { copyStringIntoBuffer, waitForTick } from "../../utils/index.js";
+import PDFCrossRefSection from "../document/PDFCrossRefSection.js";
+import type PDFHeader from "../document/PDFHeader.js";
+import PDFTrailer from "../document/PDFTrailer.js";
+import PDFTrailerDict from "../document/PDFTrailerDict.js";
+import { assertPDFAWrite, isCatalogMetadata } from "../metadata/pdfa.js";
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
 import PDFXRefChainReader, {
   XRefChainError,
   type XRefDisposition,
-} from '../parser/PDFXRefChainReader.js';
-import type {
-  BaselineEncryption,
-  ObjectEncryptor,
-} from '../security/PDFSecurity.js';
-import { generateFileID } from '../security/PDFSecurity.js';
-import { withoutCryptFilter } from '../security/streamCrypt.js';
-import PDFObjectStream from '../structures/PDFObjectStream.js';
-import CharCodes from '../syntax/CharCodes.js';
+} from "../parser/PDFXRefChainReader.js";
+import type { BaselineEncryption, ObjectEncryptor } from "../security/PDFSecurity.js";
+import { generateFileID } from "../security/PDFSecurity.js";
+import { withoutCryptFilter } from "../security/streamCrypt.js";
+import PDFObjectStream from "../structures/PDFObjectStream.js";
+import CharCodes from "../syntax/CharCodes.js";
 
 export interface FreeEntry {
   /** The freed number with the generation its next use would carry. */
@@ -63,9 +57,7 @@ export const freeEntries = (
 
   for (const ref of inUse) {
     if (ref.objectNumber === 0) {
-      throw new Error(
-        'Cannot write object number 0: it is the head of the free list.',
-      );
+      throw new Error("Cannot write object number 0: it is the head of the free list.");
     }
 
     if (written.has(ref.objectNumber)) {
@@ -97,7 +89,7 @@ export const freeEntries = (
   const generations = new Map<number, number>();
 
   for (const [num, entry] of inherited ?? []) {
-    if (entry.kind === 'free' && !written.has(num)) {
+    if (entry.kind === "free" && !written.has(num)) {
       generations.set(num, entry.generation);
     }
   }
@@ -113,12 +105,12 @@ export const freeEntries = (
     const entry = inherited?.get(ref.objectNumber);
 
     const generation =
-      entry?.kind === 'free'
+      entry?.kind === "free"
         ? entry.generation
         : Math.min(
-            (entry?.kind === 'inUse'
+            (entry?.kind === "inUse"
               ? entry.generation
-              : entry?.kind === 'compressed'
+              : entry?.kind === "compressed"
                 ? 0
                 : ref.generationNumber) + 1,
             65535,
@@ -160,7 +152,7 @@ const assertInheritedFreeEntriesRespected = (
   for (const ref of inUse) {
     const entry = entries.get(ref.objectNumber);
 
-    if (entry?.kind !== 'free') continue;
+    if (entry?.kind !== "free") continue;
 
     if (entry.generation === 65535) {
       throw new Error(
@@ -196,14 +188,12 @@ export interface WriteEncryption {
  * The encryption an increment must keep, throwing for a file loaded
  * encrypted without its password, which no write accepts (see below).
  */
-export const savableBaseline = (
-  context: PDFContext,
-): BaselineEncryption | undefined => {
+export const savableBaseline = (context: PDFContext): BaselineEncryption | undefined => {
   const baseline = context.baselineEncryption;
 
-  if (baseline === 'keyless') {
+  if (baseline === "keyless") {
     throw new Error(
-      'An encrypted file loaded without its password cannot be saved or encrypted; load it with the `password` option.',
+      "An encrypted file loaded without its password cannot be saved or encrypted; load it with the `password` option.",
     );
   }
 
@@ -240,8 +230,7 @@ export const writeEncryption = (
         (trailerInfo.Encrypt
           ? undefined
           : {
-              encryptIndirectObject: (_ref, object) =>
-                withoutCryptFilter(object),
+              encryptIndirectObject: (_ref, object) => withoutCryptFilter(object),
             }),
       Encrypt: trailerInfo.Encrypt,
       ID: trailerInfo.ID,
@@ -250,7 +239,7 @@ export const writeEncryption = (
 
   if (context.security) {
     throw new Error(
-      'An incremental update cannot change the encryption of a file; save it with a full rewrite after encrypt().',
+      "An incremental update cannot change the encryption of a file; save it with a full rewrite after encrypt().",
     );
   }
 
@@ -271,11 +260,7 @@ export const writeEncryption = (
 const firstFileIDs = new WeakMap<PDFContext, PDFHexString>();
 
 class PDFWriter {
-  static forContext = (
-    context: PDFContext,
-    objectsPerTick: number,
-    compress = false,
-  ) =>
+  static forContext = (context: PDFContext, objectsPerTick: number, compress = false) =>
     new PDFWriter(context, objectsPerTick, defaultDocumentSnapshot, compress);
 
   static forContextWithSnapshot = (
@@ -353,10 +338,7 @@ class PDFWriter {
       kept = generated;
     }
 
-    this.encryption.ID = this.context.obj([
-      kept,
-      PDFHexString.fromBytes(generateFileID()),
-    ]);
+    this.encryption.ID = this.context.obj([kept, PDFHexString.fromBytes(generateFileID())]);
   }
 
   protected constructor(
@@ -379,11 +361,7 @@ class PDFWriter {
    * @param object PDFObject used to check if it is an XRef stream, when not 'incremental' saving
    * @returns whether the object should be saved or not
    */
-  protected shouldSave(
-    incremental: boolean,
-    objNum: number,
-    object: PDFObject,
-  ): boolean {
+  protected shouldSave(incremental: boolean, objNum: number, object: PDFObject): boolean {
     let should = true;
 
     if (incremental) {
@@ -391,7 +369,7 @@ class PDFWriter {
     } else {
       should = !(
         object instanceof PDFRawStream &&
-        object.dict.lookup(PDFName.of('Type')) === PDFName.of('XRef')
+        object.dict.lookup(PDFName.of("Type")) === PDFName.of("XRef")
       );
     }
 
@@ -449,8 +427,7 @@ class PDFWriter {
       buffer[offset++] = CharCodes.Newline;
       buffer[offset++] = CharCodes.Newline;
 
-      const n =
-        object instanceof PDFObjectStream ? object.getObjectsCount() : 1;
+      const n = object instanceof PDFObjectStream ? object.getObjectsCount() : 1;
 
       if (this.shouldWaitForTick(n)) await waitForTick();
     }
@@ -471,20 +448,14 @@ class PDFWriter {
     return buffer;
   }
 
-  protected computeIndirectObjectSize([ref, object]: [
-    PDFRef,
-    PDFObject,
-  ]): number {
+  protected computeIndirectObjectSize([ref, object]: [PDFRef, PDFObject]): number {
     const refSize = ref.sizeInBytes() + 3; // 'R' -> 'obj\n'
     const objectSize = object.sizeInBytes() + 9; // '\nendobj\n\n'
 
     return refSize + objectSize;
   }
 
-  protected createTrailerDict(
-    prevStartXRef?: number,
-    incremental = false,
-  ): PDFDict {
+  protected createTrailerDict(prevStartXRef?: number, incremental = false): PDFDict {
     /**
      * In a full save, if the last object (an XRef Stream) is not in the
      * output, the size is one less. In an increment a skipped object is
@@ -493,10 +464,7 @@ class PDFWriter {
      */
     const size =
       this.context.largestObjectNumber +
-      (!incremental &&
-      this._largestSkippedObjectNum === this.context.largestObjectNumber
-        ? 0
-        : 1);
+      (!incremental && this._largestSkippedObjectNum === this.context.largestObjectNumber ? 0 : 1);
 
     return this.context.obj({
       Size: size,
@@ -508,9 +476,7 @@ class PDFWriter {
     });
   }
 
-  protected async computeBufferSize(
-    incremental: boolean,
-  ): Promise<SerializationInfo> {
+  protected async computeBufferSize(incremental: boolean): Promise<SerializationInfo> {
     this._largestSkippedObjectNum = 0;
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
     this.prepareTrailerID(incremental);
@@ -610,7 +576,7 @@ class PDFWriter {
 
     if (!originalBytes || prevStartXRef === undefined) {
       throw new Error(
-        'fillXrefGaps in an incremental save needs the bytes and startxref of the file it extends',
+        "fillXrefGaps in an incremental save needs the bytes and startxref of the file it extends",
       );
     }
 
@@ -632,13 +598,13 @@ class PDFWriter {
 
       if (!entry) return PDFCrossRefSection.freeGap(objectNumber);
 
-      if (entry.kind === 'compressed') {
+      if (entry.kind === "compressed") {
         throw new Error(
           `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} is inherited from an object stream, which a table cannot list. Save without fillXrefGaps, or with useObjectStreams.`,
         );
       }
 
-      if (entry.kind === 'null') {
+      if (entry.kind === "null") {
         // Listing it free would make the number reusable; in use, resolvable.
         throw new Error(
           `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} has an xref-stream entry of an undefined type (a null reference), which a table cannot list. Save without fillXrefGaps.`,
@@ -647,8 +613,8 @@ class PDFWriter {
 
       return {
         ref: PDFRef.of(objectNumber, entry.generation),
-        offset: entry.kind === 'inUse' ? entry.offset : 0,
-        deleted: entry.kind === 'free',
+        offset: entry.kind === "inUse" ? entry.offset : 0,
+        deleted: entry.kind === "free",
       };
     }, inherited.highestFree);
   }
@@ -661,7 +627,7 @@ class PDFWriter {
     if (isCatalogMetadata(this.context, object)) return;
 
     // Skip if already has a Filter (already compressed)
-    const filter = object.dict.get(PDFName.of('Filter'));
+    const filter = object.dict.get(PDFName.of("Filter"));
 
     if (filter) return;
 
@@ -676,10 +642,10 @@ class PDFWriter {
     if (compressed.length >= contents.length) return;
 
     object.updateContents(compressed as Uint8Array<ArrayBuffer>);
-    object.dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
+    object.dict.set(PDFName.of("Filter"), PDFName.of("FlateDecode"));
     // /DecodeParms on an unfiltered stream meant nothing; under the new
     // filter it would apply a predictor these bytes never had.
-    object.dict.delete(PDFName.of('DecodeParms'));
+    object.dict.delete(PDFName.of("DecodeParms"));
   }
 
   /**
@@ -693,7 +659,7 @@ class PDFWriter {
   protected shouldSkipCopiedObjectStream(object: PDFObject): boolean {
     return (
       object instanceof PDFRawStream &&
-      object.dict.lookup(PDFName.of('Type')) === PDFName.of('ObjStm')
+      object.dict.lookup(PDFName.of("Type")) === PDFName.of("ObjStm")
     );
   }
 

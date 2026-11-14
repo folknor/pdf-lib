@@ -1,4 +1,23 @@
 {
+  "name": "@folknor/pdf-lib",
+  "version": "2.6.0",
+  "private": false,
+  "description": "Create and modify PDF files with JavaScript",
+  "keywords": [
+    "create",
+    "creation",
+    "document",
+    "edit",
+    "editing",
+    "javascript",
+    "library",
+    "modification",
+    "modify",
+    "pdf",
+    "pdf-lib",
+    "typescript"
+  ],
+  "license": "MIT",
   "author": "folknor",
   "contributors": [
     "Andrew Dillon <andrew.dillon.j@gmail.com>",
@@ -32,55 +51,22 @@
     "Phakorn Kiong (https://github.com/PhakornKiong)",
     "Donald Ness (https://github.com/programmarchy)"
   ],
-  "dependencies": {
-    "brotli": "^2.1.0",
-    "color": "^5.0.3",
-    "fflate": "^0.8.3",
-    "node-html-better-parser": "^1.5.9"
-  },
-  "description": "Create and modify PDF files with JavaScript",
-  "devDependencies": {
-    "@oxlint/plugins": "1.93.0",
-    "@types/color": "^4.2.1",
-    "@types/node": "^26.6.6",
-    "@vitest/coverage-v8": "^5.1.0",
-    "oxfmt": "0.78.0",
-    "oxlint": "1.93.0",
-    "rimraf": "^6.1.4",
-    "typescript": "^7.0.2",
-    "vitest": "^5.1.0"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "files": [
     "dist/",
     "src/",
     "LICENSE.md",
     "README.md"
   ],
-  "keywords": [
-    "pdf-lib",
-    "pdf",
-    "document",
-    "create",
-    "modify",
-    "creation",
-    "modification",
-    "edit",
-    "editing",
-    "typescript",
-    "javascript",
-    "library"
-  ],
-  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
-  "name": "@folknor/pdf-lib",
-  "packageManager": "pnpm@12.21.0",
-  "private": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist coverage",
@@ -93,8 +79,22 @@
     "testc": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "sideEffects": false,
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "version": "2.6.0"
+  "dependencies": {
+    "brotli": "^2.1.0",
+    "color": "^5.0.3",
+    "fflate": "^0.8.3",
+    "node-html-better-parser": "^1.5.9"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "1.93.0",
+    "@types/color": "^4.2.1",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.1.0",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
+    "rimraf": "^6.1.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "packageManager": "pnpm@12.21.0"
 }

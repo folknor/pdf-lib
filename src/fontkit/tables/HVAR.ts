@@ -1,6 +1,6 @@
-import * as r from '../../vendors/restructure/index.js';
-import { resolveLength } from '../../vendors/restructure/index.js';
-import { ItemVariationStore } from './variations.js';
+import * as r from "../../vendors/restructure/index.js";
+import { resolveLength } from "../../vendors/restructure/index.js";
+import { ItemVariationStore } from "./variations.js";
 
 // TODO: add this to restructure
 class VariableSizeNumber {
@@ -31,19 +31,15 @@ class VariableSizeNumber {
 }
 
 const MapDataEntry = new r.Struct({
-  entry: new VariableSizeNumber(
-    (t: any) => ((t.parent.entryFormat & 0x0030) >> 4) + 1,
-  ) as any,
-  outerIndex: (t: any) =>
-    t['entry'] >> ((t['parent'].entryFormat & 0x000f) + 1),
-  innerIndex: (t: any) =>
-    t['entry'] & ((1 << ((t['parent'].entryFormat & 0x000f) + 1)) - 1),
+  entry: new VariableSizeNumber((t: any) => ((t.parent.entryFormat & 0x0030) >> 4) + 1) as any,
+  outerIndex: (t: any) => t["entry"] >> ((t["parent"].entryFormat & 0x000f) + 1),
+  innerIndex: (t: any) => t["entry"] & ((1 << ((t["parent"].entryFormat & 0x000f) + 1)) - 1),
 });
 
 const DeltaSetIndexMap = new r.Struct({
   entryFormat: r.uint16,
   mapCount: r.uint16,
-  mapData: new r.Array(MapDataEntry, 'mapCount'),
+  mapData: new r.Array(MapDataEntry, "mapCount"),
 });
 
 export default new r.Struct({

@@ -1,6 +1,6 @@
-import { ligated, piece } from '../layout/Occurrence.js';
-import GlyphInfo from './GlyphInfo.js';
-import OTProcessor, { backtrackOrder } from './OTProcessor.js';
+import { ligated, piece } from "../layout/Occurrence.js";
+import GlyphInfo from "./GlyphInfo.js";
+import OTProcessor, { backtrackOrder } from "./OTProcessor.js";
 
 export default class GSUBProcessor extends OTProcessor {
   /**
@@ -8,10 +8,7 @@ export default class GSUBProcessor extends OTProcessor {
    * lookup wraps the same type, so the first decides).
    */
   override isReverseLookup(lookup: any): boolean {
-    const type =
-      lookup.lookupType === 7
-        ? lookup.subTables[0]?.lookupType
-        : lookup.lookupType;
+    const type = lookup.lookupType === 7 ? lookup.subTables[0]?.lookupType : lookup.lookupType;
 
     return type === 8;
   }
@@ -62,29 +59,19 @@ export default class GSUBProcessor extends OTProcessor {
           const features = this.glyphIterator.cur!.features;
           const curGlyph = this.glyphIterator.cur!;
 
-          const replacement = sequence
-            .slice(1)
-            .map((gid: number, i: number) => {
-              const glyph = new GlyphInfo(
-                this.font,
-                gid,
-                piece(curGlyph, []),
-                features,
-              );
+          const replacement = sequence.slice(1).map((gid: number, i: number) => {
+            const glyph = new GlyphInfo(this.font, gid, piece(curGlyph, []), features);
 
-              glyph.shaperInfo = curGlyph.shaperInfo;
-              glyph.isLigated = curGlyph.isLigated;
-              glyph.ligatureComponent = i + 1;
-              glyph.substituted = true;
-              glyph.isMultiplied = true;
+            glyph.shaperInfo = curGlyph.shaperInfo;
+            glyph.isLigated = curGlyph.isLigated;
+            glyph.ligatureComponent = i + 1;
+            glyph.substituted = true;
+            glyph.isMultiplied = true;
 
-              return glyph;
-            });
+            return glyph;
+          });
 
-          this.replaceGlyph(this.glyphIterator.index, [
-            curGlyph,
-            ...replacement,
-          ]);
+          this.replaceGlyph(this.glyphIterator.index, [curGlyph, ...replacement]);
 
           return true;
         }
@@ -143,10 +130,7 @@ export default class GSUBProcessor extends OTProcessor {
           const lastMatched = matched[matched.length - 1]!;
 
           for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
-            occurrence.cluster = Math.min(
-              occurrence.cluster,
-              this.glyphs[i]!.cluster,
-            );
+            occurrence.cluster = Math.min(occurrence.cluster, this.glyphs[i]!.cluster);
           }
 
           for (let i = this.glyphIterator.index + 1; i < lastMatched; i++) {
@@ -213,10 +197,7 @@ export default class GSUBProcessor extends OTProcessor {
                 const ligComponent =
                   curComps -
                   lastNumComps +
-                  Math.min(
-                    this.glyphs[idx]!.ligatureComponent || 1,
-                    lastNumComps,
-                  );
+                  Math.min(this.glyphs[idx]!.ligatureComponent || 1, lastNumComps);
 
                 this.glyphs[idx]!.ligatureID = ligatureGlyph.ligatureID;
                 this.glyphs[idx]!.ligatureComponent = ligComponent;
@@ -237,10 +218,7 @@ export default class GSUBProcessor extends OTProcessor {
                 const ligComponent =
                   curComps -
                   lastNumComps +
-                  Math.min(
-                    this.glyphs[i]!.ligatureComponent || 1,
-                    lastNumComps,
-                  );
+                  Math.min(this.glyphs[i]!.ligatureComponent || 1, lastNumComps);
 
                 this.glyphs[i]!.ligatureComponent = ligComponent;
               } else {

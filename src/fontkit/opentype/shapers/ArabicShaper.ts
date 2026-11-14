@@ -1,23 +1,15 @@
-import { unzlibSync } from 'fflate';
-import { getCategory } from '../../../vendors/unicode-properties/index.js';
-import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
-import { decodeBase64 } from '../../utils.js';
-import type GlyphInfo from '../GlyphInfo.js';
-import type ShapingPlan from '../ShapingPlan.js';
-import DefaultShaper from './DefaultShaper.js';
-import base64DeflatedTrie from './trie.js';
+import { unzlibSync } from "fflate";
+import { getCategory } from "../../../vendors/unicode-properties/index.js";
+import { UnicodeTrie } from "../../../vendors/unicode-properties/UnicodeTrie.js";
+import { decodeBase64 } from "../../utils.js";
+import type GlyphInfo from "../GlyphInfo.js";
+import type ShapingPlan from "../ShapingPlan.js";
+import DefaultShaper from "./DefaultShaper.js";
+import base64DeflatedTrie from "./trie.js";
 
 const trie = new UnicodeTrie(unzlibSync(decodeBase64(base64DeflatedTrie)));
 
-const FEATURES: string[] = [
-  'isol',
-  'fina',
-  'fin2',
-  'fin3',
-  'medi',
-  'med2',
-  'init',
-];
+const FEATURES: string[] = ["isol", "fina", "fin2", "fin3", "medi", "med2", "init"];
 
 const ShapingClasses: Record<string, number> = {
   Non_Joining: 0,
@@ -26,17 +18,17 @@ const ShapingClasses: Record<string, number> = {
   Dual_Joining: 3,
   Join_Causing: 3,
   ALAPH: 4,
-  'DALATH RISH': 5,
+  "DALATH RISH": 5,
   Transparent: 6,
 };
 
-const ISOL = 'isol';
-const FINA = 'fina';
-const FIN2 = 'fin2';
-const FIN3 = 'fin3';
-const MEDI = 'medi';
-const MED2 = 'med2';
-const INIT = 'init';
+const ISOL = "isol";
+const FINA = "fina";
+const FIN2 = "fin2";
+const FIN3 = "fin3";
+const MEDI = "medi";
+const MED2 = "med2";
+const INIT = "init";
 const NONE = null;
 
 // Each entry is [prevAction, curAction, nextState]
@@ -123,14 +115,14 @@ const STATE_TABLE: [string | null, string | null, number][][] = [
  */
 export default class ArabicShaper extends DefaultShaper {
   static override planFeatures(plan: ShapingPlan): void {
-    plan.add(['ccmp', 'locl']);
+    plan.add(["ccmp", "locl"]);
 
     for (let i = 0; i < FEATURES.length; i++) {
       const feature = FEATURES[i]!;
       plan.addStage(feature, false);
     }
 
-    plan.addStage('mset');
+    plan.addStage("mset");
   }
 
   static override assignFeatures(plan: ShapingPlan, glyphs: GlyphInfo[]): void {
@@ -146,7 +138,7 @@ export default class ArabicShaper extends DefaultShaper {
       const glyph = glyphs[i]!;
       const type = getShapingClass(glyph.codePoints[0]!);
 
-      if (type === ShapingClasses['Transparent']) {
+      if (type === ShapingClasses["Transparent"]) {
         actions[i] = NONE;
         continue;
       }
@@ -185,9 +177,9 @@ function getShapingClass(codePoint: number): number {
 
   const category = getCategory(codePoint);
 
-  if (category === 'Mn' || category === 'Me' || category === 'Cf') {
-    return ShapingClasses['Transparent']!;
+  if (category === "Mn" || category === "Me" || category === "Cf") {
+    return ShapingClasses["Transparent"]!;
   }
 
-  return ShapingClasses['Non_Joining']!;
+  return ShapingClasses["Non_Joining"]!;
 }

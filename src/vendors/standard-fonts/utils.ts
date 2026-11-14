@@ -13,10 +13,9 @@
  *     Licensed under the MIT license.
  */
 
-import { unzlibSync } from 'fflate';
+import { unzlibSync } from "fflate";
 
-const chars =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // Use a lookup table to find the index.
 const lookup = new Uint8Array(256);
@@ -35,10 +34,10 @@ export const decodeFromBase64 = (base64: string): Uint8Array => {
   let encoded3: number | undefined;
   let encoded4: number | undefined;
 
-  if (base64[base64.length - 1] === '=') {
+  if (base64[base64.length - 1] === "=") {
     bufferLength--;
 
-    if (base64[base64.length - 2] === '=') {
+    if (base64[base64.length - 2] === "=") {
       bufferLength--;
     }
   }
@@ -60,7 +59,7 @@ export const decodeFromBase64 = (base64: string): Uint8Array => {
 };
 
 const arrayToString = (array: Uint8Array): string => {
-  let str = '';
+  let str = "";
 
   for (let i = 0; i < array.length; i++) {
     str += String.fromCharCode(array[i]!);
@@ -72,12 +71,8 @@ const arrayToString = (array: Uint8Array): string => {
 export const decompressJson = (compressedJson: string): string =>
   arrayToString(unzlibSync(decodeFromBase64(compressedJson)));
 
-export const padStart = (
-  value: string,
-  length: number,
-  padChar: string,
-): string => {
-  let padding = '';
+export const padStart = (value: string, length: number, padChar: string): string => {
+  let padding = "";
 
   for (let idx = 0, len = length - value.length; idx < len; idx++) {
     padding += padChar;

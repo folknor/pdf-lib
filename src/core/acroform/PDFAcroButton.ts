@@ -1,24 +1,19 @@
-import { IndexOutOfBoundsError } from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import type PDFObject from '../objects/PDFObject.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFString from '../objects/PDFString.js';
-import PDFAcroTerminal from './PDFAcroTerminal.js';
+import { IndexOutOfBoundsError } from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import type PDFObject from "../objects/PDFObject.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFString from "../objects/PDFString.js";
+import PDFAcroTerminal from "./PDFAcroTerminal.js";
 
 class PDFAcroButton extends PDFAcroTerminal {
   Opt(): PDFString | PDFHexString | PDFArray | undefined {
-    return this.dict.lookupMaybe(
-      PDFName.of('Opt'),
-      PDFString,
-      PDFHexString,
-      PDFArray,
-    );
+    return this.dict.lookupMaybe(PDFName.of("Opt"), PDFString, PDFHexString, PDFArray);
   }
 
   setOpt(opt: PDFObject[]) {
-    this.dict.set(PDFName.of('Opt'), this.dict.context.obj(opt));
+    this.dict.set(PDFName.of("Opt"), this.dict.context.obj(opt));
   }
 
   getExportValues(): (PDFString | PDFHexString)[] | undefined {
@@ -72,8 +67,7 @@ class PDFAcroButton extends PDFAcroTerminal {
       const widget = widgets[idx]!;
 
       const exportVal =
-        exportValues[idx] ??
-        PDFHexString.fromText(widget.getOnValue()?.decodeText() ?? '');
+        exportValues[idx] ?? PDFHexString.fromText(widget.getOnValue()?.decodeText() ?? "");
 
       Opt.push(exportVal);
     }
@@ -108,11 +102,7 @@ class PDFAcroButton extends PDFAcroTerminal {
     return existingIdx ?? Opt.size() - 1;
   }
 
-  addWidgetWithOpt(
-    widget: PDFRef,
-    opt: PDFHexString | PDFString,
-    useExistingOptIdx: boolean,
-  ) {
+  addWidgetWithOpt(widget: PDFRef, opt: PDFHexString | PDFString, useExistingOptIdx: boolean) {
     const optIdx = this.addOpt(opt, useExistingOptIdx);
     const apStateValue = PDFName.of(String(optIdx));
     this.addWidget(widget);

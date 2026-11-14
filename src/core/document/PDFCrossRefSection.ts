@@ -1,6 +1,6 @@
-import { copyStringIntoBuffer, padStart } from '../../utils/index.js';
-import PDFRef from '../objects/PDFRef.js';
-import CharCodes from '../syntax/CharCodes.js';
+import { copyStringIntoBuffer, padStart } from "../../utils/index.js";
+import PDFRef from "../objects/PDFRef.js";
+import CharCodes from "../syntax/CharCodes.js";
 
 export interface Entry {
   ref: PDFRef;
@@ -117,8 +117,7 @@ class PDFCrossRefSection {
     for (let i = 0; i < freeIndices.length; i++) {
       const nextFreeIdx = freeIndices[i + 1];
 
-      const nextFreeObjNum =
-        nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
+      const nextFreeObjNum = nextFreeIdx !== undefined ? merged[nextFreeIdx]!.ref.objectNumber : 0;
 
       merged[freeIndices[i]!]!.offset = nextFreeObjNum;
     }
@@ -129,28 +128,20 @@ class PDFCrossRefSection {
   }
 
   toString(): string {
-    let section = 'xref\n';
+    let section = "xref\n";
 
-    for (
-      let rangeIdx = 0, rangeLen = this.subsections.length;
-      rangeIdx < rangeLen;
-      rangeIdx++
-    ) {
+    for (let rangeIdx = 0, rangeLen = this.subsections.length; rangeIdx < rangeLen; rangeIdx++) {
       const range = this.subsections[rangeIdx]!;
       section += `${range[0]!.ref.objectNumber} ${range.length}\n`;
 
-      for (
-        let entryIdx = 0, entryLen = range.length;
-        entryIdx < entryLen;
-        entryIdx++
-      ) {
+      for (let entryIdx = 0, entryLen = range.length; entryIdx < entryLen; entryIdx++) {
         const entry = range[entryIdx]!;
-        section += padStart(String(entry.offset), 10, '0');
-        section += ' ';
-        section += padStart(String(entry.ref.generationNumber), 5, '0');
-        section += ' ';
-        section += entry.deleted ? 'f' : 'n';
-        section += ' \n';
+        section += padStart(String(entry.offset), 10, "0");
+        section += " ";
+        section += padStart(String(entry.ref.generationNumber), 5, "0");
+        section += " ";
+        section += entry.deleted ? "f" : "n";
+        section += " \n";
       }
     }
 
@@ -212,21 +203,17 @@ class PDFCrossRefSection {
     return offset - initialOffset;
   }
 
-  private copyEntriesIntoBuffer(
-    entries: Entry[],
-    buffer: Uint8Array,
-    offset: number,
-  ): number {
+  private copyEntriesIntoBuffer(entries: Entry[], buffer: Uint8Array, offset: number): number {
     const length = entries.length;
 
     for (let idx = 0; idx < length; idx++) {
       const entry = entries[idx]!;
 
-      const entryOffset = padStart(String(entry.offset), 10, '0');
+      const entryOffset = padStart(String(entry.offset), 10, "0");
       offset += copyStringIntoBuffer(entryOffset, buffer, offset);
       buffer[offset++] = CharCodes.Space;
 
-      const entryGen = padStart(String(entry.ref.generationNumber), 5, '0');
+      const entryGen = padStart(String(entry.ref.generationNumber), 5, "0");
       offset += copyStringIntoBuffer(entryGen, buffer, offset);
       buffer[offset++] = CharCodes.Space;
 

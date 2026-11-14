@@ -1,13 +1,10 @@
-import {
-  InvalidAcroFieldValueError,
-  MultiSelectValueError,
-} from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFString from '../objects/PDFString.js';
-import { AcroChoiceFlags } from './flags.js';
-import PDFAcroTerminal from './PDFAcroTerminal.js';
+import { InvalidAcroFieldValueError, MultiSelectValueError } from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFString from "../objects/PDFString.js";
+import { AcroChoiceFlags } from "./flags.js";
+import PDFAcroTerminal from "./PDFAcroTerminal.js";
 
 class PDFAcroChoice extends PDFAcroTerminal {
   setValues(values: (PDFString | PDFHexString)[]) {
@@ -20,11 +17,11 @@ class PDFAcroChoice extends PDFAcroTerminal {
     }
 
     if (values.length === 0) {
-      this.dict.delete(PDFName.of('V'));
+      this.dict.delete(PDFName.of("V"));
     }
 
     if (values.length === 1) {
-      this.dict.set(PDFName.of('V'), values[0]!);
+      this.dict.set(PDFName.of("V"), values[0]!);
     }
 
     if (values.length > 1) {
@@ -32,7 +29,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
         throw new MultiSelectValueError();
       }
 
-      this.dict.set(PDFName.of('V'), this.dict.context.obj(values));
+      this.dict.set(PDFName.of("V"), this.dict.context.obj(values));
     }
 
     this.updateSelectedIndices(values);
@@ -59,18 +56,13 @@ class PDFAcroChoice extends PDFAcroTerminal {
 
       for (let idx = 0, len = values.length; idx < len; idx++) {
         const val = values[idx]!.decodeText();
-        indices[idx] = options.findIndex(
-          (o) => val === (o.display || o.value).decodeText(),
-        );
+        indices[idx] = options.findIndex((o) => val === (o.display || o.value).decodeText());
       }
 
       // /I must be in ascending numeric order (the default sort is lexical)
-      this.dict.set(
-        PDFName.of('I'),
-        this.dict.context.obj(indices.sort((a, b) => a - b)),
-      );
+      this.dict.set(PDFName.of("I"), this.dict.context.obj(indices.sort((a, b) => a - b)));
     } else {
-      this.dict.delete(PDFName.of('I'));
+      this.dict.delete(PDFName.of("I"));
     }
   }
 
@@ -97,12 +89,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
   }
 
   Opt(): PDFArray | PDFString | PDFHexString | undefined {
-    return this.dict.lookupMaybe(
-      PDFName.of('Opt'),
-      PDFString,
-      PDFHexString,
-      PDFArray,
-    );
+    return this.dict.lookupMaybe(PDFName.of("Opt"), PDFString, PDFHexString, PDFArray);
   }
 
   setOptions(
@@ -118,7 +105,7 @@ class PDFAcroChoice extends PDFAcroTerminal {
       newOpt[idx] = this.dict.context.obj([value, display || value]);
     }
 
-    this.dict.set(PDFName.of('Opt'), this.dict.context.obj(newOpt));
+    this.dict.set(PDFName.of("Opt"), this.dict.context.obj(newOpt));
   }
 
   getOptions(): {

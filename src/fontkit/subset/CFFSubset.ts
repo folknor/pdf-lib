@@ -1,6 +1,6 @@
-import standardStrings from '../cff/CFFStandardStrings.js';
-import CFFTop from '../cff/CFFTop.js';
-import Subset from './Subset.js';
+import standardStrings from "../cff/CFFStandardStrings.js";
+import CFFTop from "../cff/CFFTop.js";
+import Subset from "./Subset.js";
 
 export default class CFFSubset extends Subset {
   cff: any;
@@ -11,10 +11,10 @@ export default class CFFSubset extends Subset {
   constructor(font: any) {
     super(font);
 
-    this.cff = this.font['CFF '];
+    this.cff = this.font["CFF "];
 
     if (!this.cff) {
-      throw new Error('Not a CFF Font');
+      throw new Error("Not a CFF Font");
     }
   }
 
@@ -101,10 +101,7 @@ export default class CFFSubset extends Subset {
 
       if (dict.Private?.Subrs) {
         dict.Private = Object.assign({}, dict.Private);
-        dict.Private.Subrs = this.subsetSubrs(
-          dict.Private.Subrs,
-          used_subrs[i]!,
-        );
+        dict.Private.Subrs = this.subsetSubrs(dict.Private.Subrs, used_subrs[i]!);
       }
     }
 
@@ -126,10 +123,7 @@ export default class CFFSubset extends Subset {
     const privateDict = Object.assign({}, this.cff.topDict.Private);
 
     if (this.cff.topDict.Private?.Subrs) {
-      privateDict.Subrs = this.subsetSubrs(
-        this.cff.topDict.Private.Subrs,
-        used_subrs,
-      );
+      privateDict.Subrs = this.subsetSubrs(this.cff.topDict.Private.Subrs, used_subrs);
     }
 
     topDict.FDArray = [{ Private: privateDict }];
@@ -171,20 +165,20 @@ export default class CFFSubset extends Subset {
     topDict.CharStrings = this.charstrings;
 
     for (const key of [
-      'version',
-      'Notice',
-      'Copyright',
-      'FullName',
-      'FamilyName',
-      'Weight',
-      'PostScript',
-      'BaseFontName',
-      'FontName',
+      "version",
+      "Notice",
+      "Copyright",
+      "FullName",
+      "FamilyName",
+      "Weight",
+      "PostScript",
+      "BaseFontName",
+      "FontName",
     ]) {
       topDict[key] = this.addString(this.cff.string(topDict[key]));
     }
 
-    topDict.ROS = [this.addString('Adobe'), this.addString('Identity'), 0];
+    topDict.ROS = [this.addString("Adobe"), this.addString("Identity"), 0];
     topDict.CIDCount = this.charstrings.length;
 
     if (this.cff.isCIDFont) {

@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 interface LocaTable {
   version: number;
@@ -6,7 +6,7 @@ interface LocaTable {
   _processed?: boolean;
 }
 
-const loca = new r.VersionedStruct('head.indexToLocFormat', {
+const loca = new r.VersionedStruct("head.indexToLocFormat", {
   0: {
     offsets: new r.Array(r.uint16),
   },

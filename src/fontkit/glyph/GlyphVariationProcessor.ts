@@ -1,4 +1,4 @@
-import type { Point } from './TTFGlyph.js';
+import type { Point } from "./TTFGlyph.js";
 
 const TUPLES_SHARE_POINT_NUMBERS = 0x8000;
 const TUPLE_COUNT_MASK = 0x0fff;
@@ -68,8 +68,7 @@ export default class GlyphVariationProcessor {
           if (j >= 1 && (normalized[i] ?? 0) < pair.fromCoord) {
             const prev = segment.correspondence[j - 1];
             normalized[i] =
-              (((normalized[i] ?? 0) - prev.fromCoord) *
-                (pair.toCoord - prev.toCoord) +
+              (((normalized[i] ?? 0) - prev.fromCoord) * (pair.toCoord - prev.toCoord) +
                 Number.EPSILON) /
                 (pair.fromCoord - prev.fromCoord + Number.EPSILON) +
               prev.toCoord;
@@ -139,7 +138,7 @@ export default class GlyphVariationProcessor {
         }
       } else {
         if ((tupleIndex & TUPLE_INDEX_MASK) >= gvar.globalCoordCount) {
-          throw new Error('Invalid gvar table');
+          throw new Error("Invalid gvar table");
         }
 
         tupleCoords = gvar.globalCoords[tupleIndex & TUPLE_INDEX_MASK];
@@ -163,12 +162,7 @@ export default class GlyphVariationProcessor {
       }
 
       // Get the factor at which to apply this tuple
-      const factor = this.tupleFactor(
-        tupleIndex,
-        tupleCoords,
-        startCoords,
-        endCoords,
-      );
+      const factor = this.tupleFactor(tupleIndex, tupleCoords, startCoords, endCoords);
 
       if (factor === 0) {
         offsetToData += tupleDataSize;
@@ -257,8 +251,7 @@ export default class GlyphVariationProcessor {
       const run = stream.readUInt8();
       const runCount = (run & POINT_RUN_COUNT_MASK) + 1;
 
-      const fn =
-        run & POINTS_ARE_WORDS ? stream.readUInt16BE : stream.readUInt8;
+      const fn = run & POINTS_ARE_WORDS ? stream.readUInt16BE : stream.readUInt8;
 
       for (let j = 0; j < runCount && i < count; j++) {
         point += fn.call(stream);
@@ -281,8 +274,7 @@ export default class GlyphVariationProcessor {
       if (run & DELTAS_ARE_ZERO) {
         i += runCount;
       } else {
-        const fn =
-          run & DELTAS_ARE_WORDS ? stream.readInt16BE : stream.readInt8;
+        const fn = run & DELTAS_ARE_WORDS ? stream.readInt16BE : stream.readInt8;
 
         for (let j = 0; j < runCount && i < count; j++) {
           deltas[i++] = fn.call(stream);
@@ -323,9 +315,7 @@ export default class GlyphVariationProcessor {
           return 0;
         }
 
-        factor =
-          (factor * normalizedCoord + Number.EPSILON) /
-          (tupleCoord + Number.EPSILON);
+        factor = (factor * normalizedCoord + Number.EPSILON) / (tupleCoord + Number.EPSILON);
       } else {
         const startCoord = startCoords?.[i] ?? 0;
         const endCoord = endCoords?.[i] ?? 0;
@@ -350,11 +340,7 @@ export default class GlyphVariationProcessor {
   // Interpolates points without delta values.
   // Needed for the Ø and Q glyphs in Skia.
   // Algorithm from Freetype.
-  interpolateMissingDeltas(
-    points: Point[],
-    inPoints: Point[],
-    hasDelta: boolean[],
-  ): void {
+  interpolateMissingDeltas(points: Point[], inPoints: Point[], hasDelta: boolean[]): void {
     if (points.length === 0) {
       return;
     }
@@ -388,14 +374,7 @@ export default class GlyphVariationProcessor {
       while (point <= endPoint) {
         // find the next point with a delta, and interpolate intermediate points
         if (hasDelta[point]) {
-          this.deltaInterpolate(
-            curDelta + 1,
-            point - 1,
-            curDelta,
-            point,
-            inPoints,
-            points,
-          );
+          this.deltaInterpolate(curDelta + 1, point - 1, curDelta, point, inPoints, points);
           curDelta = point;
         }
 
@@ -407,24 +386,10 @@ export default class GlyphVariationProcessor {
         this.deltaShift(firstPoint, endPoint, curDelta, inPoints, points);
       } else {
         // otherwise, handle the remaining points at the end and beginning of the contour
-        this.deltaInterpolate(
-          curDelta + 1,
-          endPoint,
-          curDelta,
-          firstDelta,
-          inPoints,
-          points,
-        );
+        this.deltaInterpolate(curDelta + 1, endPoint, curDelta, firstDelta, inPoints, points);
 
         if (firstDelta > 0) {
-          this.deltaInterpolate(
-            firstPoint,
-            firstDelta - 1,
-            curDelta,
-            firstDelta,
-            inPoints,
-            points,
-          );
+          this.deltaInterpolate(firstPoint, firstDelta - 1, curDelta, firstDelta, inPoints, points);
         }
       }
 
@@ -444,7 +409,7 @@ export default class GlyphVariationProcessor {
       return;
     }
 
-    const iterable = ['x', 'y'] as const;
+    const iterable = ["x", "y"] as const;
 
     for (let i = 0; i < iterable.length; i++) {
       const k = iterable[i]!;
@@ -493,13 +458,7 @@ export default class GlyphVariationProcessor {
     }
   }
 
-  deltaShift(
-    p1: number,
-    p2: number,
-    ref: number,
-    inPoints: Point[],
-    outPoints: Point[],
-  ): void {
+  deltaShift(p1: number, p2: number, ref: number, inPoints: Point[], outPoints: Point[]): void {
     const outRef = outPoints[ref];
     const inRef = inPoints[ref];
 
@@ -561,8 +520,7 @@ export default class GlyphVariationProcessor {
     let netAdjustment = 0;
 
     for (let master = 0; master < varData.regionIndexCount; master++) {
-      netAdjustment +=
-        (deltaSet.deltas[master] ?? 0) * (blendVector[master] ?? 0);
+      netAdjustment += (deltaSet.deltas[master] ?? 0) * (blendVector[master] ?? 0);
     }
 
     return netAdjustment;
@@ -591,16 +549,9 @@ export default class GlyphVariationProcessor {
 
         // compute the scalar contribution of this axis
         // ignore invalid ranges
-        if (
-          axis.startCoord > axis.peakCoord ||
-          axis.peakCoord > axis.endCoord
-        ) {
+        if (axis.startCoord > axis.peakCoord || axis.peakCoord > axis.endCoord) {
           axisScalar = 1;
-        } else if (
-          axis.startCoord < 0 &&
-          axis.endCoord > 0 &&
-          axis.peakCoord !== 0
-        ) {
+        } else if (axis.startCoord < 0 && axis.endCoord > 0 && axis.peakCoord !== 0) {
           axisScalar = 1;
 
           // peak of 0 means ignore this axis

@@ -1,9 +1,9 @@
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFString from '../objects/PDFString.js';
-import PDFAnnotation from './PDFAnnotation.js';
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFString from "../objects/PDFString.js";
+import PDFAnnotation from "./PDFAnnotation.js";
 
 /**
  * Represents a PDF Link annotation.
@@ -12,15 +12,14 @@ import PDFAnnotation from './PDFAnnotation.js';
  * - A destination (/Dest) for internal document navigation
  */
 class PDFLinkAnnotation extends PDFAnnotation {
-  static override fromDict = (dict: PDFDict): PDFLinkAnnotation =>
-    new PDFLinkAnnotation(dict);
+  static override fromDict = (dict: PDFDict): PDFLinkAnnotation => new PDFLinkAnnotation(dict);
 
   /**
    * Get the action dictionary (/A) if present.
    * @returns The action dictionary or undefined.
    */
   A(): PDFDict | undefined {
-    return this.dict.lookupMaybe(PDFName.of('A'), PDFDict);
+    return this.dict.lookupMaybe(PDFName.of("A"), PDFDict);
   }
 
   /**
@@ -29,13 +28,9 @@ class PDFLinkAnnotation extends PDFAnnotation {
    * @returns The destination or undefined.
    */
   Dest(): PDFArray | PDFName | PDFString | undefined {
-    const dest = this.dict.lookup(PDFName.of('Dest'));
+    const dest = this.dict.lookup(PDFName.of("Dest"));
 
-    if (
-      dest instanceof PDFArray ||
-      dest instanceof PDFName ||
-      dest instanceof PDFString
-    ) {
+    if (dest instanceof PDFArray || dest instanceof PDFName || dest instanceof PDFString) {
       return dest;
     }
 
@@ -53,12 +48,12 @@ class PDFLinkAnnotation extends PDFAnnotation {
     if (!action) return;
 
     // Check that this is a URI action
-    const actionType = action.lookup(PDFName.of('S'), PDFName);
+    const actionType = action.lookup(PDFName.of("S"), PDFName);
 
-    if (actionType?.toString() !== '/URI') return;
+    if (actionType?.toString() !== "/URI") return;
 
     // Get the URI value - can be PDFString, PDFHexString, or PDFName
-    const uri = action.get(PDFName.of('URI'));
+    const uri = action.get(PDFName.of("URI"));
 
     if (uri instanceof PDFString) {
       return uri.asString();

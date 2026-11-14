@@ -7,19 +7,19 @@
  */
 export type PDFWarningCode =
   /** A parsed number above Number.MAX_SAFE_INTEGER, replaced by it (`capNumbers`). */
-  | 'number-too-large-capped'
+  | "number-too-large-capped"
   /** A parsed number above Number.MAX_SAFE_INTEGER, kept as is. */
-  | 'number-too-large'
+  | "number-too-large"
   /** An object the parser could not read, kept as raw bytes (PDFInvalidObject). */
-  | 'invalid-object-recovered'
+  | "invalid-object-recovered"
   /** A reconstructing parse met an object numbered 0 and dropped it. */
-  | 'object-zero-removed'
+  | "object-zero-removed"
   /** An AES-256 /Perms entry disagrees with the encryption dictionary. */
-  | 'encryption-perms-inconsistent'
+  | "encryption-perms-inconsistent"
   /** getForm() removed XFA data. */
-  | 'xfa-removed'
+  | "xfa-removed"
   /** enableCombing() on a text field with no max length. */
-  | 'comb-without-max-length';
+  | "comb-without-max-length";
 
 export interface PDFWarning {
   code: PDFWarningCode;

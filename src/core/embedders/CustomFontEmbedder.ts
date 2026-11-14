@@ -5,12 +5,12 @@ import type {
   GlyphPosition,
   Subset,
   TypeFeatures,
-} from '../../types/fontkit.js';
-import { mergeUint8Arrays, toHexStringOfMinLength } from '../../utils/index.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import { createCmap, type ToUnicodeEntry } from './CMap.js';
+} from "../../types/fontkit.js";
+import { mergeUint8Arrays, toHexStringOfMinLength } from "../../utils/index.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import { createCmap, type ToUnicodeEntry } from "./CMap.js";
 import EncodedText, {
   type ActualTextSpan,
   BASE_SPACING,
@@ -19,8 +19,8 @@ import EncodedText, {
   SPACE_SPACING,
   spacingExtras,
   type TextSpacing,
-} from './EncodedText.js';
-import { deriveFontFlags } from './FontFlags.js';
+} from "./EncodedText.js";
+import { deriveFontFlags } from "./FontFlags.js";
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -36,9 +36,7 @@ class CustomFontEmbedder {
     postscriptName?: string,
     maxDecodedSize?: number,
   ) {
-    const font = asFont(
-      await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
-    );
+    const font = asFont(await fontkit.create(fontData, postscriptName, { maxDecodedSize }));
 
     return new CustomFontEmbedder(font, fontData, customName, fontFeatures);
   }
@@ -72,11 +70,11 @@ class CustomFontEmbedder {
     this.font = font;
     this.scale = 1000 / this.font.unitsPerEm;
     this.fontData = fontData;
-    this.fontName = this.font.postscriptName || 'Font';
+    this.fontName = this.font.postscriptName || "Font";
     this.customName = customName;
     this.fontFeatures = fontFeatures;
 
-    this.baseFontName = '';
+    this.baseFontName = "";
   }
 
   /**
@@ -145,7 +143,7 @@ class CustomFontEmbedder {
 
     for (const group of groups) {
       const typed = text.slice(group.from, group.to);
-      let extracted: string | null = '';
+      let extracted: string | null = "";
 
       for (let idx = group.start; idx < group.end; idx++) {
         const code = glyphCodes[idx]!;
@@ -176,11 +174,7 @@ class CustomFontEmbedder {
    * which stands for no character whatever it was shown for). Encoding, not
    * drawing, is what votes; measuring does not.
    */
-  private recordText(
-    code: number,
-    text: readonly number[],
-    position: GlyphPosition,
-  ): void {
+  private recordText(code: number, text: readonly number[], position: GlyphPosition): void {
     this.encodedCodes.add(code);
 
     if (code === 0 || position.hidden || text.length === 0) return;
@@ -256,11 +250,7 @@ class CustomFontEmbedder {
   // jamo composition, Indic conjuncts, ligatures - by up to a factor of two.
   // Measuring does not add glyphs to a subset.
   // With spacing, it measures what encodeText(text).withSpacing() draws.
-  widthOfTextAtSize(
-    text: string,
-    size: number,
-    spacing: TextSpacing = {},
-  ): number {
+  widthOfTextAtSize(text: string, size: number, spacing: TextSpacing = {}): number {
     const layout = this.positionedLayout(text);
     const { positions } = layout;
     let total = 0;
@@ -311,11 +301,7 @@ class CustomFontEmbedder {
     const run = this.font.layout(text, this.fontFeatures);
     const glyphs = run.glyphs as (Glyph | null | undefined)[];
 
-    const positions = (run.positions ?? []) as (
-      | GlyphPosition
-      | null
-      | undefined
-    )[];
+    const positions = (run.positions ?? []) as (GlyphPosition | null | undefined)[];
 
     if (positions.length !== glyphs.length) {
       throw new Error(
@@ -346,14 +332,13 @@ class CustomFontEmbedder {
 
     // Another fontkit build may report no per-occurrence text; its glyph
     // objects' codePoints are then the best there is.
-    const occurrenceText =
-      run.text ?? glyphs.map((glyph) => glyph!.codePoints ?? []);
+    const occurrenceText = run.text ?? glyphs.map((glyph) => glyph!.codePoints ?? []);
 
     if (
       occurrenceText.length !== glyphs.length ||
       (codePoints !== undefined && codePoints.length !== glyphs.length)
     ) {
-      throw new Error('Font layout returned code points for other glyphs');
+      throw new Error("Font layout returned code points for other glyphs");
     }
 
     return {
@@ -381,10 +366,7 @@ class CustomFontEmbedder {
     return Math.round(glyph.advanceWidth) * this.scale;
   }
 
-  heightOfFontAtSize(
-    size: number,
-    options: { descender?: boolean } = {},
-  ): number {
+  heightOfFontAtSize(size: number, options: { descender?: boolean } = {}): number {
     const { descender = true } = options;
 
     const { ascent, descent, bbox } = this.font;
@@ -407,24 +389,20 @@ class CustomFontEmbedder {
   }
 
   embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
-    this.baseFontName =
-      this.customName || context.addRandomSuffix(this.fontName);
+    this.baseFontName = this.customName || context.addRandomSuffix(this.fontName);
 
     return this.embedFontDict(context, ref);
   }
 
-  protected async embedFontDict(
-    context: PDFContext,
-    ref?: PDFRef,
-  ): Promise<PDFRef> {
+  protected async embedFontDict(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
     const cidFontDictRef = await this.embedCIDFontDict(context);
     const unicodeCMapRef = this.embedUnicodeCmap(context);
 
     const fontDict = context.obj({
-      Type: 'Font',
-      Subtype: 'Type0',
+      Type: "Font",
+      Subtype: "Type0",
       BaseFont: this.baseFontName,
-      Encoding: 'Identity-H',
+      Encoding: "Identity-H",
       DescendantFonts: [cidFontDictRef],
       ToUnicode: unicodeCMapRef,
     });
@@ -447,7 +425,7 @@ class CustomFontEmbedder {
       directory?: { tables?: Record<string, unknown> };
     };
 
-    return !!(font.cff || font.directory?.tables?.['CFF ']);
+    return !!(font.cff || font.directory?.tables?.["CFF "]);
   }
 
   /**
@@ -455,20 +433,20 @@ class CustomFontEmbedder {
    * CID-keyed CFF (see serializeFont), TrueType needs none.
    */
   protected fontFileSubtype(): string | undefined {
-    return this.isCFF() ? 'CIDFontType0C' : undefined;
+    return this.isCFF() ? "CIDFontType0C" : undefined;
   }
 
   protected async embedCIDFontDict(context: PDFContext): Promise<PDFRef> {
     const fontDescriptorRef = await this.embedFontDescriptor(context);
 
     const cidFontDict = context.obj({
-      Type: 'Font',
-      Subtype: this.isCFF() ? 'CIDFontType0' : 'CIDFontType2',
-      CIDToGIDMap: 'Identity',
+      Type: "Font",
+      Subtype: this.isCFF() ? "CIDFontType0" : "CIDFontType2",
+      CIDToGIDMap: "Identity",
       BaseFont: this.baseFontName,
       CIDSystemInfo: {
-        Registry: PDFString.of('Adobe'),
-        Ordering: PDFString.of('Identity'),
+        Registry: PDFString.of("Adobe"),
+        Ordering: PDFString.of("Identity"),
         Supplement: 0,
       },
       FontDescriptor: fontDescriptorRef,
@@ -492,7 +470,7 @@ class CustomFontEmbedder {
     const { italicAngle, ascent, descent, capHeight, xHeight } = this.font;
 
     const fontDescriptor = context.obj({
-      Type: 'FontDescriptor',
+      Type: "FontDescriptor",
       FontName: this.baseFontName,
       Flags: deriveFontFlags(this.font),
       FontBBox: bbox,
@@ -506,7 +484,7 @@ class CustomFontEmbedder {
       // https://stackoverflow.com/questions/35485179/stemv-value-of-the-truetype-font
       StemV: 0,
 
-      [this.isCFF() ? 'FontFile3' : 'FontFile2']: fontStreamRef,
+      [this.isCFF() ? "FontFile3" : "FontFile2"]: fontStreamRef,
     });
 
     // Reuse existing ref to avoid orphans on re-embedding
@@ -555,9 +533,7 @@ class CustomFontEmbedder {
    * stands. A CFF program keeps the source head box, as before; nothing here
    * checks it against the CFF top DICT FontBBox.
    */
-  protected async embedFontStream(
-    context: PDFContext,
-  ): Promise<{ ref: PDFRef; bbox: number[] }> {
+  protected async embedFontStream(context: PDFContext): Promise<{ ref: PDFRef; bbox: number[] }> {
     const fontProgram = await this.serializeFont();
     let bbox: number[];
 
@@ -607,9 +583,7 @@ class CustomFontEmbedder {
    * before; a glyph encoded only without text stays unmapped.
    */
   protected toUnicodeEntries(): ToUnicodeEntry[] {
-    return withCmapFill(this.font, this.recordedEntries(), (code) =>
-      this.encodedCodes.has(code),
-    );
+    return withCmapFill(this.font, this.recordedEntries(), (code) => this.encodedCodes.has(code));
   }
 
   protected embedUnicodeCmap(context: PDFContext): PDFRef {
@@ -649,10 +623,7 @@ class CustomFontEmbedder {
 
   protected computeWidths(): (number | number[])[] {
     return compressWidths(
-      this.glyphsForWidths().map((glyph) => [
-        this.glyphId(glyph),
-        this.pdfWidthOf(glyph),
-      ]),
+      this.glyphsForWidths().map((glyph) => [this.glyphId(glyph), this.pdfWidthOf(glyph)]),
     );
   }
 }
@@ -691,25 +662,22 @@ const withCmapFill = (
  * failing later on a missing method.
  */
 export const asFont = (font: unknown): Font => {
-  if (!font || typeof font !== 'object') {
+  if (!font || typeof font !== "object") {
     throw new Error(
-      'fontkit.create() returned no font. Check the font bytes, or the PostScript name used to select a face from a collection.',
+      "fontkit.create() returned no font. Check the font bytes, or the PostScript name used to select a face from a collection.",
     );
   }
 
   const candidate = font as Partial<Font> & { fonts?: unknown };
 
-  if (
-    typeof candidate.layout !== 'function' ||
-    typeof candidate.glyphForCodePoint !== 'function'
-  ) {
+  if (typeof candidate.layout !== "function" || typeof candidate.glyphForCodePoint !== "function") {
     if (Array.isArray(candidate.fonts)) {
       throw new Error(
-        'fontkit.create() returned a font collection (e.g. .ttc/.dfont). Select a face by its PostScript name, or embed a single-font file.',
+        "fontkit.create() returned a font collection (e.g. .ttc/.dfont). Select a face by its PostScript name, or embed a single-font file.",
       );
     }
 
-    throw new Error('fontkit.create() did not return a usable font.');
+    throw new Error("fontkit.create() did not return a usable font.");
   }
 
   return font as Font;
@@ -720,13 +688,13 @@ const isCFF2 = (font: Font): boolean => {
     directory?: { tables?: Record<string, unknown> };
   };
 
-  return !!directory?.tables?.['CFF2'];
+  return !!directory?.tables?.["CFF2"];
 };
 
 const isWebFont = (font: Font): boolean => {
   const { type } = font as { type?: unknown };
 
-  return type === 'WOFF' || type === 'WOFF2';
+  return type === "WOFF" || type === "WOFF2";
 };
 
 /**
@@ -754,9 +722,9 @@ export const encodeSubset = (subset: Subset): Promise<Uint8Array> =>
     const parts: Uint8Array[] = [];
     subset
       .encodeStream()
-      .on('data', (bytes) => parts.push(bytes))
-      .on('end', () => resolve(mergeUint8Arrays(parts)))
-      .on('error' as any, (err) => reject(err));
+      .on("data", (bytes) => parts.push(bytes))
+      .on("end", () => resolve(mergeUint8Arrays(parts)))
+      .on("error" as any, (err) => reject(err));
   });
 
 /**
@@ -766,33 +734,33 @@ export const encodeSubset = (subset: Subset): Promise<Uint8Array> =>
 export const sfntFontBBox = (bytes: Uint8Array): number[] => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
-  if (bytes.length < 12) throw new Error('Font program has no sfnt directory');
+  if (bytes.length < 12) throw new Error("Font program has no sfnt directory");
   const numTables = view.getUint16(4);
 
   if (12 + 16 * numTables > bytes.length) {
-    throw new Error('Font program sfnt directory is truncated');
+    throw new Error("Font program sfnt directory is truncated");
   }
 
   for (let i = 0; i < numTables; i++) {
     const record = 12 + 16 * i;
     const tag = String.fromCharCode(...bytes.subarray(record, record + 4));
 
-    if (tag !== 'head') continue;
+    if (tag !== "head") continue;
     const offset = view.getUint32(record + 8);
 
     if (view.getUint32(record + 12) < 54 || offset + 54 > bytes.length) {
-      throw new Error('Font program head table is truncated');
+      throw new Error("Font program head table is truncated");
     }
 
     const unitsPerEm = view.getUint16(offset + 18);
 
-    if (unitsPerEm === 0) throw new Error('Font program head has unitsPerEm 0');
+    if (unitsPerEm === 0) throw new Error("Font program head has unitsPerEm 0");
     const scale = 1000 / unitsPerEm;
 
     return [36, 38, 40, 42].map((at) => view.getInt16(offset + at) * scale);
   }
 
-  throw new Error('Font program has no head table');
+  throw new Error("Font program has no head table");
 };
 
 /** Runs of at least this many equal widths are written as `first last w`. */
@@ -804,9 +772,7 @@ const MIN_WIDTH_RANGE = 4;
  * identical widths use the `cFirst cLast w` form (PDF 32000-1:2008 9.7.4.3),
  * which keeps /W small for large fonts with many same-width glyphs (CJK).
  */
-export const compressWidths = (
-  entries: [number, number][],
-): (number | number[])[] => {
+export const compressWidths = (entries: [number, number][]): (number | number[])[] => {
   const widths: (number | number[])[] = [];
   let section: number[] | undefined;
   let prevId = Number.NaN;
@@ -915,7 +881,7 @@ const clusterGroups = (
   const smallest = values[0]!;
   const groups: ClusterGroup[] = [];
 
-  for (let start = 0; start < count; ) {
+  for (let start = 0; start < count;) {
     const value = clusters[start]!;
     let end = start + 1;
 

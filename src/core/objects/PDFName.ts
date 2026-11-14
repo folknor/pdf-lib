@@ -3,11 +3,11 @@ import {
   copyStringIntoBuffer,
   toCharCode,
   toHexString,
-} from '../../utils/index.js';
-import { PrivateConstructorError } from '../errors.js';
-import CharCodes from '../syntax/CharCodes.js';
-import { IsIrregular } from '../syntax/Irregular.js';
-import PDFObject from './PDFObject.js';
+} from "../../utils/index.js";
+import { PrivateConstructorError } from "../errors.js";
+import CharCodes from "../syntax/CharCodes.js";
+import { IsIrregular } from "../syntax/Irregular.js";
+import PDFObject from "./PDFObject.js";
 
 /**
  * Decodes `#XX` hex escapes in a name token read from PDF syntax. Unlike
@@ -22,9 +22,7 @@ const decodeName = (name: string) =>
   name.replace(/#([\dABCDEF]{2})/g, (_, hex) => charFromHexCode(hex));
 
 const isRegularChar = (charCode: number) =>
-  charCode >= CharCodes.ExclamationPoint &&
-  charCode <= CharCodes.Tilde &&
-  !IsIrregular[charCode];
+  charCode >= CharCodes.ExclamationPoint && charCode <= CharCodes.Tilde && !IsIrregular[charCode];
 
 const ENFORCER = {};
 const pool = new Map<string, PDFName>();
@@ -50,71 +48,71 @@ class PDFName extends PDFObject {
 
   /* tslint:disable member-ordering */
   // Stream
-  static readonly Length = PDFName.of('Length');
-  static readonly Filter = PDFName.of('Filter');
-  static readonly FlateDecode = PDFName.of('FlateDecode');
+  static readonly Length = PDFName.of("Length");
+  static readonly Filter = PDFName.of("Filter");
+  static readonly FlateDecode = PDFName.of("FlateDecode");
 
   // Document structure
-  static readonly Type = PDFName.of('Type');
-  static readonly Subtype = PDFName.of('Subtype');
-  static readonly Parent = PDFName.of('Parent');
-  static readonly Kids = PDFName.of('Kids');
-  static readonly Count = PDFName.of('Count');
-  static readonly Catalog = PDFName.of('Catalog');
-  static readonly Pages = PDFName.of('Pages');
-  static readonly Page = PDFName.of('Page');
+  static readonly Type = PDFName.of("Type");
+  static readonly Subtype = PDFName.of("Subtype");
+  static readonly Parent = PDFName.of("Parent");
+  static readonly Kids = PDFName.of("Kids");
+  static readonly Count = PDFName.of("Count");
+  static readonly Catalog = PDFName.of("Catalog");
+  static readonly Pages = PDFName.of("Pages");
+  static readonly Page = PDFName.of("Page");
 
   // Page
-  static readonly Contents = PDFName.of('Contents');
-  static readonly Resources = PDFName.of('Resources');
-  static readonly MediaBox = PDFName.of('MediaBox');
-  static readonly CropBox = PDFName.of('CropBox');
-  static readonly BleedBox = PDFName.of('BleedBox');
-  static readonly TrimBox = PDFName.of('TrimBox');
-  static readonly ArtBox = PDFName.of('ArtBox');
-  static readonly Rotate = PDFName.of('Rotate');
-  static readonly Annots = PDFName.of('Annots');
+  static readonly Contents = PDFName.of("Contents");
+  static readonly Resources = PDFName.of("Resources");
+  static readonly MediaBox = PDFName.of("MediaBox");
+  static readonly CropBox = PDFName.of("CropBox");
+  static readonly BleedBox = PDFName.of("BleedBox");
+  static readonly TrimBox = PDFName.of("TrimBox");
+  static readonly ArtBox = PDFName.of("ArtBox");
+  static readonly Rotate = PDFName.of("Rotate");
+  static readonly Annots = PDFName.of("Annots");
 
   // Resources
-  static readonly Font = PDFName.of('Font');
-  static readonly XObject = PDFName.of('XObject');
-  static readonly ExtGState = PDFName.of('ExtGState');
-  static readonly ColorSpace = PDFName.of('ColorSpace');
-  static readonly Pattern = PDFName.of('Pattern');
-  static readonly Shading = PDFName.of('Shading');
-  static readonly Properties = PDFName.of('Properties');
+  static readonly Font = PDFName.of("Font");
+  static readonly XObject = PDFName.of("XObject");
+  static readonly ExtGState = PDFName.of("ExtGState");
+  static readonly ColorSpace = PDFName.of("ColorSpace");
+  static readonly Pattern = PDFName.of("Pattern");
+  static readonly Shading = PDFName.of("Shading");
+  static readonly Properties = PDFName.of("Properties");
 
   // XObject subtypes
-  static readonly Form = PDFName.of('Form');
-  static readonly Image = PDFName.of('Image');
+  static readonly Form = PDFName.of("Form");
+  static readonly Image = PDFName.of("Image");
 
   // Form fields
-  static readonly Off = PDFName.of('Off');
-  static readonly Yes = PDFName.of('Yes');
-  static readonly Opt = PDFName.of('Opt');
+  static readonly Off = PDFName.of("Off");
+  static readonly Yes = PDFName.of("Yes");
+  static readonly Opt = PDFName.of("Opt");
 
   // Names / Embedded files
-  static readonly Names = PDFName.of('Names');
-  static readonly EmbeddedFiles = PDFName.of('EmbeddedFiles');
+  static readonly Names = PDFName.of("Names");
+  static readonly EmbeddedFiles = PDFName.of("EmbeddedFiles");
 
   // Metadata
-  static readonly Title = PDFName.of('Title');
-  static readonly Author = PDFName.of('Author');
-  static readonly Subject = PDFName.of('Subject');
-  static readonly Creator = PDFName.of('Creator');
-  static readonly Keywords = PDFName.of('Keywords');
-  static readonly Producer = PDFName.of('Producer');
-  static readonly CreationDate = PDFName.of('CreationDate');
-  static readonly ModDate = PDFName.of('ModDate');
+  static readonly Title = PDFName.of("Title");
+  static readonly Author = PDFName.of("Author");
+  static readonly Subject = PDFName.of("Subject");
+  static readonly Creator = PDFName.of("Creator");
+  static readonly Keywords = PDFName.of("Keywords");
+  static readonly Producer = PDFName.of("Producer");
+  static readonly CreationDate = PDFName.of("CreationDate");
+  static readonly ModDate = PDFName.of("ModDate");
   /* tslint:enable member-ordering */
 
   private readonly encodedName: string;
 
   private constructor(enforcer: any, name: string) {
-    if (enforcer !== ENFORCER) throw new PrivateConstructorError('PDFName');
+    if (enforcer !== ENFORCER) throw new PrivateConstructorError("PDFName");
     super();
 
-    let encodedName = '/';
+    let encodedName = "/";
 
     for (let idx = 0, len = name.length; idx < len; idx++) {
       const character = name[idx]!;
@@ -128,7 +126,7 @@ class PDFName extends PDFObject {
   asBytes(): Uint8Array {
     const bytes: number[] = [];
 
-    let hex = '';
+    let hex = "";
     let escaped = false;
 
     const pushByte = (byte?: number) => {
@@ -155,13 +153,13 @@ class PDFName extends PDFObject {
           if (
             hex.length === 2 ||
             !(
-              (nextChar !== undefined && nextChar >= '0' && nextChar <= '9') ||
-              (nextChar !== undefined && nextChar >= 'a' && nextChar <= 'f') ||
-              (nextChar !== undefined && nextChar >= 'A' && nextChar <= 'F')
+              (nextChar !== undefined && nextChar >= "0" && nextChar <= "9") ||
+              (nextChar !== undefined && nextChar >= "a" && nextChar <= "f") ||
+              (nextChar !== undefined && nextChar >= "A" && nextChar <= "F")
             )
           ) {
             pushByte(parseInt(hex, 16));
-            hex = '';
+            hex = "";
           }
         } else {
           pushByte(byte);

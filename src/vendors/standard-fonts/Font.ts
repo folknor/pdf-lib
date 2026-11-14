@@ -4,84 +4,56 @@
  * Absorbed and converted for pdf-lib
  */
 
-import CourierCompressed from './data/Courier.compressed.json' with {
-  type: 'json',
-};
+import CourierCompressed from "./data/Courier.compressed.json" with { type: "json" };
 
 // Import compressed font data
-import CourierBoldCompressed from './data/Courier-Bold.compressed.json' with {
-  type: 'json',
-};
-import CourierBoldObliqueCompressed from './data/Courier-BoldOblique.compressed.json' with {
-  type: 'json',
-};
-import CourierObliqueCompressed from './data/Courier-Oblique.compressed.json' with {
-  type: 'json',
-};
-import HelveticaCompressed from './data/Helvetica.compressed.json' with {
-  type: 'json',
-};
-import HelveticaBoldCompressed from './data/Helvetica-Bold.compressed.json' with {
-  type: 'json',
-};
-import HelveticaBoldObliqueCompressed from './data/Helvetica-BoldOblique.compressed.json' with {
-  type: 'json',
-};
-import HelveticaObliqueCompressed from './data/Helvetica-Oblique.compressed.json' with {
-  type: 'json',
-};
-import SymbolCompressed from './data/Symbol.compressed.json' with {
-  type: 'json',
-};
-import TimesBoldCompressed from './data/Times-Bold.compressed.json' with {
-  type: 'json',
-};
-import TimesBoldItalicCompressed from './data/Times-BoldItalic.compressed.json' with {
-  type: 'json',
-};
-import TimesItalicCompressed from './data/Times-Italic.compressed.json' with {
-  type: 'json',
-};
-import TimesRomanCompressed from './data/Times-Roman.compressed.json' with {
-  type: 'json',
-};
-import ZapfDingbatsCompressed from './data/ZapfDingbats.compressed.json' with {
-  type: 'json',
-};
-import { decompressJson } from './utils.js';
+import CourierBoldCompressed from "./data/Courier-Bold.compressed.json" with { type: "json" };
+import CourierBoldObliqueCompressed from "./data/Courier-BoldOblique.compressed.json" with { type: "json" };
+import CourierObliqueCompressed from "./data/Courier-Oblique.compressed.json" with { type: "json" };
+import HelveticaCompressed from "./data/Helvetica.compressed.json" with { type: "json" };
+import HelveticaBoldCompressed from "./data/Helvetica-Bold.compressed.json" with { type: "json" };
+import HelveticaBoldObliqueCompressed from "./data/Helvetica-BoldOblique.compressed.json" with { type: "json" };
+import HelveticaObliqueCompressed from "./data/Helvetica-Oblique.compressed.json" with { type: "json" };
+import SymbolCompressed from "./data/Symbol.compressed.json" with { type: "json" };
+import TimesBoldCompressed from "./data/Times-Bold.compressed.json" with { type: "json" };
+import TimesBoldItalicCompressed from "./data/Times-BoldItalic.compressed.json" with { type: "json" };
+import TimesItalicCompressed from "./data/Times-Italic.compressed.json" with { type: "json" };
+import TimesRomanCompressed from "./data/Times-Roman.compressed.json" with { type: "json" };
+import ZapfDingbatsCompressed from "./data/ZapfDingbats.compressed.json" with { type: "json" };
+import { decompressJson } from "./utils.js";
 
 const compressedJsonForFontName: Record<string, string> = {
   Courier: CourierCompressed as unknown as string,
-  'Courier-Bold': CourierBoldCompressed as unknown as string,
-  'Courier-Oblique': CourierObliqueCompressed as unknown as string,
-  'Courier-BoldOblique': CourierBoldObliqueCompressed as unknown as string,
+  "Courier-Bold": CourierBoldCompressed as unknown as string,
+  "Courier-Oblique": CourierObliqueCompressed as unknown as string,
+  "Courier-BoldOblique": CourierBoldObliqueCompressed as unknown as string,
   Helvetica: HelveticaCompressed as unknown as string,
-  'Helvetica-Bold': HelveticaBoldCompressed as unknown as string,
-  'Helvetica-Oblique': HelveticaObliqueCompressed as unknown as string,
-  'Helvetica-BoldOblique': HelveticaBoldObliqueCompressed as unknown as string,
-  'Times-Roman': TimesRomanCompressed as unknown as string,
-  'Times-Bold': TimesBoldCompressed as unknown as string,
-  'Times-Italic': TimesItalicCompressed as unknown as string,
-  'Times-BoldItalic': TimesBoldItalicCompressed as unknown as string,
+  "Helvetica-Bold": HelveticaBoldCompressed as unknown as string,
+  "Helvetica-Oblique": HelveticaObliqueCompressed as unknown as string,
+  "Helvetica-BoldOblique": HelveticaBoldObliqueCompressed as unknown as string,
+  "Times-Roman": TimesRomanCompressed as unknown as string,
+  "Times-Bold": TimesBoldCompressed as unknown as string,
+  "Times-Italic": TimesItalicCompressed as unknown as string,
+  "Times-BoldItalic": TimesBoldItalicCompressed as unknown as string,
   Symbol: SymbolCompressed as unknown as string,
   ZapfDingbats: ZapfDingbatsCompressed as unknown as string,
 };
 
 export enum FontNames {
-  Courier = 'Courier',
-  CourierBold = 'Courier-Bold',
-  CourierOblique = 'Courier-Oblique',
-  CourierBoldOblique = 'Courier-BoldOblique',
-  Helvetica = 'Helvetica',
-  HelveticaBold = 'Helvetica-Bold',
-  HelveticaOblique = 'Helvetica-Oblique',
-  HelveticaBoldOblique = 'Helvetica-BoldOblique',
-  TimesRoman = 'Times-Roman',
-  TimesRomanBold = 'Times-Bold',
-  TimesRomanItalic = 'Times-Italic',
-  TimesRomanBoldItalic = 'Times-BoldItalic',
-  Symbol = 'Symbol',
-  ZapfDingbats = 'ZapfDingbats',
+  Courier = "Courier",
+  CourierBold = "Courier-Bold",
+  CourierOblique = "Courier-Oblique",
+  CourierBoldOblique = "Courier-BoldOblique",
+  Helvetica = "Helvetica",
+  HelveticaBold = "Helvetica-Bold",
+  HelveticaOblique = "Helvetica-Oblique",
+  HelveticaBoldOblique = "Helvetica-BoldOblique",
+  TimesRoman = "Times-Roman",
+  TimesRomanBold = "Times-Bold",
+  TimesRomanItalic = "Times-Italic",
+  TimesRomanBoldItalic = "Times-BoldItalic",
+  Symbol = "Symbol",
+  ZapfDingbats = "ZapfDingbats",
 }
 
 export type IFontNames = FontNames | keyof typeof compressedJsonForFontName;
@@ -176,12 +148,8 @@ export class Font {
 
   private constructor() {}
 
-  getWidthOfGlyph = (glyphName: string): number | undefined =>
-    this.CharWidths[glyphName];
+  getWidthOfGlyph = (glyphName: string): number | undefined => this.CharWidths[glyphName];
 
-  getXAxisKerningForPair = (
-    leftGlyphName: string,
-    rightGlyphName: string,
-  ): number | undefined =>
+  getXAxisKerningForPair = (leftGlyphName: string, rightGlyphName: string): number | undefined =>
     this.KernPairXAmounts[leftGlyphName]?.[rightGlyphName];
 }

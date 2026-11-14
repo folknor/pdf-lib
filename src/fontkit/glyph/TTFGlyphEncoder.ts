@@ -1,6 +1,6 @@
-import type { EncodeStream } from '../../vendors/restructure/index.js';
-import * as r from '../../vendors/restructure/index.js';
-import type PathType from './Path.js';
+import type { EncodeStream } from "../../vendors/restructure/index.js";
+import * as r from "../../vendors/restructure/index.js";
+import type PathType from "./Path.js";
 
 // Flags for simple glyphs
 const ON_CURVE = 1 << 0;
@@ -30,7 +30,7 @@ const Glyf = new r.Struct({
   yMin: r.int16,
   xMax: r.int16,
   yMax: r.int16,
-  endPtsOfContours: new r.Array(r.uint16, 'numberOfContours'),
+  endPtsOfContours: new r.Array(r.uint16, "numberOfContours"),
   instructions: new r.Array(r.uint8, r.uint16),
   flags: new r.Array(r.uint8, 0),
   xPoints: new r.Array(PointEncoder as unknown as r.Base<number>, 0),
@@ -91,8 +91,8 @@ export default class TTFGlyphEncoder {
 
       if (!c) continue;
 
-      if (c.command === 'bezierCurveTo') {
-        throw new Error('glyf cannot hold cubic curves; convert them first');
+      if (c.command === "bezierCurveTo") {
+        throw new Error("glyf cannot hold cubic curves; convert them first");
       }
 
       for (let j = 0; j < c.args.length; j += 2) {
@@ -108,10 +108,10 @@ export default class TTFGlyphEncoder {
         // decoder implies it. The decoder implies the midpoint of the rounded
         // controls, so omit the point when that midpoint is the point itself
         // or its rounding (it is then at least as close as writing it).
-        if (c.command === 'quadraticCurveTo' && j === 2) {
+        if (c.command === "quadraticCurveTo" && j === 2) {
           const next = path.commands[i + 1];
 
-          if (next && next.command === 'quadraticCurveTo') {
+          if (next && next.command === "quadraticCurveTo") {
             const rawX = c.args[j] ?? 0;
             const rawY = c.args[j + 1] ?? 0;
             const midX2 = lastX + Math.round(next.args[0] ?? 0);
@@ -126,34 +126,20 @@ export default class TTFGlyphEncoder {
           }
         }
 
-        checkInt16(x, 'x coordinate');
-        checkInt16(y, 'y coordinate');
-        checkInt16(x - lastX, 'x delta');
-        checkInt16(y - lastY, 'y delta');
+        checkInt16(x, "x coordinate");
+        checkInt16(y, "y coordinate");
+        checkInt16(x - lastX, "x delta");
+        checkInt16(y - lastY, "y delta");
 
         if (pointCount === 0 && overlapping) flag |= OVERLAP_SIMPLE;
 
         // All points except control points are on curve.
-        if (!(c.command === 'quadraticCurveTo' && j === 0)) {
+        if (!(c.command === "quadraticCurveTo" && j === 0)) {
           flag |= ON_CURVE;
         }
 
-        flag = this._encodePoint(
-          x,
-          lastX,
-          xPoints,
-          flag,
-          X_SHORT_VECTOR,
-          SAME_X,
-        );
-        flag = this._encodePoint(
-          y,
-          lastY,
-          yPoints,
-          flag,
-          Y_SHORT_VECTOR,
-          SAME_Y,
-        );
+        flag = this._encodePoint(x, lastX, xPoints, flag, X_SHORT_VECTOR, SAME_X);
+        flag = this._encodePoint(y, lastY, yPoints, flag, Y_SHORT_VECTOR, SAME_Y);
 
         if (flag === lastFlag && same < 255) {
           const lastFlagIdx = flags.length - 1;
@@ -186,7 +172,7 @@ export default class TTFGlyphEncoder {
         pointCount++;
       }
 
-      if (c.command === 'closePath') {
+      if (c.command === "closePath") {
         endPtsOfContours.push(pointCount - 1);
       }
     }
@@ -201,11 +187,7 @@ export default class TTFGlyphEncoder {
     // Close the path if the last command didn't already
     const lastCmd = path.commands[path.commands.length - 1];
 
-    if (
-      path.commands.length > 1 &&
-      lastCmd &&
-      lastCmd.command !== 'closePath'
-    ) {
+    if (path.commands.length > 1 && lastCmd && lastCmd.command !== "closePath") {
       endPtsOfContours.push(pointCount - 1);
     }
 

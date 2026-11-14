@@ -1,9 +1,9 @@
-import fs from 'fs';
-import { describe, it, expect } from 'vitest';
-import { PDFDocument } from '../../src/index';
+import fs from "fs";
+import { describe, it, expect } from "vitest";
+import { PDFDocument } from "../../src/index";
 
-describe('Incremental Save', () => {
-  it('rejects a snapshot from a created document before preparing or writing', async () => {
+describe("Incremental Save", () => {
+  it("rejects a snapshot from a created document before preparing or writing", async () => {
     const doc = await PDFDocument.create();
     const snapshot = doc.takeSnapshot();
     const objects = doc.context.enumerateIndirectObjects();
@@ -14,8 +14,8 @@ describe('Incremental Save', () => {
     expect(doc.context.snapshot).toBeUndefined();
   });
 
-  it('rejects a snapshot when loaded without forIncrementalUpdate', async () => {
-    const doc = await PDFDocument.load(fs.readFileSync('./assets/pdfs/normal.pdf'));
+  it("rejects a snapshot when loaded without forIncrementalUpdate", async () => {
+    const doc = await PDFDocument.load(fs.readFileSync("./assets/pdfs/normal.pdf"));
     const snapshot = doc.takeSnapshot();
     const objects = doc.context.enumerateIndirectObjects();
     await expect(doc.saveIncremental(snapshot)).rejects.toThrow(
@@ -25,8 +25,8 @@ describe('Incremental Save', () => {
     expect(doc.context.snapshot).toBeUndefined();
   });
 
-  it('rejects a snapshot from another document before preparing or writing', async () => {
-    const bytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("rejects a snapshot from another document before preparing or writing", async () => {
+    const bytes = fs.readFileSync("./assets/pdfs/normal.pdf");
     const doc = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
     const other = await PDFDocument.load(bytes, { forIncrementalUpdate: true });
     const snapshot = doc.takeSnapshot();
@@ -39,34 +39,34 @@ describe('Incremental Save', () => {
     expect(doc.takeSnapshot()).toBe(snapshot);
   });
 
-  it('can take a snapshot and save incrementally', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
-    
+  it("can take a snapshot and save incrementally", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
+
     // Load for incremental update
     const pdfDoc = await PDFDocument.load(pdfBytes, { forIncrementalUpdate: true });
-    
+
     // Take a snapshot
     const snapshot = pdfDoc.takeSnapshot();
     expect(snapshot.pdfSize).toBe(pdfBytes.length);
-    
+
     // Make a change
     const page = pdfDoc.getPages()[0];
-    page.drawText('TEST', { x: 50, y: 50, size: 12 });
-    
+    page.drawText("TEST", { x: 50, y: 50, size: 12 });
+
     // Save incrementally using commit()
     const incrementalBytes = await pdfDoc.commit();
-    
+
     // Incremental bytes should start with the original PDF
     // (first bytes should match original)
     expect(incrementalBytes.length).toBeGreaterThan(pdfBytes.length);
-    
+
     // Verify the incremental PDF loads correctly
     const verifyDoc = await PDFDocument.load(incrementalBytes);
     expect(verifyDoc.getPageCount()).toBe(pdfDoc.getPageCount());
   });
 
-  it('saveIncremental returns only the delta bytes', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("saveIncremental returns only the delta bytes", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
 
     // Load for incremental update
     const pdfDoc = await PDFDocument.load(pdfBytes, { forIncrementalUpdate: true });
@@ -74,7 +74,7 @@ describe('Incremental Save', () => {
 
     // Make a change
     const page = pdfDoc.getPages()[0];
-    page.drawText('HELLO', { x: 100, y: 100, size: 20 });
+    page.drawText("HELLO", { x: 100, y: 100, size: 20 });
 
     // saveIncremental returns ONLY the delta bytes (not the full PDF)
     const deltaBytes = await pdfDoc.saveIncremental(snapshot);
@@ -93,13 +93,13 @@ describe('Incremental Save', () => {
     expect(verifyDoc.getPageCount()).toBeGreaterThan(0);
   });
 
-  it('preserves original bytes at the start of incremental save', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("preserves original bytes at the start of incremental save", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
     const pdfDoc = await PDFDocument.load(pdfBytes, { forIncrementalUpdate: true });
 
     pdfDoc.takeSnapshot();
     const page = pdfDoc.getPages()[0];
-    page.drawText('X', { x: 0, y: 0, size: 10 });
+    page.drawText("X", { x: 0, y: 0, size: 10 });
 
     const incrementalBytes = await pdfDoc.commit();
 
@@ -110,10 +110,8 @@ describe('Incremental Save', () => {
     expect(Array.from(incrementalStart)).toEqual(Array.from(originalStart));
   });
 
-  it('keeps largestObjectNumber and trailer entries across linearized sections', async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/linearized_with_object_streams.pdf',
-    );
+  it("keeps largestObjectNumber and trailer entries across linearized sections", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/linearized_with_object_streams.pdf");
 
     const pdfDoc = await PDFDocument.load(pdfBytes, {
       forIncrementalUpdate: true,

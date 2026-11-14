@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // maxiumum profile. Version 0.5 (CFF and bitmap-only fonts) holds only
 // numGlyphs; reading it as the 1.0 layout would run past the table.

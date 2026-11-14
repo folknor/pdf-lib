@@ -1,10 +1,10 @@
-import { charFromCode } from '../../utils/index.js';
-import { NumberParsingError } from '../errors.js';
-import type ByteStream from '../parser/ByteStream.js';
-import CharCodes from '../syntax/CharCodes.js';
-import { IsDigit, IsNumeric } from '../syntax/Numeric.js';
-import { IsWhitespace } from '../syntax/Whitespace.js';
-import type { PDFWarning } from '../warnings.js';
+import { charFromCode } from "../../utils/index.js";
+import { NumberParsingError } from "../errors.js";
+import type ByteStream from "../parser/ByteStream.js";
+import CharCodes from "../syntax/CharCodes.js";
+import { IsDigit, IsNumeric } from "../syntax/Numeric.js";
+import { IsWhitespace } from "../syntax/Whitespace.js";
+import type { PDFWarning } from "../warnings.js";
 
 const { Newline, CarriageReturn } = CharCodes;
 
@@ -25,7 +25,7 @@ abstract class BaseParser {
   protected abstract warnAt(offset: number, warning: PDFWarning): void;
 
   protected parseRawInt(): number {
-    let value = '';
+    let value = "";
 
     while (!this.bytes.done()) {
       const byte = this.bytes.peek();
@@ -46,7 +46,7 @@ abstract class BaseParser {
   // TODO: Maybe handle exponential format?
   // TODO: Compare performance of string concatenation to charFromCode(...bytes)
   protected parseRawNumber(): number {
-    let value = '';
+    let value = "";
 
     // Parse integer-part, the leading (+ | - | . | 0-9)
     while (!this.bytes.done()) {
@@ -77,7 +77,7 @@ abstract class BaseParser {
 
       if (this.capNumbers) {
         this.warnAt(start, {
-          code: 'number-too-large-capped',
+          code: "number-too-large-capped",
           message: `Parsed number that is too large for some PDF readers: ${value}, using Number.MAX_SAFE_INTEGER instead.`,
         });
 
@@ -85,7 +85,7 @@ abstract class BaseParser {
       }
 
       this.warnAt(start, {
-        code: 'number-too-large',
+        code: "number-too-large",
         message: `Parsed number that is too large for some PDF readers: ${value}, not capping.`,
       });
     }

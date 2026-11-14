@@ -1,98 +1,92 @@
-import {
-  EncodedText,
-  PDFDocument,
-  PDFFont,
-  PDFHexString,
-  StandardFonts,
-} from '../../src/index';
+import { EncodedText, PDFDocument, PDFFont, PDFHexString, StandardFonts } from "../../src/index";
 
-describe('PDFFont', () => {
-  describe('embedding standard fonts', () => {
-    it('can embed Helvetica and returns a PDFFont instance', async () => {
+describe("PDFFont", () => {
+  describe("embedding standard fonts", () => {
+    it("can embed Helvetica and returns a PDFFont instance", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       expect(font).toBeInstanceOf(PDFFont);
     });
 
-    it('can embed Courier and returns a PDFFont instance', async () => {
+    it("can embed Courier and returns a PDFFont instance", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Courier);
       expect(font).toBeInstanceOf(PDFFont);
     });
 
-    it('can embed TimesRoman and returns a PDFFont instance', async () => {
+    it("can embed TimesRoman and returns a PDFFont instance", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.TimesRoman);
       expect(font).toBeInstanceOf(PDFFont);
     });
 
-    it('can embed HelveticaBold and returns a PDFFont instance', async () => {
+    it("can embed HelveticaBold and returns a PDFFont instance", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.HelveticaBold);
       expect(font).toBeInstanceOf(PDFFont);
     });
 
-    it('can embed CourierBoldOblique and returns a PDFFont instance', async () => {
+    it("can embed CourierBoldOblique and returns a PDFFont instance", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.CourierBoldOblique);
       expect(font).toBeInstanceOf(PDFFont);
     });
   });
 
-  describe('name property', () => {
+  describe("name property", () => {
     it('returns "Helvetica" for a Helvetica font', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      expect(font.name).toBe('Helvetica');
+      expect(font.name).toBe("Helvetica");
     });
 
     it('returns "Courier" for a Courier font', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Courier);
-      expect(font.name).toBe('Courier');
+      expect(font.name).toBe("Courier");
     });
 
     it('returns "Times-Roman" for a TimesRoman font', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.TimesRoman);
-      expect(font.name).toBe('Times-Roman');
+      expect(font.name).toBe("Times-Roman");
     });
 
     it('returns "Helvetica-Bold" for a HelveticaBold font', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.HelveticaBold);
-      expect(font.name).toBe('Helvetica-Bold');
+      expect(font.name).toBe("Helvetica-Bold");
     });
   });
 
-  describe('widthOfTextAtSize()', () => {
-    it('returns a number greater than 0 for non-empty text', async () => {
+  describe("widthOfTextAtSize()", () => {
+    it("returns a number greater than 0 for non-empty text", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const width = font.widthOfTextAtSize('Hello World', 12);
+      const width = font.widthOfTextAtSize("Hello World", 12);
       expect(width).toBeGreaterThan(0);
     });
 
-    it('returns 0 for an empty string', async () => {
+    it("returns 0 for an empty string", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const width = font.widthOfTextAtSize('', 12);
+      const width = font.widthOfTextAtSize("", 12);
       expect(width).toBe(0);
     });
 
-    it('scales linearly with font size (size 24 = 2x size 12)', async () => {
+    it("scales linearly with font size (size 24 = 2x size 12)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const text = 'Test string';
+      const text = "Test string";
       const widthAt12 = font.widthOfTextAtSize(text, 12);
       const widthAt24 = font.widthOfTextAtSize(text, 24);
       expect(widthAt24).toBeCloseTo(widthAt12 * 2, 5);
     });
 
-    it('scales linearly with font size (size 36 = 3x size 12)', async () => {
+    it("scales linearly with font size (size 36 = 3x size 12)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const text = 'Scaling test';
+      const text = "Scaling test";
       const widthAt12 = font.widthOfTextAtSize(text, 12);
       const widthAt36 = font.widthOfTextAtSize(text, 36);
       expect(widthAt36).toBeCloseTo(widthAt12 * 3, 5);
@@ -101,49 +95,49 @@ describe('PDFFont', () => {
     it('proportional font (Helvetica): "W" is wider than "i"', async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const widthW = font.widthOfTextAtSize('W', 12);
-      const widthI = font.widthOfTextAtSize('i', 12);
+      const widthW = font.widthOfTextAtSize("W", 12);
+      const widthI = font.widthOfTextAtSize("i", 12);
       expect(widthW).toBeGreaterThan(widthI);
     });
 
-    it('monospaced font (Courier): all characters have the same width', async () => {
+    it("monospaced font (Courier): all characters have the same width", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Courier);
-      const widthW = font.widthOfTextAtSize('W', 12);
-      const widthI = font.widthOfTextAtSize('i', 12);
-      const widthM = font.widthOfTextAtSize('M', 12);
-      const widthA = font.widthOfTextAtSize('a', 12);
+      const widthW = font.widthOfTextAtSize("W", 12);
+      const widthI = font.widthOfTextAtSize("i", 12);
+      const widthM = font.widthOfTextAtSize("M", 12);
+      const widthA = font.widthOfTextAtSize("a", 12);
       expect(widthW).toBeCloseTo(widthI, 5);
       expect(widthW).toBeCloseTo(widthM, 5);
       expect(widthW).toBeCloseTo(widthA, 5);
     });
 
-    it('multi-character string is wider than a single character', async () => {
+    it("multi-character string is wider than a single character", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const singleWidth = font.widthOfTextAtSize('A', 12);
-      const multiWidth = font.widthOfTextAtSize('ABC', 12);
+      const singleWidth = font.widthOfTextAtSize("A", 12);
+      const multiWidth = font.widthOfTextAtSize("ABC", 12);
       expect(multiWidth).toBeGreaterThan(singleWidth);
     });
 
-    it('returns different widths for different text with proportional fonts', async () => {
+    it("returns different widths for different text with proportional fonts", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const widthNarrow = font.widthOfTextAtSize('iiii', 12);
-      const widthWide = font.widthOfTextAtSize('WWWW', 12);
+      const widthNarrow = font.widthOfTextAtSize("iiii", 12);
+      const widthWide = font.widthOfTextAtSize("WWWW", 12);
       expect(widthWide).toBeGreaterThan(widthNarrow);
     });
   });
 
-  describe('heightAtSize()', () => {
-    it('returns a number greater than 0', async () => {
+  describe("heightAtSize()", () => {
+    it("returns a number greater than 0", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const height = font.heightAtSize(12);
       expect(height).toBeGreaterThan(0);
     });
 
-    it('scales linearly with font size (2x)', async () => {
+    it("scales linearly with font size (2x)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightAt12 = font.heightAtSize(12);
@@ -151,7 +145,7 @@ describe('PDFFont', () => {
       expect(heightAt24).toBeCloseTo(heightAt12 * 2, 5);
     });
 
-    it('scales linearly with font size (3x)', async () => {
+    it("scales linearly with font size (3x)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightAt10 = font.heightAtSize(10);
@@ -159,7 +153,7 @@ describe('PDFFont', () => {
       expect(heightAt30).toBeCloseTo(heightAt10 * 3, 5);
     });
 
-    it('with descender=false returns smaller height than descender=true (default)', async () => {
+    it("with descender=false returns smaller height than descender=true (default)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightWithDescender = font.heightAtSize(12);
@@ -171,7 +165,7 @@ describe('PDFFont', () => {
       expect(heightWithoutDescender).toBeLessThan(heightWithDescender);
     });
 
-    it('default options include descender (same as descender=true)', async () => {
+    it("default options include descender (same as descender=true)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const heightDefault = font.heightAtSize(12);
@@ -183,7 +177,7 @@ describe('PDFFont', () => {
       expect(heightDefault).toBe(heightExplicitDescender);
     });
 
-    it('returns consistent results across different standard fonts', async () => {
+    it("returns consistent results across different standard fonts", async () => {
       const doc = await PDFDocument.create();
       const helvetica = doc.embedStandardFont(StandardFonts.Helvetica);
       const courier = doc.embedStandardFont(StandardFonts.Courier);
@@ -196,15 +190,15 @@ describe('PDFFont', () => {
     });
   });
 
-  describe('sizeAtHeight()', () => {
-    it('returns a positive font size for a given height', async () => {
+  describe("sizeAtHeight()", () => {
+    it("returns a positive font size for a given height", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const size = font.sizeAtHeight(20);
       expect(size).toBeGreaterThan(0);
     });
 
-    it('round-trip: heightAtSize(sizeAtHeight(h)) approximately equals h', async () => {
+    it("round-trip: heightAtSize(sizeAtHeight(h)) approximately equals h", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const targetHeight = 24;
@@ -213,7 +207,7 @@ describe('PDFFont', () => {
       expect(recoveredHeight).toBeCloseTo(targetHeight, 1);
     });
 
-    it('round-trip works for small heights', async () => {
+    it("round-trip works for small heights", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const targetHeight = 8;
@@ -222,7 +216,7 @@ describe('PDFFont', () => {
       expect(recoveredHeight).toBeCloseTo(targetHeight, 1);
     });
 
-    it('round-trip works for large heights', async () => {
+    it("round-trip works for large heights", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const targetHeight = 100;
@@ -231,7 +225,7 @@ describe('PDFFont', () => {
       expect(recoveredHeight).toBeCloseTo(targetHeight, 1);
     });
 
-    it('larger height input produces larger font size', async () => {
+    it("larger height input produces larger font size", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const smallSize = font.sizeAtHeight(10);
@@ -240,8 +234,8 @@ describe('PDFFont', () => {
     });
   });
 
-  describe('getCharacterSet()', () => {
-    it('returns an array of numbers (Unicode code points)', async () => {
+  describe("getCharacterSet()", () => {
+    it("returns an array of numbers (Unicode code points)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const charSet = font.getCharacterSet();
@@ -249,11 +243,11 @@ describe('PDFFont', () => {
       expect(charSet.length).toBeGreaterThan(0);
 
       for (const codePoint of charSet) {
-        expect(typeof codePoint).toBe('number');
+        expect(typeof codePoint).toBe("number");
       }
     });
 
-    it('character set length is greater than 0', async () => {
+    it("character set length is greater than 0", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const charSet = font.getCharacterSet();
@@ -274,14 +268,14 @@ describe('PDFFont', () => {
       expect(charSet).toContain(48); // '0'
     });
 
-    it('includes space (code point 32)', async () => {
+    it("includes space (code point 32)", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const charSet = font.getCharacterSet();
       expect(charSet).toContain(32); // ' '
     });
 
-    it('includes common lowercase letters', async () => {
+    it("includes common lowercase letters", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       const charSet = font.getCharacterSet();
@@ -289,7 +283,7 @@ describe('PDFFont', () => {
       expect(charSet).toContain(122); // 'z'
     });
 
-    it('Courier also has a non-empty character set with ASCII', async () => {
+    it("Courier also has a non-empty character set with ASCII", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Courier);
       const charSet = font.getCharacterSet();
@@ -297,7 +291,7 @@ describe('PDFFont', () => {
       expect(charSet).toContain(65); // 'A'
     });
 
-    it('TimesRoman also has a non-empty character set with ASCII', async () => {
+    it("TimesRoman also has a non-empty character set with ASCII", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.TimesRoman);
       const charSet = font.getCharacterSet();
@@ -306,86 +300,86 @@ describe('PDFFont', () => {
     });
   });
 
-  describe('encodeText()', () => {
-    it('returns EncodedText whose codes are a PDFHexString', async () => {
+  describe("encodeText()", () => {
+    it("returns EncodedText whose codes are a PDFHexString", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encoded = font.encodeText('Hello');
+      const encoded = font.encodeText("Hello");
       expect(encoded).toBeInstanceOf(EncodedText);
       expect(encoded.toHexString()).toBeInstanceOf(PDFHexString);
     });
 
-    it('returns a non-empty hex string for non-empty text', async () => {
+    it("returns a non-empty hex string for non-empty text", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encoded = font.encodeText('ABC');
+      const encoded = font.encodeText("ABC");
       expect(encoded.toHexString().asString().length).toBeGreaterThan(0);
     });
 
-    it('encodes a single character', async () => {
+    it("encodes a single character", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encoded = font.encodeText('A');
-      expect(encoded.codes).toEqual(['41']);
+      const encoded = font.encodeText("A");
+      expect(encoded.codes).toEqual(["41"]);
     });
 
-    it('encodes different text to different hex strings', async () => {
+    it("encodes different text to different hex strings", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encodedA = font.encodeText('A').toHexString();
-      const encodedB = font.encodeText('B').toHexString();
+      const encodedA = font.encodeText("A").toHexString();
+      const encodedB = font.encodeText("B").toHexString();
       expect(encodedA.toString()).not.toBe(encodedB.toString());
     });
 
-    it('returns consistent results for the same text', async () => {
+    it("returns consistent results for the same text", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encoded1 = font.encodeText('Test');
-      const encoded2 = font.encodeText('Test');
+      const encoded1 = font.encodeText("Test");
+      const encoded2 = font.encodeText("Test");
       expect(encoded1).toEqual(encoded2);
     });
 
-    it('advances by what widthOfTextAtSize measures, kerning included', async () => {
+    it("advances by what widthOfTextAtSize measures, kerning included", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
-      const encoded = font.encodeText('AV');
+      const encoded = font.encodeText("AV");
       // Helvetica kerns A V by -70.
       expect(encoded.advances[0]).toBe(encoded.widths[0]! - 70);
-      expect(encoded.advance).toBeCloseTo(font.widthOfTextAtSize('AV', 1000));
+      expect(encoded.advance).toBeCloseTo(font.widthOfTextAtSize("AV", 1000));
     });
   });
 
-  describe('embed()', () => {
-    it('can be called without error', async () => {
+  describe("embed()", () => {
+    it("can be called without error", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       await expect(font.embed()).resolves.not.toThrowError();
     });
 
-    it('font is usable after embedding', async () => {
+    it("font is usable after embedding", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       await font.embed();
 
       // Font should still function correctly after embed
-      const width = font.widthOfTextAtSize('Hello', 12);
+      const width = font.widthOfTextAtSize("Hello", 12);
       expect(width).toBeGreaterThan(0);
 
       const height = font.heightAtSize(12);
       expect(height).toBeGreaterThan(0);
 
-      const encoded = font.encodeText('Hello');
+      const encoded = font.encodeText("Hello");
       expect(encoded).toBeInstanceOf(EncodedText);
     });
 
-    it('can be called multiple times without error', async () => {
+    it("can be called multiple times without error", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       await expect(font.embed()).resolves.not.toThrowError();
       await expect(font.embed()).resolves.not.toThrowError();
     });
 
-    it('second call is a no-op when font is not modified', async () => {
+    it("second call is a no-op when font is not modified", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       await font.embed();
@@ -393,12 +387,12 @@ describe('PDFFont', () => {
       await expect(font.embed()).resolves.not.toThrowError();
     });
 
-    it('re-embeds after encodeText marks font as modified', async () => {
+    it("re-embeds after encodeText marks font as modified", async () => {
       const doc = await PDFDocument.create();
       const font = doc.embedStandardFont(StandardFonts.Helvetica);
       await font.embed();
       // encodeText sets modified=true
-      font.encodeText('New text');
+      font.encodeText("New text");
       await expect(font.embed()).resolves.not.toThrowError();
     });
   });

@@ -19,7 +19,7 @@ export default class Subset {
   }
 
   includeGlyph(glyph: number | { id: number }): number {
-    if (typeof glyph === 'object') {
+    if (typeof glyph === "object") {
       glyph = glyph.id;
     }
 
@@ -32,7 +32,7 @@ export default class Subset {
   }
 
   encode(): Uint8Array {
-    throw new Error('encode() must be implemented by subclass');
+    throw new Error("encode() must be implemented by subclass");
   }
 
   // Returns a stream-like object for encoding the subset
@@ -53,16 +53,16 @@ export default class Subset {
       try {
         const data = this.encode();
 
-        if (handlers['data']) {
-          handlers['data'](data);
+        if (handlers["data"]) {
+          handlers["data"](data);
         }
 
-        if (handlers['end']) {
-          handlers['end']();
+        if (handlers["end"]) {
+          handlers["end"]();
         }
       } catch (err) {
-        if (handlers['error']) {
-          handlers['error'](err);
+        if (handlers["error"]) {
+          handlers["error"](err);
         }
       }
     });

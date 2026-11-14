@@ -1,12 +1,12 @@
-import { decompress as brotliDecompress } from 'brotli/decompress.js';
-import { DecodedStreamTooLargeError } from '../core/errors.js';
-import * as r from '../vendors/restructure/index.js';
-import type Glyph from './glyph/Glyph.js';
-import TTFGlyph, { Point } from './glyph/TTFGlyph.js';
-import WOFF2Glyph from './glyph/WOFF2Glyph.js';
-import TTFFont, { isOutlineGlyph } from './TTFFont.js';
-import WOFF2Directory from './tables/WOFF2Directory.js';
-import { asciiDecoder } from './utils.js';
+import { decompress as brotliDecompress } from "brotli/decompress.js";
+import { DecodedStreamTooLargeError } from "../core/errors.js";
+import * as r from "../vendors/restructure/index.js";
+import type Glyph from "./glyph/Glyph.js";
+import TTFGlyph, { Point } from "./glyph/TTFGlyph.js";
+import WOFF2Glyph from "./glyph/WOFF2Glyph.js";
+import TTFFont, { isOutlineGlyph } from "./TTFFont.js";
+import WOFF2Directory from "./tables/WOFF2Directory.js";
+import { asciiDecoder } from "./utils.js";
 
 // A glyph as decoded from the transformed glyf table, before any variation.
 // The bbox is the glyph header's: explicit in the bbox stream where the
@@ -26,7 +26,7 @@ export interface TransformedGlyph {
  * See spec here: http://www.w3.org/TR/WOFF2/
  */
 export default class WOFF2Font extends TTFFont {
-  override type: string = 'WOFF2';
+  override type: string = "WOFF2";
   // `declare`: these are set during super() (via _decodeDirectory) or lazily.
   // A plain field declaration would be re-initialised to undefined after
   // super() returns under define semantics for class fields.
@@ -34,7 +34,7 @@ export default class WOFF2Font extends TTFFont {
   declare _transformedGlyphs?: TransformedGlyph[];
 
   static override probe(buffer: Uint8Array): boolean {
-    return asciiDecoder.decode(buffer.slice(0, 4)) === 'wOF2';
+    return asciiDecoder.decode(buffer.slice(0, 4)) === "wOF2";
   }
 
   override _decodeDirectory(): void {
@@ -59,8 +59,7 @@ export default class WOFF2Font extends TTFFont {
     for (const tag in this.directory.tables) {
       const entry = this.directory.tables[tag];
       entry.offset = decompressedSize;
-      decompressedSize +=
-        entry.transformLength != null ? entry.transformLength : entry.length;
+      decompressedSize += entry.transformLength != null ? entry.transformLength : entry.length;
     }
 
     if (decompressedSize > maxDecodedSize) {
@@ -70,7 +69,7 @@ export default class WOFF2Font extends TTFFont {
     const decompressed = brotliDecompress(buffer, decompressedSize);
 
     if (!decompressed) {
-      throw new Error('Error decoding compressed data in WOFF2');
+      throw new Error("Error decoding compressed data in WOFF2");
     }
 
     this.stream = new r.DecodeStream(decompressed);
@@ -108,13 +107,11 @@ export default class WOFF2Font extends TTFFont {
     this.stream.pos = this.directory.tables.glyf.offset;
     const table: any = GlyfTable.decode(this.stream);
     const glyphs: TransformedGlyph[] = [];
-    const bboxes: r.DecodeStream = table['bboxes'];
+    const bboxes: r.DecodeStream = table["bboxes"];
 
-    const bboxBitmap = bboxes.readBuffer(
-      4 * Math.floor((table['numGlyphs'] + 31) / 32),
-    );
+    const bboxBitmap = bboxes.readBuffer(4 * Math.floor((table["numGlyphs"] + 31) / 32));
 
-    for (let index = 0; index < table['numGlyphs']; index++) {
+    for (let index = 0; index < table["numGlyphs"]; index++) {
       const glyph: TransformedGlyph = {
         numberOfContours: 0,
         xMin: 0,
@@ -123,7 +120,7 @@ export default class WOFF2Font extends TTFFont {
         yMax: 0,
       };
 
-      const nContours = table['nContours'].readInt16BE();
+      const nContours = table["nContours"].readInt16BE();
       glyph.numberOfContours = nContours;
 
       if (nContours > 0) {
@@ -132,32 +129,28 @@ export default class WOFF2Font extends TTFFont {
         let totalPoints = 0;
 
         for (let i = 0; i < nContours; i++) {
-          const pointCount = read255UInt16(table['nPoints']);
+          const pointCount = read255UInt16(table["nPoints"]);
           totalPoints += pointCount;
           nPoints.push(totalPoints);
         }
 
-        glyph.points = decodeTriplet(
-          table['flags'],
-          table['glyphs'],
-          totalPoints,
-        );
+        glyph.points = decodeTriplet(table["flags"], table["glyphs"], totalPoints);
 
         for (let i = 0; i < nContours; i++) {
           glyph.points[nPoints[i]! - 1]!.endContour = true;
         }
 
-        read255UInt16(table['glyphs']);
+        read255UInt16(table["glyphs"]);
       } else if (nContours < 0) {
         // composite glyph
         const haveInstructions = TTFGlyph.prototype._decodeComposite.call(
           { _font: this },
           glyph as any,
-          table['composites'],
+          table["composites"],
         );
 
         if (haveInstructions) {
-          read255UInt16(table['glyphs']);
+          read255UInt16(table["glyphs"]);
         }
       }
 
@@ -212,13 +205,13 @@ const GlyfTable = new r.Struct({
   compositeStreamSize: r.uint32,
   bboxStreamSize: r.uint32,
   instructionStreamSize: r.uint32,
-  nContours: new Substream('nContourStreamSize') as any,
-  nPoints: new Substream('nPointsStreamSize') as any,
-  flags: new Substream('flagStreamSize') as any,
-  glyphs: new Substream('glyphStreamSize') as any,
-  composites: new Substream('compositeStreamSize') as any,
-  bboxes: new Substream('bboxStreamSize') as any,
-  instructions: new Substream('instructionStreamSize') as any,
+  nContours: new Substream("nContourStreamSize") as any,
+  nPoints: new Substream("nPointsStreamSize") as any,
+  flags: new Substream("flagStreamSize") as any,
+  glyphs: new Substream("glyphStreamSize") as any,
+  composites: new Substream("compositeStreamSize") as any,
+  bboxes: new Substream("bboxStreamSize") as any,
+  instructions: new Substream("instructionStreamSize") as any,
 });
 
 const WORD_CODE = 253;
@@ -248,11 +241,7 @@ function withSign(flag: number, baseval: number): number {
   return flag & 1 ? baseval : -baseval;
 }
 
-function decodeTriplet(
-  flags: r.DecodeStream,
-  glyphs: r.DecodeStream,
-  nPoints: number,
-): Point[] {
+function decodeTriplet(flags: r.DecodeStream, glyphs: r.DecodeStream, nPoints: number): Point[] {
   let y;
   let x = (y = 0);
   const res = [];
@@ -279,10 +268,7 @@ function decodeTriplet(
     } else if (flag < 120) {
       const b0_120 = flag - 84;
       dx = withSign(flag, 1 + ((b0_120 / 12) << 8) + glyphs.readUInt8());
-      dy = withSign(
-        flag >> 1,
-        1 + (((b0_120 % 12) >> 2) << 8) + glyphs.readUInt8(),
-      );
+      dy = withSign(flag >> 1, 1 + (((b0_120 % 12) >> 2) << 8) + glyphs.readUInt8());
     } else if (flag < 124) {
       const b1_124 = glyphs.readUInt8();
       const b2 = glyphs.readUInt8();

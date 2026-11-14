@@ -9,10 +9,10 @@ import {
   utf8Decode,
   utf16Decode,
   utf16Encode,
-} from '../../utils/index.js';
-import { InvalidPDFDateStringError } from '../errors.js';
-import CharCodes from '../syntax/CharCodes.js';
-import PDFObject from './PDFObject.js';
+} from "../../utils/index.js";
+import { InvalidPDFDateStringError } from "../errors.js";
+import CharCodes from "../syntax/CharCodes.js";
+import PDFObject from "./PDFObject.js";
 
 class PDFHexString extends PDFObject {
   static of = (value: string) => new PDFHexString(value);
@@ -20,7 +20,7 @@ class PDFHexString extends PDFObject {
   static fromText = (value: string) => {
     const encoded = utf16Encode(value);
 
-    let hex = '';
+    let hex = "";
 
     for (let idx = 0, len = encoded.length; idx < len; idx++) {
       hex += toHexStringOfMinLength(encoded[idx]!, 4);
@@ -29,8 +29,7 @@ class PDFHexString extends PDFObject {
     return new PDFHexString(hex);
   };
 
-  static fromBytes = (bytes: Uint8Array) =>
-    PDFHexString.of(byteArrayToHexString(bytes));
+  static fromBytes = (bytes: Uint8Array) => PDFHexString.of(byteArrayToHexString(bytes));
 
   private readonly value: string;
 
@@ -41,9 +40,9 @@ class PDFHexString extends PDFObject {
 
   asBytes(): Uint8Array {
     // Per PDF spec 7.3.4.3, white-space inside hex strings must be ignored.
-    const stripped = this.value.replace(/[\0\t\n\f\r ]/g, '');
+    const stripped = this.value.replace(/[\0\t\n\f\r ]/g, "");
     // Append a zero if the number of digits is odd. See PDF spec 7.3.4.3
-    const hex = stripped + (stripped.length % 2 === 1 ? '0' : '');
+    const hex = stripped + (stripped.length % 2 === 1 ? "0" : "");
     const hexLength = hex.length;
 
     const bytes = new Uint8Array(hex.length / 2);

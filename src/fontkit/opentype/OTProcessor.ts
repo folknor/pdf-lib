@@ -1,17 +1,16 @@
-import type GlyphPosition from '../layout/GlyphPosition.js';
-import * as Script from '../layout/Script.js';
-import type GlyphInfo from './GlyphInfo.js';
-import GlyphIterator, { type GlyphIteratorOptions } from './GlyphIterator.js';
+import type GlyphPosition from "../layout/GlyphPosition.js";
+import * as Script from "../layout/Script.js";
+import type GlyphInfo from "./GlyphInfo.js";
+import GlyphIterator, { type GlyphIteratorOptions } from "./GlyphIterator.js";
 
-const DEFAULT_SCRIPTS: string[] = ['DFLT', 'dflt', 'latn'];
+const DEFAULT_SCRIPTS: string[] = ["DFLT", "dflt", "latn"];
 
 /**
  * Chaining-context backtrack sequences are stored closest glyph first, while
  * match() walks forward from the furthest backtrack glyph, so they are
  * matched reversed. Copies; the decoded table is shared.
  */
-export const backtrackOrder = <T>(sequence: ArrayLike<T>): T[] =>
-  Array.from(sequence).reverse();
+export const backtrackOrder = <T>(sequence: ArrayLike<T>): T[] => Array.from(sequence).reverse();
 
 /**
  * A glyph sequence a lookup application is working on, kept in step with
@@ -137,7 +136,7 @@ export default class OTProcessor {
     }
 
     if (language && language.length < 4) {
-      language += ' '.repeat(4 - language.length);
+      language += " ".repeat(4 - language.length);
     }
 
     if (!language || language !== this.languageTag) {
@@ -167,8 +166,7 @@ export default class OTProcessor {
         for (const featureIndex of this.language.featureIndexes) {
           const record = this.table.featureList[featureIndex];
 
-          const substituteFeature =
-            this.substituteFeatureForVariations(featureIndex);
+          const substituteFeature = this.substituteFeatureForVariations(featureIndex);
 
           this.features[record.tag] = substituteFeature || record.feature;
         }
@@ -223,10 +221,7 @@ export default class OTProcessor {
       return null;
     }
 
-    const record =
-      this.table.featureVariations.featureVariationRecords[
-        this.variationsIndex
-      ];
+    const record = this.table.featureVariations.featureVariationRecords[this.variationsIndex];
 
     const substitutions = record.featureTableSubstitution.substitutions;
 
@@ -261,13 +256,9 @@ export default class OTProcessor {
 
   variationConditionsMatch(conditions: any[], coords: number[]): boolean {
     return conditions.every((condition) => {
-      const coord =
-        condition.axisIndex < coords.length ? coords[condition.axisIndex]! : 0;
+      const coord = condition.axisIndex < coords.length ? coords[condition.axisIndex]! : 0;
 
-      return (
-        condition.filterRangeMinValue <= coord! &&
-        coord! <= condition.filterRangeMaxValue
-      );
+      return condition.filterRangeMinValue <= coord! && coord! <= condition.filterRangeMaxValue;
     });
   }
 
@@ -418,8 +409,7 @@ export default class OTProcessor {
       return flags;
     }
 
-    const coverage =
-      this.font?.GDEF?.markGlyphSetsDef?.coverage?.[lookup.markFilteringSet];
+    const coverage = this.font?.GDEF?.markGlyphSetsDef?.coverage?.[lookup.markFilteringSet];
 
     return {
       ...flags,
@@ -435,7 +425,7 @@ export default class OTProcessor {
   }
 
   applyLookup(_lookup: number, _table: any): boolean {
-    throw new Error('applyLookup must be implemented by subclasses');
+    throw new Error("applyLookup must be implemented by subclasses");
   }
 
   /**
@@ -526,11 +516,7 @@ export default class OTProcessor {
     let glyph = this.glyphIterator.increment(sequenceIndex);
     const matched: number[] = [];
 
-    while (
-      matched.length < sequence.length &&
-      glyph &&
-      fn(sequence[matched.length], glyph)
-    ) {
+    while (matched.length < sequence.length && glyph && fn(sequence[matched.length], glyph)) {
       matched.push(this.glyphIterator.index);
       glyph = this.glyphIterator.next();
     }
@@ -541,17 +527,10 @@ export default class OTProcessor {
   }
 
   sequenceMatches(sequenceIndex: number, sequence: number[]): false | number[] {
-    return this.match(
-      sequenceIndex,
-      sequence,
-      (component, glyph) => component === glyph.id,
-    );
+    return this.match(sequenceIndex, sequence, (component, glyph) => component === glyph.id);
   }
 
-  sequenceMatchIndices(
-    sequenceIndex: number,
-    sequence: number[],
-  ): false | number[] {
+  sequenceMatchIndices(sequenceIndex: number, sequence: number[]): false | number[] {
     return this.match(sequenceIndex, sequence, (component, glyph) => {
       // Each component must be eligible for some feature the lookup serves
       // (not necessarily the same one for every component).
@@ -563,10 +542,7 @@ export default class OTProcessor {
     });
   }
 
-  coverageSequenceMatches(
-    sequenceIndex: number,
-    sequence: any[],
-  ): false | number[] {
+  coverageSequenceMatches(sequenceIndex: number, sequence: any[]): false | number[] {
     return this.match(
       sequenceIndex,
       sequence,
@@ -601,11 +577,7 @@ export default class OTProcessor {
     return 0;
   }
 
-  classSequenceMatches(
-    sequenceIndex: number,
-    sequence: number[],
-    classDef: any,
-  ): false | number[] {
+  classSequenceMatches(sequenceIndex: number, sequence: number[], classDef: any): false | number[] {
     return this.match(
       sequenceIndex,
       sequence,
@@ -634,10 +606,7 @@ export default class OTProcessor {
           const rest = this.sequenceMatches(1, rule.input);
 
           if (rest) {
-            return this.applyLookupList(rule.lookupRecords, [
-              this.glyphIterator.index,
-              ...rest,
-            ]);
+            return this.applyLookupList(rule.lookupRecords, [this.glyphIterator.index, ...rest]);
           }
         }
 
@@ -656,17 +625,10 @@ export default class OTProcessor {
         }
 
         for (const rule of set) {
-          const rest = this.classSequenceMatches(
-            1,
-            rule.classes,
-            table.classDef,
-          );
+          const rest = this.classSequenceMatches(1, rule.classes, table.classDef);
 
           if (rest) {
-            return this.applyLookupList(rule.lookupRecords, [
-              this.glyphIterator.index,
-              ...rest,
-            ]);
+            return this.applyLookupList(rule.lookupRecords, [this.glyphIterator.index, ...rest]);
           }
         }
 
@@ -704,25 +666,14 @@ export default class OTProcessor {
         }
 
         for (const rule of set) {
-          if (
-            !this.sequenceMatches(
-              -rule.backtrack.length,
-              backtrackOrder(rule.backtrack),
-            )
-          ) {
+          if (!this.sequenceMatches(-rule.backtrack.length, backtrackOrder(rule.backtrack))) {
             continue;
           }
 
           const rest = this.sequenceMatches(1, rule.input);
 
-          if (
-            rest &&
-            this.sequenceMatches(1 + rule.input.length, rule.lookahead)
-          ) {
-            return this.applyLookupList(rule.lookupRecords, [
-              this.glyphIterator.index,
-              ...rest,
-            ]);
+          if (rest && this.sequenceMatches(1 + rule.input.length, rule.lookahead)) {
+            return this.applyLookupList(rule.lookupRecords, [this.glyphIterator.index, ...rest]);
           }
         }
 
@@ -734,10 +685,7 @@ export default class OTProcessor {
           return false;
         }
 
-        index = this.getClassID(
-          this.glyphIterator.cur!.id,
-          table.inputClassDef,
-        );
+        index = this.getClassID(this.glyphIterator.cur!.id, table.inputClassDef);
         const rules = table.chainClassSet[index];
 
         if (!rules) {
@@ -755,11 +703,7 @@ export default class OTProcessor {
             continue;
           }
 
-          const rest = this.classSequenceMatches(
-            1,
-            rule.input,
-            table.inputClassDef,
-          );
+          const rest = this.classSequenceMatches(1, rule.input, table.inputClassDef);
 
           if (
             rest &&
@@ -769,10 +713,7 @@ export default class OTProcessor {
               table.lookaheadClassDef,
             )
           ) {
-            return this.applyLookupList(rule.lookupRecords, [
-              this.glyphIterator.index,
-              ...rest,
-            ]);
+            return this.applyLookupList(rule.lookupRecords, [this.glyphIterator.index, ...rest]);
           }
         }
 
@@ -791,13 +732,7 @@ export default class OTProcessor {
 
         const input = this.coverageSequenceMatches(0, table.inputCoverage);
 
-        if (
-          input &&
-          this.coverageSequenceMatches(
-            table.inputGlyphCount,
-            table.lookaheadCoverage,
-          )
-        ) {
+        if (input && this.coverageSequenceMatches(table.inputGlyphCount, table.lookaheadCoverage)) {
           return this.applyLookupList(table.lookupRecords, input);
         }
 

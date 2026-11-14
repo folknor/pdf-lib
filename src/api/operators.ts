@@ -5,10 +5,10 @@ import {
   type PDFName,
   type PDFNumber,
   PDFOperator,
-} from '../core/index.js';
-import { numberToString } from '../utils/index.js';
-import { asNumber, asPDFName, asPDFNumber } from './objects.js';
-import { degreesToRadians } from './rotations.js';
+} from "../core/index.js";
+import { numberToString } from "../utils/index.js";
+import { asNumber, asPDFName, asPDFNumber } from "./objects.js";
+import { degreesToRadians } from "./rotations.js";
 
 /* ==================== Clipping Path Operators ==================== */
 
@@ -55,34 +55,15 @@ export const rotateRadians = (angle: number | PDFNumber) =>
 export const rotateDegrees = (angle: number | PDFNumber) =>
   rotateRadians(degreesToRadians(asNumber(angle)));
 
-export const skewRadians = (
-  xSkewAngle: number | PDFNumber,
-  ySkewAngle: number | PDFNumber,
-) =>
-  concatTransformationMatrix(
-    1,
-    tan(asNumber(xSkewAngle)),
-    tan(asNumber(ySkewAngle)),
-    1,
-    0,
-    0,
-  );
+export const skewRadians = (xSkewAngle: number | PDFNumber, ySkewAngle: number | PDFNumber) =>
+  concatTransformationMatrix(1, tan(asNumber(xSkewAngle)), tan(asNumber(ySkewAngle)), 1, 0, 0);
 
-export const skewDegrees = (
-  xSkewAngle: number | PDFNumber,
-  ySkewAngle: number | PDFNumber,
-) =>
-  skewRadians(
-    degreesToRadians(asNumber(xSkewAngle)),
-    degreesToRadians(asNumber(ySkewAngle)),
-  );
+export const skewDegrees = (xSkewAngle: number | PDFNumber, ySkewAngle: number | PDFNumber) =>
+  skewRadians(degreesToRadians(asNumber(xSkewAngle)), degreesToRadians(asNumber(ySkewAngle)));
 
-export const setDashPattern = (
-  dashArray: (number | PDFNumber)[],
-  dashPhase: number | PDFNumber,
-) =>
+export const setDashPattern = (dashArray: (number | PDFNumber)[], dashPhase: number | PDFNumber) =>
   PDFOperator.of(Ops.SetLineDashPattern, [
-    `[${dashArray.map(asPDFNumber).join(' ')}]`,
+    `[${dashArray.map(asPDFNumber).join(" ")}]`,
     asPDFNumber(dashPhase),
   ]);
 
@@ -188,8 +169,8 @@ export const square = (xPos: number, yPos: number, size: number) =>
 export const stroke = () => PDFOperator.of(Ops.StrokePath);
 
 export enum FillRule {
-  NonZero = 'f',
-  EvenOdd = 'f*',
+  NonZero = "f",
+  EvenOdd = "f*",
 }
 
 export const fill = () => PDFOperator.of(Ops.FillNonZero);
@@ -209,12 +190,10 @@ export const moveText = (x: number | PDFNumber, y: number | PDFNumber) =>
 
 /* ==================== Text Showing Operators ==================== */
 
-export const showText = (text: PDFHexString) =>
-  PDFOperator.of(Ops.ShowText, [text]);
+export const showText = (text: PDFHexString) => PDFOperator.of(Ops.ShowText, [text]);
 
 /** `TJ` with an already serialised array, e.g. `[<0041> -80 <0056>]`. */
-const showTextAdjusted = (array: string) =>
-  PDFOperator.of(Ops.ShowTextAdjusted, [array]);
+const showTextAdjusted = (array: string) => PDFOperator.of(Ops.ShowTextAdjusted, [array]);
 
 // Four decimals of a thousandth of an em: far below a device pixel, and it
 // keeps float noise (1e-13) out of the content stream.
@@ -259,13 +238,13 @@ export const showEncodedText = (
   const baseRise = asNumber(rise);
   const operators: PDFOperator[] = [];
   let parts: string[] = [];
-  let pendingCodes = '';
+  let pendingCodes = "";
   let pendingAdjust = 0;
   let currentRise = roundPosition(baseRise);
 
   const flushCodes = () => {
-    if (pendingCodes !== '') parts.push(`<${pendingCodes}>`);
-    pendingCodes = '';
+    if (pendingCodes !== "") parts.push(`<${pendingCodes}>`);
+    pendingCodes = "";
   };
 
   const flushAdjust = () => {
@@ -284,7 +263,7 @@ export const showEncodedText = (
     flushCodes();
 
     if (parts.length > 0) {
-      operators.push(showTextAdjusted(`[${parts.join(' ')}]`));
+      operators.push(showTextAdjusted(`[${parts.join(" ")}]`));
     }
 
     parts = [];
@@ -302,9 +281,7 @@ export const showEncodedText = (
 
     const xOffset = text.xOffsets[idx]!;
 
-    const glyphRise = roundPosition(
-      baseRise + (text.yOffsets[idx]! * size) / 1000,
-    );
+    const glyphRise = roundPosition(baseRise + (text.yOffsets[idx]! * size) / 1000);
 
     if (glyphRise !== currentRise) {
       flushArray();
@@ -339,10 +316,8 @@ export const showEncodedText = (
 export const beginText = () => PDFOperator.of(Ops.BeginText);
 export const endText = () => PDFOperator.of(Ops.EndText);
 
-export const setFontAndSize = (
-  name: string | PDFName,
-  size: number | PDFNumber,
-) => PDFOperator.of(Ops.SetFontAndSize, [asPDFName(name), asPDFNumber(size)]);
+export const setFontAndSize = (name: string | PDFName, size: number | PDFNumber) =>
+  PDFOperator.of(Ops.SetFontAndSize, [asPDFName(name), asPDFNumber(size)]);
 
 export const setCharacterSpacing = (spacing: number | PDFNumber) =>
   PDFOperator.of(Ops.SetCharacterSpacing, [asPDFNumber(spacing)]);
@@ -451,11 +426,7 @@ export const setStrokingRgbColor = (
   green: number | PDFNumber,
   blue: number | PDFNumber,
 ) =>
-  PDFOperator.of(Ops.StrokingColorRgb, [
-    asPDFNumber(red),
-    asPDFNumber(green),
-    asPDFNumber(blue),
-  ]);
+  PDFOperator.of(Ops.StrokingColorRgb, [asPDFNumber(red), asPDFNumber(green), asPDFNumber(blue)]);
 
 export const setFillingCmykColor = (
   cyan: number | PDFNumber,
@@ -492,14 +463,12 @@ export const setStrokingColorSpace = (name: string | PDFName) =>
   PDFOperator.of(Ops.StrokingColorspace, [asPDFName(name)]);
 
 /** `scn`: set the non-stroking colour components in the current space. */
-export const setFillingColorComponents = (
-  ...components: (number | PDFNumber)[]
-) => PDFOperator.of(Ops.NonStrokingColorN, components.map(asPDFNumber));
+export const setFillingColorComponents = (...components: (number | PDFNumber)[]) =>
+  PDFOperator.of(Ops.NonStrokingColorN, components.map(asPDFNumber));
 
 /** `SCN`: set the stroking colour components in the current space. */
-export const setStrokingColorComponents = (
-  ...components: (number | PDFNumber)[]
-) => PDFOperator.of(Ops.StrokingColorN, components.map(asPDFNumber));
+export const setStrokingColorComponents = (...components: (number | PDFNumber)[]) =>
+  PDFOperator.of(Ops.StrokingColorN, components.map(asPDFNumber));
 
 /* ==================== Marked Content Operators ==================== */
 
@@ -515,6 +484,6 @@ export const endMarkedContent = () => PDFOperator.of(Ops.EndMarkedContent);
  */
 export const beginActualText = (text: string) =>
   PDFOperator.of(Ops.BeginMarkedContentSequence, [
-    asPDFName('Span'),
+    asPDFName("Span"),
     `<</ActualText ${PDFHexString.fromText(text).toString()}>>`,
   ]);

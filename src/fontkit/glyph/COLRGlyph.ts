@@ -1,6 +1,6 @@
-import BBox from './BBox.js';
-import Glyph, { type GlyphMetrics } from './Glyph.js';
-import Path from './Path.js';
+import BBox from "./BBox.js";
+import Glyph, { type GlyphMetrics } from "./Glyph.js";
+import Path from "./Path.js";
 
 interface COLRColor {
   red: number;
@@ -29,7 +29,7 @@ class COLRLayer {
  * of which  is another vector glyph.
  */
 export default class COLRGlyph extends Glyph {
-  type = 'COLR';
+  type = "COLR";
 
   // path, cbox, bbox, metrics and name are the base (glyf/CFF) glyph's: that
   // outline is what a PDF embeds and draws for a colour font (TTFSubset and
@@ -130,9 +130,7 @@ export default class COLRGlyph extends Glyph {
         // Palette indices are relative to the palette's first colour record;
         // layers use the default palette (0).
         color =
-          cpal?.colorRecords?.[
-            (cpal.colorRecordIndices?.[0] ?? 0) + rec.paletteIndex
-          ] ?? null;
+          cpal?.colorRecords?.[(cpal.colorRecordIndices?.[0] ?? 0) + rec.paletteIndex] ?? null;
 
         // A record outside the colour array is malformed; skip the layer
         // rather than paint it in the foreground colour.
@@ -165,10 +163,7 @@ export default class COLRGlyph extends Glyph {
 
       try {
         if (color) {
-          ctx.fillColor(
-            [color.red, color.green, color.blue],
-            (color.alpha / 255) * 100,
-          );
+          ctx.fillColor([color.red, color.green, color.blue], (color.alpha / 255) * 100);
         }
 
         glyph.render(ctx, size);

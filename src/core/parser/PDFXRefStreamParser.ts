@@ -1,14 +1,14 @@
-import { ReparseError } from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import ByteStream from './ByteStream.js';
+import { ReparseError } from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import ByteStream from "./ByteStream.js";
 
-const SizeName = PDFName.of('Size');
+const SizeName = PDFName.of("Size");
 
 export interface Entry {
   ref: PDFRef;
@@ -18,8 +18,7 @@ export interface Entry {
 }
 
 class PDFXRefStreamParser {
-  static forStream = (rawStream: PDFRawStream) =>
-    new PDFXRefStreamParser(rawStream);
+  static forStream = (rawStream: PDFRawStream) => new PDFXRefStreamParser(rawStream);
 
   private alreadyParsed: boolean;
 
@@ -42,7 +41,7 @@ class PDFXRefStreamParser {
 
     const Size = this.dict.lookup(SizeName, PDFNumber);
 
-    const Index = this.dict.lookup(PDFName.of('Index'));
+    const Index = this.dict.lookup(PDFName.of("Index"));
 
     if (Index instanceof PDFArray) {
       this.subsections = [];
@@ -56,7 +55,7 @@ class PDFXRefStreamParser {
       this.subsections = [{ firstObjectNumber: 0, length: Size.asNumber() }];
     }
 
-    const W = this.dict.lookup(PDFName.of('W'), PDFArray);
+    const W = this.dict.lookup(PDFName.of("W"), PDFArray);
     this.byteWidths = [-1, -1, -1];
 
     for (let idx = 0, len = W.size(); idx < len; idx++) {
@@ -66,7 +65,7 @@ class PDFXRefStreamParser {
 
   parseIntoContext(): Entry[] {
     if (this.alreadyParsed) {
-      throw new ReparseError('PDFXRefStreamParser', 'parseIntoContext');
+      throw new ReparseError("PDFXRefStreamParser", "parseIntoContext");
     }
 
     this.alreadyParsed = true;
@@ -78,10 +77,10 @@ class PDFXRefStreamParser {
     const prev = this.context.trailerInfo;
     this.context.trailerInfo = {
       Size: Size || prev.Size,
-      Root: this.dict.get(PDFName.of('Root')) || prev.Root,
-      Encrypt: this.dict.get(PDFName.of('Encrypt')) || prev.Encrypt,
-      Info: this.dict.get(PDFName.of('Info')) || prev.Info,
-      ID: this.dict.get(PDFName.of('ID')) || prev.ID,
+      Root: this.dict.get(PDFName.of("Root")) || prev.Root,
+      Encrypt: this.dict.get(PDFName.of("Encrypt")) || prev.Encrypt,
+      Info: this.dict.get(PDFName.of("Info")) || prev.Info,
+      ID: this.dict.get(PDFName.of("ID")) || prev.ID,
     };
 
     // Use Math.max so a later section with a smaller Size (e.g. linearized

@@ -2,11 +2,11 @@ import {
   isOptionalContentGroupOn,
   optionalContentGroupName,
   setOptionalContentGroupOn,
-} from '../core/interactive/OptionalContent.js';
-import type PDFRef from '../core/objects/PDFRef.js';
-import type PDFCatalog from '../core/structures/PDFCatalog.js';
-import { savableBaseline } from '../core/writers/PDFWriter.js';
-import { collectUnreferenced } from './detach.js';
+} from "../core/interactive/OptionalContent.js";
+import type PDFRef from "../core/objects/PDFRef.js";
+import type PDFCatalog from "../core/structures/PDFCatalog.js";
+import { savableBaseline } from "../core/writers/PDFWriter.js";
+import { collectUnreferenced } from "./detach.js";
 
 /**
  * An optional content group (a layer) of a document, as listed in its

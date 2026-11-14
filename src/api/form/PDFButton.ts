@@ -3,28 +3,21 @@ import {
   type PDFRef,
   PDFStream,
   type PDFWidgetAnnotation,
-} from '../../core/index.js';
-import {
-  assertIs,
-  assertOrUndefined,
-  assertPositive,
-} from '../../utils/index.js';
-import { rgb } from '../colors.js';
-import { ImageAlignment } from '../image/alignment.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFFont from '../PDFFont.js';
-import type PDFImage from '../PDFImage.js';
-import PDFPage from '../PDFPage.js';
-import { degrees } from '../rotations.js';
+} from "../../core/index.js";
+import { assertIs, assertOrUndefined, assertPositive } from "../../utils/index.js";
+import { rgb } from "../colors.js";
+import { ImageAlignment } from "../image/alignment.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFFont from "../PDFFont.js";
+import type PDFImage from "../PDFImage.js";
+import PDFPage from "../PDFPage.js";
+import { degrees } from "../rotations.js";
 import {
   type AppearanceProviderFor,
   defaultButtonAppearanceProvider,
   normalizeAppearance,
-} from './appearances.js';
-import PDFField, {
-  assertFieldAppearanceOptions,
-  type FieldAppearanceOptions,
-} from './PDFField.js';
+} from "./appearances.js";
+import PDFField, { assertFieldAppearanceOptions, type FieldAppearanceOptions } from "./PDFField.js";
 
 /**
  * Represents a button field of a [[PDFForm]].
@@ -47,25 +40,16 @@ export default class PDFButton extends PDFField {
    * @param ref The unique reference for this button.
    * @param doc The document to which this button will belong.
    */
-  static of = (
-    acroPushButton: PDFAcroPushButton,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) => new PDFButton(acroPushButton, ref, doc);
+  static of = (acroPushButton: PDFAcroPushButton, ref: PDFRef, doc: PDFDocument) =>
+    new PDFButton(acroPushButton, ref, doc);
 
   /** The low-level PDFAcroPushButton wrapped by this button. */
   declare readonly acroField: PDFAcroPushButton;
 
-  private constructor(
-    acroPushButton: PDFAcroPushButton,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) {
+  private constructor(acroPushButton: PDFAcroPushButton, ref: PDFRef, doc: PDFDocument) {
     super(acroPushButton, ref, doc);
 
-    assertIs(acroPushButton, 'acroButton', [
-      [PDFAcroPushButton, 'PDFAcroPushButton'],
-    ]);
+    assertIs(acroPushButton, "acroButton", [[PDFAcroPushButton, "PDFAcroPushButton"]]);
 
     this.acroField = acroPushButton;
   }
@@ -88,11 +72,7 @@ export default class PDFButton extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const streamRef = this.createImageAppearanceStream(
-        widget,
-        image,
-        alignment,
-      );
+      const streamRef = this.createImageAppearanceStream(widget, image, alignment);
 
       this.updateWidgetAppearances(widget, { normal: streamRef });
     }
@@ -122,7 +102,7 @@ export default class PDFButton extends PDFField {
    */
   setFontSize(fontSize: number) {
     this.doc.getForm().prepareForMutation();
-    assertPositive(fontSize, 'fontSize');
+    assertPositive(fontSize, "fontSize");
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
   }
@@ -161,16 +141,14 @@ export default class PDFButton extends PDFField {
     options?: FieldAppearanceOptions,
   ) {
     this.doc.getForm().prepareForMutation();
-    assertOrUndefined(text, 'text', ['string']);
-    assertOrUndefined(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertOrUndefined(text, "text", ["string"]);
+    assertOrUndefined(page, "page", [[PDFPage, "PDFPage"]]);
     assertFieldAppearanceOptions(options);
 
     // Create a widget for this button
     // Use 'in' check to allow explicit null for transparent background
     const backgroundColor =
-      options && 'backgroundColor' in options
-        ? options.backgroundColor
-        : rgb(0.75, 0.75, 0.75);
+      options && "backgroundColor" in options ? options.backgroundColor : rgb(0.75, 0.75, 0.75);
 
     const widget = this.createWidget({
       x: (options?.x ?? 0) - (options?.borderWidth ?? 0) / 2,
@@ -219,8 +197,7 @@ export default class PDFButton extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const hasAppearances =
-        widget.getAppearances()?.normal instanceof PDFStream;
+      const hasAppearances = widget.getAppearances()?.normal instanceof PDFStream;
 
       if (!hasAppearances) return true;
     }
@@ -239,7 +216,7 @@ export default class PDFButton extends PDFField {
    * @param font The font to be used for creating the appearance streams.
    */
   override defaultUpdateAppearances(font: PDFFont) {
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
     this.updateAppearances(font);
   }
 
@@ -262,13 +239,10 @@ export default class PDFButton extends PDFField {
    * @param provider Optionally, the appearance provider to be used for
    *                 generating the contents of the appearance streams.
    */
-  updateAppearances(
-    font: PDFFont,
-    provider?: AppearanceProviderFor<PDFButton>,
-  ) {
+  updateAppearances(font: PDFFont, provider?: AppearanceProviderFor<PDFButton>) {
     this.doc.getForm().prepareForMutation();
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', ['function']);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
+    assertOrUndefined(provider, "provider", ["function"]);
 
     const widgets = this.acroField.getWidgets();
 

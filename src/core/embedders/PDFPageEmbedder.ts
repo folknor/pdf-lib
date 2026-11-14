@@ -1,19 +1,16 @@
-import type { TransformationMatrix } from '../../types/matrix.js';
-import { mergeIntoTypedArray } from '../../utils/index.js';
-import {
-  MissingPageContentsEmbeddingError,
-  UnrecognizedStreamTypeError,
-} from '../errors.js';
-import type PDFArray from '../objects/PDFArray.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import type PDFContext from '../PDFContext.js';
-import { decodePDFRawStream } from '../streams/decode.js';
-import PDFContentStream from '../structures/PDFContentStream.js';
-import type PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import CharCodes from '../syntax/CharCodes.js';
+import type { TransformationMatrix } from "../../types/matrix.js";
+import { mergeIntoTypedArray } from "../../utils/index.js";
+import { MissingPageContentsEmbeddingError, UnrecognizedStreamTypeError } from "../errors.js";
+import type PDFArray from "../objects/PDFArray.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import type PDFContext from "../PDFContext.js";
+import { decodePDFRawStream } from "../streams/decode.js";
+import PDFContentStream from "../structures/PDFContentStream.js";
+import type PDFPageLeaf from "../structures/PDFPageLeaf.js";
+import CharCodes from "../syntax/CharCodes.js";
 
 /**
  * Represents a page bounding box.
@@ -55,9 +52,14 @@ const fullPageBoundingBox = (page: PDFPageLeaf) => {
 
 // Returns the identity matrix, modified to position the content of the given
 // bounding box at (0, 0).
-const boundingBoxAdjustedMatrix = (
-  bb: PageBoundingBox,
-): TransformationMatrix => [1, 0, 0, 1, -bb.left, -bb.bottom];
+const boundingBoxAdjustedMatrix = (bb: PageBoundingBox): TransformationMatrix => [
+  1,
+  0,
+  0,
+  1,
+  -bb.left,
+  -bb.bottom,
+];
 
 class PDFPageEmbedder {
   static async for(
@@ -87,8 +89,7 @@ class PDFPageEmbedder {
     this.width = bb.right - bb.left;
     this.height = bb.top - bb.bottom;
     this.boundingBox = bb;
-    this.transformationMatrix =
-      transformationMatrix ?? boundingBoxAdjustedMatrix(bb);
+    this.transformationMatrix = transformationMatrix ?? boundingBoxAdjustedMatrix(bb);
   }
 
   async embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
@@ -100,8 +101,8 @@ class PDFPageEmbedder {
     const { left, bottom, right, top } = this.boundingBox;
 
     const xObject = context.flateStream(decodedContents, {
-      Type: 'XObject',
-      Subtype: 'Form',
+      Type: "XObject",
+      Subtype: "Form",
       FormType: 1,
       BBox: [left, bottom, right, top],
       Matrix: this.transformationMatrix,

@@ -3,6 +3,7 @@
 ## Remaining Open Issues
 
 ### Parsing / Loading
+
 - #1718: PDF parsed as invalid
 - #1713: Failed to parse PDF document (line:24 col:934 offset=4584): No PDF header found
 - #1646: Failed to parse PDF document (line:104 col:8 offset=195965): No PDF header found
@@ -25,7 +26,9 @@
 - #1294: Unable to get correct information like pages or form fields from high version PDF file
 
 ### Forms / AcroFields
+
 **Field detection:**
+
 - #1732: error when trying to fill out a form that does allow 'Filling of form fields'
 - #1705: Fields not readable with Pdf-lib
 - #1670: Not finding fillable fields
@@ -38,23 +41,27 @@
 - #1268: Getting correct widget ref to be removed
 
 **Manipulation:**
+
 - #1548: Text size shrinking and expanding in Text Fields as per text length.
 - #1538: Original font is not mantained when a form is filled
 - #1504: PDFDocument method pdfDoc.saveAsBase64({dataUri: true}) returning same contents even after modifying the fillable PDF.
 - #1104: PDF form field not filled according to field font
 
 **Styling:**
+
 - #1597: .setText() on a form field keeps font-size but overwrites pre-set font and font-color
 - #1581: bad line height on the text of the form element
 - #1378: PDF form text field setText does not use font
 - #1334: Background fill for fields is causing checkbox borders disappear
 
 **Checkboxes/Radio:**
+
 - #1685: Improve acro checkbox set value
 - #1574: On pdf.flatten() check mark getting removed from flattened pdf
 - #1546: Unexpected Checkbox Borders on Print After Editing PDF with pdf-lib
 
 **Flattening:**
+
 - #1757: Cannot sign flattened PDFs using a certificate (error: There was a problem reading this document (14))
 - #1519: Error on flattening with some pdf
 - #1482: Flattening form causing Error 14 in Adobe
@@ -62,12 +69,15 @@
 - #1267: Flattened PDFs Malformed
 
 **Features:**
+
 - #1758: Added support to only flatten some fields
 - #1540: From field tabulation order
 - #1415: PDF417 barcode tied to fields are not rendering
 
 ### Text / Fonts
+
 **Encoding:**
+
 - #1759: Standard fonts in pdf-lib cannot encode certain characters outside WinAnsi
 - #1754: Kerning and style set 2 are not respected in the configuration
 - #1649: PDFString supports only one-byte characters
@@ -76,19 +86,23 @@
 - #1395: embedFont: woff2 font not recognized by Acrobat Reader?
 
 **Errors:**
+
 - #1506: pdf.drawText is not supporting with custom font
 
 **Rendering:**
+
 - #1272: drawText Does not support text style like text decoration
 - #1169: Scrambled Text when pdfs are viewed in acrobat
 
 ### Images
+
 - #1634: embedJpg is writing a jpeg image to pdf as text not as an image
 - #1529: Set BoundingBox for Images
 - #1404: File size increased exponentially after embedded png to pdf-doc
 - #1146: embedPng stuck in infinity loop
 
 ### Pages / Copy
+
 - #1772: Fix: Resolve visual corruption in PDFs (#951)
 - #1769: fix: Preserve object order for PDFs with incremental updates (#951)
 - #1755: fix issue #951 - Introduced logic for output reordering of indirect objects
@@ -107,17 +121,20 @@
 - #612: Copy two different pages and add them in a document.
 
 **Manipulation:**
+
 - #1563: Outside SetCropBox content is maintained when cloning (not sure if it's a bug)
 - #1348: Page translateContent does not work for form fields
 - #1317: The page content disappears
 - #1399: Text boxes disappear when embedding PDFs
 
 **Size/Transform:**
+
 - #1765: feat: literal, immutable `PageSizes`
 - #1336: Line color changed when page rotated
 - #1204: while splitting large documents in term of pages the new file saved from the large document is having large size
 
 ### Encryption / Signing
+
 - #1757: Cannot sign flattened PDFs using a certificate (error: There was a problem reading this document (14))
 - #1673: Issue with Adding Multiple Signatures to PDF by iteration: Except 1st signature "Annotation Deleted" in Adobe Acrobat
 - #1643: Embed digital signature(pkcs7) to pdf
@@ -130,6 +147,7 @@
 - #1530: How to decrypt a pdf doc by using pdf-lib
 
 ### Build / Integration
+
 - #1707: Buffer error while importing
 - #1682: TypeError: Cannot set property constructor of [object Object] which has only a getter
 - #1654: error TS2502: 'provider' is referenced directly or indirectly in its own type annotation.
@@ -146,6 +164,7 @@
 - #1366: Publish tsconfig.json to npm package
 
 ### API / Features
+
 - #1765: feat: literal, immutable `PageSizes`
 - #1758: Added support to only flatten some fields
 - #1748: add the option to rename AcroForm field
@@ -179,6 +198,7 @@
 - #1322: Add support for Separation colors
 
 ### Corruption / Save
+
 - #1767: Merge pdf - getting error while viewing the pdf in acrobat reader and content is blank.
 - #1639: PDF Pages Appear Blank After Processing with pdf-lib
 - #1615: Filled fields in additional pages do not render in Acrobat, but work fine in chrome.
@@ -189,11 +209,13 @@
 - #1206: PowerPoint PDF data loaded into PDF-Lib does not open in Adobe Acrobat Pro DC
 
 **File size:**
+
 - #1404: File size increased exponentially after embedded png to pdf-doc
 - #1306: File Size increasing after modifying.
 - #1204: while splitting large documents in term of pages the new file saved from the large document is having large size
 
 **Save:**
+
 - #1589: Library produces different results in browser vs nodejs
 - #1504: PDFDocument method pdfDoc.saveAsBase64({dataUri: true}) returning same contents even after modifying the fillable PDF.
 - #1422: Set default file name for a PFD document created with pdf lib by Javascript
@@ -201,5 +223,6 @@
 - #1068: pdf-lib automatically add a layer without any operation
 
 **Incremental:**
+
 - #1741: Incremental PDF update, with automatic change tracking, or manual tracking of changes. Fixes issue #816
 - #1418: incremental save

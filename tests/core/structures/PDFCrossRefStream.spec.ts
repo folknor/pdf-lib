@@ -1,4 +1,4 @@
-import { zlibSync } from 'fflate';
+import { zlibSync } from "fflate";
 
 import {
   mergeIntoTypedArray,
@@ -6,16 +6,14 @@ import {
   PDFCrossRefStream,
   PDFRef,
   toCharCode,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFCrossRefStream', () => {
+describe("PDFCrossRefStream", () => {
   const context = PDFContext.create();
   const dict = context.obj({});
 
-  it('can be constructed from PDFCrossRefStream.create(...)', () => {
-    expect(PDFCrossRefStream.create(dict, false)).toBeInstanceOf(
-      PDFCrossRefStream,
-    );
+  it("can be constructed from PDFCrossRefStream.create(...)", () => {
+    expect(PDFCrossRefStream.create(dict, false)).toBeInstanceOf(PDFCrossRefStream);
   });
 
   const stream1 = PDFCrossRefStream.create(dict, false);
@@ -29,47 +27,45 @@ describe('PDFCrossRefStream', () => {
   stream2.addUncompressedEntry(PDFRef.of(9000), 600);
   stream2.addCompressedEntry(PDFRef.of(9001), PDFRef.of(10), 1);
 
-  it('can be cloned', () => {
+  it("can be cloned", () => {
     const original = stream1;
     const clone = original.clone();
     expect(clone).not.toBe(original);
     expect(String(clone)).toBe(String(original));
   });
 
-  it('points the free-list head at the first free entry added', () => {
-    expect(String(stream1)).toContain('stream\n01');
+  it("points the free-list head at the first free entry added", () => {
+    expect(String(stream1)).toContain("stream\n01");
   });
 
-  it('can be converted to a string', () => {
+  it("can be converted to a string", () => {
     expect(String(stream1)).toEqual(
-      '<<\n/Type /XRef\n/Length 16\n/W [ 1 1 2 ]\n/Index [ 0 3 21 1 ]\n>>\n' +
-        'stream\n' +
-        '011111111111111111010110101111100101000101011010110011' +
-        '\nendstream',
+      "<<\n/Type /XRef\n/Length 16\n/W [ 1 1 2 ]\n/Index [ 0 3 21 1 ]\n>>\n" +
+        "stream\n" +
+        "011111111111111111010110101111100101000101011010110011" +
+        "\nendstream",
     );
   });
 
-  it('can be converted to a string without object number 1', () => {
+  it("can be converted to a string without object number 1", () => {
     expect(String(stream2)).toEqual(
-      '<<\n/Type /XRef\n/Length 25\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n>>\n' +
-        'stream\n' +
-        '00011111111111111111110110000100101000110101100000100101001' +
-        '\nendstream',
+      "<<\n/Type /XRef\n/Length 25\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n>>\n" +
+        "stream\n" +
+        "00011111111111111111110110000100101000110101100000100101001" +
+        "\nendstream",
     );
   });
 
-  it('can provide its size in bytes', () => {
+  it("can provide its size in bytes", () => {
     expect(stream1.sizeInBytes()).toBe(95);
   });
 
-  it('can provide its size in bytes without object number 1', () => {
+  it("can provide its size in bytes without object number 1", () => {
     expect(stream2.sizeInBytes()).toBe(110);
   });
 
-  it('can be serialized', () => {
-    const buffer = new Uint8Array(stream1.sizeInBytes() + 3).fill(
-      toCharCode(' '),
-    );
+  it("can be serialized", () => {
+    const buffer = new Uint8Array(stream1.sizeInBytes() + 3).fill(toCharCode(" "));
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
@@ -79,18 +75,16 @@ describe('PDFCrossRefStream', () => {
     expect(stream1.copyBytesInto(buffer, 2)).toBe(95);
     expect(buffer).toEqual(
       mergeIntoTypedArray(
-        '  <<\n/Type /XRef\n/Length 16\n/W [ 1 1 2 ]\n/Index [ 0 3 21 1 ]\n>>\n',
-        'stream\n',
+        "  <<\n/Type /XRef\n/Length 16\n/W [ 1 1 2 ]\n/Index [ 0 3 21 1 ]\n>>\n",
+        "stream\n",
         expectedEntries,
-        '\nendstream ',
+        "\nendstream ",
       ),
     );
   });
 
-  it('can be serialized without object number 1', () => {
-    const buffer = new Uint8Array(stream2.sizeInBytes() + 3).fill(
-      toCharCode(' '),
-    );
+  it("can be serialized without object number 1", () => {
+    const buffer = new Uint8Array(stream2.sizeInBytes() + 3).fill(toCharCode(" "));
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
@@ -101,24 +95,22 @@ describe('PDFCrossRefStream', () => {
     expect(stream2.copyBytesInto(buffer, 2)).toBe(110);
     expect(buffer).toEqual(
       mergeIntoTypedArray(
-        '  <<\n/Type /XRef\n/Length 25\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n>>\n',
-        'stream\n',
+        "  <<\n/Type /XRef\n/Length 25\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n>>\n",
+        "stream\n",
         expectedEntries,
-        '\nendstream ',
+        "\nendstream ",
       ),
     );
   });
 
-  it('can be serialized when encoded', () => {
+  it("can be serialized when encoded", () => {
     const stream = PDFCrossRefStream.create(dict, true);
     stream.addUncompressedEntry(PDFRef.of(2), 300);
     stream.addCompressedEntry(PDFRef.of(3), PDFRef.of(10), 0);
     stream.addUncompressedEntry(PDFRef.of(9000), 600);
     stream.addCompressedEntry(PDFRef.of(9001), PDFRef.of(10), 1);
 
-    const buffer = new Uint8Array(stream.sizeInBytes() + 3).fill(
-      toCharCode(' '),
-    );
+    const buffer = new Uint8Array(stream.sizeInBytes() + 3).fill(toCharCode(" "));
 
     // prettier-ignore
     const expectedEntries = new Uint8Array([
@@ -131,15 +123,15 @@ describe('PDFCrossRefStream', () => {
     expect(stream.copyBytesInto(buffer, 2)).toBe(135);
     expect(buffer).toEqual(
       mergeIntoTypedArray(
-        '  <<\n/Type /XRef\n/Length 29\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n/Filter /FlateDecode\n>>\n',
-        'stream\n',
+        "  <<\n/Type /XRef\n/Length 29\n/W [ 1 2 2 ]\n/Index [ 0 1 2 2 9000 2 ]\n/Filter /FlateDecode\n>>\n",
+        "stream\n",
         encodedEntries,
-        '\nendstream ',
+        "\nendstream ",
       ),
     );
   });
 
-  it('keeps entries sorted by object number regardless of insertion order', () => {
+  it("keeps entries sorted by object number regardless of insertion order", () => {
     const inOrder = PDFCrossRefStream.create(dict, false);
     const shuffled = PDFCrossRefStream.create(dict, false);
     const nums = [5, 1, 9000, 3, 2, 9001, 4, 7];
@@ -152,17 +144,17 @@ describe('PDFCrossRefStream', () => {
     expect(String(shuffled)).toBe(String(inOrder));
   });
 
-  it('keeps insertion order among entries with equal object numbers', () => {
+  it("keeps insertion order among entries with equal object numbers", () => {
     const stream = PDFCrossRefStream.create(dict, false);
     stream.addUncompressedEntry(PDFRef.of(3), 30);
     stream.addUncompressedEntry(PDFRef.of(2, 1), 21);
     stream.addUncompressedEntry(PDFRef.of(2, 2), 22);
     stream.addUncompressedEntry(PDFRef.of(1), 10);
 
-    const entries = (
-      stream as unknown as { entries: { ref: PDFRef }[] }
-    ).entries.map((e) => e.ref.toString());
+    const entries = (stream as unknown as { entries: { ref: PDFRef }[] }).entries.map((e) =>
+      e.ref.toString(),
+    );
 
-    expect(entries).toEqual(['0 65535 R', '1 0 R', '2 1 R', '2 2 R', '3 0 R']);
+    expect(entries).toEqual(["0 65535 R", "1 0 R", "2 1 R", "2 2 R", "3 0 R"]);
   });
 });

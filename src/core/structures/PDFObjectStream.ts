@@ -1,39 +1,32 @@
-import { copyStringIntoBuffer, last } from '../../utils/index.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import PDFFlateStream from './PDFFlateStream.js';
+import { copyStringIntoBuffer, last } from "../../utils/index.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import CharCodes from "../syntax/CharCodes.js";
+import PDFFlateStream from "./PDFFlateStream.js";
 
 export type IndirectObject = [PDFRef, PDFObject];
 
 class PDFObjectStream extends PDFFlateStream {
-  static withContextAndObjects = (
-    context: PDFContext,
-    objects: IndirectObject[],
-    encode = true,
-  ) => new PDFObjectStream(context, objects, encode);
+  static withContextAndObjects = (context: PDFContext, objects: IndirectObject[], encode = true) =>
+    new PDFObjectStream(context, objects, encode);
 
   private readonly objects: IndirectObject[];
   private readonly offsets: [number, number][];
   private readonly offsetsString: string;
 
-  private constructor(
-    context: PDFContext,
-    objects: IndirectObject[],
-    encode = true,
-  ) {
+  private constructor(context: PDFContext, objects: IndirectObject[], encode = true) {
     super(context.obj({}), encode);
 
     this.objects = objects;
     this.offsets = this.computeObjectOffsets();
     this.offsetsString = this.computeOffsetsString();
 
-    this.dict.set(PDFName.of('Type'), PDFName.of('ObjStm'));
-    this.dict.set(PDFName.of('N'), PDFNumber.of(this.objects.length));
-    this.dict.set(PDFName.of('First'), PDFNumber.of(this.offsetsString.length));
+    this.dict.set(PDFName.of("Type"), PDFName.of("ObjStm"));
+    this.dict.set(PDFName.of("N"), PDFNumber.of(this.objects.length));
+    this.dict.set(PDFName.of("First"), PDFNumber.of(this.offsetsString.length));
   }
 
   getObjectsCount(): number {
@@ -74,15 +67,12 @@ class PDFObjectStream extends PDFFlateStream {
 
   getUnencodedContentsSize(): number {
     return (
-      this.offsetsString.length +
-      last(this.offsets)![1] +
-      last(this.objects)![1].sizeInBytes() +
-      1
+      this.offsetsString.length + last(this.offsets)![1] + last(this.objects)![1].sizeInBytes() + 1
     );
   }
 
   private computeOffsetsString(): string {
-    let offsetsString = '';
+    let offsetsString = "";
 
     for (let idx = 0, len = this.offsets.length; idx < len; idx++) {
       const [objectNumber, offset] = this.offsets[idx]!;

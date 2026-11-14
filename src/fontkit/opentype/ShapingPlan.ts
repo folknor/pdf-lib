@@ -1,13 +1,9 @@
-import type { FeatureRequest } from '../layout/FeatureValues.js';
-import type GlyphPosition from '../layout/GlyphPosition.js';
-import type GlyphInfo from './GlyphInfo.js';
-import type OTProcessor from './OTProcessor.js';
+import type { FeatureRequest } from "../layout/FeatureValues.js";
+import type GlyphPosition from "../layout/GlyphPosition.js";
+import type GlyphInfo from "./GlyphInfo.js";
+import type OTProcessor from "./OTProcessor.js";
 
-type StageFunction = (
-  font: any,
-  glyphs: GlyphInfo[],
-  plan: ShapingPlan,
-) => void;
+type StageFunction = (font: any, glyphs: GlyphInfo[], plan: ShapingPlan) => void;
 
 type Stage = string[] | StageFunction;
 
@@ -57,7 +53,7 @@ export default class ShapingPlan {
     const stageIndex = this.stages.length - 1;
     const stage = this.stages[stageIndex];
 
-    if (!stage || typeof stage === 'function') {
+    if (!stage || typeof stage === "function") {
       return;
     }
 
@@ -81,28 +77,25 @@ export default class ShapingPlan {
       this.stages.push([]);
     }
 
-    if (typeof arg === 'string') {
+    if (typeof arg === "string") {
       arg = [arg];
     }
 
     if (Array.isArray(arg)) {
       this._addFeatures(arg, global);
-    } else if (typeof arg === 'object') {
+    } else if (typeof arg === "object") {
       this._addFeatures(arg.global || [], true);
       this._addFeatures(arg.local || [], false);
     } else {
-      throw new Error('Unsupported argument to ShapingPlan#add');
+      throw new Error("Unsupported argument to ShapingPlan#add");
     }
   }
 
   /**
    * Add a new stage
    */
-  addStage(
-    arg: string | string[] | FeatureSpec | StageFunction,
-    global?: boolean,
-  ): void {
-    if (typeof arg === 'function') {
+  addStage(arg: string | string[] | FeatureSpec | StageFunction, global?: boolean): void {
+    if (typeof arg === "function") {
       this.stages.push(arg, []);
     } else {
       this.stages.push([]);
@@ -119,11 +112,11 @@ export default class ShapingPlan {
   setFeatureOverrides(features: string[] | FeatureRequest): void {
     if (Array.isArray(features)) {
       this.add(features);
-    } else if (typeof features === 'object') {
+    } else if (typeof features === "object") {
       for (const tag in features) {
         const value = features[tag];
 
-        if (typeof value === 'number') {
+        if (typeof value === "number") {
           this.featureValues[tag] = value;
         }
 
@@ -157,13 +150,9 @@ export default class ShapingPlan {
   /**
    * Executes the planned stages using the given OTProcessor
    */
-  process(
-    processor: OTProcessor,
-    glyphs: GlyphInfo[],
-    positions?: GlyphPosition[],
-  ): void {
+  process(processor: OTProcessor, glyphs: GlyphInfo[], positions?: GlyphPosition[]): void {
     for (const stage of this.stages) {
-      if (typeof stage === 'function') {
+      if (typeof stage === "function") {
         if (!positions) {
           stage(this.font, glyphs, this);
         }

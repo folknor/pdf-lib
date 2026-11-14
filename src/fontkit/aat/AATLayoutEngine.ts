@@ -1,6 +1,6 @@
-import type GlyphRun from '../layout/GlyphRun.js';
-import * as AATFeatureMap from './AATFeatureMap.js';
-import AATMorxProcessor, { type MorxGlyph } from './AATMorxProcessor.js';
+import type GlyphRun from "../layout/GlyphRun.js";
+import * as AATFeatureMap from "./AATFeatureMap.js";
+import AATMorxProcessor, { type MorxGlyph } from "./AATMorxProcessor.js";
 
 export default class AATLayoutEngine {
   font: any;
@@ -25,14 +25,11 @@ export default class AATLayoutEngine {
       components: glyphRun.components[i]!,
     }));
 
-    if (glyphRun.direction === 'rtl') {
+    if (glyphRun.direction === "rtl") {
       records.reverse();
     }
 
-    const out = this.morxProcessor.process(
-      records,
-      AATFeatureMap.mapOTToAAT(glyphRun.features),
-    );
+    const out = this.morxProcessor.process(records, AATFeatureMap.mapOTToAAT(glyphRun.features));
 
     glyphRun.glyphs = out.map((record) => this.font.getGlyph(record.id));
     glyphRun.codePoints = out.map((record) => record.codePoints);
@@ -43,7 +40,7 @@ export default class AATLayoutEngine {
 
   /** morx output stays in the order it was processed in: visual for RTL. */
   reversesBeforeSubstitution(glyphRun: GlyphRun): boolean {
-    return glyphRun.direction === 'rtl';
+    return glyphRun.direction === "rtl";
   }
 
   getAvailableFeatures(_script: string, _language?: string): string[] {
@@ -55,21 +52,14 @@ export default class AATLayoutEngine {
     const result = new Set<string>();
 
     for (const glyphs of glyphStrings) {
-      this._addStrings(glyphs, 0, result, '');
+      this._addStrings(glyphs, 0, result, "");
     }
 
     return result;
   }
 
-  _addStrings(
-    glyphs: number[],
-    index: number,
-    strings: Set<string>,
-    string: string,
-  ): void {
-    const codePoints = this.font._cmapProcessor.codePointsForGlyph(
-      glyphs[index],
-    );
+  _addStrings(glyphs: number[], index: number, strings: Set<string>, string: string): void {
+    const codePoints = this.font._cmapProcessor.codePointsForGlyph(glyphs[index]);
 
     for (const codePoint of codePoints) {
       const s = string + String.fromCodePoint(codePoint);

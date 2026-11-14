@@ -5,36 +5,33 @@ import {
   type PDFRef,
   PDFStream,
   type PDFWidgetAnnotation,
-} from '../../core/index.js';
+} from "../../core/index.js";
 import {
   assertIs,
   assertIsOneOf,
   assertOrUndefined,
   assertPositive,
   assertRangeOrUndefined,
-} from '../../utils/index.js';
-import { rgb } from '../colors.js';
+} from "../../utils/index.js";
+import { rgb } from "../colors.js";
 import {
   ExceededMaxLengthError,
   InvalidMaxLengthError,
   RichTextFieldReadError,
-} from '../errors.js';
-import { ImageAlignment } from '../image/alignment.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFFont from '../PDFFont.js';
-import type PDFImage from '../PDFImage.js';
-import PDFPage from '../PDFPage.js';
-import { degrees } from '../rotations.js';
-import { TextAlignment } from '../text/alignment.js';
+} from "../errors.js";
+import { ImageAlignment } from "../image/alignment.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFFont from "../PDFFont.js";
+import type PDFImage from "../PDFImage.js";
+import PDFPage from "../PDFPage.js";
+import { degrees } from "../rotations.js";
+import { TextAlignment } from "../text/alignment.js";
 import {
   type AppearanceProviderFor,
   defaultTextFieldAppearanceProvider,
   normalizeAppearance,
-} from './appearances.js';
-import PDFField, {
-  assertFieldAppearanceOptions,
-  type FieldAppearanceOptions,
-} from './PDFField.js';
+} from "./appearances.js";
+import PDFField, { assertFieldAppearanceOptions, type FieldAppearanceOptions } from "./PDFField.js";
 
 /**
  * Represents a text field of a [[PDFForm]].
@@ -66,7 +63,7 @@ export default class PDFTextField extends PDFField {
   private constructor(acroText: PDFAcroText, ref: PDFRef, doc: PDFDocument) {
     super(acroText, ref, doc);
 
-    assertIs(acroText, 'acroText', [[PDFAcroText, 'PDFAcroText']]);
+    assertIs(acroText, "acroText", [[PDFAcroText, "PDFAcroText"]]);
 
     this.acroField = acroText;
   }
@@ -149,7 +146,7 @@ export default class PDFTextField extends PDFField {
    */
   setText(text: string | undefined) {
     this.doc.getForm().prepareForMutation();
-    assertOrUndefined(text, 'text', ['string']);
+    assertOrUndefined(text, "text", ["string"]);
 
     const maxLength = this.getMaxLength();
 
@@ -215,7 +212,7 @@ export default class PDFTextField extends PDFField {
    */
   setAlignment(alignment: TextAlignment) {
     this.doc.getForm().prepareForMutation();
-    assertIsOneOf(alignment, 'alignment', TextAlignment);
+    assertIsOneOf(alignment, "alignment", TextAlignment);
     this.markAsDirty();
     this.acroField.setQuadding(alignment);
   }
@@ -259,7 +256,7 @@ export default class PDFTextField extends PDFField {
    */
   setMaxLength(maxLength?: number) {
     this.doc.getForm().prepareForMutation();
-    assertRangeOrUndefined(maxLength, 'maxLength', 0, Number.MAX_SAFE_INTEGER);
+    assertRangeOrUndefined(maxLength, "maxLength", 0, Number.MAX_SAFE_INTEGER);
 
     this.markAsDirty();
 
@@ -318,11 +315,7 @@ export default class PDFTextField extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const streamRef = this.createImageAppearanceStream(
-        widget,
-        image,
-        alignment,
-      );
+      const streamRef = this.createImageAppearanceStream(widget, image, alignment);
 
       this.updateWidgetAppearances(widget, { normal: streamRef });
     }
@@ -352,7 +345,7 @@ export default class PDFTextField extends PDFField {
    */
   setFontSize(fontSize: number) {
     this.doc.getForm().prepareForMutation();
-    assertPositive(fontSize, 'fontSize');
+    assertPositive(fontSize, "fontSize");
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
   }
@@ -679,8 +672,8 @@ export default class PDFTextField extends PDFField {
 
     if (this.getMaxLength() === undefined) {
       this.doc.context.warn({
-        code: 'comb-without-max-length',
-        message: 'PDFTextFields must have a max length in order to be combed',
+        code: "comb-without-max-length",
+        message: "PDFTextFields must have a max length in order to be combed",
       });
     }
 
@@ -786,18 +779,18 @@ export default class PDFTextField extends PDFField {
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
     this.doc.getForm().prepareForMutation();
-    assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertIs(page, "page", [[PDFPage, "PDFPage"]]);
     assertFieldAppearanceOptions(options);
 
     if (!options) options = {};
 
-    if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+    if (!("textColor" in options)) options.textColor = rgb(0, 0, 0);
 
-    if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+    if (!("backgroundColor" in options)) options.backgroundColor = rgb(1, 1, 1);
 
-    if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+    if (!("borderColor" in options)) options.borderColor = rgb(0, 0, 0);
 
-    if (!('borderWidth' in options)) options.borderWidth = 1;
+    if (!("borderWidth" in options)) options.borderWidth = 1;
 
     // Create a widget for this text field
     const widget = this.createWidget({
@@ -844,8 +837,7 @@ export default class PDFTextField extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const hasAppearances =
-        widget.getAppearances()?.normal instanceof PDFStream;
+      const hasAppearances = widget.getAppearances()?.normal instanceof PDFStream;
 
       if (!hasAppearances) return true;
     }
@@ -864,7 +856,7 @@ export default class PDFTextField extends PDFField {
    * @param font The font to be used for creating the appearance streams.
    */
   override defaultUpdateAppearances(font: PDFFont) {
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
     this.updateAppearances(font);
   }
 
@@ -884,13 +876,10 @@ export default class PDFTextField extends PDFField {
    * @param provider Optionally, the appearance provider to be used for
    *                 generating the contents of the appearance streams.
    */
-  updateAppearances(
-    font: PDFFont,
-    provider?: AppearanceProviderFor<PDFTextField>,
-  ) {
+  updateAppearances(font: PDFFont, provider?: AppearanceProviderFor<PDFTextField>) {
     this.doc.getForm().prepareForMutation();
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', ['function']);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
+    assertOrUndefined(provider, "provider", ["function"]);
 
     const widgets = this.acroField.getWidgets();
 

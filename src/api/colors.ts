@@ -1,5 +1,5 @@
-import ColorParser from 'color';
-import { assertIs, assertRange, error } from '../utils/index.js';
+import ColorParser from "color";
+import { assertIs, assertRange, error } from "../utils/index.js";
 import {
   setFillingCmykColor,
   setFillingGrayscaleColor,
@@ -7,14 +7,14 @@ import {
   setStrokingCmykColor,
   setStrokingGrayscaleColor,
   setStrokingRgbColor,
-} from './operators.js';
-import type PDFSeparation from './PDFSeparation.js';
+} from "./operators.js";
+import type PDFSeparation from "./PDFSeparation.js";
 
 export enum ColorTypes {
-  Grayscale = 'Grayscale',
-  RGB = 'RGB',
-  CMYK = 'CMYK',
-  Separation = 'Separation',
+  Grayscale = "Grayscale",
+  RGB = "RGB",
+  CMYK = "CMYK",
+  Separation = "Separation",
 }
 
 export interface Grayscale {
@@ -60,47 +60,37 @@ export interface SeparationColor {
 /** A colour the `PDFPage` drawing methods can paint with. */
 export type PaintColor = Color | SeparationColor;
 
-export const separation = (
-  colorSpace: PDFSeparation,
-  tint: number,
-): SeparationColor => {
-  assertRange(tint, 'tint', 0, 1);
+export const separation = (colorSpace: PDFSeparation, tint: number): SeparationColor => {
+  assertRange(tint, "tint", 0, 1);
 
   return { type: ColorTypes.Separation, separation: colorSpace, tint };
 };
 
 export const grayscale = (gray: number): Grayscale => {
-  assertRange(gray, 'gray', 0.0, 1.0);
+  assertRange(gray, "gray", 0.0, 1.0);
 
   return { type: ColorTypes.Grayscale, gray };
 };
 
 export const rgb = (red: number, green: number, blue: number): RGB => {
-  assertRange(red, 'red', 0, 1);
-  assertRange(green, 'green', 0, 1);
-  assertRange(blue, 'blue', 0, 1);
+  assertRange(red, "red", 0, 1);
+  assertRange(green, "green", 0, 1);
+  assertRange(blue, "blue", 0, 1);
 
   return { type: ColorTypes.RGB, red, green, blue };
 };
 
-export const cmyk = (
-  cyan: number,
-  magenta: number,
-  yellow: number,
-  key: number,
-): CMYK => {
-  assertRange(cyan, 'cyan', 0, 1);
-  assertRange(magenta, 'magenta', 0, 1);
-  assertRange(yellow, 'yellow', 0, 1);
-  assertRange(key, 'key', 0, 1);
+export const cmyk = (cyan: number, magenta: number, yellow: number, key: number): CMYK => {
+  assertRange(cyan, "cyan", 0, 1);
+  assertRange(magenta, "magenta", 0, 1);
+  assertRange(yellow, "yellow", 0, 1);
+  assertRange(key, "key", 0, 1);
 
   return { type: ColorTypes.CMYK, cyan, magenta, yellow, key };
 };
 
-export const colorString = (
-  color: string,
-): { rgb: Color; alpha: number | undefined } => {
-  assertIs(color, 'color', ['string']);
+export const colorString = (color: string): { rgb: Color; alpha: number | undefined } => {
+  assertIs(color, "color", ["string"]);
   const colorDescription = ColorParser(color).unitObject();
 
   return {

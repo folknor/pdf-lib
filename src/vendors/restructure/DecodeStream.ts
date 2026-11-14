@@ -6,9 +6,9 @@
 
 // Node back-compat encoding mapping
 const ENCODING_MAPPING: Record<string, string> = {
-  utf16le: 'utf-16le',
-  ucs2: 'utf-16le',
-  utf16be: 'utf-16be',
+  utf16le: "utf-16le",
+  ucs2: "utf-16le",
+  utf16be: "utf-16be",
 };
 
 export const TYPES: Record<string, number> = {
@@ -32,16 +32,12 @@ export class DecodeStream {
 
   constructor(buffer: Uint8Array) {
     this.buffer = buffer;
-    this.view = new DataView(
-      buffer.buffer,
-      buffer.byteOffset,
-      buffer.byteLength,
-    );
+    this.view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     this.pos = 0;
     this.length = this.buffer.length;
   }
 
-  readString(length: number, encoding = 'ascii'): string | Uint8Array {
+  readString(length: number, encoding = "ascii"): string | Uint8Array {
     encoding = ENCODING_MAPPING[encoding] || encoding;
     const buf = this.readBuffer(length);
 

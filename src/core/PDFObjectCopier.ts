@@ -1,12 +1,12 @@
-import PDFArray from './objects/PDFArray.js';
-import PDFDict from './objects/PDFDict.js';
-import PDFName from './objects/PDFName.js';
-import type PDFObject from './objects/PDFObject.js';
-import PDFRef from './objects/PDFRef.js';
-import PDFStream from './objects/PDFStream.js';
-import type PDFContext from './PDFContext.js';
-import PDFPageLeaf from './structures/PDFPageLeaf.js';
-import { pruneResources } from './utils/ContentStreamResourceAnalyzer.js';
+import PDFArray from "./objects/PDFArray.js";
+import PDFDict from "./objects/PDFDict.js";
+import PDFName from "./objects/PDFName.js";
+import type PDFObject from "./objects/PDFObject.js";
+import PDFRef from "./objects/PDFRef.js";
+import PDFStream from "./objects/PDFStream.js";
+import type PDFContext from "./PDFContext.js";
+import PDFPageLeaf from "./structures/PDFPageLeaf.js";
+import { pruneResources } from "./utils/ContentStreamResourceAnalyzer.js";
 
 export interface CopyOptions {
   /**
@@ -69,11 +69,7 @@ class PDFObjectCopier {
   private readonly traversedObjects = new Map<PDFObject, PDFObject>();
   private readonly options: CopyOptions;
 
-  private constructor(
-    src: PDFContext,
-    dest: PDFContext,
-    options?: CopyOptions,
-  ) {
+  private constructor(src: PDFContext, dest: PDFContext, options?: CopyOptions) {
     this.src = src;
     this.dest = dest;
     this.options = options || {};
@@ -133,7 +129,7 @@ class PDFObjectCopier {
 
     // Remove the parent reference to prevent the whole donor document's page
     // tree from being copied when we only need a single page.
-    clonedPage.delete(PDFName.of('Parent'));
+    clonedPage.delete(PDFName.of("Parent"));
 
     return this.copyPDFDict(clonedPage) as PDFPageLeaf;
   };

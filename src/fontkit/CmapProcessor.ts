@@ -1,5 +1,5 @@
-import { getEncoding, getEncodingMapping } from './encodings.js';
-import { binarySearch, range } from './utils.js';
+import { getEncoding, getEncodingMapping } from "./encodings.js";
+import { binarySearch, range } from "./utils.js";
 
 /** cmap subtable formats lookup, getCharacterSet and codePointsForGlyph read. */
 const LOOKUP_FORMATS: ReadonlySet<number> = new Set([0, 4, 6, 10, 12, 13]);
@@ -34,11 +34,7 @@ export default class CmapProcessor {
     // If not unicode cmap was found, take the first table with a supported encoding.
     if (!this.cmap) {
       for (const cmap of cmapTable.tables) {
-        const encoding = getEncoding(
-          cmap.platformID,
-          cmap.encodingID,
-          cmap.table.language - 1,
-        );
+        const encoding = getEncoding(cmap.platformID, cmap.encodingID, cmap.table.language - 1);
 
         if (encoding && LOOKUP_FORMATS.has(cmap.table.version)) {
           const mapping = getEncodingMapping(encoding);
@@ -52,7 +48,7 @@ export default class CmapProcessor {
     }
 
     if (!this.cmap) {
-      throw new Error('Could not find a supported cmap table');
+      throw new Error("Could not find a supported cmap table");
     }
 
     this.uvs = this.findSubtable(cmapTable, UVS_FORMATS, [[0, 5]]);
@@ -63,11 +59,7 @@ export default class CmapProcessor {
    * order, whose format is in `formats`. A subtable in a format we cannot
    * read (2, 8) is passed over so a later candidate can win.
    */
-  findSubtable(
-    cmapTable: any,
-    formats: ReadonlySet<number>,
-    pairs: [number, number][],
-  ): any {
+  findSubtable(cmapTable: any, formats: ReadonlySet<number>, pairs: [number, number][]): any {
     for (const [platformID, encodingID] of pairs) {
       for (const cmap of cmapTable.tables) {
         if (
@@ -123,9 +115,7 @@ export default class CmapProcessor {
               gid = codepoint + cmap.idDelta.get(mid);
             } else {
               const index =
-                rangeOffset / 2 +
-                (codepoint - cmap.startCode.get(mid)) -
-                (cmap.segCount - mid);
+                rangeOffset / 2 + (codepoint - cmap.startCode.get(mid)) - (cmap.segCount - mid);
 
               gid = cmap.glyphIndexArray.get(index) || 0;
 
@@ -142,7 +132,7 @@ export default class CmapProcessor {
       }
 
       case 8:
-        throw new Error('TODO: cmap format 8');
+        throw new Error("TODO: cmap format 8");
 
       case 6:
       case 10:
@@ -174,7 +164,7 @@ export default class CmapProcessor {
       }
 
       case 14:
-        throw new Error('TODO: cmap format 14');
+        throw new Error("TODO: cmap format 14");
 
       default:
         throw new Error(`Unknown cmap format ${cmap.version}`);
@@ -188,10 +178,7 @@ export default class CmapProcessor {
 
     const selectors = this.uvs.varSelectors.toArray();
 
-    let i = binarySearch(
-      selectors,
-      (x: any) => variationSelector - x.varSelector,
-    );
+    let i = binarySearch(selectors, (x: any) => variationSelector - x.varSelector);
 
     const sel = selectors[i];
 
@@ -206,10 +193,7 @@ export default class CmapProcessor {
     }
 
     if (i !== -1 && sel.nonDefaultUVS) {
-      i = binarySearch(
-        sel.nonDefaultUVS,
-        (x: any) => codepoint - x.unicodeValue,
-      );
+      i = binarySearch(sel.nonDefaultUVS, (x: any) => codepoint - x.unicodeValue);
 
       if (i !== -1) {
         return sel.nonDefaultUVS[i].glyphID;
@@ -247,14 +231,11 @@ export default class CmapProcessor {
       }
 
       case 8:
-        throw new Error('TODO: cmap format 8');
+        throw new Error("TODO: cmap format 8");
 
       case 6:
       case 10:
-        result = range(
-          cmap.firstCode,
-          cmap.firstCode + cmap.glyphIndices.length,
-        );
+        result = range(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
         break;
 
       case 12:
@@ -270,7 +251,7 @@ export default class CmapProcessor {
       }
 
       case 14:
-        throw new Error('TODO: cmap format 14');
+        throw new Error("TODO: cmap format 14");
 
       default:
         throw new Error(`Unknown cmap format ${cmap.version}`);

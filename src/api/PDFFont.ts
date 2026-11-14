@@ -4,15 +4,10 @@ import {
   PDFRef,
   StandardFontEmbedder,
   type TextSpacing,
-} from '../core/index.js';
-import {
-  assertIs,
-  assertOrUndefined,
-  cleanText,
-  mergeLines,
-} from '../utils/index.js';
-import type Embeddable from './Embeddable.js';
-import PDFDocument from './PDFDocument.js';
+} from "../core/index.js";
+import { assertIs, assertOrUndefined, cleanText, mergeLines } from "../utils/index.js";
+import type Embeddable from "./Embeddable.js";
+import PDFDocument from "./PDFDocument.js";
 
 export type FontEmbedder = CustomFontEmbedder | StandardFontEmbedder;
 
@@ -48,11 +43,11 @@ export default class PDFFont implements Embeddable {
   private readonly embedder: FontEmbedder;
 
   private constructor(ref: PDFRef, doc: PDFDocument, embedder: FontEmbedder) {
-    assertIs(ref, 'ref', [[PDFRef, 'PDFRef']]);
-    assertIs(doc, 'doc', [[PDFDocument, 'PDFDocument']]);
-    assertIs(embedder, 'embedder', [
-      [CustomFontEmbedder, 'CustomFontEmbedder'],
-      [StandardFontEmbedder, 'StandardFontEmbedder'],
+    assertIs(ref, "ref", [[PDFRef, "PDFRef"]]);
+    assertIs(doc, "doc", [[PDFDocument, "PDFDocument"]]);
+    assertIs(embedder, "embedder", [
+      [CustomFontEmbedder, "CustomFontEmbedder"],
+      [StandardFontEmbedder, "StandardFontEmbedder"],
     ]);
 
     this.ref = ref;
@@ -77,7 +72,7 @@ export default class PDFFont implements Embeddable {
    * @returns The encoded text.
    */
   encodeText(text: string): EncodedText {
-    assertIs(text, 'text', ['string']);
+    assertIs(text, "text", ["string"]);
 
     return this.embedder.encodeText(text);
   }
@@ -102,19 +97,13 @@ export default class PDFFont implements Embeddable {
     size: number,
     textState: TextSpacing & { horizontalScaling?: number } = {},
   ): number {
-    assertIs(text, 'text', ['string']);
-    assertIs(size, 'size', ['number']);
+    assertIs(text, "text", ["string"]);
+    assertIs(size, "size", ["number"]);
     const { horizontalScaling = 100, ...spacing } = textState;
 
-    const width = this.embedder.widthOfTextAtSize(
-      mergeLines(cleanText(text)),
-      size,
-      spacing,
-    );
+    const width = this.embedder.widthOfTextAtSize(mergeLines(cleanText(text)), size, spacing);
 
-    return horizontalScaling === 100
-      ? width
-      : (width * horizontalScaling) / 100;
+    return horizontalScaling === 100 ? width : (width * horizontalScaling) / 100;
   }
 
   /**
@@ -131,8 +120,8 @@ export default class PDFFont implements Embeddable {
    * @returns The height of this font at the given size.
    */
   heightAtSize(size: number, options?: { descender?: boolean }): number {
-    assertIs(size, 'size', ['number']);
-    assertOrUndefined(options?.descender, 'options.descender', ['boolean']);
+    assertIs(size, "size", ["number"]);
+    assertOrUndefined(options?.descender, "options.descender", ["boolean"]);
 
     return this.embedder.heightOfFontAtSize(size, {
       descender: options?.descender ?? true,
@@ -148,7 +137,7 @@ export default class PDFFont implements Embeddable {
    * @returns The font size at which this font is the given height.
    */
   sizeAtHeight(height: number): number {
-    assertIs(height, 'height', ['number']);
+    assertIs(height, "height", ["number"]);
 
     return this.embedder.sizeOfFontAtHeight(height);
   }

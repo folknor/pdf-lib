@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // VDMX tables contain ascender/descender overrides for certain (usually small)
 // sizes. This is needed in order to match font metrics on Windows.
@@ -20,14 +20,14 @@ const VdmxGroup = new r.Struct({
   recs: r.uint16, // Number of height records in this group
   startsz: r.uint8, // Starting yPelHeight
   endsz: r.uint8, // Ending yPelHeight
-  entries: new r.Array(vTable, 'recs'), // The VDMX records
+  entries: new r.Array(vTable, "recs"), // The VDMX records
 });
 
 export default new r.Struct({
   version: r.uint16, // Version number (0 or 1)
   numRecs: r.uint16, // Number of VDMX groups present
   numRatios: r.uint16, // Number of aspect ratio groupings
-  ratioRanges: new r.Array(Ratio, 'numRatios'), // Ratio ranges
-  offsets: new r.Array(r.uint16, 'numRatios'), // Offset to the VDMX group for this ratio range
-  groups: new r.Array(VdmxGroup, 'numRecs'), // The actual VDMX groupings
+  ratioRanges: new r.Array(Ratio, "numRatios"), // Ratio ranges
+  offsets: new r.Array(r.uint16, "numRatios"), // Offset to the VDMX group for this ratio range
+  groups: new r.Array(VdmxGroup, "numRecs"), // The actual VDMX groupings
 });

@@ -1,20 +1,18 @@
-import fontkit, { type Font } from 'src/fontkit.js';
-import fs from 'fs';
+import fontkit, { type Font } from "src/fontkit.js";
+import fs from "fs";
 
-import { createCmap, type ToUnicodeEntry } from '../../../src/core/embedders/CMap';
+import { createCmap, type ToUnicodeEntry } from "../../../src/core/embedders/CMap";
 
-const ubuntuFont = fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf');
+const ubuntuFont = fs.readFileSync("./assets/fonts/ubuntu/Ubuntu-R.ttf");
 
 const sourceHansJpFont = fs.readFileSync(
-  './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
+  "./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf",
 );
 
-const ubuntuFontCmap = fs.readFileSync(
-  './tests/core/embedders/data/Ubuntu-R.ttf.cmap',
-);
+const ubuntuFontCmap = fs.readFileSync("./tests/core/embedders/data/Ubuntu-R.ttf.cmap");
 
 const sourceHansJpFontCmap = fs.readFileSync(
-  './tests/core/embedders/data/SourceHanSerifJP-Regular.otf.cmap',
+  "./tests/core/embedders/data/SourceHanSerifJP-Regular.otf.cmap",
 );
 
 // Each glyph the cmap reaches, with the lowest code point mapping to it.
@@ -30,8 +28,8 @@ const cmapEntries = (font: Font): ToUnicodeEntry[] => {
   return [...entries].sort(([a], [b]) => a - b);
 };
 
-describe('createCmap', () => {
-  it('creates CMaps for embedded Ubuntu-R font files', () => {
+describe("createCmap", () => {
+  it("creates CMaps for embedded Ubuntu-R font files", () => {
     const font = fontkit.create(ubuntuFont);
 
     const cmap = createCmap(cmapEntries(font));
@@ -39,7 +37,7 @@ describe('createCmap', () => {
     expect(cmap).toEqual(String(ubuntuFontCmap));
   });
 
-  it('creates CMaps for embedded SourceHanSerifJP-Regular font files', () => {
+  it("creates CMaps for embedded SourceHanSerifJP-Regular font files", () => {
     const font = fontkit.create(sourceHansJpFont);
 
     const cmap = createCmap(cmapEntries(font));

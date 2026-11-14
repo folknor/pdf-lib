@@ -1,6 +1,6 @@
 // Lists fonts whose GSUB/GPOS lookups set UseMarkFilteringSet (0x0010),
 // and their GDEF version. Raw sfnt parse; TTF/OTF only.
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 
 for (const path of process.argv.slice(2)) {
   const b = readFileSync(path);
@@ -11,18 +11,18 @@ for (const path of process.argv.slice(2)) {
 
   for (let i = 0; i < n; i++) {
     const r = 12 + i * 16;
-    tables[b.toString('latin1', r, r + 4)] = u32(r + 8);
+    tables[b.toString("latin1", r, r + 4)] = u32(r + 8);
   }
 
   const gdef = tables.GDEF;
-  let line = `${path}: GDEF ${gdef == null ? 'none' : u32(gdef).toString(16)}`;
+  let line = `${path}: GDEF ${gdef == null ? "none" : u32(gdef).toString(16)}`;
 
   if (gdef != null && u32(gdef) >= 0x10002) {
     const off = u16(gdef + 12);
-    line += off ? ` sets=${u16(gdef + off + 2)}` : ' sets=null';
+    line += off ? ` sets=${u16(gdef + off + 2)}` : " sets=null";
   }
 
-  for (const tag of ['GSUB', 'GPOS']) {
+  for (const tag of ["GSUB", "GPOS"]) {
     const t = tables[tag];
 
     if (t == null) continue;
@@ -40,7 +40,7 @@ for (const path of process.argv.slice(2)) {
       }
     }
 
-    line += ` ${tag} ${count} lookups, filtered [${hits.join(' ')}]`;
+    line += ` ${tag} ${count} lookups, filtered [${hits.join(" ")}]`;
   }
 
   console.log(line);

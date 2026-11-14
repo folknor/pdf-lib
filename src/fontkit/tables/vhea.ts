@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // Vertical Header Table
 export default new r.Struct({

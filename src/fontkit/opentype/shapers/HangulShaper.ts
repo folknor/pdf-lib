@@ -1,12 +1,7 @@
-import {
-  composed,
-  inserted,
-  type Occurrence,
-  piece,
-} from '../../layout/Occurrence.js';
-import GlyphInfo from '../GlyphInfo.js';
-import type ShapingPlan from '../ShapingPlan.js';
-import DefaultShaper from './DefaultShaper.js';
+import { composed, inserted, type Occurrence, piece } from "../../layout/Occurrence.js";
+import GlyphInfo from "../GlyphInfo.js";
+import type ShapingPlan from "../ShapingPlan.js";
+import DefaultShaper from "./DefaultShaper.js";
 
 /**
  * This is a shaper for the Hangul script, used by the Korean language.
@@ -31,9 +26,9 @@ import DefaultShaper from './DefaultShaper.js';
  *   - http://ktug.org/~nomos/harfbuzz-hangul/hangulshaper.pdf
  */
 export default class HangulShaper extends DefaultShaper {
-  static override zeroMarkWidths = 'NONE';
+  static override zeroMarkWidths = "NONE";
   static override planFeatures(plan: ShapingPlan): void {
-    plan.add(['ljmo', 'vjmo', 'tjmo'], false);
+    plan.add(["ljmo", "vjmo", "tjmo"], false);
   }
 
   static override assignFeatures(plan: ShapingPlan, glyphs: GlyphInfo[]): void {
@@ -104,20 +99,17 @@ const isT = (code: number): boolean =>
 
 const isTone = (code: number): boolean => 0x302e <= code && code <= 0x302f;
 
-const isLVT = (code: number): boolean =>
-  HANGUL_BASE <= code && code <= HANGUL_END;
+const isLVT = (code: number): boolean => HANGUL_BASE <= code && code <= HANGUL_END;
 
 // Bounded below too: without isLVT, code points under U+AC00 whose offset
 // happens to be divisible by T_COUNT (H, comma, d, ...) passed as syllables
 // and were "composed" with a following trailing jamo into another letter.
-const isLV = (code: number): boolean =>
-  isLVT(code) && (code - HANGUL_BASE) % T_COUNT === 0;
+const isLV = (code: number): boolean => isLVT(code) && (code - HANGUL_BASE) % T_COUNT === 0;
 
 const isCombiningL = (code: number): boolean => L_BASE <= code && code <= L_END;
 const isCombiningV = (code: number): boolean => V_BASE <= code && code <= V_END;
 
-const isCombiningT = (code: number): boolean =>
-  T_BASE + 1 <= code && code <= T_END;
+const isCombiningT = (code: number): boolean => T_BASE + 1 <= code && code <= T_END;
 
 // Character categories
 const X = 0; // Other character
@@ -219,12 +211,7 @@ function getGlyph(
   features: Record<string, boolean>,
   occurrence: Occurrence,
 ): GlyphInfo {
-  return new GlyphInfo(
-    font,
-    font.glyphForCodePoint(code).id,
-    occurrence,
-    features,
-  );
+  return new GlyphInfo(font, font.glyphForCodePoint(code).id, occurrence, features);
 }
 
 function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
@@ -249,16 +236,16 @@ function decompose(glyphs: GlyphInfo[], i: number, font: any): number {
   // Replace the current glyph with decomposed L, V, and T glyphs,
   // and apply the proper OpenType features to each component.
   const ljmo = getGlyph(font, l, glyph.features, piece(glyph, [l]));
-  ljmo.features['ljmo'] = true;
+  ljmo.features["ljmo"] = true;
 
   const vjmo = getGlyph(font, v, glyph.features, piece(glyph, [v]));
-  vjmo.features['vjmo'] = true;
+  vjmo.features["vjmo"] = true;
 
   const insert = [ljmo, vjmo];
 
   if (t > T_BASE) {
     const tjmo = getGlyph(font, t, glyph.features, piece(glyph, [t]));
-    tjmo.features['tjmo'] = true;
+    tjmo.features["tjmo"] = true;
     insert.push(tjmo);
   }
 
@@ -316,11 +303,7 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
     if (font.hasGlyphForCodePoint(s)) {
       const del = prevType === V ? 3 : 2;
       const parts = glyphs.slice(i - del + 1, i + 1);
-      glyphs.splice(
-        i - del + 1,
-        del,
-        getGlyph(font, s, glyph.features, composed(parts, [s])),
-      );
+      glyphs.splice(i - del + 1, del, getGlyph(font, s, glyph.features, composed(parts, [s])));
 
       return i - del + 1;
     }
@@ -328,15 +311,15 @@ function compose(glyphs: GlyphInfo[], i: number, font: any): number {
 
   // Didn't compose (either a non-combining component or unsupported by font).
   if (ljmo) {
-    ljmo.features['ljmo'] = true;
+    ljmo.features["ljmo"] = true;
   }
 
   if (vjmo) {
-    vjmo.features['vjmo'] = true;
+    vjmo.features["vjmo"] = true;
   }
 
   if (tjmo) {
-    tjmo.features['tjmo'] = true;
+    tjmo.features["tjmo"] = true;
   }
 
   if (prevType === LV) {

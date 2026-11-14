@@ -1,17 +1,16 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const Setting = new r.Struct({
   setting: r.uint16,
   nameIndex: r.int16,
-  name: (t: any) =>
-    t['parent'].parent.parent.name.records.fontFeatures[t['nameIndex']],
+  name: (t: any) => t["parent"].parent.parent.name.records.fontFeatures[t["nameIndex"]],
 });
 
 const FeatureName = new r.Struct({
   feature: r.uint16,
   nSettings: r.uint16,
-  settingTable: new r.Pointer(r.uint32, new r.Array(Setting, 'nSettings'), {
-    type: 'parent',
+  settingTable: new r.Pointer(r.uint32, new r.Array(Setting, "nSettings"), {
+    type: "parent",
   }),
   featureFlags: new r.Bitfield(r.uint8, [
     null,
@@ -20,13 +19,12 @@ const FeatureName = new r.Struct({
     null,
     null,
     null,
-    'hasDefault',
-    'exclusive',
+    "hasDefault",
+    "exclusive",
   ]),
   defaultSetting: r.uint8,
   nameIndex: r.int16,
-  name: (t: any) =>
-    t['parent'].parent.name.records.fontFeatures[t['nameIndex']],
+  name: (t: any) => t["parent"].parent.name.records.fontFeatures[t["nameIndex"]],
 });
 
 export default new r.Struct({
@@ -34,5 +32,5 @@ export default new r.Struct({
   featureNameCount: r.uint16,
   reserved1: new r.Reserved(r.uint16),
   reserved2: new r.Reserved(r.uint32),
-  featureNames: new r.Array(FeatureName, 'featureNameCount'),
+  featureNames: new r.Array(FeatureName, "featureNameCount"),
 });

@@ -1,6 +1,6 @@
-import { PrivateConstructorError } from '../errors.js';
-import CharCodes from '../syntax/CharCodes.js';
-import PDFObject from './PDFObject.js';
+import { PrivateConstructorError } from "../errors.js";
+import CharCodes from "../syntax/CharCodes.js";
+import PDFObject from "./PDFObject.js";
 
 const ENFORCER = {};
 
@@ -11,7 +11,7 @@ class PDFBool extends PDFObject {
   private readonly value: boolean;
 
   private constructor(enforcer: any, value: boolean) {
-    if (enforcer !== ENFORCER) throw new PrivateConstructorError('PDFBool');
+    if (enforcer !== ENFORCER) throw new PrivateConstructorError("PDFBool");
     super();
     this.value = value;
   }

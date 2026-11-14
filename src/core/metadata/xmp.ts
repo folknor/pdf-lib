@@ -13,37 +13,37 @@ import {
   type XmlDocument,
   type XmlElement,
   XmlError,
-} from './xml.js';
+} from "./xml.js";
 
-export const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-export const X_NS = 'adobe:ns:meta/';
-export const DC_NS = 'http://purl.org/dc/elements/1.1/';
-export const XMP_NS = 'http://ns.adobe.com/xap/1.0/';
-export const PDF_NS = 'http://ns.adobe.com/pdf/1.3/';
-export const PDFAID_NS = 'http://www.aiim.org/pdfa/ns/id/';
-export const PDFA_EXTENSION_NS = 'http://www.aiim.org/pdfa/ns/extension/';
-export const PDFA_SCHEMA_NS = 'http://www.aiim.org/pdfa/ns/schema#';
-export const PDFA_PROPERTY_NS = 'http://www.aiim.org/pdfa/ns/property#';
+export const RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+export const X_NS = "adobe:ns:meta/";
+export const DC_NS = "http://purl.org/dc/elements/1.1/";
+export const XMP_NS = "http://ns.adobe.com/xap/1.0/";
+export const PDF_NS = "http://ns.adobe.com/pdf/1.3/";
+export const PDFAID_NS = "http://www.aiim.org/pdfa/ns/id/";
+export const PDFA_EXTENSION_NS = "http://www.aiim.org/pdfa/ns/extension/";
+export const PDFA_SCHEMA_NS = "http://www.aiim.org/pdfa/ns/schema#";
+export const PDFA_PROPERTY_NS = "http://www.aiim.org/pdfa/ns/property#";
 
 /**
  * The prefixes this library writes; PDF/A prescribes `pdfaid` and the
  * extension schema prefixes (ISO 19005-1 6.7.8, -2/-3 6.6.2.3).
  */
 const preferredPrefix: Record<string, string> = {
-  [DC_NS]: 'dc',
-  [XMP_NS]: 'xmp',
-  [PDF_NS]: 'pdf',
-  [PDFAID_NS]: 'pdfaid',
-  [PDFA_EXTENSION_NS]: 'pdfaExtension',
-  [PDFA_SCHEMA_NS]: 'pdfaSchema',
-  [PDFA_PROPERTY_NS]: 'pdfaProperty',
+  [DC_NS]: "dc",
+  [XMP_NS]: "xmp",
+  [PDF_NS]: "pdf",
+  [PDFAID_NS]: "pdfaid",
+  [PDFA_EXTENSION_NS]: "pdfaExtension",
+  [PDFA_SCHEMA_NS]: "pdfaSchema",
+  [PDFA_PROPERTY_NS]: "pdfaProperty",
 };
 
 /** One property of a PDF/A extension schema (`pdfaProperty` fields). */
 export interface ExtensionProperty {
   name: string;
   valueType: string;
-  category: 'internal' | 'external';
+  category: "internal" | "external";
   description: string;
 }
 
@@ -69,8 +69,8 @@ export class XmpError extends Error {}
 
 /** One occurrence of a property on a top-level description. */
 export type XmpProperty =
-  | { form: 'attribute'; description: XmlElement; attribute: XmlAttribute }
-  | { form: 'element'; description: XmlElement; element: XmlElement };
+  | { form: "attribute"; description: XmlElement; attribute: XmlAttribute }
+  | { form: "element"; description: XmlElement; element: XmlElement };
 
 /**
  * What a property holds, as far as this library reads it: absent, a simple
@@ -78,45 +78,38 @@ export type XmpProperty =
  * array where text was expected, a qualified value, several occurrences).
  */
 export type XmpRead =
-  | { kind: 'absent' }
-  | { kind: 'text'; value: string }
-  | { kind: 'unsupported'; reason: string };
+  | { kind: "absent" }
+  | { kind: "text"; value: string }
+  | { kind: "unsupported"; reason: string };
 
-const isRdf = (e: XmlElement, local: string) =>
-  e.ns === RDF_NS && e.local === local;
+const isRdf = (e: XmlElement, local: string) => e.ns === RDF_NS && e.local === local;
 
 const rdfAttribute = (e: XmlElement, local: string) =>
   e.attributes.find((a) => a.ns === RDF_NS && a.local === local);
 
 const langOf = (e: XmlElement) =>
-  e.attributes.find((a) => a.ns === XML_NAMESPACE && a.local === 'lang')?.value;
+  e.attributes.find((a) => a.ns === XML_NAMESPACE && a.local === "lang")?.value;
 
 const isSyntaxAttribute = (a: XmlAttribute) =>
   a.ns === XMLNS_NAMESPACE || a.ns === RDF_NS || a.ns === XML_NAMESPACE;
 
-const isDefaultItem = (e: XmlElement) =>
-  langOf(e)?.toLowerCase() === 'x-default';
+const isDefaultItem = (e: XmlElement) => langOf(e)?.toLowerCase() === "x-default";
 
 /** Whether an element is a plain text-valued property element. */
 const simpleTextElement = (e: XmlElement): boolean =>
   childElements(e).length === 0 &&
   e.attributes.every(
-    (a) =>
-      a.ns === XMLNS_NAMESPACE ||
-      (a.ns === XML_NAMESPACE && a.local === 'lang'),
+    (a) => a.ns === XMLNS_NAMESPACE || (a.ns === XML_NAMESPACE && a.local === "lang"),
   );
 
 /** The rdf:Bag/Seq/Alt directly inside a property element, if that is all it holds. */
 const arrayOf = (e: XmlElement): XmlElement | undefined => {
   const kids = childElements(e);
 
-  if (kids.length !== 1 || textContent(e).trim() !== '') return undefined;
+  if (kids.length !== 1 || textContent(e).trim() !== "") return undefined;
   const [array] = kids;
 
-  if (
-    array &&
-    (isRdf(array, 'Bag') || isRdf(array, 'Seq') || isRdf(array, 'Alt'))
-  ) {
+  if (array && (isRdf(array, "Bag") || isRdf(array, "Seq") || isRdf(array, "Alt"))) {
     return array;
   }
 
@@ -124,11 +117,8 @@ const arrayOf = (e: XmlElement): XmlElement | undefined => {
 };
 
 /** Every rdf:RDF element; a packet has exactly one (ISO 16684-1 7.3). */
-const findRdfRoots = (
-  e: XmlElement,
-  found: XmlElement[] = [],
-): XmlElement[] => {
-  if (isRdf(e, 'RDF')) {
+const findRdfRoots = (e: XmlElement, found: XmlElement[] = []): XmlElement[] => {
+  if (isRdf(e, "RDF")) {
     found.push(e);
 
     return found;
@@ -139,15 +129,15 @@ const findRdfRoots = (
   return found;
 };
 
-export const XMP_PACKET_ID = 'W5M0MpCehiHzreSzNTczkc9d';
+export const XMP_PACKET_ID = "W5M0MpCehiHzreSzNTczkc9d";
 
 const freshPacket = (): string =>
   `<?xpacket begin="\uFEFF" id="${XMP_PACKET_ID}"?>\n` +
   `<x:xmpmeta xmlns:x="${X_NS}">\n` +
   ` <rdf:RDF xmlns:rdf="${RDF_NS}">\n` +
-  ' </rdf:RDF>\n' +
-  '</x:xmpmeta>\n' +
-  `${' '.repeat(99)}\n`.repeat(20) +
+  " </rdf:RDF>\n" +
+  "</x:xmpmeta>\n" +
+  `${" ".repeat(99)}\n`.repeat(20) +
   '<?xpacket end="w"?>';
 
 /**
@@ -192,7 +182,7 @@ export class XmpPacket {
 
     if (roots.length !== 1) {
       throw new XmpError(
-        `XMP packet has ${roots.length === 0 ? 'no' : 'more than one'} rdf:RDF element`,
+        `XMP packet has ${roots.length === 0 ? "no" : "more than one"} rdf:RDF element`,
       );
     }
 
@@ -201,24 +191,20 @@ export class XmpPacket {
     let about: string | undefined;
 
     for (const node of childElements(rdf)) {
-      if (!isRdf(node, 'Description')) {
-        throw new XmpError(
-          `XMP top-level node <${node.name}> is not an rdf:Description`,
-        );
+      if (!isRdf(node, "Description")) {
+        throw new XmpError(`XMP top-level node <${node.name}> is not an rdf:Description`);
       }
 
-      const value = rdfAttribute(node, 'about')?.value ?? '';
+      const value = rdfAttribute(node, "about")?.value ?? "";
 
       if (about !== undefined && value !== about) {
-        throw new XmpError(
-          'XMP descriptions describe different resources (rdf:about differs)',
-        );
+        throw new XmpError("XMP descriptions describe different resources (rdf:about differs)");
       }
 
       about = value;
     }
 
-    this.about = about ?? '';
+    this.about = about ?? "";
   }
 
   private descriptions(): XmlElement[] {
@@ -231,18 +217,14 @@ export class XmpPacket {
 
     for (const description of this.descriptions()) {
       for (const attribute of description.attributes) {
-        if (
-          !isSyntaxAttribute(attribute) &&
-          attribute.ns === ns &&
-          attribute.local === local
-        ) {
-          found.push({ form: 'attribute', description, attribute });
+        if (!isSyntaxAttribute(attribute) && attribute.ns === ns && attribute.local === local) {
+          found.push({ form: "attribute", description, attribute });
         }
       }
 
       for (const element of childElements(description)) {
         if (element.ns === ns && element.local === local) {
-          found.push({ form: 'element', description, element });
+          found.push({ form: "element", description, element });
         }
       }
     }
@@ -253,9 +235,7 @@ export class XmpPacket {
   /** Whether any property of the namespace occurs at all. */
   hasNamespace(ns: string): boolean {
     for (const description of this.descriptions()) {
-      if (
-        description.attributes.some((a) => !isSyntaxAttribute(a) && a.ns === ns)
-      ) {
+      if (description.attributes.some((a) => !isSyntaxAttribute(a) && a.ns === ns)) {
         return true;
       }
 
@@ -286,64 +266,60 @@ export class XmpPacket {
   readText(ns: string, local: string): XmpRead {
     const found = this.properties(ns, local);
 
-    if (found.length === 0) return { kind: 'absent' };
+    if (found.length === 0) return { kind: "absent" };
 
     if (found.length > 1) {
-      return { kind: 'unsupported', reason: `${local} occurs more than once` };
+      return { kind: "unsupported", reason: `${local} occurs more than once` };
     }
 
     const [p] = found;
 
-    if (p!.form === 'attribute')
-      return { kind: 'text', value: p!.attribute.value };
+    if (p!.form === "attribute") return { kind: "text", value: p!.attribute.value };
 
     if (!simpleTextElement(p!.element)) {
-      return { kind: 'unsupported', reason: `${local} is not a simple value` };
+      return { kind: "unsupported", reason: `${local} is not a simple value` };
     }
 
-    return { kind: 'text', value: textContent(p!.element) };
+    return { kind: "text", value: textContent(p!.element) };
   }
 
   /** The x-default item of a language alternative. */
   readDefaultLanguage(ns: string, local: string): XmpRead {
     const found = this.properties(ns, local);
 
-    if (found.length === 0) return { kind: 'absent' };
+    if (found.length === 0) return { kind: "absent" };
 
-    if (found.length > 1 || found[0]!.form !== 'element') {
+    if (found.length > 1 || found[0]!.form !== "element") {
       return {
-        kind: 'unsupported',
+        kind: "unsupported",
         reason: `${local} is not a language alternative`,
       };
     }
 
     const alt = arrayOf(found[0]!.element);
 
-    if (!alt || !isRdf(alt, 'Alt')) {
+    if (!alt || !isRdf(alt, "Alt")) {
       return {
-        kind: 'unsupported',
+        kind: "unsupported",
         reason: `${local} is not a language alternative`,
       };
     }
 
     const items = this.items(alt);
 
-    if (!items)
-      return { kind: 'unsupported', reason: `${local} has a non-text item` };
+    if (!items) return { kind: "unsupported", reason: `${local} has a non-text item` };
     const defaults = items.filter(isDefaultItem);
 
     if (defaults.length > 1) {
       return {
-        kind: 'unsupported',
+        kind: "unsupported",
         reason: `${local} has several x-default items`,
       };
     }
 
     const [item] = defaults;
 
-    return item
-      ? { kind: 'text', value: textContent(item) }
-      : { kind: 'absent' };
+    return item ? { kind: "text", value: textContent(item) } : { kind: "absent" };
   }
 
   /** The items of an ordered or unordered array, as text. */
@@ -352,39 +328,37 @@ export class XmpPacket {
     local: string,
     ordered = false,
   ):
-    | { kind: 'absent' }
-    | { kind: 'list'; values: string[] }
-    | { kind: 'unsupported'; reason: string } {
+    | { kind: "absent" }
+    | { kind: "list"; values: string[] }
+    | { kind: "unsupported"; reason: string } {
     const found = this.properties(ns, local);
 
-    if (found.length === 0) return { kind: 'absent' };
+    if (found.length === 0) return { kind: "absent" };
 
-    if (found.length > 1 || found[0]!.form !== 'element') {
-      return { kind: 'unsupported', reason: `${local} is not an array` };
+    if (found.length > 1 || found[0]!.form !== "element") {
+      return { kind: "unsupported", reason: `${local} is not an array` };
     }
 
     const array = arrayOf(found[0]!.element);
 
-    if (!array || isRdf(array, 'Alt') || (ordered && !isRdf(array, 'Seq'))) {
+    if (!array || isRdf(array, "Alt") || (ordered && !isRdf(array, "Seq"))) {
       return {
-        kind: 'unsupported',
-        reason: `${local} is not ${ordered ? 'an ordered' : 'an'} array`,
+        kind: "unsupported",
+        reason: `${local} is not ${ordered ? "an ordered" : "an"} array`,
       };
     }
 
     const items = this.items(array);
 
-    if (!items)
-      return { kind: 'unsupported', reason: `${local} has a non-text item` };
+    if (!items) return { kind: "unsupported", reason: `${local} has a non-text item` };
 
-    return { kind: 'list', values: items.map(textContent) };
+    return { kind: "list", values: items.map(textContent) };
   }
 
   private items(array: XmlElement): XmlElement[] | undefined {
     const kids = childElements(array);
 
-    if (kids.some((k) => !isRdf(k, 'li') || !simpleTextElement(k)))
-      return undefined;
+    if (kids.some((k) => !isRdf(k, "li") || !simpleTextElement(k))) return undefined;
 
     return kids;
   }
@@ -398,17 +372,16 @@ export class XmpPacket {
     assertXmlValue(value);
     const found = this.properties(ns, local);
 
-    if (found.length > 1)
-      throw new XmpError(`XMP ${local} occurs more than once`);
+    if (found.length > 1) throw new XmpError(`XMP ${local} occurs more than once`);
     const [p] = found;
 
     if (!p) {
-      this.addProperty(ns, local, prefix).children = [{ kind: 'text', value }];
+      this.addProperty(ns, local, prefix).children = [{ kind: "text", value }];
 
       return;
     }
 
-    if (p.form === 'attribute') {
+    if (p.form === "attribute") {
       p.attribute.value = value;
 
       return;
@@ -418,7 +391,7 @@ export class XmpPacket {
       throw new XmpError(`XMP ${local} is not a simple value`);
     }
 
-    p.element.children = [{ kind: 'text', value }];
+    p.element.children = [{ kind: "text", value }];
   }
 
   /** Set the x-default item of a language alternative, keeping other languages. */
@@ -428,19 +401,19 @@ export class XmpPacket {
 
     if (found.length === 0) {
       const property = this.addProperty(ns, local);
-      const alt = this.addRdfChild(property, 'Alt');
-      this.addItem(alt, value, 'x-default');
+      const alt = this.addRdfChild(property, "Alt");
+      this.addItem(alt, value, "x-default");
 
       return;
     }
 
-    if (found.length > 1 || found[0]!.form !== 'element') {
+    if (found.length > 1 || found[0]!.form !== "element") {
       throw new XmpError(`XMP ${local} is not a language alternative`);
     }
 
     const alt = arrayOf(found[0]!.element);
 
-    if (!alt || !isRdf(alt, 'Alt') || !this.items(alt)) {
+    if (!alt || !isRdf(alt, "Alt") || !this.items(alt)) {
       throw new XmpError(`XMP ${local} is not a language alternative`);
     }
 
@@ -453,10 +426,10 @@ export class XmpPacket {
     const [item] = defaults;
 
     if (item) {
-      item.children = [{ kind: 'text', value }];
+      item.children = [{ kind: "text", value }];
     } else {
       // The x-default item comes first (XMP part 1, 8.2.2.4).
-      const li = this.addItem(alt, value, 'x-default');
+      const li = this.addItem(alt, value, "x-default");
       alt.children.splice(alt.children.indexOf(li), 1);
       alt.children.unshift(li);
     }
@@ -467,7 +440,7 @@ export class XmpPacket {
     assertXmlValue(value);
     const found = this.properties(ns, local);
 
-    if (found.length > 1 || (found[0] && found[0].form !== 'element')) {
+    if (found.length > 1 || (found[0] && found[0].form !== "element")) {
       throw new XmpError(`XMP ${local} is not an array`);
     }
 
@@ -477,19 +450,19 @@ export class XmpPacket {
       property = (found[0] as { element: XmlElement }).element;
       const array = arrayOf(property);
 
-      if (!array || isRdf(array, 'Alt') || !this.items(array)) {
+      if (!array || isRdf(array, "Alt") || !this.items(array)) {
         throw new XmpError(`XMP ${local} is not an array of text items`);
       }
 
       // Always an ordered array, whatever the packet had (dc:creator is a Seq).
       property.children = [];
-      this.addItem(this.addRdfChild(property, 'Seq'), value);
+      this.addItem(this.addRdfChild(property, "Seq"), value);
 
       return;
     }
 
     property = this.addProperty(ns, local);
-    this.addItem(this.addRdfChild(property, 'Seq'), value);
+    this.addItem(this.addRdfChild(property, "Seq"), value);
   }
 
   /**
@@ -497,11 +470,7 @@ export class XmpPacket {
    * it in scope, else (for an element) unprefixed under an RDF default
    * namespace, else with an `rdf` prefix declared on `context` itself.
    */
-  private rdfName(
-    context: XmlElement,
-    local: string,
-    attribute = false,
-  ): string {
+  private rdfName(context: XmlElement, local: string, attribute = false): string {
     for (let e: XmlElement | undefined = context; e; e = e.parent) {
       for (const a of e.attributes) {
         if (a.ns === XMLNS_NAMESPACE && a.value === RDF_NS && a.local) {
@@ -512,16 +481,16 @@ export class XmpPacket {
       }
     }
 
-    if (!attribute && lookupNamespace(context, '') === RDF_NS) return local;
+    if (!attribute && lookupNamespace(context, "") === RDF_NS) return local;
 
-    if (lookupNamespace(context, 'rdf') !== undefined) {
-      throw new XmpError('XMP: the rdf prefix is bound to another namespace');
+    if (lookupNamespace(context, "rdf") !== undefined) {
+      throw new XmpError("XMP: the rdf prefix is bound to another namespace");
     }
 
     context.attributes.unshift({
-      name: 'xmlns:rdf',
+      name: "xmlns:rdf",
       ns: XMLNS_NAMESPACE,
-      local: 'rdf',
+      local: "rdf",
       value: RDF_NS,
     });
 
@@ -536,18 +505,18 @@ export class XmpPacket {
   }
 
   private addItem(array: XmlElement, value: string, lang?: string): XmlElement {
-    const li = this.addRdfChild(array, 'li');
+    const li = this.addRdfChild(array, "li");
 
     if (lang !== undefined) {
       li.attributes.push({
-        name: 'xml:lang',
+        name: "xml:lang",
         ns: XML_NAMESPACE,
-        local: 'lang',
+        local: "lang",
         value: lang,
       });
     }
 
-    li.children = [{ kind: 'text', value }];
+    li.children = [{ kind: "text", value }];
 
     return li;
   }
@@ -558,11 +527,7 @@ export class XmpPacket {
    * description that declares the prefix itself, so no existing binding is
    * disturbed.
    */
-  private addProperty(
-    ns: string,
-    local: string,
-    prefixOverride?: string,
-  ): XmlElement {
+  private addProperty(ns: string, local: string, prefixOverride?: string): XmlElement {
     const prefix = prefixOverride ?? preferredPrefix[ns];
 
     if (!prefix) throw new XmpError(`XMP: no prefix known for ${ns}`);
@@ -571,17 +536,15 @@ export class XmpPacket {
       throw new XmpError(`XMP: ${prefix} is not a usable prefix`);
     }
 
-    let description = this.descriptions().find(
-      (d) => lookupNamespace(d, prefix) === ns,
-    );
+    let description = this.descriptions().find((d) => lookupNamespace(d, prefix) === ns);
 
     if (!description) {
-      description = this.addRdfChild(this.rdf, 'Description');
+      description = this.addRdfChild(this.rdf, "Description");
       description.attributes.push(
         {
-          name: this.rdfName(description, 'about', true),
+          name: this.rdfName(description, "about", true),
           ns: RDF_NS,
-          local: 'about',
+          local: "about",
           value: this.about,
         },
         {
@@ -622,9 +585,7 @@ export class XmpPacket {
     if (!prefix) throw new XmpError(`XMP: no prefix known for ${ns}`);
 
     if (lookupNamespace(context, prefix) !== undefined) {
-      throw new XmpError(
-        `XMP: the ${prefix} prefix is bound to another namespace`,
-      );
+      throw new XmpError(`XMP: the ${prefix} prefix is bound to another namespace`);
     }
 
     context.attributes.push({
@@ -637,29 +598,16 @@ export class XmpPacket {
     return `${prefix}:${local}`;
   }
 
-  private addField(
-    container: XmlElement,
-    ns: string,
-    local: string,
-  ): XmlElement {
-    const field = createElement(
-      this.qualifiedName(container, ns, local),
-      ns,
-      container,
-    );
+  private addField(container: XmlElement, ns: string, local: string): XmlElement {
+    const field = createElement(this.qualifiedName(container, ns, local), ns, container);
 
     container.children.push(field);
 
     return field;
   }
 
-  private addTextField(
-    container: XmlElement,
-    ns: string,
-    local: string,
-    value: string,
-  ) {
-    this.addField(container, ns, local).children = [{ kind: 'text', value }];
+  private addTextField(container: XmlElement, ns: string, local: string, value: string) {
+    this.addField(container, ns, local).children = [{ kind: "text", value }];
   }
 
   /**
@@ -667,7 +615,7 @@ export class XmpPacket {
    * single nested rdf:Description. Undefined for any other form.
    */
   private readStruct(item: XmlElement): XmpStruct | undefined {
-    if (!isRdf(item, 'li') || textContent(item).trim() !== '') return undefined;
+    if (!isRdf(item, "li") || textContent(item).trim() !== "") return undefined;
 
     // Only namespace declarations, plus the parseType that makes the item
     // itself the structure; any other RDF or xml: attribute (rdf:resource,
@@ -676,12 +624,12 @@ export class XmpPacket {
       e.attributes.every(
         (a) =>
           a.ns === XMLNS_NAMESPACE ||
-          (allowParseType && a.ns === RDF_NS && a.local === 'parseType'),
+          (allowParseType && a.ns === RDF_NS && a.local === "parseType"),
       );
 
     let container: XmlElement;
 
-    if (rdfAttribute(item, 'parseType')?.value === 'Resource') {
+    if (rdfAttribute(item, "parseType")?.value === "Resource") {
       if (!onlyDeclarations(item, true)) return undefined;
       container = item;
     } else {
@@ -689,12 +637,10 @@ export class XmpPacket {
 
       if (
         kids.length !== 1 ||
-        !isRdf(kids[0]!, 'Description') ||
+        !isRdf(kids[0]!, "Description") ||
         !onlyDeclarations(item, false) ||
-        textContent(kids[0]!).trim() !== '' ||
-        kids[0]!.attributes.some(
-          (a) => a.ns === RDF_NS || a.ns === XML_NAMESPACE,
-        )
+        textContent(kids[0]!).trim() !== "" ||
+        kids[0]!.attributes.some((a) => a.ns === RDF_NS || a.ns === XML_NAMESPACE)
       ) {
         return undefined;
       }
@@ -720,35 +666,35 @@ export class XmpPacket {
   private structText(struct: XmpStruct, ns: string, local: string): XmpRead {
     const found = struct.fields.get(fieldKey(ns, local)) ?? [];
 
-    if (found.length === 0) return { kind: 'absent' };
+    if (found.length === 0) return { kind: "absent" };
 
     if (found.length > 1) {
-      return { kind: 'unsupported', reason: `${local} occurs more than once` };
+      return { kind: "unsupported", reason: `${local} occurs more than once` };
     }
 
     const f = found[0]!;
 
-    if ('children' in f) {
+    if ("children" in f) {
       if (!simpleTextElement(f)) {
         return {
-          kind: 'unsupported',
+          kind: "unsupported",
           reason: `${local} is not a simple value`,
         };
       }
 
-      return { kind: 'text', value: textContent(f).trim() };
+      return { kind: "text", value: textContent(f).trim() };
     }
 
-    return { kind: 'text', value: f.value.trim() };
+    return { kind: "text", value: f.value.trim() };
   }
 
   /** The text of a structure field that must be stated once, as text. */
   private requiredText(struct: XmpStruct, ns: string, local: string): string {
     const read = this.structText(struct, ns, local);
 
-    if (read.kind === 'text' && read.value !== '') return read.value;
+    if (read.kind === "text" && read.value !== "") return read.value;
     throw new XmpError(
-      read.kind === 'unsupported'
+      read.kind === "unsupported"
         ? `XMP extension schema field ${local}: ${read.reason}`
         : `XMP extension schema lacks ${local}`,
     );
@@ -756,18 +702,18 @@ export class XmpPacket {
 
   /** The items of the pdfaExtension:schemas bag, or undefined if absent. */
   private schemaBag(): XmlElement | undefined {
-    const found = this.properties(PDFA_EXTENSION_NS, 'schemas');
+    const found = this.properties(PDFA_EXTENSION_NS, "schemas");
 
     if (found.length === 0) return undefined;
 
-    if (found.length > 1 || found[0]!.form !== 'element') {
-      throw new XmpError('XMP pdfaExtension:schemas is not a single bag');
+    if (found.length > 1 || found[0]!.form !== "element") {
+      throw new XmpError("XMP pdfaExtension:schemas is not a single bag");
     }
 
     const bag = arrayOf(found[0]!.element);
 
-    if (!bag || !isRdf(bag, 'Bag')) {
-      throw new XmpError('XMP pdfaExtension:schemas is not a bag');
+    if (!bag || !isRdf(bag, "Bag")) {
+      throw new XmpError("XMP pdfaExtension:schemas is not a bag");
     }
 
     return bag;
@@ -786,14 +732,12 @@ export class XmpPacket {
       const struct = this.readStruct(item);
 
       if (!struct) {
-        throw new XmpError(
-          'XMP pdfaExtension:schemas has an item that is not a structure',
-        );
+        throw new XmpError("XMP pdfaExtension:schemas has an item that is not a structure");
       }
 
       return {
         struct,
-        namespaceURI: this.requiredText(struct, PDFA_SCHEMA_NS, 'namespaceURI'),
+        namespaceURI: this.requiredText(struct, PDFA_SCHEMA_NS, "namespaceURI"),
       };
     });
   }
@@ -813,9 +757,7 @@ export class XmpPacket {
    * edited, so callers edit a packet they discard on failure.
    */
   ensureExtensionSchema(schema: ExtensionSchema): void {
-    const matching = this.extensionSchemas().filter(
-      (s) => s.namespaceURI === schema.namespaceURI,
-    );
+    const matching = this.extensionSchemas().filter((s) => s.namespaceURI === schema.namespaceURI);
 
     if (matching.length > 1) {
       throw new XmpError(
@@ -829,26 +771,15 @@ export class XmpPacket {
       let bag = this.schemaBag();
 
       if (!bag) {
-        bag = this.addRdfChild(
-          this.addProperty(PDFA_EXTENSION_NS, 'schemas'),
-          'Bag',
-        );
+        bag = this.addRdfChild(this.addProperty(PDFA_EXTENSION_NS, "schemas"), "Bag");
       }
 
       const item = this.addResourceItem(bag);
-      this.addTextField(item, PDFA_SCHEMA_NS, 'schema', schema.schema);
-      this.addTextField(
-        item,
-        PDFA_SCHEMA_NS,
-        'namespaceURI',
-        schema.namespaceURI,
-      );
-      this.addTextField(item, PDFA_SCHEMA_NS, 'prefix', schema.prefix);
+      this.addTextField(item, PDFA_SCHEMA_NS, "schema", schema.schema);
+      this.addTextField(item, PDFA_SCHEMA_NS, "namespaceURI", schema.namespaceURI);
+      this.addTextField(item, PDFA_SCHEMA_NS, "prefix", schema.prefix);
 
-      const seq = this.addRdfChild(
-        this.addField(item, PDFA_SCHEMA_NS, 'property'),
-        'Seq',
-      );
+      const seq = this.addRdfChild(this.addField(item, PDFA_SCHEMA_NS, "property"), "Seq");
 
       for (const p of schema.properties) this.addExtensionProperty(seq, p);
 
@@ -856,8 +787,8 @@ export class XmpPacket {
     }
 
     const { struct } = existing;
-    this.requiredText(struct, PDFA_SCHEMA_NS, 'schema');
-    const prefix = this.requiredText(struct, PDFA_SCHEMA_NS, 'prefix');
+    this.requiredText(struct, PDFA_SCHEMA_NS, "schema");
+    const prefix = this.requiredText(struct, PDFA_SCHEMA_NS, "prefix");
 
     if (prefix !== schema.prefix) {
       throw new XmpError(
@@ -865,11 +796,10 @@ export class XmpPacket {
       );
     }
 
-    const propertyFields =
-      struct.fields.get(fieldKey(PDFA_SCHEMA_NS, 'property')) ?? [];
+    const propertyFields = struct.fields.get(fieldKey(PDFA_SCHEMA_NS, "property")) ?? [];
 
     if (propertyFields.length > 1) {
-      throw new XmpError('XMP extension schema states property more than once');
+      throw new XmpError("XMP extension schema states property more than once");
     }
 
     let seq: XmlElement | undefined;
@@ -877,27 +807,23 @@ export class XmpPacket {
     const [field] = propertyFields;
 
     if (field) {
-      seq = 'children' in field ? arrayOf(field) : undefined;
+      seq = "children" in field ? arrayOf(field) : undefined;
 
-      if (!seq || !isRdf(seq, 'Seq')) {
-        throw new XmpError('XMP extension schema property is not a Seq');
+      if (!seq || !isRdf(seq, "Seq")) {
+        throw new XmpError("XMP extension schema property is not a Seq");
       }
 
       for (const item of childElements(seq)) {
         const p = this.readStruct(item);
 
         if (!p) {
-          throw new XmpError(
-            'XMP extension schema has a property that is not a structure',
-          );
+          throw new XmpError("XMP extension schema has a property that is not a structure");
         }
 
-        const name = this.requiredText(p, PDFA_PROPERTY_NS, 'name');
+        const name = this.requiredText(p, PDFA_PROPERTY_NS, "name");
 
         if (declared.has(name)) {
-          throw new XmpError(
-            `XMP extension schema describes ${name} more than once`,
-          );
+          throw new XmpError(`XMP extension schema describes ${name} more than once`);
         }
 
         declared.set(name, p);
@@ -914,9 +840,9 @@ export class XmpPacket {
         continue;
       }
 
-      const valueType = this.requiredText(p, PDFA_PROPERTY_NS, 'valueType');
-      const category = this.requiredText(p, PDFA_PROPERTY_NS, 'category');
-      this.requiredText(p, PDFA_PROPERTY_NS, 'description');
+      const valueType = this.requiredText(p, PDFA_PROPERTY_NS, "valueType");
+      const category = this.requiredText(p, PDFA_PROPERTY_NS, "category");
+      this.requiredText(p, PDFA_PROPERTY_NS, "description");
 
       if (valueType !== wanted.valueType || category !== wanted.category) {
         throw new XmpError(
@@ -928,22 +854,19 @@ export class XmpPacket {
     if (missing.length === 0) return;
 
     if (!seq) {
-      seq = this.addRdfChild(
-        this.addField(struct.container, PDFA_SCHEMA_NS, 'property'),
-        'Seq',
-      );
+      seq = this.addRdfChild(this.addField(struct.container, PDFA_SCHEMA_NS, "property"), "Seq");
     }
 
     for (const p of missing) this.addExtensionProperty(seq, p);
   }
 
   private addResourceItem(array: XmlElement): XmlElement {
-    const item = this.addRdfChild(array, 'li');
+    const item = this.addRdfChild(array, "li");
     item.attributes.push({
-      name: this.rdfName(item, 'parseType', true),
+      name: this.rdfName(item, "parseType", true),
       ns: RDF_NS,
-      local: 'parseType',
-      value: 'Resource',
+      local: "parseType",
+      value: "Resource",
     });
 
     return item;
@@ -951,10 +874,10 @@ export class XmpPacket {
 
   private addExtensionProperty(seq: XmlElement, p: ExtensionProperty) {
     const item = this.addResourceItem(seq);
-    this.addTextField(item, PDFA_PROPERTY_NS, 'name', p.name);
-    this.addTextField(item, PDFA_PROPERTY_NS, 'valueType', p.valueType);
-    this.addTextField(item, PDFA_PROPERTY_NS, 'category', p.category);
-    this.addTextField(item, PDFA_PROPERTY_NS, 'description', p.description);
+    this.addTextField(item, PDFA_PROPERTY_NS, "name", p.name);
+    this.addTextField(item, PDFA_PROPERTY_NS, "valueType", p.valueType);
+    this.addTextField(item, PDFA_PROPERTY_NS, "category", p.category);
+    this.addTextField(item, PDFA_PROPERTY_NS, "description", p.description);
   }
 
   serialize(): Uint8Array {
@@ -966,12 +889,12 @@ export class XmpPacket {
 export const assertXmlValue = (value: string): void => {
   if (!isXmlText(value)) {
     throw new XmpError(
-      'The value contains characters XML cannot represent (a control character or an unpaired surrogate)',
+      "The value contains characters XML cannot represent (a control character or an unpaired surrogate)",
     );
   }
 };
 
-const pad = (n: number, width = 2) => String(n).padStart(width, '0');
+const pad = (n: number, width = 2) => String(n).padStart(width, "0");
 
 /** An XMP date (ISO 8601) at whole-second precision in UTC. */
 export const formatXmpDate = (date: Date): string =>
@@ -987,17 +910,7 @@ export const parseXmpDate = (text: string): Date | undefined => {
 
   if (!m) return undefined;
 
-  const [
-    ,
-    y,
-    mo = '01',
-    d = '01',
-    h = '00',
-    mi = '00',
-    s = '00',
-    frac = '',
-    tz,
-  ] = m;
+  const [, y, mo = "01", d = "01", h = "00", mi = "00", s = "00", frac = "", tz] = m;
 
   const ms = frac ? Math.floor(Number(`0.${frac}`) * 1000) : 0;
   // setUTCFullYear keeps years below 100 as written; the component check
@@ -1019,14 +932,13 @@ export const parseXmpDate = (text: string): Date | undefined => {
 
   let time = date.getTime();
 
-  if (tz && tz !== 'Z') {
+  if (tz && tz !== "Z") {
     if (Number(tz.slice(1, 3)) > 23 || Number(tz.slice(4, 6)) > 59) {
       return undefined;
     }
 
-    const sign = tz[0] === '-' ? -1 : 1;
-    time -=
-      sign * (Number(tz.slice(1, 3)) * 60 + Number(tz.slice(4, 6))) * 60_000;
+    const sign = tz[0] === "-" ? -1 : 1;
+    time -= sign * (Number(tz.slice(1, 3)) * 60 + Number(tz.slice(4, 6))) * 60_000;
   }
 
   return Number.isNaN(time) ? undefined : new Date(time);

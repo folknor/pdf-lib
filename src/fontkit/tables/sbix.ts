@@ -1,10 +1,10 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const ImageTable = new r.Struct({
   ppem: r.uint16,
   resolution: r.uint16,
   imageOffsets: new r.Array(
-    new r.Pointer(r.uint32, 'void'),
+    new r.Pointer(r.uint32, "void"),
     (t: any) => t.parent.parent.maxp.numGlyphs + 1,
   ),
 });
@@ -14,7 +14,7 @@ const ImageTable = new r.Struct({
 // of several different sizes.
 export default new r.Struct({
   version: r.uint16,
-  flags: new r.Bitfield(r.uint16, ['renderOutlines']),
+  flags: new r.Bitfield(r.uint16, ["renderOutlines"]),
   numImgTables: r.uint32,
-  imageTables: new r.Array(new r.Pointer(r.uint32, ImageTable), 'numImgTables'),
+  imageTables: new r.Array(new r.Pointer(r.uint32, ImageTable), "numImgTables"),
 });

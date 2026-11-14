@@ -1,5 +1,5 @@
-import DecodeStream from '../core/streams/DecodeStream.js';
-import UPNG from '../vendors/upng.js';
+import DecodeStream from "../core/streams/DecodeStream.js";
+import UPNG from "../vendors/upng.js";
 
 const getImageType = (ctype: number) => {
   if (ctype === 0) return PngType.Greyscale;
@@ -35,11 +35,11 @@ const splitAlphaChannel = (rgbaChannel: Uint8Array) => {
 };
 
 export enum PngType {
-  Greyscale = 'Greyscale',
-  Truecolour = 'Truecolour',
-  IndexedColour = 'IndexedColour',
-  GreyscaleWithAlpha = 'GreyscaleWithAlpha',
-  TruecolourWithAlpha = 'TruecolourWithAlpha',
+  Greyscale = "Greyscale",
+  Truecolour = "Truecolour",
+  IndexedColour = "IndexedColour",
+  GreyscaleWithAlpha = "GreyscaleWithAlpha",
+  TruecolourWithAlpha = "TruecolourWithAlpha",
 }
 
 export class PNG {
@@ -60,10 +60,7 @@ export class PNG {
   readonly height: number;
   readonly bitsPerComponent: number;
 
-  private constructor(
-    pngData: Uint8Array<ArrayBuffer>,
-    maxDecodedSize: number,
-  ) {
+  private constructor(pngData: Uint8Array<ArrayBuffer>, maxDecodedSize: number) {
     const UPNGmod = (UPNG as typeof UPNG).decode
       ? UPNG
       : (UPNG as unknown as { default: typeof UPNG }).default;
@@ -72,17 +69,13 @@ export class PNG {
     // byteOffset (e.g. from subarray) would otherwise decode the wrong region
     // of its backing ArrayBuffer.
     const buffer =
-      pngData.byteOffset === 0 &&
-      pngData.byteLength === pngData.buffer.byteLength
+      pngData.byteOffset === 0 && pngData.byteLength === pngData.buffer.byteLength
         ? pngData.buffer
-        : pngData.buffer.slice(
-            pngData.byteOffset,
-            pngData.byteOffset + pngData.byteLength,
-          );
+        : pngData.buffer.slice(pngData.byteOffset, pngData.byteOffset + pngData.byteLength);
 
     const upng = UPNGmod.decode(buffer, maxDecodedSize);
 
-    if (upng.numFrames > 1) throw new Error('Animated PNGs are not supported');
+    if (upng.numFrames > 1) throw new Error("Animated PNGs are not supported");
 
     const frame = new Uint8Array(UPNGmod.toRGBA8(upng));
     const { rgbChannel, alphaChannel } = splitAlphaChannel(frame);

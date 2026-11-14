@@ -10,28 +10,28 @@ export const numberToString = (num: number) => {
   let numStr = String(num);
 
   if (Math.abs(num) < 1.0) {
-    const e = parseInt(num.toString().split('e-')[1]!, 10);
+    const e = parseInt(num.toString().split("e-")[1]!, 10);
 
     if (e) {
       // Numbers with very large negative exponents produce absurdly long
       // strings (e.g. Number.MIN_VALUE with e=324 → 331 chars) that
       // corrupt PDF output for many readers. Clamp to zero.
-      if (e > 100) return num < 0 ? '-0' : '0';
+      if (e > 100) return num < 0 ? "-0" : "0";
       const negative = num < 0;
 
       if (negative) num *= -1;
       num *= 10 ** (e - 1);
-      numStr = `0.${new Array(e).join('0')}${num.toString().substring(2)}`;
+      numStr = `0.${new Array(e).join("0")}${num.toString().substring(2)}`;
 
       if (negative) numStr = `-${numStr}`;
     }
   } else {
-    let e = parseInt(num.toString().split('+')[1]!, 10);
+    let e = parseInt(num.toString().split("+")[1]!, 10);
 
     if (e > 20) {
       e -= 20;
       num /= 10 ** e;
-      numStr = num.toString() + new Array(e + 1).join('0');
+      numStr = num.toString() + new Array(e + 1).join("0");
     }
   }
 

@@ -1,11 +1,11 @@
-import BBox from './BBox.js';
-import TTFGlyph, { type DecodedGlyph } from './TTFGlyph.js';
+import BBox from "./BBox.js";
+import TTFGlyph, { type DecodedGlyph } from "./TTFGlyph.js";
 
 /**
  * Represents a TrueType glyph in the WOFF2 format, which compresses glyphs differently.
  */
 export default class WOFF2Glyph extends TTFGlyph {
-  override type = 'WOFF2';
+  override type = "WOFF2";
 
   override _decode(): DecodedGlyph {
     // Glyphs are decoded in advance (WOFF2Font._transformGlyfTable) and shared
@@ -24,10 +24,7 @@ export default class WOFF2Glyph extends TTFGlyph {
 
     if (decoded.components) {
       glyph.components = decoded.components.map((component) =>
-        Object.assign(
-          Object.create(Object.getPrototypeOf(component)),
-          component,
-        ),
+        Object.assign(Object.create(Object.getPrototypeOf(component)), component),
       );
     }
 

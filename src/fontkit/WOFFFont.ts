@@ -1,15 +1,15 @@
-import { inflateSync } from 'fflate';
-import { DecodedStreamTooLargeError } from '../core/errors.js';
-import * as r from '../vendors/restructure/index.js';
-import TTFFont from './TTFFont.js';
-import WOFFDirectory from './tables/WOFFDirectory.js';
-import { asciiDecoder } from './utils.js';
+import { inflateSync } from "fflate";
+import { DecodedStreamTooLargeError } from "../core/errors.js";
+import * as r from "../vendors/restructure/index.js";
+import TTFFont from "./TTFFont.js";
+import WOFFDirectory from "./tables/WOFFDirectory.js";
+import { asciiDecoder } from "./utils.js";
 
 export default class WOFFFont extends TTFFont {
-  override type: string = 'WOFF';
+  override type: string = "WOFF";
 
   static override probe(buffer: Uint8Array): boolean {
-    return asciiDecoder.decode(buffer.slice(0, 4)) === 'wOFF';
+    return asciiDecoder.decode(buffer.slice(0, 4)) === "wOFF";
   }
 
   override _decodeDirectory(): void {
@@ -47,10 +47,9 @@ export default class WOFFFont extends TTFFont {
       if (entry.compLength < entry.length) {
         this.stream.pos += 2; // skip the zlib header; inflateSync is raw
 
-        const table = inflateSync(
-          this.stream.readBuffer(entry.compLength - 2),
-          { out: new Uint8Array(entry.length) },
-        );
+        const table = inflateSync(this.stream.readBuffer(entry.compLength - 2), {
+          out: new Uint8Array(entry.length),
+        });
 
         out.set(table, pos);
       } else {

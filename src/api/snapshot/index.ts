@@ -1,5 +1,5 @@
-export * from './DefaultDocumentSnapshot.js';
+export * from "./DefaultDocumentSnapshot.js";
 
-export * from './DocumentSnapshot.js';
+export * from "./DocumentSnapshot.js";
 
-export * from './IncrementalDocumentSnapshot.js';
+export * from "./IncrementalDocumentSnapshot.js";

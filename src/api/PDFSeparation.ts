@@ -1,15 +1,15 @@
-import type { PDFRef } from '../core/index.js';
-import PDFName from '../core/objects/PDFName.js';
-import { utf8Encode } from '../utils/unicode.js';
-import { type Color, ColorTypes, colorToComponents } from './colors.js';
-import type PDFDocument from './PDFDocument.js';
+import type { PDFRef } from "../core/index.js";
+import PDFName from "../core/objects/PDFName.js";
+import { utf8Encode } from "../utils/unicode.js";
+import { type Color, ColorTypes, colorToComponents } from "./colors.js";
+import type PDFDocument from "./PDFDocument.js";
 
 const alternateSpace = (color: Color): string =>
   color.type === ColorTypes.Grayscale
-    ? 'DeviceGray'
+    ? "DeviceGray"
     : color.type === ColorTypes.RGB
-      ? 'DeviceRGB'
-      : 'DeviceCMYK';
+      ? "DeviceRGB"
+      : "DeviceCMYK";
 
 /** The alternate-space value of tint 0: no ink, so the paper shows. */
 const noInk = (color: Color): number[] =>
@@ -26,24 +26,19 @@ const noInk = (color: Color): number[] =>
  * digits, which a reader parses as a different name.
  */
 export const colorantName = (name: string): PDFName => {
-  if (name.length === 0) throw new Error('A colourant name cannot be empty');
+  if (name.length === 0) throw new Error("A colourant name cannot be empty");
 
-  if (name.includes('\0')) {
-    throw new Error('A colourant name cannot contain NUL');
+  if (name.includes("\0")) {
+    throw new Error("A colourant name cannot contain NUL");
   }
 
-  if (
-    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(
-      name,
-    )
-  ) {
-    throw new Error('A colourant name cannot contain an unpaired surrogate');
+  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(name)) {
+    throw new Error("A colourant name cannot contain an unpaired surrogate");
   }
 
-  let bytes = '';
+  let bytes = "";
 
-  for (const byte of utf8Encode(name, false))
-    bytes += String.fromCharCode(byte);
+  for (const byte of utf8Encode(name, false)) bytes += String.fromCharCode(byte);
 
   return PDFName.fromDecoded(bytes);
 };
@@ -104,12 +99,7 @@ export default class PDFSeparation {
     });
 
     this.ref = context.register(
-      context.obj([
-        PDFName.of('Separation'),
-        pdfName,
-        PDFName.of(space),
-        tintTransform,
-      ]),
+      context.obj([PDFName.of("Separation"), pdfName, PDFName.of(space), tintTransform]),
     );
   }
 

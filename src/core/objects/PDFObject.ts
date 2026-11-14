@@ -1,5 +1,5 @@
-import { MethodNotImplementedError } from '../errors.js';
-import type PDFContext from '../PDFContext.js';
+import { MethodNotImplementedError } from "../errors.js";
+import type PDFContext from "../PDFContext.js";
 
 class PDFObject {
   /**
@@ -13,26 +13,23 @@ class PDFObject {
    * need to implement this as they cannot be modified after creation.
    */
   registerChange(): void {
-    throw new MethodNotImplementedError(
-      this.constructor.name,
-      'registerChange',
-    );
+    throw new MethodNotImplementedError(this.constructor.name, "registerChange");
   }
 
   clone(_context?: PDFContext): PDFObject {
-    throw new MethodNotImplementedError(this.constructor.name, 'clone');
+    throw new MethodNotImplementedError(this.constructor.name, "clone");
   }
 
   toString(): string {
-    throw new MethodNotImplementedError(this.constructor.name, 'toString');
+    throw new MethodNotImplementedError(this.constructor.name, "toString");
   }
 
   sizeInBytes(): number {
-    throw new MethodNotImplementedError(this.constructor.name, 'sizeInBytes');
+    throw new MethodNotImplementedError(this.constructor.name, "sizeInBytes");
   }
 
   copyBytesInto(_buffer: Uint8Array, _offset: number): number {
-    throw new MethodNotImplementedError(this.constructor.name, 'copyBytesInto');
+    throw new MethodNotImplementedError(this.constructor.name, "copyBytesInto");
   }
 }
 

@@ -4,6 +4,6 @@
  * Absorbed and converted for pdf-lib
  */
 
-export * from './Encoding.js';
+export * from "./Encoding.js";
 
-export * from './Font.js';
+export * from "./Font.js";

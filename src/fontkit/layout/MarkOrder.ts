@@ -21,8 +21,8 @@
 // sheva/hiriq + meteg swap: no font among those three consumes it and no
 // public source for it was found.
 
-import { getScript, isMark } from '../../vendors/unicode-properties/index.js';
-import { combiningClass } from './CanonicalCompose.js';
+import { getScript, isMark } from "../../vendors/unicode-properties/index.js";
+import { combiningClass } from "./CanonicalCompose.js";
 
 const RANK_OVERRIDES = new Map<number, number>([
   // Thai SARA U, SARA UU (103) before PHINTHU (9).
@@ -56,8 +56,7 @@ const RANK_OVERRIDES = new Map<number, number>([
 ]);
 
 /** The rank a mark is sorted by outside Arabic runs; ccc unless overridden. */
-export const shapingRank = (cp: number): number =>
-  RANK_OVERRIDES.get(cp) ?? combiningClass(cp);
+export const shapingRank = (cp: number): number => RANK_OVERRIDES.get(cp) ?? combiningClass(cp);
 
 // Arabic marks, listed by code point because many are Script=Inherited
 // (fatha, damma, shadda, hamza above).
@@ -72,8 +71,7 @@ const ARABIC_MARKS: [number, number][] = [
   [0x08e3, 0x08ff],
 ];
 
-const isArabicMark = (cp: number) =>
-  ARABIC_MARKS.some(([a, b]) => cp >= a && cp <= b);
+const isArabicMark = (cp: number) => ARABIC_MARKS.some(([a, b]) => cp >= a && cp <= b);
 
 /**
  * Whether the run cps[start..end) is ordered and composed as Arabic: the
@@ -86,7 +84,7 @@ export function isArabicRun(cps: number[], start: number, end: number) {
 
   while (base >= 0 && isMark(cps[base]!)) base--;
 
-  if (base >= 0 && getScript(cps[base]!) === 'Arabic') return true;
+  if (base >= 0 && getScript(cps[base]!) === "Arabic") return true;
 
   for (let i = start; i < end; i++) if (isArabicMark(cps[i]!)) return true;
 
@@ -121,7 +119,5 @@ export function arabicKeys(cps: number[]): number[] {
     }
   }
 
-  return classes.map((cls, i) =>
-    promoted[i] ? (cls === 220 ? -3 : -2) : cls === 33 ? -1 : cls,
-  );
+  return classes.map((cls, i) => (promoted[i] ? (cls === 220 ? -3 : -2) : cls === 33 ? -1 : cls));
 }

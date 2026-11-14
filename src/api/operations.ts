@@ -1,19 +1,8 @@
-import type {
-  EncodedText,
-  PDFName,
-  PDFNumber,
-  PDFOperator,
-} from '../core/index.js';
-import type { Space, TransformationMatrix } from '../types/index.js';
-import { identityMatrix } from '../types/matrix.js';
-import {
-  type Color,
-  ColorTypes,
-  rgb,
-  setFillingColor,
-  setStrokingColor,
-} from './colors.js';
-import { asNumber } from './objects.js';
+import type { EncodedText, PDFName, PDFNumber, PDFOperator } from "../core/index.js";
+import type { Space, TransformationMatrix } from "../types/index.js";
+import { identityMatrix } from "../types/matrix.js";
+import { type Color, ColorTypes, rgb, setFillingColor, setStrokingColor } from "./colors.js";
+import { asNumber } from "./objects.js";
 import {
   beginMarkedContent,
   beginText,
@@ -56,10 +45,10 @@ import {
   stroke,
   type TextRenderingMode,
   translate,
-} from './operators.js';
-import { degrees, type Rotation, toDegrees, toRadians } from './rotations.js';
-import { combineMatrix, transformationToMatrix } from './svg.js';
-import { svgPathToOperators } from './svgPath.js';
+} from "./operators.js";
+import { degrees, type Rotation, toDegrees, toRadians } from "./rotations.js";
+import { combineMatrix, transformationToMatrix } from "./svg.js";
+import { svgPathToOperators } from "./svgPath.js";
 
 /**
  * A Separation tint as the operators see it: the colour space is named by its
@@ -79,23 +68,16 @@ export type ColorOperand = Color | SeparationOperand;
  * (`cs`) together with the tint (`scn`), so the two cannot be separated. */
 export const fillingColorOperators = (color: ColorOperand): PDFOperator[] =>
   color.type === ColorTypes.Separation
-    ? [
-        setFillingColorSpace(color.colorSpace),
-        setFillingColorComponents(color.tint),
-      ]
+    ? [setFillingColorSpace(color.colorSpace), setFillingColorComponents(color.tint)]
     : [setFillingColor(color)];
 
 /** Operators setting the stroking colour (`CS` + `SCN` for a Separation). */
 export const strokingColorOperators = (color: ColorOperand): PDFOperator[] =>
   color.type === ColorTypes.Separation
-    ? [
-        setStrokingColorSpace(color.colorSpace),
-        setStrokingColorComponents(color.tint),
-      ]
+    ? [setStrokingColorSpace(color.colorSpace), setStrokingColorComponents(color.tint)]
     : [setStrokingColor(color)];
 
-const maybeFill = (color: ColorOperand | undefined) =>
-  color ? fillingColorOperators(color) : [];
+const maybeFill = (color: ColorOperand | undefined) => (color ? fillingColorOperators(color) : []);
 
 const maybeStroke = (color: ColorOperand | undefined) =>
   color ? strokingColorOperators(color) : [];
@@ -156,14 +138,8 @@ const textRiseFor = (
   return { rise: 0, operator: needed ? setTextRise(0) : undefined };
 };
 
-export const drawText = (
-  line: EncodedText,
-  options: DrawTextOptions,
-): PDFOperator[] => {
-  const { rise, operator: riseOperator } = textRiseFor(
-    [line],
-    options.textRise,
-  );
+export const drawText = (line: EncodedText, options: DrawTextOptions): PDFOperator[] => {
+  const { rise, operator: riseOperator } = textRiseFor([line], options.textRise);
 
   return [
     pushGraphicsState(),
@@ -171,8 +147,7 @@ export const drawText = (
     beginText(),
     ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
-    options.horizontalScaling !== undefined &&
-      setCharacterSqueeze(options.horizontalScaling),
+    options.horizontalScaling !== undefined && setCharacterSqueeze(options.horizontalScaling),
     riseOperator,
     options.strokeWidth && setLineWidth(options.strokeWidth),
     ...maybeStroke(options.strokeColor),
@@ -209,8 +184,7 @@ export const drawLinesOfText = (
     ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
     setLineHeight(options.lineHeight),
-    options.horizontalScaling !== undefined &&
-      setCharacterSqueeze(options.horizontalScaling),
+    options.horizontalScaling !== undefined && setCharacterSqueeze(options.horizontalScaling),
     riseOperator,
     options.strokeWidth && setLineWidth(options.strokeWidth),
     ...maybeStroke(options.strokeColor),
@@ -225,10 +199,7 @@ export const drawLinesOfText = (
   ].filter(Boolean) as PDFOperator[];
 
   for (let idx = 0, len = lines.length; idx < len; idx++) {
-    operators.push(
-      ...showEncodedText(lines[idx]!, options.size, rise),
-      nextLine(),
-    );
+    operators.push(...showEncodedText(lines[idx]!, options.size, rise), nextLine());
   }
 
   operators.push(endText(), popGraphicsState());
@@ -339,10 +310,10 @@ export const drawRectangle = (options: {
   clipSpaces?: Space[];
 }) => {
   const { width, height, xSkew, ySkew, rotate, matrix } = options;
-  const w = typeof width === 'number' ? width : width.asNumber();
-  const h = typeof height === 'number' ? height : height.asNumber();
-  const x = typeof options.x === 'number' ? options.x : options.x.asNumber();
-  const y = typeof options.y === 'number' ? options.y : options.y.asNumber();
+  const w = typeof width === "number" ? width : width.asNumber();
+  const h = typeof height === "number" ? height : height.asNumber();
+  const x = typeof options.x === "number" ? options.x : options.x.asNumber();
+  const y = typeof options.y === "number" ? options.y : options.y.asNumber();
 
   // Ensure rx and ry are within bounds
   const rx = Math.max(0, Math.min(options.rx || 0, w / 2));
@@ -361,44 +332,32 @@ export const drawRectangle = (options: {
           `C ${rx * (1 - KAPPA)},${h} 0,${h - ry * (1 - KAPPA)} 0,${h - ry}`,
           `V ${ry}`,
           `C 0,${ry * (1 - KAPPA)} ${rx * (1 - KAPPA)},0 ${rx},0`,
-          'Z',
-        ].join(' ')
+          "Z",
+        ].join(" ")
       : `M 0,0 H ${w} V ${h} H 0 Z`;
 
   // the drawRectangle applies the rotation around its anchor point (bottom-left), it means that the translation should be applied before the rotation
   // invert the y parameter because transformationToMatrix expects parameters from an svg space. The same is valid for rotate and ySkew
   let fullMatrix = combineMatrix(
     matrix || identityMatrix,
-    transformationToMatrix('translate', [x, -y]),
+    transformationToMatrix("translate", [x, -y]),
   );
 
   // Transformation to apply rotation and skew
   if (rotate) {
-    fullMatrix = combineMatrix(
-      fullMatrix,
-      transformationToMatrix('rotate', [-toDegrees(rotate)]),
-    );
+    fullMatrix = combineMatrix(fullMatrix, transformationToMatrix("rotate", [-toDegrees(rotate)]));
   }
 
   if (xSkew) {
-    fullMatrix = combineMatrix(
-      fullMatrix,
-      transformationToMatrix('skewX', [toDegrees(xSkew)]),
-    );
+    fullMatrix = combineMatrix(fullMatrix, transformationToMatrix("skewX", [toDegrees(xSkew)]));
   }
 
   if (ySkew) {
-    fullMatrix = combineMatrix(
-      fullMatrix,
-      transformationToMatrix('skewY', [-toDegrees(ySkew)]),
-    );
+    fullMatrix = combineMatrix(fullMatrix, transformationToMatrix("skewY", [-toDegrees(ySkew)]));
   }
 
   // move the rectangle upward so that the (x, y) coord is bottom-left
-  fullMatrix = combineMatrix(
-    fullMatrix,
-    transformationToMatrix('translateY', [-h]),
-  );
+  fullMatrix = combineMatrix(fullMatrix, transformationToMatrix("translateY", [-h]));
 
   return drawSvgPath(d, {
     ...options,
@@ -441,18 +400,18 @@ export const drawEllipse = (options: {
     `C ${xScale},${-oy} ${ox},${-yScale} 0,${-yScale}`,
     `C ${-ox},${-yScale} ${-xScale},${-oy} ${-xScale},0`,
     `C ${-xScale},${oy} ${-ox},${yScale} 0,${yScale}`,
-    'Z',
-  ].join(' ');
+    "Z",
+  ].join(" ");
 
   let fullMatrix = combineMatrix(
     options.matrix || identityMatrix,
-    transformationToMatrix('translate', [x, -y]),
+    transformationToMatrix("translate", [x, -y]),
   );
 
   if (options.rotate) {
     fullMatrix = combineMatrix(
       fullMatrix,
-      transformationToMatrix('rotate', [-toDegrees(options.rotate)]),
+      transformationToMatrix("rotate", [-toDegrees(options.rotate)]),
     );
   }
 
@@ -779,7 +738,7 @@ export const drawTextField = (options: {
   padding: number | PDFNumber;
   borderDashArray?: (number | PDFNumber)[];
   borderDashPhase?: number | PDFNumber;
-  borderStyle?: 'S' | 'D' | 'B' | 'I' | 'U';
+  borderStyle?: "S" | "D" | "B" | "I" | "U";
 }) => {
   const x = asNumber(options.x);
   const y = asNumber(options.y);
@@ -787,7 +746,7 @@ export const drawTextField = (options: {
   const height = asNumber(options.height);
   const borderWidth = asNumber(options.borderWidth);
   const padding = asNumber(options.padding);
-  const borderStyle = options.borderStyle ?? 'S';
+  const borderStyle = options.borderStyle ?? "S";
 
   const clipX = x + borderWidth / 2 + padding;
   const clipY = y + borderWidth / 2 + padding;
@@ -807,7 +766,7 @@ export const drawTextField = (options: {
   // For underline style, only draw the bottom border
   let background: PDFOperator[];
 
-  if (borderStyle === 'U') {
+  if (borderStyle === "U") {
     // Underline style: fill background + draw only bottom line
     const bgOps: PDFOperator[] = [];
 
@@ -846,7 +805,7 @@ export const drawTextField = (options: {
     }
 
     background = bgOps;
-  } else if (borderStyle === 'B' || borderStyle === 'I') {
+  } else if (borderStyle === "B" || borderStyle === "I") {
     // Beveled or Inset: draw 3D-style border
     background = drawBeveledRectangle({
       x,
@@ -856,7 +815,7 @@ export const drawTextField = (options: {
       borderWidth,
       color: options.color,
       borderColor: options.borderColor,
-      inset: borderStyle === 'I',
+      inset: borderStyle === "I",
     });
   } else {
     // Solid or Dashed
@@ -890,7 +849,7 @@ export const drawTextField = (options: {
   });
 
   const markedContent = [
-    beginMarkedContent('Tx'),
+    beginMarkedContent("Tx"),
     pushGraphicsState(),
     ...lines,
     popGraphicsState(),
@@ -921,8 +880,7 @@ const drawBeveledRectangle = (options: {
   borderColor: Color | undefined;
   inset: boolean;
 }): PDFOperator[] => {
-  const { x, y, width, height, borderWidth, color, borderColor, inset } =
-    options;
+  const { x, y, width, height, borderWidth, color, borderColor, inset } = options;
 
   const ops: PDFOperator[] = [];
 
@@ -1093,7 +1051,7 @@ export const drawOptionList = (options: {
   });
 
   const markedContent = [
-    beginMarkedContent('Tx'),
+    beginMarkedContent("Tx"),
     pushGraphicsState(),
     ...lines,
     popGraphicsState(),

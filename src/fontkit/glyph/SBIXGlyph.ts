@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import TTFGlyph from './TTFGlyph.js';
+import * as r from "../../vendors/restructure/index.js";
+import TTFGlyph from "./TTFGlyph.js";
 
 interface SBIXImageData {
   originX: number;
@@ -22,7 +22,7 @@ const SBIXImage = new r.Struct({
  * Represents a color (e.g. emoji) glyph in Apple's SBIX format.
  */
 export default class SBIXGlyph extends TTFGlyph {
-  override type = 'SBIX';
+  override type = "SBIX";
 
   /**
    * Returns an object representing a glyph image at the given point size.

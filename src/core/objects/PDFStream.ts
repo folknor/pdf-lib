@@ -1,10 +1,10 @@
-import { MethodNotImplementedError } from '../errors.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import type PDFDict from './PDFDict.js';
-import PDFName from './PDFName.js';
-import PDFNumber from './PDFNumber.js';
-import PDFObject from './PDFObject.js';
+import { MethodNotImplementedError } from "../errors.js";
+import type PDFContext from "../PDFContext.js";
+import CharCodes from "../syntax/CharCodes.js";
+import type PDFDict from "./PDFDict.js";
+import PDFName from "./PDFName.js";
+import PDFNumber from "./PDFNumber.js";
+import PDFObject from "./PDFObject.js";
 
 class PDFStream extends PDFObject {
   readonly dict: PDFDict;
@@ -15,32 +15,23 @@ class PDFStream extends PDFObject {
   }
 
   override clone(_context?: PDFContext): PDFStream {
-    throw new MethodNotImplementedError(this.constructor.name, 'clone');
+    throw new MethodNotImplementedError(this.constructor.name, "clone");
   }
 
   getContentsString(): string {
-    throw new MethodNotImplementedError(
-      this.constructor.name,
-      'getContentsString',
-    );
+    throw new MethodNotImplementedError(this.constructor.name, "getContentsString");
   }
 
   getContents(): Uint8Array {
-    throw new MethodNotImplementedError(this.constructor.name, 'getContents');
+    throw new MethodNotImplementedError(this.constructor.name, "getContents");
   }
 
   getContentsSize(): number {
-    throw new MethodNotImplementedError(
-      this.constructor.name,
-      'getContentsSize',
-    );
+    throw new MethodNotImplementedError(this.constructor.name, "getContentsSize");
   }
 
   updateContents(_contents: Uint8Array): void {
-    throw new MethodNotImplementedError(
-      this.constructor.name,
-      'updateContents',
-    );
+    throw new MethodNotImplementedError(this.constructor.name, "updateContents");
   }
 
   updateDict(): void {
@@ -57,9 +48,9 @@ class PDFStream extends PDFObject {
   override toString(): string {
     this.updateDict();
     let streamString = this.dict.toString();
-    streamString += '\nstream\n';
+    streamString += "\nstream\n";
     streamString += this.getContentsString();
-    streamString += '\nendstream';
+    streamString += "\nendstream";
 
     return streamString;
   }

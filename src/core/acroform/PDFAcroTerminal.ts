@@ -1,16 +1,15 @@
-import PDFWidgetAnnotation from '../annotation/PDFWidgetAnnotation.js';
-import { IndexOutOfBoundsError } from '../errors.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFAcroField from './PDFAcroField.js';
+import PDFWidgetAnnotation from "../annotation/PDFWidgetAnnotation.js";
+import { IndexOutOfBoundsError } from "../errors.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFAcroField from "./PDFAcroField.js";
 
 class PDFAcroTerminal extends PDFAcroField {
-  static fromDict = (dict: PDFDict, ref: PDFRef) =>
-    new PDFAcroTerminal(dict, ref);
+  static fromDict = (dict: PDFDict, ref: PDFRef) => new PDFAcroTerminal(dict, ref);
 
   FT(): PDFName {
-    const nameOrRef = this.getInheritableAttribute(PDFName.of('FT'));
+    const nameOrRef = this.getInheritableAttribute(PDFName.of("FT"));
 
     return this.dict.context.lookup(nameOrRef, PDFName);
   }
@@ -68,7 +67,7 @@ class PDFAcroTerminal extends PDFAcroField {
     // for them.
     if (!Kids) {
       Kids = this.dict.context.obj([this.ref]);
-      this.dict.set(PDFName.of('Kids'), Kids);
+      this.dict.set(PDFName.of("Kids"), Kids);
     }
 
     return { Kids };

@@ -1,4 +1,4 @@
-import Path from './Path.js';
+import Path from "./Path.js";
 
 type Point = [number, number];
 
@@ -83,9 +83,7 @@ const cubicToQuadratics = (
 
   for (let i = 0; i < n; i++) {
     const [a, b, c, d] =
-      n === 1
-        ? [p0, p1, p2, p3]
-        : cubicPiece(p0, p1, p2, p3, i / n, (i + 1) / n);
+      n === 1 ? [p0, p1, p2, p3] : cubicPiece(p0, p1, p2, p3, i / n, (i + 1) / n);
 
     const control: Point = [
       (3 * (b[0] + c[0]) - (a[0] + d[0])) / 4,
@@ -112,12 +110,12 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
     const a = args.map((v) => v ?? 0);
 
     switch (command) {
-      case 'moveTo':
+      case "moveTo":
         close();
         point = [a[0]!, a[1]!];
         current = { start: point, segments: [] };
         break;
-      case 'lineTo': {
+      case "lineTo": {
         const end: Point = [a[0]!, a[1]!];
         current ??= { start: point, segments: [] };
         current.segments.push({ points: [end] });
@@ -125,7 +123,7 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         break;
       }
 
-      case 'quadraticCurveTo': {
+      case "quadraticCurveTo": {
         const end: Point = [a[2]!, a[3]!];
         current ??= { start: point, segments: [] };
         current.segments.push({ points: [[a[0]!, a[1]!], end] });
@@ -133,23 +131,17 @@ const contoursOf = (path: Path, tolerance: number): Contour[] => {
         break;
       }
 
-      case 'bezierCurveTo': {
+      case "bezierCurveTo": {
         const end: Point = [a[4]!, a[5]!];
         current ??= { start: point, segments: [] };
         current.segments.push(
-          ...cubicToQuadratics(
-            point,
-            [a[0]!, a[1]!],
-            [a[2]!, a[3]!],
-            end,
-            tolerance,
-          ),
+          ...cubicToQuadratics(point, [a[0]!, a[1]!], [a[2]!, a[3]!], end, tolerance),
         );
         point = end;
         break;
       }
 
-      case 'closePath':
+      case "closePath":
         // A closed contour's current point stays where it was drawn to, as
         // Path and the charstring decoders treat it.
         close();
@@ -197,11 +189,7 @@ export const toTrueTypeOutline = (path: Path, tolerance: number): Path => {
     // that would duplicate the start point.
     const final = out.commands.at(-1)!;
 
-    if (
-      final.command === 'lineTo' &&
-      final.args[0] === last[0] &&
-      final.args[1] === last[1]
-    ) {
+    if (final.command === "lineTo" && final.args[0] === last[0] && final.args[1] === last[1]) {
       out.commands.pop();
     }
 

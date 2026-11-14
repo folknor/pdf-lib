@@ -1,5 +1,5 @@
-import { DecodeStream } from '../vendors/restructure/index.js';
-import type { FontOptions } from './TTFFont.js';
+import { DecodeStream } from "../vendors/restructure/index.js";
+import type { FontOptions } from "./TTFFont.js";
 
 export type { FontOptions };
 
@@ -14,11 +14,7 @@ export function registerFormat(format: FontFormat): void {
   formats.push(format);
 }
 
-export function create(
-  buffer: Uint8Array,
-  postscriptName?: string,
-  options?: FontOptions,
-): any {
+export function create(buffer: Uint8Array, postscriptName?: string, options?: FontOptions): any {
   for (let i = 0; i < formats.length; i++) {
     const format = formats[i]!;
 
@@ -27,7 +23,7 @@ export function create(
 
       if (postscriptName) {
         // Collections (TTC, DFont): select the face by PostScript name.
-        if ('fonts' in font) return font.getFont(postscriptName);
+        if ("fonts" in font) return font.getFont(postscriptName);
 
         // Variable fonts: select a named instance if one matches.
         if (
@@ -44,11 +40,11 @@ export function create(
     }
   }
 
-  throw new Error('Unknown font format');
+  throw new Error("Unknown font format");
 }
 
-export let defaultLanguage: string = 'en';
+export let defaultLanguage: string = "en";
 
-export function setDefaultLanguage(lang: string = 'en'): void {
+export function setDefaultLanguage(lang: string = "en"): void {
   defaultLanguage = lang;
 }

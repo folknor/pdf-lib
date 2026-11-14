@@ -370,20 +370,20 @@ const feature = (name: string, selector: string): [number, number] => [
 ];
 
 const OTMapping: Record<string, [number, number]> = {
-  rlig: feature('ligatures', 'requiredLigatures'),
-  clig: feature('ligatures', 'contextualLigatures'),
-  dlig: feature('ligatures', 'rareLigatures'),
-  hlig: feature('ligatures', 'historicalLigatures'),
-  liga: feature('ligatures', 'commonLigatures'),
-  hist: feature('ligatures', 'historicalLigatures'), // ??
+  rlig: feature("ligatures", "requiredLigatures"),
+  clig: feature("ligatures", "contextualLigatures"),
+  dlig: feature("ligatures", "rareLigatures"),
+  hlig: feature("ligatures", "historicalLigatures"),
+  liga: feature("ligatures", "commonLigatures"),
+  hist: feature("ligatures", "historicalLigatures"), // ??
 
-  smcp: feature('lowerCase', 'lowerCaseSmallCaps'),
-  pcap: feature('lowerCase', 'lowerCasePetiteCaps'),
+  smcp: feature("lowerCase", "lowerCaseSmallCaps"),
+  pcap: feature("lowerCase", "lowerCasePetiteCaps"),
 
-  frac: feature('fractions', 'diagonalFractions'),
-  dnom: feature('fractions', 'diagonalFractions'), // ??
-  numr: feature('fractions', 'diagonalFractions'), // ??
-  afrc: feature('fractions', 'verticalFractions'),
+  frac: feature("fractions", "diagonalFractions"),
+  dnom: feature("fractions", "diagonalFractions"), // ??
+  numr: feature("fractions", "diagonalFractions"), // ??
+  afrc: feature("fractions", "verticalFractions"),
   // aalt
   // abvf, abvm, abvs, akhn, blwf, blwm, blws, cfar, cjct, cpsp, falt, isol, jalt, ljmo, mset?
   // ltra, ltrm, nukt, pref, pres, pstf, psts, rand, rkrf, rphf, rtla, rtlm, size, tjmo, tnum?
@@ -394,97 +394,94 @@ const OTMapping: Record<string, [number, number]> = {
   // mark, mkmk -> acnt table?
   // locl -> languageTag + ltag table
 
-  case: feature('caseSensitiveLayout', 'caseSensitiveLayout'), // also caseSensitiveSpacing
-  ccmp: feature('unicodeDecomposition', 'canonicalComposition'), // compatibilityComposition?
-  cpct: feature('CJKVerticalRomanPlacement', 'CJKVerticalRomanCentered'), // guess..., probably not given below
-  valt: feature('CJKVerticalRomanPlacement', 'CJKVerticalRomanCentered'),
-  swsh: feature('contextualAlternates', 'swashAlternates'),
-  cswh: feature('contextualAlternates', 'contextualSwashAlternates'),
-  curs: feature('cursiveConnection', 'cursive'), // ??
-  c2pc: feature('upperCase', 'upperCasePetiteCaps'),
-  c2sc: feature('upperCase', 'upperCaseSmallCaps'),
+  case: feature("caseSensitiveLayout", "caseSensitiveLayout"), // also caseSensitiveSpacing
+  ccmp: feature("unicodeDecomposition", "canonicalComposition"), // compatibilityComposition?
+  cpct: feature("CJKVerticalRomanPlacement", "CJKVerticalRomanCentered"), // guess..., probably not given below
+  valt: feature("CJKVerticalRomanPlacement", "CJKVerticalRomanCentered"),
+  swsh: feature("contextualAlternates", "swashAlternates"),
+  cswh: feature("contextualAlternates", "contextualSwashAlternates"),
+  curs: feature("cursiveConnection", "cursive"), // ??
+  c2pc: feature("upperCase", "upperCasePetiteCaps"),
+  c2sc: feature("upperCase", "upperCaseSmallCaps"),
 
-  init: feature('smartSwash', 'wordInitialSwashes'), // ??
-  fin2: feature('smartSwash', 'wordFinalSwashes'), // ??
-  medi: feature('smartSwash', 'nonFinalSwashes'), // ??
-  med2: feature('smartSwash', 'nonFinalSwashes'), // ??
-  fin3: feature('smartSwash', 'wordFinalSwashes'), // ??
-  fina: feature('smartSwash', 'wordFinalSwashes'), // ??
+  init: feature("smartSwash", "wordInitialSwashes"), // ??
+  fin2: feature("smartSwash", "wordFinalSwashes"), // ??
+  medi: feature("smartSwash", "nonFinalSwashes"), // ??
+  med2: feature("smartSwash", "nonFinalSwashes"), // ??
+  fin3: feature("smartSwash", "wordFinalSwashes"), // ??
+  fina: feature("smartSwash", "wordFinalSwashes"), // ??
 
-  pkna: feature('kanaSpacing', 'proportionalKana'),
-  half: feature('textSpacing', 'halfWidthText'), // also HalfWidthCJKRoman, HalfWidthIdeographs?
-  halt: feature('textSpacing', 'altHalfWidthText'),
+  pkna: feature("kanaSpacing", "proportionalKana"),
+  half: feature("textSpacing", "halfWidthText"), // also HalfWidthCJKRoman, HalfWidthIdeographs?
+  halt: feature("textSpacing", "altHalfWidthText"),
 
-  hkna: feature('alternateKana', 'alternateHorizKana'),
-  vkna: feature('alternateKana', 'alternateVertKana'),
+  hkna: feature("alternateKana", "alternateHorizKana"),
+  vkna: feature("alternateKana", "alternateVertKana"),
   // hngl: feature 'transliteration', 'hanjaToHangulSelector' # deprecated
 
-  ital: feature('italicCJKRoman', 'CJKItalicRoman'),
-  lnum: feature('numberCase', 'upperCaseNumbers'),
-  onum: feature('numberCase', 'lowerCaseNumbers'),
-  mgrk: feature('mathematicalExtras', 'mathematicalGreek'),
+  ital: feature("italicCJKRoman", "CJKItalicRoman"),
+  lnum: feature("numberCase", "upperCaseNumbers"),
+  onum: feature("numberCase", "lowerCaseNumbers"),
+  mgrk: feature("mathematicalExtras", "mathematicalGreek"),
 
   // nalt: not enough info. what type of annotation?
   // ornm: ditto, which ornament style?
 
-  calt: feature('contextualAlternates', 'contextualAlternates'), // or more?
-  vrt2: feature('verticalSubstitution', 'substituteVerticalForms'), // oh... below?
-  vert: feature('verticalSubstitution', 'substituteVerticalForms'),
-  tnum: feature('numberSpacing', 'monospacedNumbers'),
-  pnum: feature('numberSpacing', 'proportionalNumbers'),
-  sups: feature('verticalPosition', 'superiors'),
-  subs: feature('verticalPosition', 'inferiors'),
-  ordn: feature('verticalPosition', 'ordinals'),
-  pwid: feature('textSpacing', 'proportionalText'),
-  hwid: feature('textSpacing', 'halfWidthText'),
-  qwid: feature('textSpacing', 'quarterWidthText'), // also QuarterWidthNumbers?
-  twid: feature('textSpacing', 'thirdWidthText'), // also ThirdWidthNumbers?
-  fwid: feature('textSpacing', 'proportionalText'), //??
-  palt: feature('textSpacing', 'altProportionalText'),
-  trad: feature('characterShape', 'traditionalCharacters'),
-  smpl: feature('characterShape', 'simplifiedCharacters'),
-  jp78: feature('characterShape', 'JIS1978Characters'),
-  jp83: feature('characterShape', 'JIS1983Characters'),
-  jp90: feature('characterShape', 'JIS1990Characters'),
-  jp04: feature('characterShape', 'JIS2004Characters'),
-  expt: feature('characterShape', 'expertCharacters'),
-  hojo: feature('characterShape', 'hojoCharacters'),
-  nlck: feature('characterShape', 'NLCCharacters'),
-  tnam: feature('characterShape', 'traditionalNamesCharacters'),
-  ruby: feature('rubyKana', 'rubyKana'),
-  titl: feature('styleOptions', 'titlingCaps'),
-  zero: feature('typographicExtras', 'slashedZero'),
+  calt: feature("contextualAlternates", "contextualAlternates"), // or more?
+  vrt2: feature("verticalSubstitution", "substituteVerticalForms"), // oh... below?
+  vert: feature("verticalSubstitution", "substituteVerticalForms"),
+  tnum: feature("numberSpacing", "monospacedNumbers"),
+  pnum: feature("numberSpacing", "proportionalNumbers"),
+  sups: feature("verticalPosition", "superiors"),
+  subs: feature("verticalPosition", "inferiors"),
+  ordn: feature("verticalPosition", "ordinals"),
+  pwid: feature("textSpacing", "proportionalText"),
+  hwid: feature("textSpacing", "halfWidthText"),
+  qwid: feature("textSpacing", "quarterWidthText"), // also QuarterWidthNumbers?
+  twid: feature("textSpacing", "thirdWidthText"), // also ThirdWidthNumbers?
+  fwid: feature("textSpacing", "proportionalText"), //??
+  palt: feature("textSpacing", "altProportionalText"),
+  trad: feature("characterShape", "traditionalCharacters"),
+  smpl: feature("characterShape", "simplifiedCharacters"),
+  jp78: feature("characterShape", "JIS1978Characters"),
+  jp83: feature("characterShape", "JIS1983Characters"),
+  jp90: feature("characterShape", "JIS1990Characters"),
+  jp04: feature("characterShape", "JIS2004Characters"),
+  expt: feature("characterShape", "expertCharacters"),
+  hojo: feature("characterShape", "hojoCharacters"),
+  nlck: feature("characterShape", "NLCCharacters"),
+  tnam: feature("characterShape", "traditionalNamesCharacters"),
+  ruby: feature("rubyKana", "rubyKana"),
+  titl: feature("styleOptions", "titlingCaps"),
+  zero: feature("typographicExtras", "slashedZero"),
 
-  ss01: feature('stylisticAlternatives', 'stylisticAltOne'),
-  ss02: feature('stylisticAlternatives', 'stylisticAltTwo'),
-  ss03: feature('stylisticAlternatives', 'stylisticAltThree'),
-  ss04: feature('stylisticAlternatives', 'stylisticAltFour'),
-  ss05: feature('stylisticAlternatives', 'stylisticAltFive'),
-  ss06: feature('stylisticAlternatives', 'stylisticAltSix'),
-  ss07: feature('stylisticAlternatives', 'stylisticAltSeven'),
-  ss08: feature('stylisticAlternatives', 'stylisticAltEight'),
-  ss09: feature('stylisticAlternatives', 'stylisticAltNine'),
-  ss10: feature('stylisticAlternatives', 'stylisticAltTen'),
-  ss11: feature('stylisticAlternatives', 'stylisticAltEleven'),
-  ss12: feature('stylisticAlternatives', 'stylisticAltTwelve'),
-  ss13: feature('stylisticAlternatives', 'stylisticAltThirteen'),
-  ss14: feature('stylisticAlternatives', 'stylisticAltFourteen'),
-  ss15: feature('stylisticAlternatives', 'stylisticAltFifteen'),
-  ss16: feature('stylisticAlternatives', 'stylisticAltSixteen'),
-  ss17: feature('stylisticAlternatives', 'stylisticAltSeventeen'),
-  ss18: feature('stylisticAlternatives', 'stylisticAltEighteen'),
-  ss19: feature('stylisticAlternatives', 'stylisticAltNineteen'),
-  ss20: feature('stylisticAlternatives', 'stylisticAltTwenty'),
+  ss01: feature("stylisticAlternatives", "stylisticAltOne"),
+  ss02: feature("stylisticAlternatives", "stylisticAltTwo"),
+  ss03: feature("stylisticAlternatives", "stylisticAltThree"),
+  ss04: feature("stylisticAlternatives", "stylisticAltFour"),
+  ss05: feature("stylisticAlternatives", "stylisticAltFive"),
+  ss06: feature("stylisticAlternatives", "stylisticAltSix"),
+  ss07: feature("stylisticAlternatives", "stylisticAltSeven"),
+  ss08: feature("stylisticAlternatives", "stylisticAltEight"),
+  ss09: feature("stylisticAlternatives", "stylisticAltNine"),
+  ss10: feature("stylisticAlternatives", "stylisticAltTen"),
+  ss11: feature("stylisticAlternatives", "stylisticAltEleven"),
+  ss12: feature("stylisticAlternatives", "stylisticAltTwelve"),
+  ss13: feature("stylisticAlternatives", "stylisticAltThirteen"),
+  ss14: feature("stylisticAlternatives", "stylisticAltFourteen"),
+  ss15: feature("stylisticAlternatives", "stylisticAltFifteen"),
+  ss16: feature("stylisticAlternatives", "stylisticAltSixteen"),
+  ss17: feature("stylisticAlternatives", "stylisticAltSeventeen"),
+  ss18: feature("stylisticAlternatives", "stylisticAltEighteen"),
+  ss19: feature("stylisticAlternatives", "stylisticAltNineteen"),
+  ss20: feature("stylisticAlternatives", "stylisticAltTwenty"),
 };
 
 // salt: feature 'stylisticAlternatives', 'stylisticAltOne' # hmm, which one to choose
 
 // Add cv01-cv99 features
 for (let i = 1; i <= 99; i++) {
-  OTMapping[`cv${`00${i}`.slice(-2)}`] = [
-    features['characterAlternatives']!.code,
-    i,
-  ];
+  OTMapping[`cv${`00${i}`.slice(-2)}`] = [features["characterAlternatives"]!.code, i];
 }
 
 // create inverse mapping
@@ -504,9 +501,7 @@ for (const ot in OTMapping) {
 // in the form of {featureType:{featureSetting:true}}. An OpenType alternate
 // number only switches the mapped setting on: AAT selectors are not numbered
 // alternates, so `{ salt: 2 }` reaches morx as plain `salt`.
-export function mapOTToAAT(
-  inputFeatures: Record<string, boolean | number>,
-): MorxFeatures {
+export function mapOTToAAT(inputFeatures: Record<string, boolean | number>): MorxFeatures {
   const res: MorxFeatures = {};
 
   for (const k in inputFeatures) {
@@ -531,9 +526,7 @@ function mapFeatureStrings(
 ): [number | undefined, number | boolean | undefined] {
   const [type, setting] = f;
 
-  const typeCode = Number.isNaN(type as number)
-    ? features[type as string]?.code
-    : (type as number);
+  const typeCode = Number.isNaN(type as number) ? features[type as string]?.code : (type as number);
 
   const settingCode = Number.isNaN(setting as number)
     ? features[type as string]?.[setting as string]
@@ -560,7 +553,7 @@ export function mapAATToOT(
         res[r] = true;
       }
     }
-  } else if (typeof inputFeatures === 'object') {
+  } else if (typeof inputFeatures === "object") {
     for (const type in inputFeatures) {
       const feat = inputFeatures[type];
 
@@ -568,10 +561,7 @@ export function mapAATToOT(
         let r: string | undefined;
         const f = mapFeatureStrings([type, setting]);
 
-        if (
-          feat[setting] &&
-          (r = AATMapping[f[0] as number]?.[f[1] as number])
-        ) {
+        if (feat[setting] && (r = AATMapping[f[0] as number]?.[f[1] as number])) {
           res[r] = true;
         }
       }

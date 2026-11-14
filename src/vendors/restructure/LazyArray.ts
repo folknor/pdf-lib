@@ -4,11 +4,11 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { ArrayT } from './Array.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import { NumberT } from './Number.js';
-import * as utils from './utils.js';
+import { ArrayT } from "./Array.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import { NumberT } from "./Number.js";
+import * as utils from "./utils.js";
 
 interface LazyArrayContext {
   parent?: unknown;
@@ -111,11 +111,7 @@ export class LazyArray<T = unknown> extends ArrayT<T> {
     return super.size(val as T[] | null, ctx);
   }
 
-  override encode(
-    stream: EncodeStream,
-    val: T[] | LazyArrayValue<T>,
-    ctx?: unknown,
-  ): void {
+  override encode(stream: EncodeStream, val: T[] | LazyArrayValue<T>, ctx?: unknown): void {
     if (val instanceof LazyArrayValue) {
       val = val.toArray();
     }

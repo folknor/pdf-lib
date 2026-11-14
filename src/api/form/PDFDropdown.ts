@@ -6,26 +6,19 @@ import {
   PDFStream,
   type PDFString,
   type PDFWidgetAnnotation,
-} from '../../core/index.js';
-import {
-  assertIs,
-  assertOrUndefined,
-  assertPositive,
-} from '../../utils/index.js';
-import { rgb } from '../colors.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFFont from '../PDFFont.js';
-import PDFPage from '../PDFPage.js';
-import { degrees } from '../rotations.js';
+} from "../../core/index.js";
+import { assertIs, assertOrUndefined, assertPositive } from "../../utils/index.js";
+import { rgb } from "../colors.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFFont from "../PDFFont.js";
+import PDFPage from "../PDFPage.js";
+import { degrees } from "../rotations.js";
 import {
   type AppearanceProviderFor,
   defaultDropdownAppearanceProvider,
   normalizeAppearance,
-} from './appearances.js';
-import PDFField, {
-  assertFieldAppearanceOptions,
-  type FieldAppearanceOptions,
-} from './PDFField.js';
+} from "./appearances.js";
+import PDFField, { assertFieldAppearanceOptions, type FieldAppearanceOptions } from "./PDFField.js";
 
 /**
  * Represents a dropdown field of a [[PDFForm]].
@@ -57,16 +50,10 @@ export default class PDFDropdown extends PDFField {
   /** The low-level PDFAcroComboBox wrapped by this dropdown. */
   declare readonly acroField: PDFAcroComboBox;
 
-  private constructor(
-    acroComboBox: PDFAcroComboBox,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) {
+  private constructor(acroComboBox: PDFAcroComboBox, ref: PDFRef, doc: PDFDocument) {
     super(acroComboBox, ref, doc);
 
-    assertIs(acroComboBox, 'acroComboBox', [
-      [PDFAcroComboBox, 'PDFAcroComboBox'],
-    ]);
+    assertIs(acroComboBox, "acroComboBox", [[PDFAcroComboBox, "PDFAcroComboBox"]]);
 
     this.acroField = acroComboBox;
   }
@@ -139,7 +126,7 @@ export default class PDFDropdown extends PDFField {
    */
   setOptions(options: string[]) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', [Array]);
+    assertIs(options, "options", [Array]);
 
     const optionObjects = new Array<{ value: PDFHexString }>(options.length);
 
@@ -164,7 +151,7 @@ export default class PDFDropdown extends PDFField {
    */
   addOptions(options: string | string[]) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', ['string', Array]);
+    assertIs(options, "options", ["string", Array]);
 
     const optionsArr = Array.isArray(options) ? options : [options];
 
@@ -227,16 +214,14 @@ export default class PDFDropdown extends PDFField {
    */
   select(options: string | string[], merge = false) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', ['string', Array]);
-    assertIs(merge, 'merge', ['boolean']);
+    assertIs(options, "options", ["string", Array]);
+    assertIs(merge, "merge", ["boolean"]);
 
     const optionsArr = Array.isArray(options) ? options : [options];
 
     const validOptions = this.getOptions();
 
-    const hasCustomOption = optionsArr.find(
-      (option) => !validOptions.includes(option),
-    );
+    const hasCustomOption = optionsArr.find((option) => !validOptions.includes(option));
 
     if (hasCustomOption) this.enableEditing();
 
@@ -300,7 +285,7 @@ export default class PDFDropdown extends PDFField {
    */
   setFontSize(fontSize: number) {
     this.doc.getForm().prepareForMutation();
-    assertPositive(fontSize, 'fontSize');
+    assertPositive(fontSize, "fontSize");
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
   }
@@ -554,18 +539,18 @@ export default class PDFDropdown extends PDFField {
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
     this.doc.getForm().prepareForMutation();
-    assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertIs(page, "page", [[PDFPage, "PDFPage"]]);
     assertFieldAppearanceOptions(options);
 
     if (!options) options = {};
 
-    if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+    if (!("textColor" in options)) options.textColor = rgb(0, 0, 0);
 
-    if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+    if (!("backgroundColor" in options)) options.backgroundColor = rgb(1, 1, 1);
 
-    if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+    if (!("borderColor" in options)) options.borderColor = rgb(0, 0, 0);
 
-    if (!('borderWidth' in options)) options.borderWidth = 1;
+    if (!("borderWidth" in options)) options.borderWidth = 1;
 
     // Create a widget for this dropdown
     const widget = this.createWidget({
@@ -612,8 +597,7 @@ export default class PDFDropdown extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const hasAppearances =
-        widget.getAppearances()?.normal instanceof PDFStream;
+      const hasAppearances = widget.getAppearances()?.normal instanceof PDFStream;
 
       if (!hasAppearances) return true;
     }
@@ -632,7 +616,7 @@ export default class PDFDropdown extends PDFField {
    * @param font The font to be used for creating the appearance streams.
    */
   override defaultUpdateAppearances(font: PDFFont) {
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
     this.updateAppearances(font);
   }
 
@@ -652,13 +636,10 @@ export default class PDFDropdown extends PDFField {
    * @param provider Optionally, the appearance provider to be used for
    *                 generating the contents of the appearance streams.
    */
-  updateAppearances(
-    font: PDFFont,
-    provider?: AppearanceProviderFor<PDFDropdown>,
-  ) {
+  updateAppearances(font: PDFFont, provider?: AppearanceProviderFor<PDFDropdown>) {
     this.doc.getForm().prepareForMutation();
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', ['function']);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
+    assertOrUndefined(provider, "provider", ["function"]);
 
     const widgets = this.acroField.getWidgets();
 

@@ -2,21 +2,21 @@ import {
   InvalidDecodeParmsError,
   UnexpectedObjectTypeError,
   UnsupportedEncodingError,
-} from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNull from '../objects/PDFNull.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFRawStream from '../objects/PDFRawStream.js';
-import Ascii85Stream from './Ascii85Stream.js';
-import AsciiHexStream from './AsciiHexStream.js';
-import DecodeStream from './DecodeStream.js';
-import FlateStream from './FlateStream.js';
-import LZWStream from './LZWStream.js';
-import PredictorStream, { type PredictorParams } from './PredictorStream.js';
-import RunLengthStream from './RunLengthStream.js';
-import Stream, { type StreamType } from './Stream.js';
+} from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNull from "../objects/PDFNull.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFRawStream from "../objects/PDFRawStream.js";
+import Ascii85Stream from "./Ascii85Stream.js";
+import AsciiHexStream from "./AsciiHexStream.js";
+import DecodeStream from "./DecodeStream.js";
+import FlateStream from "./FlateStream.js";
+import LZWStream from "./LZWStream.js";
+import PredictorStream, { type PredictorParams } from "./PredictorStream.js";
+import RunLengthStream from "./RunLengthStream.js";
+import Stream, { type StreamType } from "./Stream.js";
 
 export interface DecodeOptions {
   /**
@@ -26,19 +26,12 @@ export interface DecodeOptions {
   strict?: boolean;
 }
 
-const integerParam = (
-  params: PDFDict,
-  key: string,
-  fallback: number,
-): number => {
+const integerParam = (params: PDFDict, key: string, fallback: number): number => {
   const value = params.lookup(PDFName.of(key));
 
   if (value === undefined || value === PDFNull) return fallback;
 
-  if (
-    !(value instanceof PDFNumber) ||
-    !Number.isSafeInteger(value.asNumber())
-  ) {
+  if (!(value instanceof PDFNumber) || !Number.isSafeInteger(value.asNumber())) {
     throw new InvalidDecodeParmsError(`/${key} is not an integer`);
   }
 
@@ -46,11 +39,9 @@ const integerParam = (
 };
 
 /** The predictor a Flate or LZW stage declares, or undefined for none (1). */
-const predictorOf = (
-  params: PDFDict | undefined,
-): PredictorParams | undefined => {
+const predictorOf = (params: PDFDict | undefined): PredictorParams | undefined => {
   if (params === undefined) return undefined;
-  const predictor = integerParam(params, 'Predictor', 1);
+  const predictor = integerParam(params, "Predictor", 1);
 
   if (predictor === 1) return undefined;
 
@@ -58,9 +49,9 @@ const predictorOf = (
     throw new InvalidDecodeParmsError(`unknown /Predictor ${predictor}`);
   }
 
-  const colors = integerParam(params, 'Colors', 1);
-  const bitsPerComponent = integerParam(params, 'BitsPerComponent', 8);
-  const columns = integerParam(params, 'Columns', 1);
+  const colors = integerParam(params, "Colors", 1);
+  const bitsPerComponent = integerParam(params, "BitsPerComponent", 8);
+  const columns = integerParam(params, "Columns", 1);
 
   if (colors < 1) throw new InvalidDecodeParmsError(`/Colors ${colors}`);
 
@@ -73,7 +64,7 @@ const predictorOf = (
   return {
     predictor,
     colors,
-    bitsPerComponent: bitsPerComponent as PredictorParams['bitsPerComponent'],
+    bitsPerComponent: bitsPerComponent as PredictorParams["bitsPerComponent"],
     columns,
   };
 };
@@ -85,16 +76,13 @@ const decodeStream = (
   limit: <T extends StreamType>(s: T) => T,
   strict: boolean,
 ): StreamType => {
-  if (
-    encoding === PDFName.of('FlateDecode') ||
-    encoding === PDFName.of('LZWDecode')
-  ) {
+  if (encoding === PDFName.of("FlateDecode") || encoding === PDFName.of("LZWDecode")) {
     let decoded: DecodeStream;
 
-    if (encoding === PDFName.of('FlateDecode')) {
+    if (encoding === PDFName.of("FlateDecode")) {
       decoded = limit(new FlateStream(stream));
     } else {
-      const earlyChange = params ? integerParam(params, 'EarlyChange', 1) : 1;
+      const earlyChange = params ? integerParam(params, "EarlyChange", 1) : 1;
 
       if (earlyChange !== 0 && earlyChange !== 1) {
         throw new InvalidDecodeParmsError(`/EarlyChange ${earlyChange}`);
@@ -107,23 +95,18 @@ const decodeStream = (
 
     if (predictor === undefined) return decoded;
 
-    return new PredictorStream(
-      decoded,
-      predictor,
-      strict,
-      decoded.maxDecodedSize,
-    );
+    return new PredictorStream(decoded, predictor, strict, decoded.maxDecodedSize);
   }
 
-  if (encoding === PDFName.of('ASCII85Decode')) {
+  if (encoding === PDFName.of("ASCII85Decode")) {
     return limit(new Ascii85Stream(stream));
   }
 
-  if (encoding === PDFName.of('ASCIIHexDecode')) {
+  if (encoding === PDFName.of("ASCIIHexDecode")) {
     return limit(new AsciiHexStream(stream));
   }
 
-  if (encoding === PDFName.of('RunLengthDecode')) {
+  if (encoding === PDFName.of("RunLengthDecode")) {
     return limit(new RunLengthStream(stream));
   }
 
@@ -136,17 +119,10 @@ const decodeStream = (
  * same length; null or absent means none. Anything else is refused rather
  * than guessed at.
  */
-const parmsPerFilter = (
-  filters: PDFName[],
-  DecodeParms: unknown,
-): (PDFDict | undefined)[] => {
+const parmsPerFilter = (filters: PDFName[], DecodeParms: unknown): (PDFDict | undefined)[] => {
   const none = filters.map(() => undefined);
 
-  if (
-    filters.length === 0 ||
-    DecodeParms === undefined ||
-    DecodeParms === PDFNull
-  ) {
+  if (filters.length === 0 || DecodeParms === undefined || DecodeParms === PDFNull) {
     return none;
   }
 
@@ -154,12 +130,12 @@ const parmsPerFilter = (
     if (value === undefined || value === PDFNull) return undefined;
 
     if (value instanceof PDFDict) return value;
-    throw new InvalidDecodeParmsError('an entry is not a dictionary');
+    throw new InvalidDecodeParmsError("an entry is not a dictionary");
   };
 
   if (DecodeParms instanceof PDFDict) {
     if (filters.length !== 1) {
-      throw new InvalidDecodeParmsError('one dictionary for several filters');
+      throw new InvalidDecodeParmsError("one dictionary for several filters");
     }
 
     return [DecodeParms];
@@ -175,7 +151,7 @@ const parmsPerFilter = (
     return filters.map((_, idx) => entry(DecodeParms.lookup(idx)));
   }
 
-  throw new InvalidDecodeParmsError('not a dictionary or an array');
+  throw new InvalidDecodeParmsError("not a dictionary or an array");
 };
 
 /**
@@ -206,7 +182,7 @@ export const decodePDFRawStream = (
     stream = limit(transform.createStream(stream, contents.length));
   }
 
-  const Filter = dict.lookup(PDFName.of('Filter'));
+  const Filter = dict.lookup(PDFName.of("Filter"));
   let filters: PDFName[];
 
   if (Filter === undefined || Filter === PDFNull) filters = [];
@@ -215,15 +191,9 @@ export const decodePDFRawStream = (
     filters = Filter.asArray().map((_, idx) => Filter.lookup(idx, PDFName));
   } else throw new UnexpectedObjectTypeError([PDFName, PDFArray], Filter);
 
-  const parms = parmsPerFilter(filters, dict.lookup(PDFName.of('DecodeParms')));
+  const parms = parmsPerFilter(filters, dict.lookup(PDFName.of("DecodeParms")));
   filters.forEach((filter, idx) => {
-    stream = decodeStream(
-      stream,
-      filter,
-      parms[idx],
-      limit,
-      options.strict ?? false,
-    );
+    stream = decodeStream(stream, filter, parms[idx], limit, options.strict ?? false);
   });
 
   return stream;

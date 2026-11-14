@@ -1,18 +1,18 @@
-import { toCodePoint, toHexString } from '../../utils/index.js';
+import { toCodePoint, toHexString } from "../../utils/index.js";
 import {
   Encodings,
   type EncodingType,
   Font,
   FontNames,
-} from '../../vendors/standard-fonts/index.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
+} from "../../vendors/standard-fonts/index.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
 import EncodedText, {
   BASE_SPACING,
   type GlyphSpacing,
   SPACE_SPACING,
   type TextSpacing,
-} from './EncodedText.js';
+} from "./EncodedText.js";
 
 export interface Glyph {
   code: number;
@@ -67,46 +67,26 @@ class StandardFontEmbedder {
     for (let idx = 0; idx < count; idx++) {
       const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
-      spacing[idx] = characters[idx] === ' ' ? SPACE_SPACING : BASE_SPACING;
+      spacing[idx] = characters[idx] === " " ? SPACE_SPACING : BASE_SPACING;
       codes[idx] = toHexString(glyphs[idx]!.code);
       widths[idx] = this.widthOfGlyph(left);
       advances[idx] =
         widths[idx]! +
-        (right === undefined
-          ? 0
-          : this.font.getXAxisKerningForPair(left, right) || 0);
+        (right === undefined ? 0 : this.font.getXAxisKerningForPair(left, right) || 0);
     }
 
-    return new EncodedText(
-      codes,
-      advances,
-      widths,
-      zeros,
-      zeros.slice(),
-      spacing,
-    );
+    return new EncodedText(codes, advances, widths, zeros, zeros.slice(), spacing);
   }
 
   // With spacing, it measures what encodeText(text).withSpacing() draws.
-  widthOfTextAtSize(
-    text: string,
-    size: number,
-    spacing: TextSpacing = {},
-  ): number {
+  widthOfTextAtSize(text: string, size: number, spacing: TextSpacing = {}): number {
     const { characterSpacing = 0, wordSpacing = 0 } = spacing;
     const encoded = this.encodeText(text);
 
-    return (
-      (encoded.withSpacing(characterSpacing, wordSpacing, size).advance *
-        size) /
-      1000
-    );
+    return (encoded.withSpacing(characterSpacing, wordSpacing, size).advance * size) / 1000;
   }
 
-  heightOfFontAtSize(
-    size: number,
-    options: { descender?: boolean } = {},
-  ): number {
+  heightOfFontAtSize(size: number, options: { descender?: boolean } = {}): number {
     const { descender = true } = options;
 
     const { Ascender, Descender, FontBBox } = this.font;
@@ -130,12 +110,11 @@ class StandardFontEmbedder {
 
   embedIntoContext(context: PDFContext, ref?: PDFRef): PDFRef {
     const fontDict = context.obj({
-      Type: 'Font',
-      Subtype: 'Type1',
+      Type: "Font",
+      Subtype: "Type1",
       BaseFont: this.customName || this.fontName,
 
-      Encoding:
-        this.encoding === Encodings.WinAnsi ? 'WinAnsiEncoding' : undefined,
+      Encoding: this.encoding === Encodings.WinAnsi ? "WinAnsiEncoding" : undefined,
     });
 
     if (ref) {
@@ -163,7 +142,7 @@ class StandardFontEmbedder {
         glyphs[idx] = this.encoding.encodeUnicodeCodePoint(codePoint);
       } catch {
         // Replace non-WinAnsi characters with a placeholder
-        glyphs[idx] = this.encoding.encodeUnicodeCodePoint(toCodePoint('?')!);
+        glyphs[idx] = this.encoding.encodeUnicodeCodePoint(toCodePoint("?")!);
       }
     }
 

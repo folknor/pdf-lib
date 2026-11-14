@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const DeviceRecord = new r.Struct({
   pixelSize: r.uint8,
@@ -11,5 +11,5 @@ export default new r.Struct({
   version: r.uint16,
   numRecords: r.int16,
   sizeDeviceRecord: r.int32,
-  records: new r.Array(DeviceRecord, 'numRecords'),
+  records: new r.Array(DeviceRecord, "numRecords"),
 });

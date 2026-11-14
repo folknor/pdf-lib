@@ -1,8 +1,8 @@
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import PDFHeader from './PDFHeader.js';
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import PDFHeader from "./PDFHeader.js";
 
 /** A PDF version as `[major, minor]`. */
 export type PDFVersion = readonly [number, number];
@@ -13,14 +13,12 @@ export const parsePDFVersion = (text: string): PDFVersion | undefined => {
   return match ? [Number(match[1]), Number(match[2])] : undefined;
 };
 
-export const compareVersions = (a: PDFVersion, b: PDFVersion): number =>
-  a[0] - b[0] || a[1] - b[1];
+export const compareVersions = (a: PDFVersion, b: PDFVersion): number => a[0] - b[0] || a[1] - b[1];
 
 export const maxVersion = (a: PDFVersion, b: PDFVersion): PDFVersion =>
   compareVersions(a, b) >= 0 ? a : b;
 
-export const versionString = (version: PDFVersion): string =>
-  `${version[0]}.${version[1]}`;
+export const versionString = (version: PDFVersion): string => `${version[0]}.${version[1]}`;
 
 export const getCatalog = (context: PDFContext): PDFDict | undefined => {
   const root = context.trailerInfo.Root;
@@ -35,16 +33,14 @@ export const getCatalog = (context: PDFContext): PDFDict | undefined => {
  * The catalog's /Version: `undefined` when absent, `'malformed'` when present
  * but not a name of the form `/major.minor`.
  */
-export const getCatalogVersion = (
-  context: PDFContext,
-): PDFVersion | 'malformed' | undefined => {
-  const value = getCatalog(context)?.lookup(PDFName.of('Version'));
+export const getCatalogVersion = (context: PDFContext): PDFVersion | "malformed" | undefined => {
+  const value = getCatalog(context)?.lookup(PDFName.of("Version"));
 
   if (value === undefined) return undefined;
 
-  if (!(value instanceof PDFName)) return 'malformed';
+  if (!(value instanceof PDFName)) return "malformed";
 
-  return parsePDFVersion(value.decodeText()) ?? 'malformed';
+  return parsePDFVersion(value.decodeText()) ?? "malformed";
 };
 
 /**
@@ -56,9 +52,7 @@ export const getEffectiveVersion = (context: PDFContext): PDFVersion => {
   const header = parsePDFVersion(context.header.getVersionString()) ?? [1, 0];
   const catalog = getCatalogVersion(context);
 
-  return catalog === undefined || catalog === 'malformed'
-    ? header
-    : maxVersion(header, catalog);
+  return catalog === undefined || catalog === "malformed" ? header : maxVersion(header, catalog);
 };
 
 export const supportsObjectStreams = (version: PDFVersion): boolean =>
@@ -76,25 +70,18 @@ export const getIncrementVersion = (context: PDFContext): PDFVersion => {
   const header = parsePDFVersion(original.getVersionString()) ?? [1, 0];
   const catalog = getCatalogVersion(context);
 
-  return catalog === undefined || catalog === 'malformed'
-    ? header
-    : maxVersion(header, catalog);
+  return catalog === undefined || catalog === "malformed" ? header : maxVersion(header, catalog);
 };
 
-const checkObjectStreamDeclarations = (
-  context: PDFContext,
-  incremental: boolean,
-): void => {
-  if (getCatalogVersion(context) === 'malformed') {
-    throw new Error(
-      'Cannot write object streams: the catalog /Version is malformed.',
-    );
+const checkObjectStreamDeclarations = (context: PDFContext, incremental: boolean): void => {
+  if (getCatalogVersion(context) === "malformed") {
+    throw new Error("Cannot write object streams: the catalog /Version is malformed.");
   }
 
   if (incremental) {
     if (!(context.trailerInfo.Root instanceof PDFRef) || !getCatalog(context)) {
       throw new Error(
-        'Cannot write object streams in an increment: the trailer /Root is not a reference to a catalog dictionary.',
+        "Cannot write object streams in an increment: the trailer /Root is not a reference to a catalog dictionary.",
       );
     }
   } else if (!parsePDFVersion(context.header.getVersionString())) {
@@ -123,9 +110,7 @@ export const planObjectStreamVersion = (
   return () => {
     checkObjectStreamDeclarations(context, incremental);
 
-    const version = incremental
-      ? getIncrementVersion(context)
-      : getEffectiveVersion(context);
+    const version = incremental ? getIncrementVersion(context) : getEffectiveVersion(context);
 
     if (supportsObjectStreams(version)) return;
     const [major, minor] = OBJECT_STREAM_VERSION;
@@ -137,7 +122,7 @@ export const planObjectStreamVersion = (
     }
 
     getCatalog(context)!.set(
-      PDFName.of('Version'),
+      PDFName.of("Version"),
       PDFName.of(versionString(OBJECT_STREAM_VERSION)),
     );
     context.snapshot?.markRefForSave(context.trailerInfo.Root as PDFRef);

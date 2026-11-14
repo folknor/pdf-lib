@@ -14,15 +14,15 @@ import {
   PDFRawStream,
   PDFRef,
   PDFString,
-} from '../../src/index';
+} from "../../src/index";
 
-describe('PDFObjectCopier', () => {
-  it('copies PDFDicts, including their indirect references', () => {
+describe("PDFObjectCopier", () => {
+  it("copies PDFDicts, including their indirect references", () => {
     // Arrange
     const src = PDFContext.create();
 
     const origDict = src.obj({
-      Foo: PDFString.of('stuff and things'),
+      Foo: PDFString.of("stuff and things"),
       Bar: PDFRef.of(13),
     });
 
@@ -30,7 +30,7 @@ describe('PDFObjectCopier', () => {
 
     src.assign(PDFRef.of(13), src.obj([1, PDFRef.of(17)]));
 
-    src.assign(PDFRef.of(17), src.obj({ Baz: 'wallykazam' }));
+    src.assign(PDFRef.of(17), src.obj({ Baz: "wallykazam" }));
 
     const dest = PDFContext.create();
 
@@ -43,11 +43,11 @@ describe('PDFObjectCopier', () => {
     expect(copiedDict).not.toBe(origDict);
     expect(copiedDict).toBeInstanceOf(PDFDict);
 
-    const Foo = PDFName.of('Foo');
+    const Foo = PDFName.of("Foo");
     expect(copiedDict.get(Foo)).not.toBe(origDict.get(Foo));
     expect(copiedDict.get(Foo)).toBeInstanceOf(PDFString);
 
-    const Bar = PDFName.of('Bar');
+    const Bar = PDFName.of("Bar");
     expect(copiedDict.get(Bar)).not.toBe(origDict.get(Bar));
     expect(copiedDict.get(Bar)).toBeInstanceOf(PDFRef);
 
@@ -69,25 +69,22 @@ describe('PDFObjectCopier', () => {
     expect(destBar1).not.toBe(srcBar1);
     expect(destBar1).toBeInstanceOf(PDFDict);
 
-    const Baz = PDFName.of('Baz');
+    const Baz = PDFName.of("Baz");
     expect(destBar1.get(Baz)).toBe(srcBar1.get(Baz));
     expect(destBar1.get(Baz)).toBeInstanceOf(PDFName);
   });
 
-  it('copies PDFArrays, including their indirect references', () => {
+  it("copies PDFArrays, including their indirect references", () => {
     // Arrange
     const src = PDFContext.create();
 
-    const origArray = src.obj([
-      PDFString.of('stuff and things'),
-      PDFRef.of(13),
-    ]);
+    const origArray = src.obj([PDFString.of("stuff and things"), PDFRef.of(13)]);
 
     src.register(origArray);
 
     src.assign(PDFRef.of(13), src.obj({ Foo: 1, Bar: PDFRef.of(17) }));
 
-    src.assign(PDFRef.of(17), src.obj(['wallykazam']));
+    src.assign(PDFRef.of(17), src.obj(["wallykazam"]));
 
     const dest = PDFContext.create();
 
@@ -112,11 +109,11 @@ describe('PDFObjectCopier', () => {
     expect(dest1).not.toBe(src1);
     expect(dest1).toBeInstanceOf(PDFDict);
 
-    const Foo = PDFName.of('Foo');
+    const Foo = PDFName.of("Foo");
     expect(dest1.get(Foo)).not.toBe(src1.get(Foo));
     expect(dest1.get(Foo)).toBeInstanceOf(PDFNumber);
 
-    const Bar = PDFName.of('Bar');
+    const Bar = PDFName.of("Bar");
     expect(dest1.get(Bar)).not.toBe(src1.get(Bar));
     expect(dest1.get(Bar)).toBeInstanceOf(PDFRef);
 
@@ -130,12 +127,12 @@ describe('PDFObjectCopier', () => {
     expect(dest1Bar.get(0)).toBeInstanceOf(PDFName);
   });
 
-  it('copies PDFStreams, including their indirect references', () => {
+  it("copies PDFStreams, including their indirect references", () => {
     // Arrange
     const src = PDFContext.create();
 
     const origStream = src.stream(new Uint8Array([1, 2, 3, 4, 5]), {
-      Foo: PDFString.of('stuff and things'),
+      Foo: PDFString.of("stuff and things"),
       Bar: PDFRef.of(13),
     });
 
@@ -143,7 +140,7 @@ describe('PDFObjectCopier', () => {
 
     src.assign(PDFRef.of(13), src.obj([1, PDFRef.of(17)]));
 
-    src.assign(PDFRef.of(17), src.obj({ Baz: 'wallykazam' }));
+    src.assign(PDFRef.of(17), src.obj({ Baz: "wallykazam" }));
 
     const dest = PDFContext.create();
 
@@ -159,11 +156,11 @@ describe('PDFObjectCopier', () => {
     expect(copiedStream.contents).not.toBe(origStream.contents);
     expect(copiedStream.contents).toEqual(origStream.contents);
 
-    const Foo = PDFName.of('Foo');
+    const Foo = PDFName.of("Foo");
     expect(copiedStream.dict.get(Foo)).not.toBe(origStream.dict.get(Foo));
     expect(copiedStream.dict.get(Foo)).toBeInstanceOf(PDFString);
 
-    const Bar = PDFName.of('Bar');
+    const Bar = PDFName.of("Bar");
     expect(copiedStream.dict.get(Bar)).not.toBe(origStream.dict.get(Bar));
     expect(copiedStream.dict.get(Bar)).toBeInstanceOf(PDFRef);
 
@@ -185,23 +182,20 @@ describe('PDFObjectCopier', () => {
     expect(destBar1).not.toBe(srcBar1);
     expect(destBar1).toBeInstanceOf(PDFDict);
 
-    const Baz = PDFName.of('Baz');
+    const Baz = PDFName.of("Baz");
     expect(destBar1.get(Baz)).toBe(srcBar1.get(Baz));
     expect(destBar1.get(Baz)).toBeInstanceOf(PDFName);
   });
 
-  it('copies PDFRefs, including their indirect references', () => {
+  it("copies PDFRefs, including their indirect references", () => {
     // Arrange
     const src = PDFContext.create();
     const origRef = PDFRef.of(21);
-    src.assign(
-      origRef,
-      src.obj({ Foo: PDFString.of('stuff and things'), Bar: PDFRef.of(13) }),
-    );
+    src.assign(origRef, src.obj({ Foo: PDFString.of("stuff and things"), Bar: PDFRef.of(13) }));
 
     src.assign(PDFRef.of(13), src.obj([1, PDFRef.of(17)]));
 
-    src.assign(PDFRef.of(17), src.obj({ Baz: 'wallykazam' }));
+    src.assign(PDFRef.of(17), src.obj({ Baz: "wallykazam" }));
 
     const dest = PDFContext.create();
 
@@ -217,11 +211,11 @@ describe('PDFObjectCopier', () => {
     const origDeref = src.lookup(origRef, PDFDict);
     const copiedDeref = dest.lookup(copiedRef, PDFDict);
 
-    const Foo = PDFName.of('Foo');
+    const Foo = PDFName.of("Foo");
     expect(copiedDeref.get(Foo)).not.toBe(origDeref.get(Foo));
     expect(copiedDeref.get(Foo)).toBeInstanceOf(PDFString);
 
-    const Bar = PDFName.of('Bar');
+    const Bar = PDFName.of("Bar");
     expect(copiedDeref.get(Bar)).not.toBe(origDeref.get(Bar));
     expect(copiedDeref.get(Bar)).toBeInstanceOf(PDFRef);
 
@@ -243,12 +237,12 @@ describe('PDFObjectCopier', () => {
     expect(destBar1).not.toBe(srcBar1);
     expect(destBar1).toBeInstanceOf(PDFDict);
 
-    const Baz = PDFName.of('Baz');
+    const Baz = PDFName.of("Baz");
     expect(destBar1.get(Baz)).toBe(srcBar1.get(Baz));
     expect(destBar1.get(Baz)).toBeInstanceOf(PDFName);
   });
 
-  it('copies individual PDFPageLeaf objects, without bringing along the whole page tree', () => {
+  it("copies individual PDFPageLeaf objects, without bringing along the whole page tree", () => {
     // Arrange
     const src = PDFContext.create();
 
@@ -260,16 +254,16 @@ describe('PDFObjectCopier', () => {
     const contentStream = PDFContentStream.of(src.obj({}), []);
 
     const origPage = PDFPageLeaf.withContextAndParent(src, middlePageTreeRef);
-    origPage.set(PDFName.of('Contents'), src.obj([contentStreamRef]));
+    origPage.set(PDFName.of("Contents"), src.obj([contentStreamRef]));
 
     const middlePageTree = PDFPageTree.withContext(src, rootPageTreeRef);
 
     const rectangle = src.obj([1, 2, 3, 4]);
     const rootPageTree = PDFPageTree.withContext(src);
-    rootPageTree.set(PDFName.of('Resources'), src.obj({}));
-    rootPageTree.set(PDFName.of('MediaBox'), rectangle);
-    rootPageTree.set(PDFName.of('CropBox'), rectangle);
-    rootPageTree.set(PDFName.of('Rotate'), PDFNumber.of(180));
+    rootPageTree.set(PDFName.of("Resources"), src.obj({}));
+    rootPageTree.set(PDFName.of("MediaBox"), rectangle);
+    rootPageTree.set(PDFName.of("CropBox"), rectangle);
+    rootPageTree.set(PDFName.of("Rotate"), PDFNumber.of(180));
 
     rootPageTree.pushTreeNode(middlePageTreeRef);
     middlePageTree.pushLeafNode(origPageRef);
@@ -299,23 +293,23 @@ describe('PDFObjectCopier', () => {
     expect(Contents.get(0)).toBeInstanceOf(PDFRef);
 
     const Resources = copiedPage.Resources();
-    expect(Resources).not.toBe(rootPageTree.get(PDFName.of('Resources')));
+    expect(Resources).not.toBe(rootPageTree.get(PDFName.of("Resources")));
     expect(Resources).toBeInstanceOf(PDFDict);
 
     const MediaBox = copiedPage.MediaBox();
-    expect(MediaBox).not.toBe(rootPageTree.get(PDFName.of('MediaBox')));
+    expect(MediaBox).not.toBe(rootPageTree.get(PDFName.of("MediaBox")));
     expect(MediaBox).toBeInstanceOf(PDFArray);
 
     const CropBox = copiedPage.CropBox();
-    expect(CropBox).not.toBe(rootPageTree.get(PDFName.of('CropBox')));
+    expect(CropBox).not.toBe(rootPageTree.get(PDFName.of("CropBox")));
     expect(CropBox).toBeInstanceOf(PDFArray);
 
     const Rotate = copiedPage.Rotate();
-    expect(Rotate).not.toBe(rootPageTree.get(PDFName.of('Rotate')));
+    expect(Rotate).not.toBe(rootPageTree.get(PDFName.of("Rotate")));
     expect(Rotate).toBeInstanceOf(PDFNumber);
   });
 
-  it('copies objects with cyclic references', () => {
+  it("copies objects with cyclic references", () => {
     // Arrange
     const src = PDFContext.create();
 
@@ -334,12 +328,10 @@ describe('PDFObjectCopier', () => {
     PDFObjectCopier.for(src, dest).copy(dict);
 
     // Assert
-    expect(dest.enumerateIndirectObjects().length).toBe(
-      src.enumerateIndirectObjects().length,
-    );
+    expect(dest.enumerateIndirectObjects().length).toBe(src.enumerateIndirectObjects().length);
   });
 
-  it('copies all types of PDFObjects', () => {
+  it("copies all types of PDFObjects", () => {
     // Arrange
     const src = PDFContext.create();
     const dest = PDFContext.create();
@@ -348,13 +340,13 @@ describe('PDFObjectCopier', () => {
     const origArray = src.obj([]);
     const origBool = src.obj(true);
     const origDict = src.obj({});
-    const origHexString = PDFHexString.of('ABC123');
+    const origHexString = PDFHexString.of("ABC123");
     const origIndirectRef = src.register(origBool);
-    const origName = src.obj('QuxBaz');
+    const origName = src.obj("QuxBaz");
     const origNull = src.obj(null);
     const origNumber = src.obj(21);
     const origRawStream = src.stream(new Uint8Array([1, 2]));
-    const origString = PDFString.of('Stuff and thingz');
+    const origString = PDFString.of("Stuff and thingz");
 
     // Act
     const copiedArray = copier.copy(origArray);
@@ -400,7 +392,7 @@ describe('PDFObjectCopier', () => {
     expect(copiedString).toBeInstanceOf(PDFString);
   });
 
-  it('copies objects with undefined references', () => {
+  it("copies objects with undefined references", () => {
     // Arrange
     const src = PDFContext.create();
     const dest = PDFContext.create();
@@ -422,20 +414,20 @@ describe('PDFObjectCopier', () => {
     expect(copiedDict).not.toBe(origDict);
     expect(copiedDict).toBeInstanceOf(PDFDict);
     expect(copiedDict.entries().length).toBe(1);
-    expect(copiedDict.get(PDFName.of('Foo'))).toBe(PDFRef.of(1));
+    expect(copiedDict.get(PDFName.of("Foo"))).toBe(PDFRef.of(1));
   });
 
-  describe('optimizeResources option (issue #1338)', () => {
-    it('copies only used resources when optimizeResources is true', () => {
+  describe("optimizeResources option (issue #1338)", () => {
+    it("copies only used resources when optimizeResources is true", () => {
       // Arrange - create source context with page that has resources
       const src = PDFContext.create();
 
       // Create fonts (refs 10, 11)
-      const font1 = src.obj({ Type: 'Font', BaseFont: 'Helvetica' });
+      const font1 = src.obj({ Type: "Font", BaseFont: "Helvetica" });
       const font1Ref = PDFRef.of(10);
       src.assign(font1Ref, font1);
 
-      const font2 = src.obj({ Type: 'Font', BaseFont: 'Times-Roman' });
+      const font2 = src.obj({ Type: "Font", BaseFont: "Times-Roman" });
       const font2Ref = PDFRef.of(11);
       src.assign(font2Ref, font2);
 
@@ -450,12 +442,12 @@ describe('PDFObjectCopier', () => {
 
       // Create resources dictionary with fonts and xobjects
       const fontDict = src.obj({});
-      fontDict.set(PDFName.of('F1'), font1Ref);
-      fontDict.set(PDFName.of('F2'), font2Ref);
+      fontDict.set(PDFName.of("F1"), font1Ref);
+      fontDict.set(PDFName.of("F2"), font2Ref);
 
       const xobjectDict = src.obj({});
-      xobjectDict.set(PDFName.of('Im1'), xobject1Ref);
-      xobjectDict.set(PDFName.of('Im2'), xobject2Ref);
+      xobjectDict.set(PDFName.of("Im1"), xobject1Ref);
+      xobjectDict.set(PDFName.of("Im2"), xobject2Ref);
 
       const resources = src.obj({});
       resources.set(PDFName.Font, fontDict);
@@ -470,9 +462,7 @@ describe('PDFObjectCopier', () => {
       src.assign(pageTreeRef, pageTree);
 
       // Create page with content stream that only uses F1 and Im1
-      const contentData = new TextEncoder().encode(
-        'BT /F1 12 Tf (Hello) Tj ET q /Im1 Do Q',
-      );
+      const contentData = new TextEncoder().encode("BT /F1 12 Tf (Hello) Tj ET q /Im1 Do Q");
 
       const contentStream = PDFRawStream.of(src.obj({}), contentData);
       const contentRef = src.register(contentStream);
@@ -493,30 +483,30 @@ describe('PDFObjectCopier', () => {
       expect(copiedResources).toBeInstanceOf(PDFDict);
 
       const copiedFonts = copiedResources.lookup(PDFName.Font, PDFDict);
-      expect(copiedFonts.get(PDFName.of('F1'))).toBeDefined(); // Used
-      expect(copiedFonts.get(PDFName.of('F2'))).toBeUndefined(); // Not used
+      expect(copiedFonts.get(PDFName.of("F1"))).toBeDefined(); // Used
+      expect(copiedFonts.get(PDFName.of("F2"))).toBeUndefined(); // Not used
 
       const copiedXObjects = copiedResources.lookup(PDFName.XObject, PDFDict);
-      expect(copiedXObjects.get(PDFName.of('Im1'))).toBeDefined(); // Used
-      expect(copiedXObjects.get(PDFName.of('Im2'))).toBeUndefined(); // Not used
+      expect(copiedXObjects.get(PDFName.of("Im1"))).toBeDefined(); // Used
+      expect(copiedXObjects.get(PDFName.of("Im2"))).toBeUndefined(); // Not used
     });
 
-    it('copies all resources when optimizeResources is false (default)', () => {
+    it("copies all resources when optimizeResources is false (default)", () => {
       // Arrange
       const src = PDFContext.create();
 
       // Create fonts
-      const font1 = src.obj({ Type: 'Font', BaseFont: 'Helvetica' });
+      const font1 = src.obj({ Type: "Font", BaseFont: "Helvetica" });
       const font1Ref = PDFRef.of(10);
       src.assign(font1Ref, font1);
 
-      const font2 = src.obj({ Type: 'Font', BaseFont: 'Times-Roman' });
+      const font2 = src.obj({ Type: "Font", BaseFont: "Times-Roman" });
       const font2Ref = PDFRef.of(11);
       src.assign(font2Ref, font2);
 
       const fontDict = src.obj({});
-      fontDict.set(PDFName.of('F1'), font1Ref);
-      fontDict.set(PDFName.of('F2'), font2Ref);
+      fontDict.set(PDFName.of("F1"), font1Ref);
+      fontDict.set(PDFName.of("F2"), font2Ref);
 
       const resources = src.obj({});
       resources.set(PDFName.Font, fontDict);
@@ -530,7 +520,7 @@ describe('PDFObjectCopier', () => {
       src.assign(pageTreeRef, pageTree);
 
       // Create page with content that only uses F1
-      const contentData = new TextEncoder().encode('BT /F1 12 Tf ET');
+      const contentData = new TextEncoder().encode("BT /F1 12 Tf ET");
       const contentStream = PDFRawStream.of(src.obj({}), contentData);
       const contentRef = src.register(contentStream);
 
@@ -546,8 +536,8 @@ describe('PDFObjectCopier', () => {
       // Assert - both fonts should be copied
       const copiedResources = copiedPage.Resources()!;
       const copiedFonts = copiedResources.lookup(PDFName.Font, PDFDict);
-      expect(copiedFonts.get(PDFName.of('F1'))).toBeDefined();
-      expect(copiedFonts.get(PDFName.of('F2'))).toBeDefined();
+      expect(copiedFonts.get(PDFName.of("F1"))).toBeDefined();
+      expect(copiedFonts.get(PDFName.of("F2"))).toBeDefined();
     });
   });
 });

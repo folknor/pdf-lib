@@ -1,9 +1,9 @@
-import type { AnnotationTypes } from '../core/annotation/AnnotationTypes.js';
-import type { Space, TransformationMatrix } from '../types/index.js';
-import type { Color, PaintColor } from './colors.js';
-import type { FillRule, LineCapStyle, TextRenderingMode } from './operators.js';
-import type PDFFont from './PDFFont.js';
-import type { Rotation } from './rotations.js';
+import type { AnnotationTypes } from "../core/annotation/AnnotationTypes.js";
+import type { Space, TransformationMatrix } from "../types/index.js";
+import type { Color, PaintColor } from "./colors.js";
+import type { FillRule, LineCapStyle, TextRenderingMode } from "./operators.js";
+import type PDFFont from "./PDFFont.js";
+import type { Rotation } from "./rotations.js";
 
 interface SvgOptions {
   matrix?: TransformationMatrix;
@@ -11,18 +11,18 @@ interface SvgOptions {
 }
 
 export enum BlendMode {
-  Normal = 'Normal',
-  Multiply = 'Multiply',
-  Screen = 'Screen',
-  Overlay = 'Overlay',
-  Darken = 'Darken',
-  Lighten = 'Lighten',
-  ColorDodge = 'ColorDodge',
-  ColorBurn = 'ColorBurn',
-  HardLight = 'HardLight',
-  SoftLight = 'SoftLight',
-  Difference = 'Difference',
-  Exclusion = 'Exclusion',
+  Normal = "Normal",
+  Multiply = "Multiply",
+  Screen = "Screen",
+  Overlay = "Overlay",
+  Darken = "Darken",
+  Lighten = "Lighten",
+  ColorDodge = "ColorDodge",
+  ColorBurn = "ColorBurn",
+  HardLight = "HardLight",
+  SoftLight = "SoftLight",
+  Difference = "Difference",
+  Exclusion = "Exclusion",
 }
 
 /** Overprint mode (`OPM`, ISO 32000-1 8.6.7). */
@@ -417,8 +417,7 @@ export interface PDFPageAddAnnotationOptions {
  * - StrikeOut
  * annotations.
  */
-export interface PDFPageAddTextMarkupAnnotationOptions
-  extends PDFPageAddAnnotationOptions {
+export interface PDFPageAddTextMarkupAnnotationOptions extends PDFPageAddAnnotationOptions {
   /**
    * The quad points that define the region(s) to be marked up.
    */

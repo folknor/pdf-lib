@@ -1,19 +1,18 @@
-import type PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import PDFAcroTerminal from './PDFAcroTerminal.js';
+import type PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import PDFAcroTerminal from "./PDFAcroTerminal.js";
 
 class PDFAcroText extends PDFAcroTerminal {
-  static override fromDict = (dict: PDFDict, ref: PDFRef) =>
-    new PDFAcroText(dict, ref);
+  static override fromDict = (dict: PDFDict, ref: PDFRef) => new PDFAcroText(dict, ref);
 
   static create = (context: PDFContext) => {
     const dict = context.obj({
-      FT: 'Tx',
+      FT: "Tx",
       Kids: [],
     });
 
@@ -23,7 +22,7 @@ class PDFAcroText extends PDFAcroTerminal {
   };
 
   MaxLen(): PDFNumber | undefined {
-    const maxLen = this.dict.lookup(PDFName.of('MaxLen'));
+    const maxLen = this.dict.lookup(PDFName.of("MaxLen"));
 
     if (maxLen instanceof PDFNumber) return maxLen;
 
@@ -31,7 +30,7 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   Q(): PDFNumber | undefined {
-    const q = this.dict.lookup(PDFName.of('Q'));
+    const q = this.dict.lookup(PDFName.of("Q"));
 
     if (q instanceof PDFNumber) return q;
 
@@ -39,11 +38,11 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   setMaxLength(maxLength: number) {
-    this.dict.set(PDFName.of('MaxLen'), PDFNumber.of(maxLength));
+    this.dict.set(PDFName.of("MaxLen"), PDFNumber.of(maxLength));
   }
 
   removeMaxLength() {
-    this.dict.delete(PDFName.of('MaxLen'));
+    this.dict.delete(PDFName.of("MaxLen"));
   }
 
   getMaxLength(): number | undefined {
@@ -53,7 +52,7 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   setQuadding(quadding: 0 | 1 | 2) {
-    this.dict.set(PDFName.of('Q'), PDFNumber.of(quadding));
+    this.dict.set(PDFName.of("Q"), PDFNumber.of(quadding));
   }
 
   getQuadding(): number | undefined {
@@ -61,7 +60,7 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   setValue(value: PDFHexString | PDFString) {
-    this.dict.set(PDFName.of('V'), value);
+    this.dict.set(PDFName.of("V"), value);
 
     // const widgets = this.getWidgets();
     // for (let idx = 0, len = widgets.length; idx < len; idx++) {
@@ -72,7 +71,7 @@ class PDFAcroText extends PDFAcroTerminal {
   }
 
   removeValue() {
-    this.dict.delete(PDFName.of('V'));
+    this.dict.delete(PDFName.of("V"));
   }
 
   getValue(): PDFString | PDFHexString | undefined {

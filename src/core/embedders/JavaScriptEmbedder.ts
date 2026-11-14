@@ -1,6 +1,6 @@
-import PDFHexString from '../objects/PDFHexString.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
+import PDFHexString from "../objects/PDFHexString.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
 
 class JavaScriptEmbedder {
   static for(script: string, scriptName: string) {
@@ -17,8 +17,8 @@ class JavaScriptEmbedder {
 
   async embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
     const jsActionDict = context.obj({
-      Type: 'Action',
-      S: 'JavaScript',
+      Type: "Action",
+      S: "JavaScript",
       JS: PDFHexString.fromText(this.script),
     });
 

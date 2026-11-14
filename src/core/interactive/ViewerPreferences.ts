@@ -1,15 +1,10 @@
-import {
-  assertEachIs,
-  assertInteger,
-  assertIsOneOf,
-  assertRange,
-} from '../../utils/index.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFBool from '../objects/PDFBool.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFContext from '../PDFContext.js';
+import { assertEachIs, assertInteger, assertIsOneOf, assertRange } from "../../utils/index.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFBool from "../objects/PDFBool.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFContext from "../PDFContext.js";
 
 const asEnum = <T extends string | number, U extends { [key: string]: T }>(
   rawValue: T | undefined,
@@ -25,71 +20,67 @@ export enum NonFullScreenPageMode {
    * After exiting FullScreen mode, neither the document outline nor thumbnail
    * images should be visible.
    */
-  UseNone = 'UseNone',
+  UseNone = "UseNone",
 
   /** After exiting FullScreen mode, the document outline should be visible. */
-  UseOutlines = 'UseOutlines',
+  UseOutlines = "UseOutlines",
 
   /** After exiting FullScreen mode, thumbnail images should be visible. */
-  UseThumbs = 'UseThumbs',
+  UseThumbs = "UseThumbs",
 
   /**
    * After exiting FullScreen mode, the optional content group panel should be
    * visible.
    */
-  UseOC = 'UseOC',
+  UseOC = "UseOC",
 }
 
 export enum ReadingDirection {
   /** The predominant reading order is Left to Right. */
-  L2R = 'L2R',
+  L2R = "L2R",
 
   /**
    * The predominant reading order is Right to left (including vertical writing
    * systems, such as Chinese, Japanese and Korean).
    */
-  R2L = 'R2L',
+  R2L = "R2L",
 }
 
 export enum PrintScaling {
   /** No page scaling. */
-  None = 'None',
+  None = "None",
 
   /* Use the PDF reader's default print scaling. */
-  AppDefault = 'AppDefault',
+  AppDefault = "AppDefault",
 }
 
 export enum Duplex {
   /** The PDF reader should print single-sided. */
-  Simplex = 'Simplex',
+  Simplex = "Simplex",
 
   /**
    * The PDF reader should print double sided and flip on the short edge of the
    * sheet.
    */
-  DuplexFlipShortEdge = 'DuplexFlipShortEdge',
+  DuplexFlipShortEdge = "DuplexFlipShortEdge",
 
   /**
    * The PDF reader should print double sided and flip on the long edge of the
    * sheet.
    */
-  DuplexFlipLongEdge = 'DuplexFlipLongEdge',
+  DuplexFlipLongEdge = "DuplexFlipLongEdge",
 }
 
 type BoolViewerPrefKey =
-  | 'HideToolbar'
-  | 'HideMenubar'
-  | 'HideWindowUI'
-  | 'FitWindow'
-  | 'CenterWindow'
-  | 'DisplayDocTitle'
-  | 'PickTrayByPDFSize';
+  | "HideToolbar"
+  | "HideMenubar"
+  | "HideWindowUI"
+  | "FitWindow"
+  | "CenterWindow"
+  | "DisplayDocTitle"
+  | "PickTrayByPDFSize";
 
-type NameViewerPrefKey =
-  | 'NonFullScreenPageMode'
-  | 'Direction'
-  | 'PrintScaling'
-  | 'Duplex';
+type NameViewerPrefKey = "NonFullScreenPageMode" | "Direction" | "PrintScaling" | "Duplex";
 
 interface PageRange {
   start: number;
@@ -101,8 +92,7 @@ class ViewerPreferences {
   readonly dict: PDFDict;
 
   /** @ignore */
-  static fromDict = (dict: PDFDict): ViewerPreferences =>
-    new ViewerPreferences(dict);
+  static fromDict = (dict: PDFDict): ViewerPreferences => new ViewerPreferences(dict);
 
   /** @ignore */
   static create = (context: PDFContext) => {
@@ -134,62 +124,62 @@ class ViewerPreferences {
 
   /** @ignore */
   HideToolbar(): PDFBool | undefined {
-    return this.lookupBool('HideToolbar');
+    return this.lookupBool("HideToolbar");
   }
 
   /** @ignore */
   HideMenubar(): PDFBool | undefined {
-    return this.lookupBool('HideMenubar');
+    return this.lookupBool("HideMenubar");
   }
 
   /** @ignore */
   HideWindowUI(): PDFBool | undefined {
-    return this.lookupBool('HideWindowUI');
+    return this.lookupBool("HideWindowUI");
   }
 
   /** @ignore */
   FitWindow(): PDFBool | undefined {
-    return this.lookupBool('FitWindow');
+    return this.lookupBool("FitWindow");
   }
 
   /** @ignore */
   CenterWindow(): PDFBool | undefined {
-    return this.lookupBool('CenterWindow');
+    return this.lookupBool("CenterWindow");
   }
 
   /** @ignore */
   DisplayDocTitle(): PDFBool | undefined {
-    return this.lookupBool('DisplayDocTitle');
+    return this.lookupBool("DisplayDocTitle");
   }
 
   /** @ignore */
   NonFullScreenPageMode(): PDFName | undefined {
-    return this.lookupName('NonFullScreenPageMode');
+    return this.lookupName("NonFullScreenPageMode");
   }
 
   /** @ignore */
   Direction(): PDFName | undefined {
-    return this.lookupName('Direction');
+    return this.lookupName("Direction");
   }
 
   /** @ignore */
   PrintScaling(): PDFName | undefined {
-    return this.lookupName('PrintScaling');
+    return this.lookupName("PrintScaling");
   }
 
   /** @ignore */
   Duplex(): PDFName | undefined {
-    return this.lookupName('Duplex');
+    return this.lookupName("Duplex");
   }
 
   /** @ignore */
   PickTrayByPDFSize(): PDFBool | undefined {
-    return this.lookupBool('PickTrayByPDFSize');
+    return this.lookupBool("PickTrayByPDFSize");
   }
 
   /** @ignore */
   PrintPageRange(): PDFArray | undefined {
-    const PrintPageRange = this.dict.lookup(PDFName.of('PrintPageRange'));
+    const PrintPageRange = this.dict.lookup(PDFName.of("PrintPageRange"));
 
     if (PrintPageRange instanceof PDFArray) return PrintPageRange;
 
@@ -198,7 +188,7 @@ class ViewerPreferences {
 
   /** @ignore */
   NumCopies(): PDFNumber | undefined {
-    const NumCopies = this.dict.lookup(PDFName.of('NumCopies'));
+    const NumCopies = this.dict.lookup(PDFName.of("NumCopies"));
 
     if (NumCopies instanceof PDFNumber) return NumCopies;
 
@@ -368,7 +358,7 @@ class ViewerPreferences {
    */
   setHideToolbar(hideToolbar: boolean) {
     const HideToolbar = this.dict.context.obj(hideToolbar);
-    this.dict.set(PDFName.of('HideToolbar'), HideToolbar);
+    this.dict.set(PDFName.of("HideToolbar"), HideToolbar);
   }
 
   /**
@@ -378,7 +368,7 @@ class ViewerPreferences {
    */
   setHideMenubar(hideMenubar: boolean) {
     const HideMenubar = this.dict.context.obj(hideMenubar);
-    this.dict.set(PDFName.of('HideMenubar'), HideMenubar);
+    this.dict.set(PDFName.of("HideMenubar"), HideMenubar);
   }
 
   /**
@@ -389,7 +379,7 @@ class ViewerPreferences {
    */
   setHideWindowUI(hideWindowUI: boolean) {
     const HideWindowUI = this.dict.context.obj(hideWindowUI);
-    this.dict.set(PDFName.of('HideWindowUI'), HideWindowUI);
+    this.dict.set(PDFName.of("HideWindowUI"), HideWindowUI);
   }
 
   /**
@@ -399,7 +389,7 @@ class ViewerPreferences {
    */
   setFitWindow(fitWindow: boolean) {
     const FitWindow = this.dict.context.obj(fitWindow);
-    this.dict.set(PDFName.of('FitWindow'), FitWindow);
+    this.dict.set(PDFName.of("FitWindow"), FitWindow);
   }
 
   /**
@@ -409,7 +399,7 @@ class ViewerPreferences {
    */
   setCenterWindow(centerWindow: boolean) {
     const CenterWindow = this.dict.context.obj(centerWindow);
-    this.dict.set(PDFName.of('CenterWindow'), CenterWindow);
+    this.dict.set(PDFName.of("CenterWindow"), CenterWindow);
   }
 
   /**
@@ -420,7 +410,7 @@ class ViewerPreferences {
    */
   setDisplayDocTitle(displayTitle: boolean) {
     const DisplayDocTitle = this.dict.context.obj(displayTitle);
-    this.dict.set(PDFName.of('DisplayDocTitle'), DisplayDocTitle);
+    this.dict.set(PDFName.of("DisplayDocTitle"), DisplayDocTitle);
   }
 
   /**
@@ -446,13 +436,9 @@ class ViewerPreferences {
    *                              exiting full screen mode.
    */
   setNonFullScreenPageMode(nonFullScreenPageMode: NonFullScreenPageMode) {
-    assertIsOneOf(
-      nonFullScreenPageMode,
-      'nonFullScreenPageMode',
-      NonFullScreenPageMode,
-    );
+    assertIsOneOf(nonFullScreenPageMode, "nonFullScreenPageMode", NonFullScreenPageMode);
     const mode = PDFName.of(nonFullScreenPageMode);
-    this.dict.set(PDFName.of('NonFullScreenPageMode'), mode);
+    this.dict.set(PDFName.of("NonFullScreenPageMode"), mode);
   }
 
   /**
@@ -474,9 +460,9 @@ class ViewerPreferences {
    * @param readingDirection The reading order for text.
    */
   setReadingDirection(readingDirection: ReadingDirection) {
-    assertIsOneOf(readingDirection, 'readingDirection', ReadingDirection);
+    assertIsOneOf(readingDirection, "readingDirection", ReadingDirection);
     const direction = PDFName.of(readingDirection);
-    this.dict.set(PDFName.of('Direction'), direction);
+    this.dict.set(PDFName.of("Direction"), direction);
   }
 
   /**
@@ -495,9 +481,9 @@ class ViewerPreferences {
    * @param printScaling The print scaling option.
    */
   setPrintScaling(printScaling: PrintScaling) {
-    assertIsOneOf(printScaling, 'printScaling', PrintScaling);
+    assertIsOneOf(printScaling, "printScaling", PrintScaling);
     const scaling = PDFName.of(printScaling);
-    this.dict.set(PDFName.of('PrintScaling'), scaling);
+    this.dict.set(PDFName.of("PrintScaling"), scaling);
   }
 
   /**
@@ -516,9 +502,9 @@ class ViewerPreferences {
    * @param duplex The double or single sided printing option.
    */
   setDuplex(duplex: Duplex) {
-    assertIsOneOf(duplex, 'duplex', Duplex);
+    assertIsOneOf(duplex, "duplex", Duplex);
     const dup = PDFName.of(duplex);
-    this.dict.set(PDFName.of('Duplex'), dup);
+    this.dict.set(PDFName.of("Duplex"), dup);
   }
 
   /**
@@ -536,7 +522,7 @@ class ViewerPreferences {
    */
   setPickTrayByPDFSize(pickTrayByPDFSize: boolean) {
     const PickTrayByPDFSize = this.dict.context.obj(pickTrayByPDFSize);
-    this.dict.set(PDFName.of('PickTrayByPDFSize'), PickTrayByPDFSize);
+    this.dict.set(PDFName.of("PickTrayByPDFSize"), PickTrayByPDFSize);
   }
 
   /**
@@ -575,10 +561,10 @@ class ViewerPreferences {
       flatRange.push(printPageRange[idx]!.end);
     }
 
-    assertEachIs(flatRange, 'printPageRange', ['number']);
+    assertEachIs(flatRange, "printPageRange", ["number"]);
 
     const pageRanges = this.dict.context.obj(flatRange);
-    this.dict.set(PDFName.of('PrintPageRange'), pageRanges);
+    this.dict.set(PDFName.of("PrintPageRange"), pageRanges);
   }
 
   /**
@@ -587,10 +573,10 @@ class ViewerPreferences {
    * @param numCopies The default number of copies.
    */
   setNumCopies(numCopies: number) {
-    assertRange(numCopies, 'numCopies', 1, Number.MAX_VALUE);
-    assertInteger(numCopies, 'numCopies');
+    assertRange(numCopies, "numCopies", 1, Number.MAX_VALUE);
+    assertInteger(numCopies, "numCopies");
     const NumCopies = this.dict.context.obj(numCopies);
-    this.dict.set(PDFName.of('NumCopies'), NumCopies);
+    this.dict.set(PDFName.of("NumCopies"), NumCopies);
   }
 }
 

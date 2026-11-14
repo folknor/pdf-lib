@@ -2,13 +2,13 @@ import {
   layoutMultilineText,
   layoutSinglelineText,
   layoutCombedText,
-} from '../../../src/api/text/layout';
-import { CombedTextLayoutError } from '../../../src/api/errors';
-import { PDFDocument, StandardFonts, TextAlignment } from '../../../src/index';
-import type PDFFont from '../../../src/api/PDFFont';
-import { cleanText, lineSplit } from '../../../src/utils';
-import fontkit from 'src/fontkit.js';
-import fs from 'fs';
+} from "../../../src/api/text/layout";
+import { CombedTextLayoutError } from "../../../src/api/errors";
+import { PDFDocument, StandardFonts, TextAlignment } from "../../../src/index";
+import type PDFFont from "../../../src/api/PDFFont";
+import { cleanText, lineSplit } from "../../../src/utils";
+import fontkit from "src/fontkit.js";
+import fs from "fs";
 
 const MIN_FONT_SIZE = 4;
 const MAX_FONT_SIZE = 500;
@@ -25,37 +25,37 @@ beforeAll(async () => {
 // ---------------------------------------------------------------------------
 // Font measurement sanity checks (used later to reason about layout results)
 // ---------------------------------------------------------------------------
-describe('Font measurement sanity checks', () => {
-  it('widthOfTextAtSize returns non-zero for non-empty text', () => {
-    const width = font.widthOfTextAtSize('Hello', 12);
+describe("Font measurement sanity checks", () => {
+  it("widthOfTextAtSize returns non-zero for non-empty text", () => {
+    const width = font.widthOfTextAtSize("Hello", 12);
     expect(width).toBeGreaterThan(0);
   });
 
   it('"WWW" is wider than "iii" at the same size (proportional font)', () => {
-    const wideWidth = font.widthOfTextAtSize('WWW', 12);
-    const narrowWidth = font.widthOfTextAtSize('iii', 12);
+    const wideWidth = font.widthOfTextAtSize("WWW", 12);
+    const narrowWidth = font.widthOfTextAtSize("iii", 12);
     expect(wideWidth).toBeGreaterThan(narrowWidth);
   });
 
-  it('width scales linearly with font size', () => {
-    const w12 = font.widthOfTextAtSize('Hello', 12);
-    const w24 = font.widthOfTextAtSize('Hello', 24);
+  it("width scales linearly with font size", () => {
+    const w12 = font.widthOfTextAtSize("Hello", 12);
+    const w24 = font.widthOfTextAtSize("Hello", 24);
     expect(w24).toBeCloseTo(w12 * 2, 5);
   });
 
-  it('heightAtSize returns non-zero', () => {
+  it("heightAtSize returns non-zero", () => {
     const h = font.heightAtSize(12);
     expect(h).toBeGreaterThan(0);
   });
 
-  it('heightAtSize without descender is smaller than with descender', () => {
+  it("heightAtSize without descender is smaller than with descender", () => {
     const withDescender = font.heightAtSize(12);
     const withoutDescender = font.heightAtSize(12, { descender: false });
     expect(withoutDescender).toBeLessThan(withDescender);
   });
 
-  it('widthOfTextAtSize returns 0 for empty string', () => {
-    const width = font.widthOfTextAtSize('', 12);
+  it("widthOfTextAtSize returns 0 for empty string", () => {
+    const width = font.widthOfTextAtSize("", 12);
     expect(width).toBe(0);
   });
 });
@@ -63,10 +63,10 @@ describe('Font measurement sanity checks', () => {
 // ---------------------------------------------------------------------------
 // layoutMultilineText
 // ---------------------------------------------------------------------------
-describe('layoutMultilineText', () => {
+describe("layoutMultilineText", () => {
   // ---- Preserved original tests ----
-  it('should layout the text on one line when it fits near-perfectly', () => {
-    const text = 'Super Mario Bros.';
+  it("should layout the text on one line when it fits near-perfectly", () => {
+    const text = "Super Mario Bros.";
 
     for (let fontSize = MIN_FONT_SIZE; fontSize <= MAX_FONT_SIZE; fontSize++) {
       const height = font.heightAtSize(fontSize);
@@ -85,8 +85,8 @@ describe('layoutMultilineText', () => {
     }
   });
 
-  it('should layout the text on one line when it fits comfortably', () => {
-    const text = 'Super Mario Bros.';
+  it("should layout the text on one line when it fits comfortably", () => {
+    const text = "Super Mario Bros.";
     const fontSize = 12;
     const height = font.heightAtSize(fontSize);
     const width = font.widthOfTextAtSize(text, fontSize) * 2;
@@ -103,8 +103,8 @@ describe('layoutMultilineText', () => {
     expect(result.lines.length).toStrictEqual(1);
   });
 
-  it('should layout the text on multiple lines when it does not fit horizontally but there is space vertically', () => {
-    const text = 'Super Mario Bros.';
+  it("should layout the text on multiple lines when it does not fit horizontally but there is space vertically", () => {
+    const text = "Super Mario Bros.";
 
     for (let fontSize = MIN_FONT_SIZE; fontSize <= MAX_FONT_SIZE; fontSize++) {
       const height = font.heightAtSize(fontSize) * 2;
@@ -123,8 +123,8 @@ describe('layoutMultilineText', () => {
     }
   });
 
-  it('should never exceed the maximum font size', () => {
-    const text = 'Super Mario Bros.';
+  it("should never exceed the maximum font size", () => {
+    const text = "Super Mario Bros.";
     const bounds = { x: 0, y: 0, width: Number.MAX_VALUE, height: Number.MAX_VALUE };
 
     const result = layoutMultilineText(text, {
@@ -138,8 +138,8 @@ describe('layoutMultilineText', () => {
     expect(result.fontSize).toStrictEqual(MAX_FONT_SIZE);
   });
 
-  it('should handle long strings without excessive time', () => {
-    const text = 'word '.repeat(2000).trim();
+  it("should handle long strings without excessive time", () => {
+    const text = "word ".repeat(2000).trim();
     const bounds = { x: 0, y: 0, width: 200, height: 10000 };
     const start = Date.now();
 
@@ -156,9 +156,9 @@ describe('layoutMultilineText', () => {
     expect(elapsed).toBeLessThan(5000);
   });
 
-  it('should respect empty lines', () => {
-    const lines = ['Super Mario Bros.', '', 'Boop'];
-    const text = lines.join('\n');
+  it("should respect empty lines", () => {
+    const lines = ["Super Mario Bros.", "", "Boop"];
+    const text = lines.join("\n");
 
     for (let fontSize = MIN_FONT_SIZE; fontSize <= MAX_FONT_SIZE; fontSize++) {
       const height = font.heightAtSize(fontSize);
@@ -179,31 +179,31 @@ describe('layoutMultilineText', () => {
 
   // ---- New behavioral tests ----
 
-  describe('return value structure', () => {
-    it('returns an object with fontSize, lineHeight, lines, and bounds', () => {
-      const result = layoutMultilineText('Hello World', {
+  describe("return value structure", () => {
+    it("returns an object with fontSize, lineHeight, lines, and bounds", () => {
+      const result = layoutMultilineText("Hello World", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
         fontSize: 12,
       });
 
-      expect(result).toHaveProperty('fontSize');
-      expect(result).toHaveProperty('lineHeight');
-      expect(result).toHaveProperty('lines');
-      expect(result).toHaveProperty('bounds');
+      expect(result).toHaveProperty("fontSize");
+      expect(result).toHaveProperty("lineHeight");
+      expect(result).toHaveProperty("lines");
+      expect(result).toHaveProperty("bounds");
 
-      expect(typeof result.fontSize).toBe('number');
-      expect(typeof result.lineHeight).toBe('number');
+      expect(typeof result.fontSize).toBe("number");
+      expect(typeof result.lineHeight).toBe("number");
       expect(Array.isArray(result.lines)).toBe(true);
-      expect(typeof result.bounds.x).toBe('number');
-      expect(typeof result.bounds.y).toBe('number');
-      expect(typeof result.bounds.width).toBe('number');
-      expect(typeof result.bounds.height).toBe('number');
+      expect(typeof result.bounds.x).toBe("number");
+      expect(typeof result.bounds.y).toBe("number");
+      expect(typeof result.bounds.width).toBe("number");
+      expect(typeof result.bounds.height).toBe("number");
     });
 
-    it('each line has text, encoded, x, y, width, and height', () => {
-      const result = layoutMultilineText('Hello', {
+    it("each line has text, encoded, x, y, width, and height", () => {
+      const result = layoutMultilineText("Hello", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -212,18 +212,18 @@ describe('layoutMultilineText', () => {
 
       expect(result.lines.length).toBe(1);
       const line = result.lines[0]!;
-      expect(line.text).toBe('Hello');
+      expect(line.text).toBe("Hello");
       expect(typeof line.encoded).toBeDefined();
-      expect(typeof line.x).toBe('number');
-      expect(typeof line.y).toBe('number');
+      expect(typeof line.x).toBe("number");
+      expect(typeof line.y).toBe("number");
       expect(line.width).toBeGreaterThan(0);
       expect(line.height).toBeGreaterThan(0);
     });
   });
 
-  describe('fontSize behavior', () => {
-    it('uses the provided fontSize when explicitly given', () => {
-      const result = layoutMultilineText('ABC', {
+  describe("fontSize behavior", () => {
+    it("uses the provided fontSize when explicitly given", () => {
+      const result = layoutMultilineText("ABC", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -233,8 +233,8 @@ describe('layoutMultilineText', () => {
       expect(result.fontSize).toBe(20);
     });
 
-    it('auto-computes fontSize when fontSize is undefined', () => {
-      const result = layoutMultilineText('ABC', {
+    it("auto-computes fontSize when fontSize is undefined", () => {
+      const result = layoutMultilineText("ABC", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -246,8 +246,8 @@ describe('layoutMultilineText', () => {
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
 
-    it('auto-computes fontSize when fontSize is 0', () => {
-      const result = layoutMultilineText('ABC', {
+    it("auto-computes fontSize when fontSize is 0", () => {
+      const result = layoutMultilineText("ABC", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -259,11 +259,11 @@ describe('layoutMultilineText', () => {
     });
   });
 
-  describe('lineHeight computation', () => {
-    it('lineHeight equals height * 1.2 for the given fontSize', () => {
+  describe("lineHeight computation", () => {
+    it("lineHeight equals height * 1.2 for the given fontSize", () => {
       const fontSize = 16;
 
-      const result = layoutMultilineText('Test text', {
+      const result = layoutMultilineText("Test text", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -276,9 +276,9 @@ describe('layoutMultilineText', () => {
     });
   });
 
-  describe('text content of lines', () => {
-    it('preserves full text content when no wrapping occurs', () => {
-      const text = 'Hello World';
+  describe("text content of lines", () => {
+    it("preserves full text content when no wrapping occurs", () => {
+      const text = "Hello World";
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -288,14 +288,14 @@ describe('layoutMultilineText', () => {
       });
 
       expect(result.lines.length).toBe(1);
-      expect(result.lines[0]!.text).toBe('Hello World');
+      expect(result.lines[0]!.text).toBe("Hello World");
     });
 
-    it('breaks text at word boundaries when wrapping', () => {
-      const text = 'The quick brown fox';
+    it("breaks text at word boundaries when wrapping", () => {
+      const text = "The quick brown fox";
       const fontSize = 12;
       // Make bounds narrow enough to force wrapping but wide enough for individual words
-      const wordWidth = font.widthOfTextAtSize('The quick ', fontSize);
+      const wordWidth = font.widthOfTextAtSize("The quick ", fontSize);
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -306,19 +306,19 @@ describe('layoutMultilineText', () => {
 
       expect(result.lines.length).toBeGreaterThan(1);
       // Each line's text should be a substring of the original (at word boundaries)
-      const reconstructed = result.lines.map((l) => l.text).join(' ');
+      const reconstructed = result.lines.map((l) => l.text).join(" ");
       // The words from the original should all be present
-      expect(reconstructed).toContain('The');
-      expect(reconstructed).toContain('quick');
-      expect(reconstructed).toContain('brown');
-      expect(reconstructed).toContain('fox');
+      expect(reconstructed).toContain("The");
+      expect(reconstructed).toContain("quick");
+      expect(reconstructed).toContain("brown");
+      expect(reconstructed).toContain("fox");
     });
 
-    it('splits long words that exceed the line width', () => {
+    it("splits long words that exceed the line width", () => {
       // A single very long word that cannot fit on one line
-      const text = 'Superlongwordwithoutanyspaces';
+      const text = "Superlongwordwithoutanyspaces";
       const fontSize = 12;
-      const singleCharWidth = font.widthOfTextAtSize('S', fontSize);
+      const singleCharWidth = font.widthOfTextAtSize("S", fontSize);
       // Make bounds narrow: only ~5 characters wide
       const narrowWidth = singleCharWidth * 5;
 
@@ -337,8 +337,8 @@ describe('layoutMultilineText', () => {
       expect(result.lines[0]!.width).toBeGreaterThan(narrowWidth);
     });
 
-    it('handles text with explicit newlines as separate input lines', () => {
-      const text = 'Line One\nLine Two\nLine Three';
+    it("handles text with explicit newlines as separate input lines", () => {
+      const text = "Line One\nLine Two\nLine Three";
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -348,13 +348,13 @@ describe('layoutMultilineText', () => {
       });
 
       expect(result.lines.length).toBe(3);
-      expect(result.lines[0]!.text).toBe('Line One');
-      expect(result.lines[1]!.text).toBe('Line Two');
-      expect(result.lines[2]!.text).toBe('Line Three');
+      expect(result.lines[0]!.text).toBe("Line One");
+      expect(result.lines[1]!.text).toBe("Line Two");
+      expect(result.lines[2]!.text).toBe("Line Three");
     });
 
-    it('handles carriage return + newline (\\r\\n) as a single newline', () => {
-      const text = 'First\r\nSecond';
+    it("handles carriage return + newline (\\r\\n) as a single newline", () => {
+      const text = "First\r\nSecond";
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -364,12 +364,12 @@ describe('layoutMultilineText', () => {
       });
 
       expect(result.lines.length).toBe(2);
-      expect(result.lines[0]!.text).toBe('First');
-      expect(result.lines[1]!.text).toBe('Second');
+      expect(result.lines[0]!.text).toBe("First");
+      expect(result.lines[1]!.text).toBe("Second");
     });
 
-    it('handles form feed character (\\f) as a line separator', () => {
-      const text = 'Part A\fPart B';
+    it("handles form feed character (\\f) as a line separator", () => {
+      const text = "Part A\fPart B";
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -379,12 +379,12 @@ describe('layoutMultilineText', () => {
       });
 
       expect(result.lines.length).toBe(2);
-      expect(result.lines[0]!.text).toBe('Part A');
-      expect(result.lines[1]!.text).toBe('Part B');
+      expect(result.lines[0]!.text).toBe("Part A");
+      expect(result.lines[1]!.text).toBe("Part B");
     });
 
-    it('replaces tab characters with four spaces', () => {
-      const text = 'Hello\tWorld';
+    it("replaces tab characters with four spaces", () => {
+      const text = "Hello\tWorld";
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -395,11 +395,11 @@ describe('layoutMultilineText', () => {
 
       expect(result.lines.length).toBe(1);
       // cleanText replaces \t with 4 spaces
-      expect(result.lines[0]!.text).toBe('Hello    World');
+      expect(result.lines[0]!.text).toBe("Hello    World");
     });
 
-    it('handles empty string input', () => {
-      const result = layoutMultilineText('', {
+    it("handles empty string input", () => {
+      const result = layoutMultilineText("", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -408,12 +408,12 @@ describe('layoutMultilineText', () => {
 
       // Empty string produces one line with empty text
       expect(result.lines.length).toBe(1);
-      expect(result.lines[0]!.text).toBe('');
+      expect(result.lines[0]!.text).toBe("");
       expect(result.lines[0]!.width).toBe(0);
     });
 
-    it('handles single character input', () => {
-      const result = layoutMultilineText('X', {
+    it("handles single character input", () => {
+      const result = layoutMultilineText("X", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -421,13 +421,13 @@ describe('layoutMultilineText', () => {
       });
 
       expect(result.lines.length).toBe(1);
-      expect(result.lines[0]!.text).toBe('X');
+      expect(result.lines[0]!.text).toBe("X");
     });
   });
 
-  describe('line widths match font measurements', () => {
-    it('each line width equals font.widthOfTextAtSize for that line text', () => {
-      const text = 'Hello World Foo Bar';
+  describe("line widths match font measurements", () => {
+    it("each line width equals font.widthOfTextAtSize for that line text", () => {
+      const text = "Hello World Foo Bar";
       const fontSize = 14;
 
       // Make the bounds narrow to force wrapping
@@ -444,10 +444,10 @@ describe('layoutMultilineText', () => {
       }
     });
 
-    it('each line height equals font.heightAtSize for the fontSize', () => {
+    it("each line height equals font.heightAtSize for the fontSize", () => {
       const fontSize = 14;
 
-      const result = layoutMultilineText('A\nB\nC', {
+      const result = layoutMultilineText("A\nB\nC", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -462,11 +462,11 @@ describe('layoutMultilineText', () => {
     });
   });
 
-  describe('position (x, y) calculations', () => {
-    it('left-aligned lines have x equal to bounds.x', () => {
+  describe("position (x, y) calculations", () => {
+    it("left-aligned lines have x equal to bounds.x", () => {
       const boundsX = 10;
 
-      const result = layoutMultilineText('Line1\nLine2', {
+      const result = layoutMultilineText("Line1\nLine2", {
         alignment: TextAlignment.Left,
         bounds: { x: boundsX, y: 0, width: 500, height: 500 },
         font,
@@ -478,12 +478,12 @@ describe('layoutMultilineText', () => {
       }
     });
 
-    it('center-aligned lines have x centered within bounds', () => {
+    it("center-aligned lines have x centered within bounds", () => {
       const boundsX = 10;
       const boundsWidth = 500;
       const fontSize = 12;
 
-      const result = layoutMultilineText('Hi\nWorld', {
+      const result = layoutMultilineText("Hi\nWorld", {
         alignment: TextAlignment.Center,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
         font,
@@ -496,12 +496,12 @@ describe('layoutMultilineText', () => {
       }
     });
 
-    it('right-aligned lines have x such that text ends at bounds right edge', () => {
+    it("right-aligned lines have x such that text ends at bounds right edge", () => {
       const boundsX = 10;
       const boundsWidth = 500;
       const fontSize = 12;
 
-      const result = layoutMultilineText('Hi\nWorld', {
+      const result = layoutMultilineText("Hi\nWorld", {
         alignment: TextAlignment.Right,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
         font,
@@ -514,12 +514,12 @@ describe('layoutMultilineText', () => {
       }
     });
 
-    it('y positions decrease by lineHeight for each subsequent line', () => {
+    it("y positions decrease by lineHeight for each subsequent line", () => {
       const boundsY = 100;
       const boundsHeight = 500;
       const fontSize = 12;
 
-      const result = layoutMultilineText('Line1\nLine2\nLine3', {
+      const result = layoutMultilineText("Line1\nLine2\nLine3", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: boundsY, width: 500, height: boundsHeight },
         font,
@@ -539,9 +539,9 @@ describe('layoutMultilineText', () => {
     });
   });
 
-  describe('output bounds', () => {
-    it('output bounds encompass all lines', () => {
-      const result = layoutMultilineText('Line1\nLine2\nLine3', {
+  describe("output bounds", () => {
+    it("output bounds encompass all lines", () => {
+      const result = layoutMultilineText("Line1\nLine2\nLine3", {
         alignment: TextAlignment.Left,
         bounds: { x: 10, y: 20, width: 500, height: 500 },
         font,
@@ -558,14 +558,13 @@ describe('layoutMultilineText', () => {
     });
   });
 
-  describe('word wrapping behavior', () => {
-    it('wraps at word boundaries to produce correct line count', () => {
+  describe("word wrapping behavior", () => {
+    it("wraps at word boundaries to produce correct line count", () => {
       const fontSize = 12;
-      const text = 'aaa bbb ccc ddd';
+      const text = "aaa bbb ccc ddd";
 
       // Compute width that fits exactly two words plus some slack
-      const twoWordWidth =
-        font.widthOfTextAtSize('aaa bbb ccc', fontSize) + 5;
+      const twoWordWidth = font.widthOfTextAtSize("aaa bbb ccc", fontSize) + 5;
 
       const result = layoutMultilineText(text, {
         alignment: TextAlignment.Left,
@@ -578,8 +577,8 @@ describe('layoutMultilineText', () => {
       expect(result.lines.length).toBe(2);
     });
 
-    it('does not wrap when bounds are wide enough', () => {
-      const text = 'This is a fairly long sentence that fits in wide bounds';
+    it("does not wrap when bounds are wide enough", () => {
+      const text = "This is a fairly long sentence that fits in wide bounds";
       const fontSize = 10;
       const fullWidth = font.widthOfTextAtSize(text, fontSize) + 10;
 
@@ -599,31 +598,31 @@ describe('layoutMultilineText', () => {
 // ---------------------------------------------------------------------------
 // layoutSinglelineText
 // ---------------------------------------------------------------------------
-describe('layoutSinglelineText', () => {
-  describe('return value structure', () => {
-    it('returns an object with fontSize, line, and bounds', () => {
-      const result = layoutSinglelineText('Hello', {
+describe("layoutSinglelineText", () => {
+  describe("return value structure", () => {
+    it("returns an object with fontSize, line, and bounds", () => {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
         fontSize: 12,
       });
 
-      expect(result).toHaveProperty('fontSize');
-      expect(result).toHaveProperty('line');
-      expect(result).toHaveProperty('bounds');
-      expect(typeof result.fontSize).toBe('number');
-      expect(typeof result.line.text).toBe('string');
-      expect(typeof result.line.x).toBe('number');
-      expect(typeof result.line.y).toBe('number');
-      expect(typeof result.line.width).toBe('number');
-      expect(typeof result.line.height).toBe('number');
+      expect(result).toHaveProperty("fontSize");
+      expect(result).toHaveProperty("line");
+      expect(result).toHaveProperty("bounds");
+      expect(typeof result.fontSize).toBe("number");
+      expect(typeof result.line.text).toBe("string");
+      expect(typeof result.line.x).toBe("number");
+      expect(typeof result.line.y).toBe("number");
+      expect(typeof result.line.width).toBe("number");
+      expect(typeof result.line.height).toBe("number");
     });
   });
 
-  describe('fontSize behavior', () => {
-    it('uses the provided fontSize', () => {
-      const result = layoutSinglelineText('Test', {
+  describe("fontSize behavior", () => {
+    it("uses the provided fontSize", () => {
+      const result = layoutSinglelineText("Test", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -633,8 +632,8 @@ describe('layoutSinglelineText', () => {
       expect(result.fontSize).toBe(18);
     });
 
-    it('auto-computes fontSize when undefined', () => {
-      const result = layoutSinglelineText('Test', {
+    it("auto-computes fontSize when undefined", () => {
+      const result = layoutSinglelineText("Test", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 200, height: 50 },
         font,
@@ -645,8 +644,8 @@ describe('layoutSinglelineText', () => {
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
 
-    it('auto-computes fontSize when 0', () => {
-      const result = layoutSinglelineText('Test', {
+    it("auto-computes fontSize when 0", () => {
+      const result = layoutSinglelineText("Test", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 200, height: 50 },
         font,
@@ -657,8 +656,8 @@ describe('layoutSinglelineText', () => {
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
 
-    it('auto-computed fontSize fits the text within bounds width', () => {
-      const text = 'Some test text';
+    it("auto-computed fontSize fits the text within bounds width", () => {
+      const text = "Some test text";
       const boundsWidth = 100;
 
       const result = layoutSinglelineText(text, {
@@ -670,7 +669,7 @@ describe('layoutSinglelineText', () => {
 
       // The text width at the computed size should not exceed bounds width
       const textWidth = font.widthOfTextAtSize(
-        text.replace(/[\n\f\r\u000B]/g, ' '),
+        text.replace(/[\n\f\r\u000B]/g, " "),
         result.fontSize,
       );
 
@@ -678,20 +677,20 @@ describe('layoutSinglelineText', () => {
     });
   });
 
-  describe('text merging', () => {
-    it('merges multiline text into a single line (newlines become spaces)', () => {
-      const result = layoutSinglelineText('Hello\nWorld', {
+  describe("text merging", () => {
+    it("merges multiline text into a single line (newlines become spaces)", () => {
+      const result = layoutSinglelineText("Hello\nWorld", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
         fontSize: 12,
       });
 
-      expect(result.line.text).toBe('Hello World');
+      expect(result.line.text).toBe("Hello World");
     });
 
-    it('handles tabs by converting to four spaces then merging', () => {
-      const result = layoutSinglelineText('A\tB', {
+    it("handles tabs by converting to four spaces then merging", () => {
+      const result = layoutSinglelineText("A\tB", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -699,13 +698,13 @@ describe('layoutSinglelineText', () => {
       });
 
       // cleanText replaces \t with 4 spaces, mergeLines joins lines
-      expect(result.line.text).toBe('A    B');
+      expect(result.line.text).toBe("A    B");
     });
   });
 
-  describe('width and height', () => {
-    it('line width matches font.widthOfTextAtSize', () => {
-      const text = 'TestString';
+  describe("width and height", () => {
+    it("line width matches font.widthOfTextAtSize", () => {
+      const text = "TestString";
       const fontSize = 14;
 
       const result = layoutSinglelineText(text, {
@@ -719,10 +718,10 @@ describe('layoutSinglelineText', () => {
       expect(result.line.width).toBeCloseTo(expectedWidth, 10);
     });
 
-    it('line height matches font.heightAtSize with descender=false', () => {
+    it("line height matches font.heightAtSize with descender=false", () => {
       const fontSize = 14;
 
-      const result = layoutSinglelineText('X', {
+      const result = layoutSinglelineText("X", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -733,8 +732,8 @@ describe('layoutSinglelineText', () => {
       expect(result.line.height).toBeCloseTo(expectedHeight, 10);
     });
 
-    it('bounds width and height match line width and height', () => {
-      const result = layoutSinglelineText('Hello', {
+    it("bounds width and height match line width and height", () => {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
@@ -746,11 +745,11 @@ describe('layoutSinglelineText', () => {
     });
   });
 
-  describe('alignment', () => {
-    it('left alignment sets x to bounds.x', () => {
+  describe("alignment", () => {
+    it("left alignment sets x to bounds.x", () => {
       const boundsX = 25;
 
-      const result = layoutSinglelineText('Hello', {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Left,
         bounds: { x: boundsX, y: 0, width: 500, height: 500 },
         font,
@@ -760,11 +759,11 @@ describe('layoutSinglelineText', () => {
       expect(result.line.x).toBe(boundsX);
     });
 
-    it('center alignment centers the text within bounds', () => {
+    it("center alignment centers the text within bounds", () => {
       const boundsX = 10;
       const boundsWidth = 500;
 
-      const result = layoutSinglelineText('Hello', {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Center,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
         font,
@@ -775,11 +774,11 @@ describe('layoutSinglelineText', () => {
       expect(result.line.x).toBeCloseTo(expectedX, 10);
     });
 
-    it('right alignment positions text at right edge of bounds', () => {
+    it("right alignment positions text at right edge of bounds", () => {
       const boundsX = 10;
       const boundsWidth = 500;
 
-      const result = layoutSinglelineText('Hello', {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Right,
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 500 },
         font,
@@ -790,24 +789,24 @@ describe('layoutSinglelineText', () => {
       expect(result.line.x).toBeCloseTo(expectedX, 10);
     });
 
-    it('different alignments produce different x positions for same text', () => {
+    it("different alignments produce different x positions for same text", () => {
       const sharedOpts = {
         bounds: { x: 0, y: 0, width: 500, height: 500 } as const,
         font,
         fontSize: 12 as const,
       };
 
-      const left = layoutSinglelineText('Hello', {
+      const left = layoutSinglelineText("Hello", {
         ...sharedOpts,
         alignment: TextAlignment.Left,
       });
 
-      const center = layoutSinglelineText('Hello', {
+      const center = layoutSinglelineText("Hello", {
         ...sharedOpts,
         alignment: TextAlignment.Center,
       });
 
-      const right = layoutSinglelineText('Hello', {
+      const right = layoutSinglelineText("Hello", {
         ...sharedOpts,
         alignment: TextAlignment.Right,
       });
@@ -817,13 +816,13 @@ describe('layoutSinglelineText', () => {
     });
   });
 
-  describe('vertical centering', () => {
-    it('y is vertically centered within bounds', () => {
+  describe("vertical centering", () => {
+    it("y is vertically centered within bounds", () => {
       const boundsY = 50;
       const boundsHeight = 200;
       const fontSize = 12;
 
-      const result = layoutSinglelineText('Hello', {
+      const result = layoutSinglelineText("Hello", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: boundsY, width: 500, height: boundsHeight },
         font,
@@ -836,23 +835,23 @@ describe('layoutSinglelineText', () => {
     });
   });
 
-  describe('empty string', () => {
-    it('handles empty string input', () => {
-      const result = layoutSinglelineText('', {
+  describe("empty string", () => {
+    it("handles empty string input", () => {
+      const result = layoutSinglelineText("", {
         alignment: TextAlignment.Left,
         bounds: { x: 0, y: 0, width: 500, height: 500 },
         font,
         fontSize: 12,
       });
 
-      expect(result.line.text).toBe('');
+      expect(result.line.text).toBe("");
       expect(result.line.width).toBe(0);
     });
   });
 
-  describe('bounds x and y in result', () => {
-    it('result bounds.x and bounds.y match line position', () => {
-      const result = layoutSinglelineText('Test', {
+  describe("bounds x and y in result", () => {
+    it("result bounds.x and bounds.y match line position", () => {
+      const result = layoutSinglelineText("Test", {
         alignment: TextAlignment.Center,
         bounds: { x: 10, y: 20, width: 300, height: 100 },
         font,
@@ -868,24 +867,24 @@ describe('layoutSinglelineText', () => {
 // ---------------------------------------------------------------------------
 // layoutCombedText
 // ---------------------------------------------------------------------------
-describe('layoutCombedText', () => {
-  describe('return value structure', () => {
-    it('returns an object with fontSize, cells, and bounds', () => {
-      const result = layoutCombedText('ABC', {
+describe("layoutCombedText", () => {
+  describe("return value structure", () => {
+    it("returns an object with fontSize, cells, and bounds", () => {
+      const result = layoutCombedText("ABC", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
         cellCount: 5,
       });
 
-      expect(result).toHaveProperty('fontSize');
-      expect(result).toHaveProperty('cells');
-      expect(result).toHaveProperty('bounds');
+      expect(result).toHaveProperty("fontSize");
+      expect(result).toHaveProperty("cells");
+      expect(result).toHaveProperty("bounds");
       expect(Array.isArray(result.cells)).toBe(true);
     });
 
-    it('each cell has text, encoded, x, y, width, and height', () => {
-      const result = layoutCombedText('AB', {
+    it("each cell has text, encoded, x, y, width, and height", () => {
+      const result = layoutCombedText("AB", {
         bounds: { x: 0, y: 0, width: 200, height: 50 },
         font,
         fontSize: 12,
@@ -893,19 +892,19 @@ describe('layoutCombedText', () => {
       });
 
       for (const cell of result.cells) {
-        expect(typeof cell.text).toBe('string');
+        expect(typeof cell.text).toBe("string");
         expect(cell.encoded).toBeDefined();
-        expect(typeof cell.x).toBe('number');
-        expect(typeof cell.y).toBe('number');
-        expect(typeof cell.width).toBe('number');
-        expect(typeof cell.height).toBe('number');
+        expect(typeof cell.x).toBe("number");
+        expect(typeof cell.y).toBe("number");
+        expect(typeof cell.width).toBe("number");
+        expect(typeof cell.height).toBe("number");
       }
     });
   });
 
-  describe('cell count', () => {
-    it('returns exactly cellCount cells', () => {
-      const result = layoutCombedText('Hi', {
+  describe("cell count", () => {
+    it("returns exactly cellCount cells", () => {
+      const result = layoutCombedText("Hi", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -915,8 +914,8 @@ describe('layoutCombedText', () => {
       expect(result.cells.length).toBe(10);
     });
 
-    it('returns cellCount cells even when text is shorter', () => {
-      const result = layoutCombedText('A', {
+    it("returns cellCount cells even when text is shorter", () => {
+      const result = layoutCombedText("A", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -927,8 +926,8 @@ describe('layoutCombedText', () => {
       expect(result.cells.length).toBe(5);
     });
 
-    it('returns cellCount cells for empty string', () => {
-      const result = layoutCombedText('', {
+    it("returns cellCount cells for empty string", () => {
+      const result = layoutCombedText("", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -939,11 +938,11 @@ describe('layoutCombedText', () => {
     });
   });
 
-  describe('text property of cells', () => {
-    it('each cell text is the full merged line (not individual characters)', () => {
+  describe("text property of cells", () => {
+    it("each cell text is the full merged line (not individual characters)", () => {
       // The source code shows: cells.push({ text: line, ... })
       // where line is the full merged text
-      const result = layoutCombedText('ABC', {
+      const result = layoutCombedText("ABC", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -951,19 +950,19 @@ describe('layoutCombedText', () => {
       });
 
       for (const cell of result.cells) {
-        expect(cell.text).toBe('ABC');
+        expect(cell.text).toBe("ABC");
       }
     });
   });
 
-  describe('cell positioning', () => {
-    it('cells are evenly distributed across bounds width', () => {
+  describe("cell positioning", () => {
+    it("cells are evenly distributed across bounds width", () => {
       const boundsWidth = 300;
       const cellCount = 6;
       const cellWidth = boundsWidth / cellCount;
       const fontSize = 12;
 
-      const result = layoutCombedText('ABCDEF', {
+      const result = layoutCombedText("ABCDEF", {
         bounds: { x: 0, y: 0, width: boundsWidth, height: 50 },
         font,
         fontSize,
@@ -980,14 +979,14 @@ describe('layoutCombedText', () => {
       }
     });
 
-    it('cells with boundsX offset are positioned relative to bounds.x', () => {
+    it("cells with boundsX offset are positioned relative to bounds.x", () => {
       const boundsX = 50;
       const boundsWidth = 300;
       const cellCount = 3;
       const cellWidth = boundsWidth / cellCount;
       const fontSize = 12;
 
-      const result = layoutCombedText('AB', {
+      const result = layoutCombedText("AB", {
         bounds: { x: boundsX, y: 0, width: boundsWidth, height: 50 },
         font,
         fontSize,
@@ -1000,8 +999,8 @@ describe('layoutCombedText', () => {
       expect(result.cells[0]!.x).toBeCloseTo(expectedFirstX, 10);
     });
 
-    it('all cells have the same y position (vertically centered)', () => {
-      const result = layoutCombedText('ABC', {
+    it("all cells have the same y position (vertically centered)", () => {
+      const result = layoutCombedText("ABC", {
         bounds: { x: 0, y: 10, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -1015,12 +1014,12 @@ describe('layoutCombedText', () => {
       }
     });
 
-    it('y is vertically centered within bounds height', () => {
+    it("y is vertically centered within bounds height", () => {
       const boundsY = 20;
       const boundsHeight = 60;
       const fontSize = 12;
 
-      const result = layoutCombedText('A', {
+      const result = layoutCombedText("A", {
         bounds: { x: 0, y: boundsY, width: 300, height: boundsHeight },
         font,
         fontSize,
@@ -1033,9 +1032,9 @@ describe('layoutCombedText', () => {
     });
   });
 
-  describe('cell dimensions', () => {
-    it('each cell width matches font measurement for that character at fontSize', () => {
-      const text = 'WiM';
+  describe("cell dimensions", () => {
+    it("each cell width matches font measurement for that character at fontSize", () => {
+      const text = "WiM";
       const fontSize = 14;
 
       const result = layoutCombedText(text, {
@@ -1046,7 +1045,7 @@ describe('layoutCombedText', () => {
       });
 
       // First three cells correspond to characters W, i, M
-      const chars = ['W', 'i', 'M'];
+      const chars = ["W", "i", "M"];
 
       for (let i = 0; i < chars.length; i++) {
         const expectedWidth = font.widthOfTextAtSize(chars[i]!, fontSize);
@@ -1054,10 +1053,10 @@ describe('layoutCombedText', () => {
       }
     });
 
-    it('each cell height is font.heightAtSize with descender=false', () => {
+    it("each cell height is font.heightAtSize with descender=false", () => {
       const fontSize = 14;
 
-      const result = layoutCombedText('AB', {
+      const result = layoutCombedText("AB", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize,
@@ -1072,9 +1071,9 @@ describe('layoutCombedText', () => {
     });
   });
 
-  describe('fontSize behavior', () => {
-    it('uses the provided fontSize', () => {
-      const result = layoutCombedText('AB', {
+  describe("fontSize behavior", () => {
+    it("uses the provided fontSize", () => {
+      const result = layoutCombedText("AB", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 16,
@@ -1084,8 +1083,8 @@ describe('layoutCombedText', () => {
       expect(result.fontSize).toBe(16);
     });
 
-    it('auto-computes fontSize when undefined', () => {
-      const result = layoutCombedText('AB', {
+    it("auto-computes fontSize when undefined", () => {
+      const result = layoutCombedText("AB", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: undefined,
@@ -1096,8 +1095,8 @@ describe('layoutCombedText', () => {
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
 
-    it('auto-computes fontSize when 0', () => {
-      const result = layoutCombedText('AB', {
+    it("auto-computes fontSize when 0", () => {
+      const result = layoutCombedText("AB", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 0,
@@ -1108,12 +1107,12 @@ describe('layoutCombedText', () => {
       expect(result.fontSize).toBeLessThanOrEqual(MAX_FONT_SIZE);
     });
 
-    it('auto-computed fontSize fits characters within cell dimensions', () => {
+    it("auto-computed fontSize fits characters within cell dimensions", () => {
       const cellCount = 5;
       const boundsWidth = 100;
       const cellWidth = boundsWidth / cellCount;
 
-      const result = layoutCombedText('WWWWW', {
+      const result = layoutCombedText("WWWWW", {
         bounds: { x: 0, y: 0, width: boundsWidth, height: 30 },
         font,
         fontSize: undefined,
@@ -1127,10 +1126,10 @@ describe('layoutCombedText', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('throws CombedTextLayoutError when text length exceeds cellCount', () => {
+  describe("error handling", () => {
+    it("throws CombedTextLayoutError when text length exceeds cellCount", () => {
       expect(() =>
-        layoutCombedText('ABCDE', {
+        layoutCombedText("ABCDE", {
           bounds: { x: 0, y: 0, width: 300, height: 50 },
           font,
           fontSize: 12,
@@ -1139,9 +1138,9 @@ describe('layoutCombedText', () => {
       ).toThrow(CombedTextLayoutError);
     });
 
-    it('throws with descriptive message about length vs cellCount', () => {
+    it("throws with descriptive message about length vs cellCount", () => {
       expect(() =>
-        layoutCombedText('ABCDE', {
+        layoutCombedText("ABCDE", {
           bounds: { x: 0, y: 0, width: 300, height: 50 },
           font,
           fontSize: 12,
@@ -1150,9 +1149,9 @@ describe('layoutCombedText', () => {
       ).toThrow(/lineLength=5.*cellCount=3/);
     });
 
-    it('does not throw when text length equals cellCount', () => {
+    it("does not throw when text length equals cellCount", () => {
       expect(() =>
-        layoutCombedText('ABC', {
+        layoutCombedText("ABC", {
           bounds: { x: 0, y: 0, width: 300, height: 50 },
           font,
           fontSize: 12,
@@ -1162,11 +1161,11 @@ describe('layoutCombedText', () => {
     });
   });
 
-  describe('text merging', () => {
-    it('merges newlines into spaces before layout', () => {
+  describe("text merging", () => {
+    it("merges newlines into spaces before layout", () => {
       // mergeLines converts newlines to spaces
       // "A\nB" becomes "A B" which is 3 chars, so cellCount must be >= 3
-      const result = layoutCombedText('A\nB', {
+      const result = layoutCombedText("A\nB", {
         bounds: { x: 0, y: 0, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -1177,13 +1176,13 @@ describe('layoutCombedText', () => {
       // So 5 cells total, with chars: A, space, B, then 2 empty cells
       expect(result.cells.length).toBe(5);
       // The text property of each cell is the full merged line
-      expect(result.cells[0]!.text).toBe('A B');
+      expect(result.cells[0]!.text).toBe("A B");
     });
   });
 
-  describe('output bounds', () => {
-    it('output bounds cover the cell area', () => {
-      const result = layoutCombedText('ABC', {
+  describe("output bounds", () => {
+    it("output bounds cover the cell area", () => {
+      const result = layoutCombedText("ABC", {
         bounds: { x: 10, y: 20, width: 300, height: 50 },
         font,
         fontSize: 12,
@@ -1199,9 +1198,9 @@ describe('layoutCombedText', () => {
 // ---------------------------------------------------------------------------
 // Cross-function comparisons
 // ---------------------------------------------------------------------------
-describe('Cross-function comparisons', () => {
-  it('layoutSinglelineText and layoutMultilineText agree on single-line text width', () => {
-    const text = 'Hello World';
+describe("Cross-function comparisons", () => {
+  it("layoutSinglelineText and layoutMultilineText agree on single-line text width", () => {
+    const text = "Hello World";
     const fontSize = 12;
     const bounds = { x: 0, y: 0, width: 500, height: 500 };
 
@@ -1228,8 +1227,8 @@ describe('Cross-function comparisons', () => {
     expect(singleResult.line.width).toBeCloseTo(multiResult.lines[0]!.width, 10);
   });
 
-  it('layoutSinglelineText and layoutMultilineText use same fontSize when provided', () => {
-    const text = 'Test';
+  it("layoutSinglelineText and layoutMultilineText use same fontSize when provided", () => {
+    const text = "Test";
     const fontSize = 20;
     const bounds = { x: 0, y: 0, width: 500, height: 500 };
 
@@ -1251,8 +1250,8 @@ describe('Cross-function comparisons', () => {
     expect(multiResult.fontSize).toBe(fontSize);
   });
 
-  it('layoutCombedText with cellCount equal to text length places one char per cell', () => {
-    const text = 'ABCDE';
+  it("layoutCombedText with cellCount equal to text length places one char per cell", () => {
+    const text = "ABCDE";
     const fontSize = 12;
     const cellCount = 5;
     const boundsWidth = 500;
@@ -1269,7 +1268,7 @@ describe('Cross-function comparisons', () => {
     // The characters are laid out one per cell. Each cell's encoded value
     // corresponds to the character at that cell's index. The width of each
     // cell corresponds to the width of that individual character.
-    const chars = ['A', 'B', 'C', 'D', 'E'];
+    const chars = ["A", "B", "C", "D", "E"];
 
     for (let i = 0; i < chars.length; i++) {
       const expectedWidth = font.widthOfTextAtSize(chars[i]!, fontSize);
@@ -1281,9 +1280,9 @@ describe('Cross-function comparisons', () => {
 // ---------------------------------------------------------------------------
 // Edge cases
 // ---------------------------------------------------------------------------
-describe('Edge cases', () => {
-  it('layoutMultilineText handles text with only newlines', () => {
-    const result = layoutMultilineText('\n\n', {
+describe("Edge cases", () => {
+  it("layoutMultilineText handles text with only newlines", () => {
+    const result = layoutMultilineText("\n\n", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
@@ -1294,13 +1293,13 @@ describe('Edge cases', () => {
     expect(result.lines.length).toBe(3);
 
     for (const line of result.lines) {
-      expect(line.text).toBe('');
+      expect(line.text).toBe("");
       expect(line.width).toBe(0);
     }
   });
 
-  it('layoutMultilineText handles text with trailing newline', () => {
-    const result = layoutMultilineText('Hello\n', {
+  it("layoutMultilineText handles text with trailing newline", () => {
+    const result = layoutMultilineText("Hello\n", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
@@ -1308,12 +1307,12 @@ describe('Edge cases', () => {
     });
 
     expect(result.lines.length).toBe(2);
-    expect(result.lines[0]!.text).toBe('Hello');
-    expect(result.lines[1]!.text).toBe('');
+    expect(result.lines[0]!.text).toBe("Hello");
+    expect(result.lines[1]!.text).toBe("");
   });
 
-  it('layoutMultilineText handles text with leading newline', () => {
-    const result = layoutMultilineText('\nWorld', {
+  it("layoutMultilineText handles text with leading newline", () => {
+    const result = layoutMultilineText("\nWorld", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
@@ -1321,24 +1320,24 @@ describe('Edge cases', () => {
     });
 
     expect(result.lines.length).toBe(2);
-    expect(result.lines[0]!.text).toBe('');
-    expect(result.lines[1]!.text).toBe('World');
+    expect(result.lines[0]!.text).toBe("");
+    expect(result.lines[1]!.text).toBe("World");
   });
 
-  it('layoutSinglelineText with only whitespace', () => {
-    const result = layoutSinglelineText('   ', {
+  it("layoutSinglelineText with only whitespace", () => {
+    const result = layoutSinglelineText("   ", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
       fontSize: 12,
     });
 
-    expect(result.line.text).toBe('   ');
+    expect(result.line.text).toBe("   ");
     expect(result.line.width).toBeGreaterThan(0);
   });
 
-  it('layoutCombedText with single character and single cell', () => {
-    const result = layoutCombedText('X', {
+  it("layoutCombedText with single character and single cell", () => {
+    const result = layoutCombedText("X", {
       bounds: { x: 0, y: 0, width: 100, height: 50 },
       font,
       fontSize: 12,
@@ -1346,8 +1345,8 @@ describe('Edge cases', () => {
     });
 
     expect(result.cells.length).toBe(1);
-    expect(result.cells[0]!.text).toBe('X');
-    const expectedWidth = font.widthOfTextAtSize('X', 12);
+    expect(result.cells[0]!.text).toBe("X");
+    const expectedWidth = font.widthOfTextAtSize("X", 12);
     expect(result.cells[0]!.width).toBeCloseTo(expectedWidth, 10);
 
     // Cell should be centered in the bounds
@@ -1356,8 +1355,8 @@ describe('Edge cases', () => {
     expect(result.cells[0]!.x).toBeCloseTo(expectedX, 10);
   });
 
-  it('layoutMultilineText with multiple spaces between words', () => {
-    const text = 'Hello   World';
+  it("layoutMultilineText with multiple spaces between words", () => {
+    const text = "Hello   World";
 
     const result = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
@@ -1368,11 +1367,11 @@ describe('Edge cases', () => {
 
     expect(result.lines.length).toBe(1);
     // Multiple spaces are preserved in the text
-    expect(result.lines[0]!.text).toBe('Hello   World');
+    expect(result.lines[0]!.text).toBe("Hello   World");
   });
 
-  it('layoutMultilineText with very small bounds still returns at least one line', () => {
-    const result = layoutMultilineText('Hello', {
+  it("layoutMultilineText with very small bounds still returns at least one line", () => {
+    const result = layoutMultilineText("Hello", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 1, height: 1 },
       font,
@@ -1383,8 +1382,8 @@ describe('Edge cases', () => {
     expect(result.lines.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('layoutMultilineText preserves encoded property as PDFHexString', () => {
-    const result = layoutMultilineText('Hello', {
+  it("layoutMultilineText preserves encoded property as PDFHexString", () => {
+    const result = layoutMultilineText("Hello", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
@@ -1397,8 +1396,8 @@ describe('Edge cases', () => {
     expect(encoded).not.toBeNull();
   });
 
-  it('layoutSinglelineText preserves encoded property', () => {
-    const result = layoutSinglelineText('Hello', {
+  it("layoutSinglelineText preserves encoded property", () => {
+    const result = layoutSinglelineText("Hello", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 500, height: 500 },
       font,
@@ -1409,8 +1408,8 @@ describe('Edge cases', () => {
     expect(result.line.encoded).not.toBeNull();
   });
 
-  it('layoutCombedText preserves encoded property for each cell', () => {
-    const result = layoutCombedText('AB', {
+  it("layoutCombedText preserves encoded property for each cell", () => {
+    const result = layoutCombedText("AB", {
       bounds: { x: 0, y: 0, width: 200, height: 50 },
       font,
       fontSize: 12,
@@ -1427,10 +1426,10 @@ describe('Edge cases', () => {
 // ---------------------------------------------------------------------------
 // Different standard fonts
 // ---------------------------------------------------------------------------
-describe('Layout with different standard fonts', () => {
-  it('layoutSinglelineText produces different widths for Courier vs Helvetica', async () => {
+describe("Layout with different standard fonts", () => {
+  it("layoutSinglelineText produces different widths for Courier vs Helvetica", async () => {
     const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
-    const text = 'Hello World';
+    const text = "Hello World";
     const fontSize = 12;
     const bounds = { x: 0, y: 0, width: 500, height: 500 };
 
@@ -1456,10 +1455,10 @@ describe('Layout with different standard fonts', () => {
     expect(helveticaResult.line.width).not.toBe(courierResult.line.width);
   });
 
-  it('Courier produces equal width for W and i (monospaced)', async () => {
+  it("Courier produces equal width for W and i (monospaced)", async () => {
     const courierFont = await pdfDoc.embedFont(StandardFonts.Courier);
-    const wWidth = courierFont.widthOfTextAtSize('W', 12);
-    const iWidth = courierFont.widthOfTextAtSize('i', 12);
+    const wWidth = courierFont.widthOfTextAtSize("W", 12);
+    const iWidth = courierFont.widthOfTextAtSize("i", 12);
     expect(wWidth).toBeCloseTo(iWidth, 10);
   });
 });
@@ -1539,8 +1538,8 @@ const randomText = (seed: number, words: number, alphabet: string) => {
     return state;
   };
 
-  const separators = [' ', ' ', ' ', '  ', '\t', ' \t '];
-  let text = '';
+  const separators = [" ", " ", " ", "  ", "\t", " \t "];
+  let text = "";
 
   for (let w = 0; w < words; w++) {
     const length = 1 + (next() % 12);
@@ -1555,18 +1554,18 @@ const randomText = (seed: number, words: number, alphabet: string) => {
   return text.trim();
 };
 
-describe('splitOutLines matches the linear reference', () => {
-  const kerned = 'AVAWATAYTaToTyVaVoWaYoLTLVLYP.F,r.y.';
-  const latin = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;-' + kerned;
+describe("splitOutLines matches the linear reference", () => {
+  const kerned = "AVAWATAYTaToTyVaVoWaYoLTLVLYP.F,r.y.";
+  const latin = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;-" + kerned;
 
   const inputs = [
-    'The quick brown fox jumps over the lazy dog, then naps in the warm afternoon sun.',
-    'AVAVAV To Ty Tw Yo Wa LT LY P. F, AWAY TOYS VAT WAVY',
-    '   leading whitespace then words that wrap around',
-    'Supercalifragilisticexpialidocious is far too long to fit at all here',
-    'a  b   c    d     e      f       g',
-    'tabs\tbetween\twords\tand  double  spaces',
-    'first paragraph wraps here\nsecond paragraph also wraps nicely',
+    "The quick brown fox jumps over the lazy dog, then naps in the warm afternoon sun.",
+    "AVAVAV To Ty Tw Yo Wa LT LY P. F, AWAY TOYS VAT WAVY",
+    "   leading whitespace then words that wrap around",
+    "Supercalifragilisticexpialidocious is far too long to fit at all here",
+    "a  b   c    d     e      f       g",
+    "tabs\tbetween\twords\tand  double  spaces",
+    "first paragraph wraps here\nsecond paragraph also wraps nicely",
     ...[1, 2, 3, 4, 5, 6, 7, 8].map((seed) => randomText(seed, 60, latin)),
   ];
 
@@ -1584,9 +1583,7 @@ describe('splitOutLines matches the linear reference', () => {
             bounds: { x: 0, y: 0, width, height: 10000 },
           });
 
-          expect(lines.map((l) => l.text)).toEqual(
-            linearLayout(text, width, layoutFont, fontSize),
-          );
+          expect(lines.map((l) => l.text)).toEqual(linearLayout(text, width, layoutFont, fontSize));
         }
       }
     }
@@ -1597,35 +1594,33 @@ describe('splitOutLines matches the linear reference', () => {
     StandardFonts.TimesRoman,
     StandardFonts.Courier,
     StandardFonts.HelveticaBold,
-  ])('with %s (pair-kerned standard font)', async (name) => {
+  ])("with %s (pair-kerned standard font)", async (name) => {
     check(await pdfDoc.embedFont(name), inputs);
   });
 
   // The linear reference shapes every candidate prefix of every line, which
   // is quadratic in full OpenType layouts; give it room.
-  it('with a custom font, including non-BMP characters', { timeout: 60_000 }, async () => {
+  it("with a custom font, including non-BMP characters", { timeout: 60_000 }, async () => {
     const doc = await PDFDocument.create();
     doc.registerFontkit(fontkit);
 
-    const ubuntu = await doc.embedFont(
-      fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'),
-    );
+    const ubuntu = await doc.embedFont(fs.readFileSync("./assets/fonts/ubuntu/Ubuntu-R.ttf"));
 
     check(ubuntu, [
       ...inputs,
-      'émoji 😀😀 and 𝔘𝔫𝔦𝔠𝔬𝔡𝔢 text that wraps across 😀 several lines',
-      'ﬁne ligatures ﬀ ﬂ in a line that needs to wrap somewhere',
+      "émoji 😀😀 and 𝔘𝔫𝔦𝔠𝔬𝔡𝔢 text that wraps across 😀 several lines",
+      "ﬁne ligatures ﬀ ﬂ in a line that needs to wrap somewhere",
     ]);
   });
 
   it.each([
-    ['many one-word lines', 'a '.repeat(4000).trim(), 12, 25],
-    ['long lines', randomText(42, 3000, 'abcdefghij'), 8, 220],
+    ["many one-word lines", "a ".repeat(4000).trim(), 12, 25],
+    ["long lines", randomText(42, 3000, "abcdefghij"), 8, 220],
   ])(
-    'measures work proportional to each line, not the rest of the paragraph (%s)',
+    "measures work proportional to each line, not the rest of the paragraph (%s)",
     async (_name, paragraph, fontSize, width) => {
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const measure = vi.spyOn(helvetica, 'widthOfTextAtSize');
+      const measure = vi.spyOn(helvetica, "widthOfTextAtSize");
 
       const { lines } = layoutMultilineText(paragraph, {
         alignment: TextAlignment.Left,
@@ -1636,10 +1631,7 @@ describe('splitOutLines matches the linear reference', () => {
 
       expect(lines.length).toBeGreaterThan(100);
 
-      const measuredChars = measure.mock.calls.reduce(
-        (sum, [text]) => sum + text.length,
-        0,
-      );
+      const measuredChars = measure.mock.calls.reduce((sum, [text]) => sum + text.length, 0);
 
       measure.mockRestore();
       // The forward scan measures each candidate of a line plus the first
@@ -1650,7 +1642,7 @@ describe('splitOutLines matches the linear reference', () => {
   );
 });
 
-describe('line breaking does not assume prefix widths grow', () => {
+describe("line breaking does not assume prefix widths grow", () => {
   // A stand-in font whose widths shrink as a line grows past one word.
   const fakeFont = (widths: Record<string, number>) =>
     ({
@@ -1659,35 +1651,35 @@ describe('line breaking does not assume prefix widths grow', () => {
       encodeText: (t: string) => t,
     }) as unknown as PDFFont;
 
-  it('ends a line at the first overflowing candidate', () => {
+  it("ends a line at the first overflowing candidate", () => {
     // A search that skipped the overflowing "a bb" would draw "a bb c".
-    const layout = layoutMultilineText('a bb c', {
+    const layout = layoutMultilineText("a bb c", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 200, height: 1000 },
-      font: fakeFont({ a: 100, 'a bb': 300, 'a bb c': 150, bb: 100 }),
+      font: fakeFont({ a: 100, "a bb": 300, "a bb c": 150, bb: 100 }),
       fontSize: 12,
     });
 
-    expect(layout.lines.map((l) => l.text)).toEqual(['a', 'bb c']);
+    expect(layout.lines.map((l) => l.text)).toEqual(["a", "bb c"]);
   });
 
-  it('keeps the whole input when its first candidate does not fit', () => {
-    const layout = layoutMultilineText('a b', {
+  it("keeps the whole input when its first candidate does not fit", () => {
+    const layout = layoutMultilineText("a b", {
       alignment: TextAlignment.Left,
       bounds: { x: 0, y: 0, width: 200, height: 1000 },
-      font: fakeFont({ a: 300, 'a b': 150 }),
+      font: fakeFont({ a: 300, "a b": 150 }),
       fontSize: 12,
     });
 
-    expect(layout.lines.map((l) => l.text)).toEqual(['a b']);
+    expect(layout.lines.map((l) => l.text)).toEqual(["a b"]);
   });
 });
 
-describe('auto font size fits the drawn lines', () => {
-  it('shrinks until an unbreakable word fits the width', () => {
+describe("auto font size fits the drawn lines", () => {
+  it("shrinks until an unbreakable word fits the width", () => {
     const bounds = { x: 0, y: 0, width: 70, height: 100 };
 
-    const layout = layoutMultilineText('Hello World', {
+    const layout = layoutMultilineText("Hello World", {
       alignment: TextAlignment.Left,
       bounds,
       font,
@@ -1698,17 +1690,15 @@ describe('auto font size fits the drawn lines', () => {
       expect(line.width).toBeLessThan(bounds.width);
     }
 
-    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
-      bounds.height,
-    );
+    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(bounds.height);
     // The next size is rejected for width: "World" alone no longer fits.
-    expect(
-      font.widthOfTextAtSize('World', layout.fontSize + 1),
-    ).toBeGreaterThanOrEqual(bounds.width);
+    expect(font.widthOfTextAtSize("World", layout.fontSize + 1)).toBeGreaterThanOrEqual(
+      bounds.width,
+    );
   });
 
-  it('counts the wrapped and empty lines it draws when height-limited', () => {
-    const text = 'one  two   three\n\nfour five six seven';
+  it("counts the wrapped and empty lines it draws when height-limited", () => {
+    const text = "one  two   three\n\nfour five six seven";
     const bounds = { x: 0, y: 0, width: 400, height: 60 };
 
     const layout = layoutMultilineText(text, {
@@ -1718,9 +1708,7 @@ describe('auto font size fits the drawn lines', () => {
       fontSize: undefined,
     });
 
-    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(
-      bounds.height,
-    );
+    expect(layout.lines.length * layout.lineHeight).toBeLessThanOrEqual(bounds.height);
 
     const larger = layoutMultilineText(text, {
       alignment: TextAlignment.Left,
@@ -1729,88 +1717,104 @@ describe('auto font size fits the drawn lines', () => {
       fontSize: layout.fontSize + 1,
     });
 
-    expect(larger.lines.length * larger.lineHeight).toBeGreaterThan(
-      bounds.height,
-    );
+    expect(larger.lines.length * larger.lineHeight).toBeGreaterThan(bounds.height);
   });
 
-  it('sizes a single line by its whole kerned width', () => {
+  it("sizes a single line by its whole kerned width", () => {
     const bounds = { x: 0, y: 0, width: 50, height: 100 };
 
-    const { fontSize } = layoutSinglelineText('A V', {
+    const { fontSize } = layoutSinglelineText("A V", {
       alignment: TextAlignment.Left,
       bounds,
       font,
       fontSize: undefined,
     });
 
-    expect(font.widthOfTextAtSize('A V', fontSize)).toBeLessThan(50);
-    expect(font.widthOfTextAtSize('A V', fontSize + 1)).toBeGreaterThanOrEqual(
-      50,
-    );
+    expect(font.widthOfTextAtSize("A V", fontSize)).toBeLessThan(50);
+    expect(font.widthOfTextAtSize("A V", fontSize + 1)).toBeGreaterThanOrEqual(50);
   });
 });
 
-describe('layout sizing boundaries and grapheme cells', () => {
+describe("layout sizing boundaries and grapheme cells", () => {
   const bounds = { x: 0, y: 0, width: 10000, height: 20 };
 
-  it('uses the single-line drawn height without descender or leading', () => {
-    const result = layoutSinglelineText('Hi', {
-      alignment: TextAlignment.Left, fontSize: undefined, font, bounds,
+  it("uses the single-line drawn height without descender or leading", () => {
+    const result = layoutSinglelineText("Hi", {
+      alignment: TextAlignment.Left,
+      fontSize: undefined,
+      font,
+      bounds,
     });
 
     expect(result.line.height).toBeLessThanOrEqual(bounds.height);
-    expect(font.heightAtSize(result.fontSize + 1, { descender: false }))
-      .toBeGreaterThan(bounds.height);
+    expect(font.heightAtSize(result.fontSize + 1, { descender: false })).toBeGreaterThan(
+      bounds.height,
+    );
   });
 
-  it.each([layoutSinglelineText, layoutMultilineText])('checks small sizes and size 500', (layout) => {
-    const options = { alignment: TextAlignment.Left, fontSize: undefined, font, bounds };
-    const small = layout('Hello', { ...options, bounds: { ...bounds, width: 0.1, height: 0.1 } });
-    expect(small.fontSize).toBeLessThan(3);
-    expect(font.widthOfTextAtSize('Hello', small.fontSize)).toBeLessThan(0.1);
-    const measure = vi.spyOn(font, 'widthOfTextAtSize');
-    const large = layout('Hello', { ...options, bounds: { ...bounds, height: 10000 } });
-    expect(large.fontSize).toBe(500);
-    expect(measure.mock.calls.some(([, size]) => size === 500)).toBe(true);
-    measure.mockRestore();
-  });
+  it.each([layoutSinglelineText, layoutMultilineText])(
+    "checks small sizes and size 500",
+    (layout) => {
+      const options = { alignment: TextAlignment.Left, fontSize: undefined, font, bounds };
+      const small = layout("Hello", { ...options, bounds: { ...bounds, width: 0.1, height: 0.1 } });
+      expect(small.fontSize).toBeLessThan(3);
+      expect(font.widthOfTextAtSize("Hello", small.fontSize)).toBeLessThan(0.1);
+      const measure = vi.spyOn(font, "widthOfTextAtSize");
+      const large = layout("Hello", { ...options, bounds: { ...bounds, height: 10000 } });
+      expect(large.fontSize).toBe(500);
+      expect(measure.mock.calls.some(([, size]) => size === 500)).toBe(true);
+      measure.mockRestore();
+    },
+  );
 
-  it('rejects size 500 when it is the first overflow', () => {
-    const result = layoutSinglelineText('Hi', {
-      alignment: TextAlignment.Left, fontSize: undefined, font,
+  it("rejects size 500 when it is the first overflow", () => {
+    const result = layoutSinglelineText("Hi", {
+      alignment: TextAlignment.Left,
+      fontSize: undefined,
+      font,
       bounds: { ...bounds, height: font.heightAtSize(499, { descender: false }) },
     });
 
     expect(result.fontSize).toBe(499);
   });
 
-  it('counts, measures and encodes grapheme clusters, including empty cells', () => {
-    const clusters = ['a\u0301', '😀', '👩‍👩‍👧‍👦', '🇳🇴'];
+  it("counts, measures and encodes grapheme clusters, including empty cells", () => {
+    const clusters = ["a\u0301", "😀", "👩‍👩‍👧‍👦", "🇳🇴"];
     const encoded: string[] = [];
     const measured: string[] = [];
 
     const mockFont = {
-      encodeText: (text: string) => { encoded.push(text);
+      encodeText: (text: string) => {
+        encoded.push(text);
 
- return font.encodeText(''); },
-      widthOfTextAtSize: (text: string, size: number) => { measured.push(text);
+        return font.encodeText("");
+      },
+      widthOfTextAtSize: (text: string, size: number) => {
+        measured.push(text);
 
- return text ? size : 0; },
+        return text ? size : 0;
+      },
       heightAtSize: (size: number) => size,
     } as unknown as PDFFont;
 
-    const result = layoutCombedText(clusters.join(''), {
-      font: mockFont, fontSize: undefined, cellCount: 5,
+    const result = layoutCombedText(clusters.join(""), {
+      font: mockFont,
+      fontSize: undefined,
+      cellCount: 5,
       bounds: { x: 0, y: 0, width: 100, height: 100 },
     });
 
-    expect(encoded).toEqual([...clusters, '']);
-    expect(measured.every((text) => text === '' || clusters.includes(text))).toBe(true);
+    expect(encoded).toEqual([...clusters, ""]);
+    expect(measured.every((text) => text === "" || clusters.includes(text))).toBe(true);
     expect(result.fontSize).toBe(15);
     expect(result.cells).toHaveLength(5);
-    expect(() => layoutCombedText(clusters.join(''), {
-      font: mockFont, fontSize: 12, cellCount: 3, bounds,
-    })).toThrow(CombedTextLayoutError);
+    expect(() =>
+      layoutCombedText(clusters.join(""), {
+        font: mockFont,
+        fontSize: 12,
+        cellCount: 3,
+        bounds,
+      }),
+    ).toThrow(CombedTextLayoutError);
   });
 });

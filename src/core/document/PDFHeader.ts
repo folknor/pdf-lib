@@ -1,9 +1,8 @@
-import { charFromCode, copyStringIntoBuffer } from '../../utils/index.js';
-import CharCodes from '../syntax/CharCodes.js';
+import { charFromCode, copyStringIntoBuffer } from "../../utils/index.js";
+import CharCodes from "../syntax/CharCodes.js";
 
 class PDFHeader {
-  static forVersion = (major: number, minor: number) =>
-    new PDFHeader(major, minor);
+  static forVersion = (major: number, minor: number) => new PDFHeader(major, minor);
 
   private readonly major: string;
   private readonly minor: string;

@@ -1,5 +1,5 @@
-import * as r from '../vendors/restructure/index.js';
-import TTFFont from './TTFFont.js';
+import * as r from "../vendors/restructure/index.js";
+import TTFFont from "./TTFFont.js";
 
 const DFontName = new r.String(r.uint8);
 
@@ -14,11 +14,9 @@ const Ref = new r.Struct({
 const Type = new r.Struct({
   name: new r.String(4),
   maxTypeIndex: r.uint16,
-  refList: new r.Pointer(
-    r.uint16,
-    new r.Array(Ref, (t: any) => t.maxTypeIndex + 1),
-    { type: 'parent' },
-  ),
+  refList: new r.Pointer(r.uint16, new r.Array(Ref, (t: any) => t.maxTypeIndex + 1), {
+    type: "parent",
+  }),
 });
 
 const TypeList = new r.Struct({
@@ -29,7 +27,7 @@ const TypeList = new r.Struct({
 const DFontMap = new r.Struct({
   reserved: new r.Reserved(r.uint8, 24),
   typeList: new r.Pointer(r.uint16, TypeList),
-  nameListOffset: new r.Pointer(r.uint16, 'void'),
+  nameListOffset: new r.Pointer(r.uint16, "void"),
 });
 
 const DFontHeader = new r.Struct({
@@ -40,7 +38,7 @@ const DFontHeader = new r.Struct({
 });
 
 export default class DFont {
-  type: string = 'DFont';
+  type: string = "DFont";
   stream: r.DecodeStream;
   header: any;
   sfnt: any;
@@ -56,8 +54,8 @@ export default class DFont {
       return false;
     }
 
-    for (const type of (header as any)['map'].typeList.types) {
-      if (type.name === 'sfnt') {
+    for (const type of (header as any)["map"].typeList.types) {
+      if (type.name === "sfnt") {
         return true;
       }
     }
@@ -79,7 +77,7 @@ export default class DFont {
         }
       }
 
-      if (type.name === 'sfnt') {
+      if (type.name === "sfnt") {
         this.sfnt = type;
       }
     }

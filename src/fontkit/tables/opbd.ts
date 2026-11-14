@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import { LookupTable } from './aat.js';
+import * as r from "../../vendors/restructure/index.js";
+import { LookupTable } from "./aat.js";
 
 const OpticalBounds = new r.Struct({
   left: r.int16,

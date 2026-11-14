@@ -4,6 +4,6 @@
  * Vendored and patched for browser compatibility
  */
 
-export * from './fontkit/index.js';
+export * from "./fontkit/index.js";
 
-export { default } from './fontkit/index.js';
+export { default } from "./fontkit/index.js";

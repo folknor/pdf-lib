@@ -1,14 +1,14 @@
-import fs from 'fs';
+import fs from "fs";
 
-import fontkit from 'src/fontkit.js';
-import BBox from '../../src/fontkit/glyph/BBox';
-import CBDTGlyph from '../../src/fontkit/glyph/CBDTGlyph';
-import COLRGlyph from '../../src/fontkit/glyph/COLRGlyph';
-import Path from '../../src/fontkit/glyph/Path';
-import TTFGlyph from '../../src/fontkit/glyph/TTFGlyph';
-import GPOSProcessor from '../../src/fontkit/opentype/GPOSProcessor';
+import fontkit from "src/fontkit.js";
+import BBox from "../../src/fontkit/glyph/BBox";
+import CBDTGlyph from "../../src/fontkit/glyph/CBDTGlyph";
+import COLRGlyph from "../../src/fontkit/glyph/COLRGlyph";
+import Path from "../../src/fontkit/glyph/Path";
+import TTFGlyph from "../../src/fontkit/glyph/TTFGlyph";
+import GPOSProcessor from "../../src/fontkit/opentype/GPOSProcessor";
 
-const ubuntuBytes = fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf');
+const ubuntuBytes = fs.readFileSync("./assets/fonts/ubuntu/Ubuntu-R.ttf");
 const openUbuntu = () => fontkit.create(new Uint8Array(ubuntuBytes));
 
 const firstCompositeGlyph = (font: any) => {
@@ -18,11 +18,11 @@ const firstCompositeGlyph = (font: any) => {
     if (decoded.numberOfContours < 0) return { id, decoded };
   }
 
-  throw new Error('no composite glyph in test font');
+  throw new Error("no composite glyph in test font");
 };
 
-describe('color and bitmap glyphs', () => {
-  it('_getBaseGlyph returns the outline glyph but keeps a cached COLR glyph', () => {
+describe("color and bitmap glyphs", () => {
+  it("_getBaseGlyph returns the outline glyph but keeps a cached COLR glyph", () => {
     const font = openUbuntu();
     const colr = new COLRGlyph(36, font);
     font._glyphs[36] = colr;
@@ -34,7 +34,7 @@ describe('color and bitmap glyphs', () => {
     expect(font._getBaseGlyph(37)).toBe(font._getBaseGlyph(37));
   });
 
-  it('resolves composite components through their outline glyphs', () => {
+  it("resolves composite components through their outline glyphs", () => {
     const reference = openUbuntu();
     const { id, decoded } = firstCompositeGlyph(reference);
     const expected = reference.getGlyph(id).path.toSVG();
@@ -42,16 +42,13 @@ describe('color and bitmap glyphs', () => {
     const font = openUbuntu();
 
     for (const component of decoded.components) {
-      font._glyphs[component.glyphID] = new COLRGlyph(
-        component.glyphID,
-        font,
-      );
+      font._glyphs[component.glyphID] = new COLRGlyph(component.glyphID, font);
     }
 
     expect(font.getGlyph(id).path.toSVG()).toBe(expected);
   });
 
-  it('returns null layers and a fallback bbox for COLR v1 glyphs', () => {
+  it("returns null layers and a fallback bbox for COLR v1 glyphs", () => {
     const fakeFont = {
       COLR: { version: 1 },
       CPAL: {},
@@ -64,7 +61,7 @@ describe('color and bitmap glyphs', () => {
     expect(() => glyph.render({ fillColor: () => {} }, 12)).not.toThrow();
   });
 
-  it('gives COLR glyphs the geometry of their base outline', () => {
+  it("gives COLR glyphs the geometry of their base outline", () => {
     const font = openUbuntu();
     const base = font._getBaseGlyph(36);
     const colr = new COLRGlyph(36, font);
@@ -78,10 +75,8 @@ describe('color and bitmap glyphs', () => {
     expect(empty.cbox).toEqual(new BBox(0, 0, 0, 0));
   });
 
-  it('keeps CFF subroutines when subsetting a COLR font', () => {
-    const bytes = fs.readFileSync(
-      './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
-    );
+  it("keeps CFF subroutines when subsetting a COLR font", () => {
+    const bytes = fs.readFileSync("./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf");
 
     const encodeSubset = (colour: boolean) => {
       const font = fontkit.create(new Uint8Array(bytes)) as any;
@@ -92,8 +87,8 @@ describe('color and bitmap glyphs', () => {
           COLR: {},
           CPAL: {},
         };
-        Object.defineProperty(font, 'COLR', { value: { version: 1 } });
-        Object.defineProperty(font, 'CPAL', { value: {} });
+        Object.defineProperty(font, "COLR", { value: { version: 1 } });
+        Object.defineProperty(font, "CPAL", { value: {} });
         expect(font.getGlyph(1000)).toBeInstanceOf(COLRGlyph);
       }
 
@@ -107,11 +102,11 @@ describe('color and bitmap glyphs', () => {
     expect(encodeSubset(true)).toEqual(encodeSubset(false));
   });
 
-  it('renders the outline of COLR v1 glyphs', () => {
+  it("renders the outline of COLR v1 glyphs", () => {
     const font = openUbuntu();
     font.directory.tables = { ...font.directory.tables, COLR: {}, CPAL: {} };
-    Object.defineProperty(font, 'COLR', { value: { version: 1 } });
-    Object.defineProperty(font, 'CPAL', { value: {} });
+    Object.defineProperty(font, "COLR", { value: { version: 1 } });
+    Object.defineProperty(font, "CPAL", { value: {} });
 
     const glyph = font.getGlyph(36);
     expect(glyph).toBeInstanceOf(COLRGlyph);
@@ -122,18 +117,20 @@ describe('color and bitmap glyphs', () => {
     const ctx = new Proxy(
       {},
       {
-        get: (_target, name) => (..._args: unknown[]) => {
-          calls.push(String(name));
-        },
+        get:
+          (_target, name) =>
+          (..._args: unknown[]) => {
+            calls.push(String(name));
+          },
       },
     );
 
     glyph.render(ctx, 12);
-    expect(calls).toContain('moveTo');
-    expect(calls).toContain('fill');
+    expect(calls).toContain("moveTo");
+    expect(calls).toContain("fill");
   });
 
-  it('creates stub CBDT glyphs for bitmap-only fonts', () => {
+  it("creates stub CBDT glyphs for bitmap-only fonts", () => {
     const font = openUbuntu();
     const { glyf: _glyf, ...tables } = font.directory.tables;
     font.directory.tables = { ...tables, CBLC: {} };
@@ -144,7 +141,7 @@ describe('color and bitmap glyphs', () => {
     expect(glyph.path.commands).toEqual([]);
   });
 
-  it('subsets bitmap-only fonts into empty glyphs with their metrics', () => {
+  it("subsets bitmap-only fonts into empty glyphs with their metrics", () => {
     const font = openUbuntu();
     const { glyf: _glyf, loca: _loca, ...tables } = font.directory.tables;
     font.directory.tables = { ...tables, CBLC: {} };
@@ -165,7 +162,7 @@ describe('color and bitmap glyphs', () => {
     expect(out.getGlyph(1).path.commands).toEqual([]);
   });
 
-  it('reads back a one-glyph bitmap-only subset', () => {
+  it("reads back a one-glyph bitmap-only subset", () => {
     const font = openUbuntu();
     const { glyf: _glyf, loca: _loca, ...tables } = font.directory.tables;
     font.directory.tables = { ...tables, CBLC: {} };
@@ -175,23 +172,19 @@ describe('color and bitmap glyphs', () => {
     expect(glyph.cbox).toEqual(new BBox(0, 0, 0, 0));
   });
 
-  it('reads a version 0.5 maxp as numGlyphs only', () => {
+  it("reads a version 0.5 maxp as numGlyphs only", () => {
     const otf = fontkit.create(
-      new Uint8Array(
-        fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
-      ),
+      new Uint8Array(fs.readFileSync("./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf")),
     ) as any;
 
     expect(otf.maxp.version).toBe(0x00005000);
-    expect(Object.keys(otf.maxp)).not.toContain('maxPoints');
+    expect(Object.keys(otf.maxp)).not.toContain("maxPoints");
     expect(otf.numGlyphs).toBeGreaterThan(0);
   });
 
-  it('gives empty CFF glyphs a zero cbox and finite metrics', () => {
+  it("gives empty CFF glyphs a zero cbox and finite metrics", () => {
     const otf = fontkit.create(
-      new Uint8Array(
-        fs.readFileSync('./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf'),
-      ),
+      new Uint8Array(fs.readFileSync("./assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf")),
     ) as any;
 
     const space = otf.glyphForCodePoint(0x20);
@@ -202,7 +195,7 @@ describe('color and bitmap glyphs', () => {
     expect(space.bbox.minX).toBe(Infinity);
   });
 
-  it('keeps cbox points of move-only paths and zeroes point-free ones', () => {
+  it("keeps cbox points of move-only paths and zeroes point-free ones", () => {
     const empty = new Path();
     empty.closePath();
     expect(empty.cbox).toEqual(new BBox(0, 0, 0, 0));
@@ -211,7 +204,7 @@ describe('color and bitmap glyphs', () => {
     expect(moved.cbox).toEqual(new BBox(12, 34, 12, 34));
   });
 
-  it('refuses to subset an sbix font without outlines', () => {
+  it("refuses to subset an sbix font without outlines", () => {
     const font = openUbuntu();
     const { glyf: _glyf, ...tables } = font.directory.tables;
     font.directory.tables = { ...tables, sbix: {} };
@@ -220,19 +213,19 @@ describe('color and bitmap glyphs', () => {
     expect(() => subset.encode()).toThrow(/neither outlines nor CBDT/);
   });
 
-  it('keeps outline glyphs for fonts with embedded bitmaps next to glyf', () => {
+  it("keeps outline glyphs for fonts with embedded bitmaps next to glyf", () => {
     const font = openUbuntu();
     font.directory.tables = { ...font.directory.tables, EBLC: {} };
     expect(font.getGlyph(36)).toBeInstanceOf(TTFGlyph);
   });
 });
 
-describe('composite variation metrics', () => {
+describe("composite variation metrics", () => {
   // No variable fixture has a USE_MY_METRICS composite, so a stand-in
   // variation processor varies Ubuntu: it moves only the given glyph's
   // phantom points, +50 on the right origin and -30 on the bottom origin.
   const varyPhantomsOf = (font: any, gid: number) => {
-    Object.defineProperty(font, '_variationProcessor', {
+    Object.defineProperty(font, "_variationProcessor", {
       value: {
         transformPoints: (id: number, points: any[]) => {
           if (id !== gid) return;
@@ -253,17 +246,15 @@ describe('composite variation metrics', () => {
       if (flagged.length !== 1) continue;
 
       // An unflagged component that is a different glyph from the flagged one.
-      const other = decoded.components.find(
-        (c: any) => c.glyphID !== flagged[0].glyphID,
-      );
+      const other = decoded.components.find((c: any) => c.glyphID !== flagged[0].glyphID);
 
       if (other) return { id, flagged: flagged[0].glyphID, other: other.glyphID };
     }
 
-    throw new Error('no USE_MY_METRICS composite in test font');
+    throw new Error("no USE_MY_METRICS composite in test font");
   };
 
-  it('takes the USE_MY_METRICS component phantom points', () => {
+  it("takes the USE_MY_METRICS component phantom points", () => {
     const { id, flagged } = flaggedComposite(openUbuntu());
     const unvaried = openUbuntu().getGlyph(id);
 
@@ -290,7 +281,7 @@ describe('composite variation metrics', () => {
   // The outline is translated once, at the composite, by the left phantom
   // point it takes its metrics from.
   const moveLeftOriginOf = (font: any, gid: number) => {
-    Object.defineProperty(font, '_variationProcessor', {
+    Object.defineProperty(font, "_variationProcessor", {
       value: {
         transformPoints: (id: number, points: any[]) => {
           if (id === gid) points[points.length - 4].x += 20;
@@ -300,10 +291,9 @@ describe('composite variation metrics', () => {
   };
 
   // An unvaried glyph's left origin, in its glyf coordinates.
-  const leftOrigin = (glyph: any) =>
-    glyph._getCBox(true).minX - glyph._getMetrics().leftBearing;
+  const leftOrigin = (glyph: any) => glyph._getCBox(true).minX - glyph._getMetrics().leftBearing;
 
-  it('shifts a composite outline by the USE_MY_METRICS left origin only', () => {
+  it("shifts a composite outline by the USE_MY_METRICS left origin only", () => {
     const { id, flagged, other } = flaggedComposite(openUbuntu());
     const unvaried = openUbuntu().getGlyph(id);
     const flaggedOrigin = leftOrigin(openUbuntu().getGlyph(flagged));
@@ -317,24 +307,20 @@ describe('composite variation metrics', () => {
       moveLeftOriginOf(font, gid!);
       const glyph = font.getGlyph(id);
       // The static path is already placed at the flagged component's origin.
-      expect(glyph.path.cbox.minX).toBe(
-        unvaried.path.cbox.minX + flaggedOrigin - shift!,
-      );
+      expect(glyph.path.cbox.minX).toBe(unvaried.path.cbox.minX + flaggedOrigin - shift!);
       expect(glyph.path.cbox.minX).toBe(glyph._getMetrics().leftBearing);
     }
   });
 });
 
-describe('static TrueType left origin', () => {
+describe("static TrueType left origin", () => {
   // UbuntuMono-R's glyph 1249 has hmtx lsb 9 but glyf xMin -34.
   const mono = () =>
     fontkit.create(
-      new Uint8Array(
-        fs.readFileSync('./assets/fonts/ubuntu/UbuntuMono-R.ttf'),
-      ),
+      new Uint8Array(fs.readFileSync("./assets/fonts/ubuntu/UbuntuMono-R.ttf")),
     ) as any;
 
-  it('places the outline and cbox at the hmtx left side bearing', () => {
+  it("places the outline and cbox at the hmtx left side bearing", () => {
     const glyph = mono().getGlyph(1249);
     const header = glyph._getCBox(true);
     const { leftBearing } = glyph._getMetrics();
@@ -345,7 +331,7 @@ describe('static TrueType left origin', () => {
     expect(glyph.cbox.maxY).toBe(header.maxY);
   });
 
-  it('writes a re-encoded glyph bearing as its xMin', () => {
+  it("writes a re-encoded glyph bearing as its xMin", () => {
     const font = mono();
     // Mark the glyf table transformed, as WOFF2 does, to force flattening.
     font.directory.tables.glyf = {
@@ -361,7 +347,7 @@ describe('static TrueType left origin', () => {
   });
 });
 
-describe('GPOSProcessor.applyAnchor', () => {
+describe("GPOSProcessor.applyAnchor", () => {
   const makeProcessor = () => {
     const processor = Object.create(GPOSProcessor.prototype);
     processor.font = {};
@@ -376,32 +362,24 @@ describe('GPOSProcessor.applyAnchor', () => {
 
   const anchor = (x: number, y: number) => ({ xCoordinate: x, yCoordinate: y });
 
-  it('skips marks whose base anchor is NULL', () => {
+  it("skips marks whose base anchor is NULL", () => {
     const processor = makeProcessor();
 
-    const applied = processor.applyAnchor(
-      { markAnchor: anchor(1, 2) },
-      null,
-      0,
-    );
+    const applied = processor.applyAnchor({ markAnchor: anchor(1, 2) }, null, 0);
 
     expect(applied).toBe(false);
     expect(processor.positions[1]).toEqual({ xOffset: 0, yOffset: 0 });
     expect(processor.glyphIterator.cur.markAttachment).toBeUndefined();
   });
 
-  it('skips marks whose mark anchor is NULL', () => {
+  it("skips marks whose mark anchor is NULL", () => {
     const processor = makeProcessor();
-    expect(
-      processor.applyAnchor({ markAnchor: null }, anchor(10, 20), 0),
-    ).toBe(false);
+    expect(processor.applyAnchor({ markAnchor: null }, anchor(10, 20), 0)).toBe(false);
   });
 
-  it('positions marks when both anchors exist', () => {
+  it("positions marks when both anchors exist", () => {
     const processor = makeProcessor();
-    expect(
-      processor.applyAnchor({ markAnchor: anchor(1, 2) }, anchor(10, 20), 0),
-    ).toBe(true);
+    expect(processor.applyAnchor({ markAnchor: anchor(1, 2) }, anchor(10, 20), 0)).toBe(true);
     expect(processor.positions[1]).toEqual({ xOffset: 9, yOffset: 18 });
     expect(processor.glyphIterator.cur.markAttachment).toBe(0);
   });

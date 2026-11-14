@@ -28,11 +28,10 @@ export function range(index: number, end: number): number[] {
   return result;
 }
 
-export const asciiDecoder = new TextDecoder('ascii');
+export const asciiDecoder = new TextDecoder("ascii");
 
 // Based on https://github.com/niklasvh/base64-arraybuffer. MIT license.
-const CHARS =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 const LOOKUP = new Uint8Array(256);
 
@@ -43,10 +42,10 @@ for (let i = 0; i < CHARS.length; i++) {
 export function decodeBase64(base64: string): Uint8Array {
   let bufferLength = base64.length * 0.75;
 
-  if (base64[base64.length - 1] === '=') {
+  if (base64[base64.length - 1] === "=") {
     bufferLength--;
 
-    if (base64[base64.length - 2] === '=') {
+    if (base64[base64.length - 2] === "=") {
       bufferLength--;
     }
   }

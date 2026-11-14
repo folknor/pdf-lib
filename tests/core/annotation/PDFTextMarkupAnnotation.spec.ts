@@ -4,11 +4,11 @@ import {
   PDFDocument,
   PDFNumber,
   PDFTextMarkupAnnotation,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFTextMarkupAnnotation', () => {
-  describe('annotations() method', () => {
-    it('returns empty array when page has no annotations', async () => {
+describe("PDFTextMarkupAnnotation", () => {
+  describe("annotations() method", () => {
+    it("returns empty array when page has no annotations", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
 
@@ -18,8 +18,8 @@ describe('PDFTextMarkupAnnotation', () => {
     });
   });
 
-  describe('addTextMarkupAnnotation()', () => {
-    it('can add a highlight annotation to a page', async () => {
+  describe("addTextMarkupAnnotation()", () => {
+    it("can add a highlight annotation to a page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -32,7 +32,7 @@ describe('PDFTextMarkupAnnotation', () => {
           width: 150,
           height: 20,
         },
-        contents: 'This is a highlight annotation',
+        contents: "This is a highlight annotation",
         quadPoints: {
           leftbottomX: 50,
           leftbottomY: 300,
@@ -50,7 +50,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotation.getSubtype()).toBe(AnnotationTypes.Highlight);
     });
 
-    it('can read back added highlight annotation from page', async () => {
+    it("can read back added highlight annotation from page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -58,7 +58,7 @@ describe('PDFTextMarkupAnnotation', () => {
         subtype: AnnotationTypes.Highlight,
         color: [1, 1, 0],
         rect: { x: 50, y: 300, width: 150, height: 20 },
-        contents: 'Test highlight',
+        contents: "Test highlight",
         quadPoints: {
           leftbottomX: 50,
           leftbottomY: 300,
@@ -77,10 +77,10 @@ describe('PDFTextMarkupAnnotation', () => {
       const fetched = annotations[0] as PDFTextMarkupAnnotation;
       expect(fetched).toBeInstanceOf(PDFTextMarkupAnnotation);
       expect(fetched.getSubtype()).toBe(AnnotationTypes.Highlight);
-      expect(fetched.Contents()?.asString()).toBe('Test highlight');
+      expect(fetched.Contents()?.asString()).toBe("Test highlight");
     });
 
-    it('can add underline annotation', async () => {
+    it("can add underline annotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -103,7 +103,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotation.getSubtype()).toBe(AnnotationTypes.Underline);
     });
 
-    it('can add strikeout annotation', async () => {
+    it("can add strikeout annotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -126,7 +126,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotation.getSubtype()).toBe(AnnotationTypes.StrikeOut);
     });
 
-    it('can add squiggly annotation', async () => {
+    it("can add squiggly annotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -149,17 +149,17 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotation.getSubtype()).toBe(AnnotationTypes.Squiggly);
     });
 
-    it('sets optional properties correctly', async () => {
+    it("sets optional properties correctly", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
-      const modDate = new Date('2024-01-15T10:30:00Z');
+      const modDate = new Date("2024-01-15T10:30:00Z");
 
       const annotation = page.addTextMarkupAnnotation({
         subtype: AnnotationTypes.Highlight,
         color: [1, 1, 0],
         rect: { x: 50, y: 300, width: 150, height: 20 },
-        contents: 'Test contents',
-        name: 'test-annotation-id',
+        contents: "Test contents",
+        name: "test-annotation-id",
         flags: 4, // Print flag
         border: [0, 0, 1],
         modificationDate: modDate,
@@ -175,14 +175,14 @@ describe('PDFTextMarkupAnnotation', () => {
         },
       });
 
-      expect(annotation.Contents()?.asString()).toBe('Test contents');
-      expect(annotation.NM()?.asString()).toBe('test-annotation-id');
+      expect(annotation.Contents()?.asString()).toBe("Test contents");
+      expect(annotation.NM()?.asString()).toBe("test-annotation-id");
       expect(annotation.getFlags()).toBe(4);
     });
   });
 
-  describe('QuadPoints()', () => {
-    it('returns quad points as array of PDFNumbers', async () => {
+  describe("QuadPoints()", () => {
+    it("returns quad points as array of PDFNumbers", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -209,8 +209,8 @@ describe('PDFTextMarkupAnnotation', () => {
     });
   });
 
-  describe('setQuadPoints()', () => {
-    it('can set quad points with tuple', async () => {
+  describe("setQuadPoints()", () => {
+    it("can set quad points with tuple", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -236,7 +236,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(quadPoints?.[7].asNumber()).toBe(80);
     });
 
-    it('can set quad points with individual arguments', async () => {
+    it("can set quad points with individual arguments", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -263,8 +263,8 @@ describe('PDFTextMarkupAnnotation', () => {
     });
   });
 
-  describe('PDFAnnotation base class methods', () => {
-    it('getSubtype returns AnnotationTypes enum value', async () => {
+  describe("PDFAnnotation base class methods", () => {
+    it("getSubtype returns AnnotationTypes enum value", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -287,7 +287,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotation.getSubtype()).toBe(AnnotationTypes.Highlight);
     });
 
-    it('getRectangle returns correct dimensions', async () => {
+    it("getRectangle returns correct dimensions", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -314,7 +314,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(rect.height).toBe(20);
     });
 
-    it('getParentPage returns the page the annotation is on', async () => {
+    it("getParentPage returns the page the annotation is on", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -340,8 +340,8 @@ describe('PDFTextMarkupAnnotation', () => {
     });
   });
 
-  describe('AnnotationFactory', () => {
-    it('creates PDFTextMarkupAnnotation for highlight subtype', async () => {
+  describe("AnnotationFactory", () => {
+    it("creates PDFTextMarkupAnnotation for highlight subtype", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -365,7 +365,7 @@ describe('PDFTextMarkupAnnotation', () => {
       expect(annotations[0]).toBeInstanceOf(PDFTextMarkupAnnotation);
     });
 
-    it('creates PDFAnnotation for generic annotation subtypes', async () => {
+    it("creates PDFAnnotation for generic annotation subtypes", async () => {
       // Non-markup annotations should return base PDFAnnotation class
       // This is tested implicitly through the factory behavior
       const pdfDoc = await PDFDocument.create();
@@ -376,8 +376,8 @@ describe('PDFTextMarkupAnnotation', () => {
     });
   });
 
-  describe('PDF roundtrip', () => {
-    it('annotations persist after save and reload', async () => {
+  describe("PDF roundtrip", () => {
+    it("annotations persist after save and reload", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -385,7 +385,7 @@ describe('PDFTextMarkupAnnotation', () => {
         subtype: AnnotationTypes.Highlight,
         color: [1, 1, 0],
         rect: { x: 50, y: 300, width: 150, height: 20 },
-        contents: 'Persisted highlight',
+        contents: "Persisted highlight",
         quadPoints: {
           leftbottomX: 50,
           leftbottomY: 300,
@@ -409,7 +409,7 @@ describe('PDFTextMarkupAnnotation', () => {
       const annotation = annotations[0] as PDFTextMarkupAnnotation;
       expect(annotation).toBeInstanceOf(PDFTextMarkupAnnotation);
       expect(annotation.getSubtype()).toBe(AnnotationTypes.Highlight);
-      expect(annotation.Contents()?.asString()).toBe('Persisted highlight');
+      expect(annotation.Contents()?.asString()).toBe("Persisted highlight");
     });
   });
 });

@@ -30,10 +30,12 @@ export const piece = (parent: Occurrence, codePoints: number[]): Occurrence =>
   mapped(codePoints, parent.cluster);
 
 /** A glyph inserted into the cluster `cluster`, standing for no text. */
-export const inserted = (
-  codePoints: number[],
-  cluster: number,
-): Occurrence => ({ codePoints, text: [], cluster, components: 1 });
+export const inserted = (codePoints: number[], cluster: number): Occurrence => ({
+  codePoints,
+  text: [],
+  cluster,
+  components: 1,
+});
 
 /** A GSUB or morx ligature of `parts`, in order. */
 export const ligated = (parts: readonly Occurrence[]): Occurrence => ({
@@ -44,10 +46,7 @@ export const ligated = (parts: readonly Occurrence[]): Occurrence => ({
 });
 
 /** A character composed from `parts` (Hangul syllable): not a ligature. */
-export const composed = (
-  parts: readonly Occurrence[],
-  codePoints: number[],
-): Occurrence =>
+export const composed = (parts: readonly Occurrence[], codePoints: number[]): Occurrence =>
   mapped(codePoints, Math.min(...parts.map((part) => part.cluster)));
 
 export const copyOccurrence = (occurrence: Occurrence): Occurrence => ({

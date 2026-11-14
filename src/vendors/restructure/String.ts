@@ -4,11 +4,11 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import { NumberT } from './Number.js';
-import * as utils from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import { NumberT } from "./Number.js";
+import * as utils from "./utils.js";
 
 type EncodingResolver = (parent: unknown) => string;
 
@@ -16,16 +16,16 @@ type LengthType = number | string | NumberT | ((parent: unknown) => number);
 
 function encodingWidth(encoding: string): number {
   switch (encoding) {
-    case 'ascii':
-    case 'utf8':
+    case "ascii":
+    case "utf8":
       return 1;
-    case 'utf16le':
-    case 'utf16-le':
-    case 'utf-16be':
-    case 'utf-16le':
-    case 'utf16be':
-    case 'utf16-be':
-    case 'ucs2':
+    case "utf16le":
+    case "utf16-le":
+    case "utf-16be":
+    case "utf-16le":
+    case "utf16be":
+    case "utf16-be":
+    case "ucs2":
       return 2;
     default:
       return 1;
@@ -34,9 +34,9 @@ function encodingWidth(encoding: string): number {
 
 function byteLength(string: string, encoding: string): number {
   switch (encoding) {
-    case 'ascii':
+    case "ascii":
       return string.length;
-    case 'utf8': {
+    case "utf8": {
       let len = 0;
 
       for (let i = 0; i < string.length; i++) {
@@ -66,11 +66,11 @@ function byteLength(string: string, encoding: string): number {
       return len;
     }
 
-    case 'utf16le':
-    case 'utf16-le':
-    case 'utf16be':
-    case 'utf16-be':
-    case 'ucs2':
+    case "utf16le":
+    case "utf16-le":
+    case "utf16be":
+    case "utf16-be":
+    case "ucs2":
       return string.length * 2;
     default:
       throw new Error(`Unknown encoding ${encoding}`);
@@ -81,10 +81,7 @@ export class StringT extends Base<string> {
   length: LengthType | undefined;
   encoding: string | EncodingResolver;
 
-  constructor(
-    length?: LengthType,
-    encoding: string | EncodingResolver = 'ascii',
-  ) {
+  constructor(length?: LengthType, encoding: string | EncodingResolver = "ascii") {
     super();
     this.length = length;
     this.encoding = encoding;
@@ -95,8 +92,8 @@ export class StringT extends Base<string> {
 
     let encoding = this.encoding;
 
-    if (typeof encoding === 'function') {
-      encoding = encoding.call(parent, parent) || 'ascii';
+    if (typeof encoding === "function") {
+      encoding = encoding.call(parent, parent) || "ascii";
     }
 
     const width = encodingWidth(encoding);
@@ -123,29 +120,22 @@ export class StringT extends Base<string> {
       stream.pos += width;
     }
 
-    return typeof result === 'string' ? result : '';
+    return typeof result === "string" ? result : "";
   }
 
-  size(
-    val?: string | null,
-    parent?: { val?: Record<string, unknown> },
-  ): number {
+  size(val?: string | null, parent?: { val?: Record<string, unknown> }): number {
     if (val === undefined || val === null) {
-      return utils.resolveLength(
-        this.length,
-        null,
-        parent as Record<string, unknown> | null,
-      );
+      return utils.resolveLength(this.length, null, parent as Record<string, unknown> | null);
     }
 
     let encoding = this.encoding;
 
-    if (typeof encoding === 'function') {
-      encoding = encoding.call(parent?.val, parent?.val) || 'ascii';
+    if (typeof encoding === "function") {
+      encoding = encoding.call(parent?.val, parent?.val) || "ascii";
     }
 
-    if (encoding === 'utf16be') {
-      encoding = 'utf16le';
+    if (encoding === "utf16be") {
+      encoding = "utf16le";
     }
 
     let size = byteLength(val, encoding);
@@ -161,15 +151,11 @@ export class StringT extends Base<string> {
     return size;
   }
 
-  encode(
-    stream: EncodeStream,
-    val: string,
-    parent?: { val?: Record<string, unknown> },
-  ): void {
+  encode(stream: EncodeStream, val: string, parent?: { val?: Record<string, unknown> }): void {
     let encoding = this.encoding;
 
-    if (typeof encoding === 'function') {
-      encoding = encoding.call(parent?.val, parent?.val) || 'ascii';
+    if (typeof encoding === "function") {
+      encoding = encoding.call(parent?.val, parent?.val) || "ascii";
     }
 
     if (this.length instanceof NumberT) {

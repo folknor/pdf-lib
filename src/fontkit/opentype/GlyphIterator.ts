@@ -1,4 +1,4 @@
-import type GlyphInfo from './GlyphInfo.js';
+import type GlyphInfo from "./GlyphInfo.js";
 
 export interface GlyphIteratorOptions {
   flags?: {
@@ -20,7 +20,7 @@ export interface GlyphIteratorOptions {
 export default class GlyphIterator {
   glyphs: GlyphInfo[];
   options: GlyphIteratorOptions;
-  flags: NonNullable<GlyphIteratorOptions['flags']>;
+  flags: NonNullable<GlyphIteratorOptions["flags"]>;
   markAttachmentType: number;
   markFilter: ((glyphId: number) => boolean) | undefined;
   index: number;
@@ -64,10 +64,7 @@ export default class GlyphIterator {
       return !this.markFilter(glyph.id);
     }
 
-    return !!(
-      this.markAttachmentType &&
-      glyph.markAttachmentType !== this.markAttachmentType
-    );
+    return !!(this.markAttachmentType && glyph.markAttachmentType !== this.markAttachmentType);
   }
 
   move(dir: number): GlyphInfo | null {

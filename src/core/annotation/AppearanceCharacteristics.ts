@@ -1,9 +1,9 @@
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import PDFString from '../objects/PDFString.js';
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import PDFString from "../objects/PDFString.js";
 
 class AppearanceCharacteristics {
   readonly dict: PDFDict;
@@ -16,7 +16,7 @@ class AppearanceCharacteristics {
   }
 
   R(): PDFNumber | undefined {
-    const R = this.dict.lookup(PDFName.of('R'));
+    const R = this.dict.lookup(PDFName.of("R"));
 
     if (R instanceof PDFNumber) return R;
 
@@ -24,7 +24,7 @@ class AppearanceCharacteristics {
   }
 
   BC(): PDFArray | undefined {
-    const BC = this.dict.lookup(PDFName.of('BC'));
+    const BC = this.dict.lookup(PDFName.of("BC"));
 
     if (BC instanceof PDFArray) return BC;
 
@@ -32,7 +32,7 @@ class AppearanceCharacteristics {
   }
 
   BG(): PDFArray | undefined {
-    const BG = this.dict.lookup(PDFName.of('BG'));
+    const BG = this.dict.lookup(PDFName.of("BG"));
 
     if (BG instanceof PDFArray) return BG;
 
@@ -40,7 +40,7 @@ class AppearanceCharacteristics {
   }
 
   CA(): PDFHexString | PDFString | undefined {
-    const CA = this.dict.lookup(PDFName.of('CA'));
+    const CA = this.dict.lookup(PDFName.of("CA"));
 
     if (CA instanceof PDFHexString || CA instanceof PDFString) return CA;
 
@@ -48,7 +48,7 @@ class AppearanceCharacteristics {
   }
 
   RC(): PDFHexString | PDFString | undefined {
-    const RC = this.dict.lookup(PDFName.of('RC'));
+    const RC = this.dict.lookup(PDFName.of("RC"));
 
     if (RC instanceof PDFHexString || RC instanceof PDFString) return RC;
 
@@ -56,7 +56,7 @@ class AppearanceCharacteristics {
   }
 
   AC(): PDFHexString | PDFString | undefined {
-    const AC = this.dict.lookup(PDFName.of('AC'));
+    const AC = this.dict.lookup(PDFName.of("AC"));
 
     if (AC instanceof PDFHexString || AC instanceof PDFString) return AC;
 
@@ -117,39 +117,39 @@ class AppearanceCharacteristics {
 
   setRotation(rotation: number) {
     const R = this.dict.context.obj(rotation);
-    this.dict.set(PDFName.of('R'), R);
+    this.dict.set(PDFName.of("R"), R);
   }
 
   setBorderColor(color: number[]) {
     const BC = this.dict.context.obj(color);
-    this.dict.set(PDFName.of('BC'), BC);
+    this.dict.set(PDFName.of("BC"), BC);
   }
 
   setBackgroundColor(color: number[]) {
     const BG = this.dict.context.obj(color);
-    this.dict.set(PDFName.of('BG'), BG);
+    this.dict.set(PDFName.of("BG"), BG);
   }
 
   clearBackgroundColor() {
-    this.dict.delete(PDFName.of('BG'));
+    this.dict.delete(PDFName.of("BG"));
   }
 
   setCaptions(captions: { normal: string; rollover?: string; down?: string }) {
     const CA = PDFHexString.fromText(captions.normal);
-    this.dict.set(PDFName.of('CA'), CA);
+    this.dict.set(PDFName.of("CA"), CA);
 
     if (captions.rollover) {
       const RC = PDFHexString.fromText(captions.rollover);
-      this.dict.set(PDFName.of('RC'), RC);
+      this.dict.set(PDFName.of("RC"), RC);
     } else {
-      this.dict.delete(PDFName.of('RC'));
+      this.dict.delete(PDFName.of("RC"));
     }
 
     if (captions.down) {
       const AC = PDFHexString.fromText(captions.down);
-      this.dict.set(PDFName.of('AC'), AC);
+      this.dict.set(PDFName.of("AC"), AC);
     } else {
-      this.dict.delete(PDFName.of('AC'));
+      this.dict.delete(PDFName.of("AC"));
     }
   }
 }

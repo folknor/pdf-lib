@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from "fs";
 import {
   BlendMode,
   degrees,
@@ -12,13 +12,13 @@ import {
   rgb,
   cmyk,
   StandardFonts,
-} from '../../src/index';
-import { TextRenderingMode } from '../../src/api/operators.js';
+} from "../../src/index";
+import { TextRenderingMode } from "../../src/api/operators.js";
 
-const birdPng = fs.readFileSync('assets/images/greyscale_bird.png');
+const birdPng = fs.readFileSync("assets/images/greyscale_bird.png");
 
-describe('PDFDocument', () => {
-  describe('getSize() method', () => {
+describe("PDFDocument", () => {
+  describe("getSize() method", () => {
     it("returns the width and height of the the page's MediaBox", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
@@ -27,7 +27,7 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('setSize() method', () => {
+  describe("setSize() method", () => {
     it("sets the width and height of only the the page's MediaBox when the other boxes are not defined", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
@@ -114,7 +114,7 @@ describe('PDFDocument', () => {
   });
 
   // https://github.com/Hopding/pdf-lib/issues/1075
-  it('drawImage() does not reuse existing XObject keys', async () => {
+  it("drawImage() does not reuse existing XObject keys", async () => {
     const pdfDoc1 = await PDFDocument.create();
     const image1 = await pdfDoc1.embedPng(birdPng);
     const page1 = pdfDoc1.addPage();
@@ -139,7 +139,7 @@ describe('PDFDocument', () => {
   });
 
   // https://github.com/Hopding/pdf-lib/issues/1075
-  it('setFont() does not reuse existing Font keys', async () => {
+  it("setFont() does not reuse existing Font keys", async () => {
     const pdfDoc1 = await PDFDocument.create();
     const font1 = await pdfDoc1.embedFont(StandardFonts.Helvetica);
     const page1 = pdfDoc1.addPage();
@@ -165,64 +165,64 @@ describe('PDFDocument', () => {
 
   // ===== NEW TESTS =====
 
-  describe('getRotation() / setRotation() methods', () => {
-    it('returns 0 degrees by default', async () => {
+  describe("getRotation() / setRotation() methods", () => {
+    it("returns 0 degrees by default", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(page.getRotation()).toEqual(degrees(0));
     });
 
-    it('sets and gets 90 degree rotation', async () => {
+    it("sets and gets 90 degree rotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.setRotation(degrees(90));
       expect(page.getRotation()).toEqual(degrees(90));
     });
 
-    it('sets and gets 180 degree rotation', async () => {
+    it("sets and gets 180 degree rotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.setRotation(degrees(180));
       expect(page.getRotation()).toEqual(degrees(180));
     });
 
-    it('sets and gets 270 degree rotation', async () => {
+    it("sets and gets 270 degree rotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.setRotation(degrees(270));
       expect(page.getRotation()).toEqual(degrees(270));
     });
 
-    it('sets and gets negative 90 degree rotation', async () => {
+    it("sets and gets negative 90 degree rotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.setRotation(degrees(-90));
       expect(page.getRotation()).toEqual(degrees(-90));
     });
 
-    it('throws for non-multiple-of-90 rotation', async () => {
+    it("throws for non-multiple-of-90 rotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setRotation(degrees(45))).toThrow();
     });
   });
 
-  describe('getWidth() / getHeight() methods', () => {
-    it('returns the width from getSize()', async () => {
+  describe("getWidth() / getHeight() methods", () => {
+    it("returns the width from getSize()", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([300, 500]);
       expect(page.getWidth()).toBe(300);
     });
 
-    it('returns the height from getSize()', async () => {
+    it("returns the height from getSize()", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([300, 500]);
       expect(page.getHeight()).toBe(500);
     });
   });
 
-  describe('setWidth() / setHeight() methods', () => {
-    it('sets only the width while preserving the height', async () => {
+  describe("setWidth() / setHeight() methods", () => {
+    it("sets only the width while preserving the height", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([300, 500]);
       page.setWidth(400);
@@ -230,7 +230,7 @@ describe('PDFDocument', () => {
       expect(page.getHeight()).toBe(500);
     });
 
-    it('sets only the height while preserving the width', async () => {
+    it("sets only the height while preserving the width", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([300, 500]);
       page.setHeight(600);
@@ -239,26 +239,26 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('position / cursor methods', () => {
-    it('getPosition() returns (0, 0) by default', async () => {
+  describe("position / cursor methods", () => {
+    it("getPosition() returns (0, 0) by default", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(page.getPosition()).toEqual({ x: 0, y: 0 });
     });
 
-    it('getX() returns 0 by default', async () => {
+    it("getX() returns 0 by default", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(page.getX()).toBe(0);
     });
 
-    it('getY() returns 0 by default', async () => {
+    it("getY() returns 0 by default", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(page.getY()).toBe(0);
     });
 
-    it('moveTo() sets both x and y', async () => {
+    it("moveTo() sets both x and y", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -267,7 +267,7 @@ describe('PDFDocument', () => {
       expect(page.getY()).toBe(100);
     });
 
-    it('moveDown() decreases y', async () => {
+    it("moveDown() decreases y", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -276,7 +276,7 @@ describe('PDFDocument', () => {
       expect(page.getX()).toBe(50);
     });
 
-    it('moveUp() increases y', async () => {
+    it("moveUp() increases y", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -285,7 +285,7 @@ describe('PDFDocument', () => {
       expect(page.getX()).toBe(50);
     });
 
-    it('moveLeft() decreases x', async () => {
+    it("moveLeft() decreases x", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -294,7 +294,7 @@ describe('PDFDocument', () => {
       expect(page.getY()).toBe(100);
     });
 
-    it('moveRight() increases x', async () => {
+    it("moveRight() increases x", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -303,7 +303,7 @@ describe('PDFDocument', () => {
       expect(page.getY()).toBe(100);
     });
 
-    it('chaining multiple move operations accumulates correctly', async () => {
+    it("chaining multiple move operations accumulates correctly", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(100, 200);
@@ -315,7 +315,7 @@ describe('PDFDocument', () => {
       expect(page.getY()).toBe(212);
     });
 
-    it('resetPosition() resets x and y to (0, 0)', async () => {
+    it("resetPosition() resets x and y to (0, 0)", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(50, 100);
@@ -325,8 +325,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('setFontSize() method', () => {
-    it('does not throw when setting a valid font size', async () => {
+  describe("setFontSize() method", () => {
+    it("does not throw when setting a valid font size", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setFontSize(12)).not.toThrow();
@@ -335,28 +335,28 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('setFontColor() method', () => {
-    it('does not throw when setting an rgb color', async () => {
+  describe("setFontColor() method", () => {
+    it("does not throw when setting an rgb color", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setFontColor(rgb(0.5, 0.5, 0.5))).not.toThrow();
     });
 
-    it('does not throw when setting a cmyk color', async () => {
+    it("does not throw when setting a cmyk color", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setFontColor(cmyk(0.4, 0.7, 0.39, 0.15))).not.toThrow();
     });
 
-    it('does not throw when setting a grayscale color', async () => {
+    it("does not throw when setting a grayscale color", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setFontColor(grayscale(0.5))).not.toThrow();
     });
   });
 
-  describe('setLineHeight() method', () => {
-    it('does not throw when setting a valid line height', async () => {
+  describe("setLineHeight() method", () => {
+    it("does not throw when setting a valid line height", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.setLineHeight(12)).not.toThrow();
@@ -364,28 +364,26 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawText() method', () => {
-    it('draws text with default options (auto-embeds Helvetica)', async () => {
+  describe("drawText() method", () => {
+    it("draws text with default options (auto-embeds Helvetica)", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
-      expect(() => page.drawText('Hello, World!')).not.toThrow();
+      expect(() => page.drawText("Hello, World!")).not.toThrow();
     });
 
-    it('draws text with an explicit font', async () => {
+    it("draws text with an explicit font", async () => {
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
       const page = pdfDoc.addPage();
-      expect(() =>
-        page.drawText('Hello, World!', { font }),
-      ).not.toThrow();
+      expect(() => page.drawText("Hello, World!", { font })).not.toThrow();
     });
 
-    it('draws text with all options', async () => {
+    it("draws text with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Courier);
       const page = pdfDoc.addPage();
       expect(() =>
-        page.drawText('Hello\nWorld', {
+        page.drawText("Hello\nWorld", {
           x: 50,
           y: 400,
           font,
@@ -398,22 +396,22 @@ describe('PDFDocument', () => {
           ySkew: degrees(5),
           blendMode: BlendMode.Multiply,
           maxWidth: 200,
-          wordBreaks: [' '],
+          wordBreaks: [" "],
         }),
       ).not.toThrow();
     });
 
-    it('draws text at the current cursor position when x/y not specified', async () => {
+    it("draws text at the current cursor position when x/y not specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       page.setFont(font);
       page.moveTo(100, 200);
       // Should not throw; text drawn at (100, 200)
-      expect(() => page.drawText('Positioned text')).not.toThrow();
+      expect(() => page.drawText("Positioned text")).not.toThrow();
     });
 
-    it('uses the default font size and line height set on the page', async () => {
+    it("uses the default font size and line height set on the page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -422,10 +420,10 @@ describe('PDFDocument', () => {
       page.setLineHeight(18);
       page.setFontColor(rgb(0, 0, 1));
       // Should not throw
-      expect(() => page.drawText('Styled text\nSecond line')).not.toThrow();
+      expect(() => page.drawText("Styled text\nSecond line")).not.toThrow();
     });
 
-    it('restores the old font after drawing with a different font', async () => {
+    it("restores the old font after drawing with a different font", async () => {
       const pdfDoc = await PDFDocument.create();
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const courier = await pdfDoc.embedFont(StandardFonts.Courier);
@@ -433,19 +431,19 @@ describe('PDFDocument', () => {
       page.setFont(helvetica);
 
       // Draw with courier temporarily
-      page.drawText('Courier text', { font: courier });
+      page.drawText("Courier text", { font: courier });
 
       // The page's default font should be restored to helvetica
       // Drawing again without specifying font should not throw
-      expect(() => page.drawText('Back to Helvetica')).not.toThrow();
+      expect(() => page.drawText("Back to Helvetica")).not.toThrow();
     });
 
-    it('draws text with stroke options', async () => {
+    it("draws text with stroke options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Stroked text', {
+        page.drawText("Stroked text", {
           font,
           strokeColor: rgb(1, 0, 0),
           strokeWidth: 2,
@@ -454,72 +452,72 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('handles multiline text with maxWidth', async () => {
+    it("handles multiline text with maxWidth", async () => {
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const page = pdfDoc.addPage();
       expect(() =>
         page.drawText(
-          'This is a long sentence that should be broken into multiple lines when maxWidth is specified.',
+          "This is a long sentence that should be broken into multiple lines when maxWidth is specified.",
           { font, maxWidth: 100 },
         ),
       ).not.toThrow();
     });
 
-    it('draws text with character spacing', async () => {
+    it("draws text with character spacing", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Spaced out', {
+        page.drawText("Spaced out", {
           font,
           characterSpacing: 5,
         }),
       ).not.toThrow();
     });
 
-    it('draws text with word spacing', async () => {
+    it("draws text with word spacing", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Extra word spacing', {
+        page.drawText("Extra word spacing", {
           font,
           wordSpacing: 10,
         }),
       ).not.toThrow();
     });
 
-    it('draws text with horizontal scaling', async () => {
+    it("draws text with horizontal scaling", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Condensed', {
+        page.drawText("Condensed", {
           font,
           horizontalScaling: 75,
         }),
       ).not.toThrow();
     });
 
-    it('draws text with text rise (superscript/subscript)', async () => {
+    it("draws text with text rise (superscript/subscript)", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Raised text', {
+        page.drawText("Raised text", {
           font,
           textRise: 5,
         }),
       ).not.toThrow();
     });
 
-    it('draws text with all text state operators combined', async () => {
+    it("draws text with all text state operators combined", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       expect(() =>
-        page.drawText('Styled text', {
+        page.drawText("Styled text", {
           font,
           characterSpacing: 2,
           wordSpacing: 5,
@@ -530,14 +528,14 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawRectangle() method', () => {
-    it('draws a rectangle with default options', async () => {
+  describe("drawRectangle() method", () => {
+    it("draws a rectangle with default options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.drawRectangle()).not.toThrow();
     });
 
-    it('draws a rectangle with all options', async () => {
+    it("draws a rectangle with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -562,7 +560,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('draws a rectangle with only borderColor (no fill)', async () => {
+    it("draws a rectangle with only borderColor (no fill)", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -577,7 +575,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('draws a rectangle with rounded corners', async () => {
+    it("draws a rectangle with rounded corners", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -593,18 +591,16 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('uses page cursor position when x/y not specified', async () => {
+    it("uses page cursor position when x/y not specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(75, 150);
-      expect(() =>
-        page.drawRectangle({ width: 50, height: 30 }),
-      ).not.toThrow();
+      expect(() => page.drawRectangle({ width: 50, height: 30 })).not.toThrow();
     });
   });
 
-  describe('drawLine() method', () => {
-    it('draws a line with minimal options', async () => {
+  describe("drawLine() method", () => {
+    it("draws a line with minimal options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -615,7 +611,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('draws a line with all options', async () => {
+    it("draws a line with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -633,7 +629,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('defaults to black when no color specified', async () => {
+    it("defaults to black when no color specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       // Should not throw; defaults color to black internally
@@ -646,14 +642,14 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawEllipse() method', () => {
-    it('draws an ellipse with default options', async () => {
+  describe("drawEllipse() method", () => {
+    it("draws an ellipse with default options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.drawEllipse()).not.toThrow();
     });
 
-    it('draws an ellipse with all options', async () => {
+    it("draws an ellipse with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -676,7 +672,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('draws an ellipse with only borderColor', async () => {
+    it("draws an ellipse with only borderColor", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -692,14 +688,14 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawCircle() method', () => {
-    it('draws a circle with default options', async () => {
+  describe("drawCircle() method", () => {
+    it("draws a circle with default options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.drawCircle()).not.toThrow();
     });
 
-    it('draws a circle with all options', async () => {
+    it("draws a circle with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -717,24 +713,22 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('uses default size of 100 when size not specified', async () => {
+    it("uses default size of 100 when size not specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       // drawCircle without size should use default 100
-      expect(() =>
-        page.drawCircle({ x: 150, y: 150, color: rgb(0, 0, 1) }),
-      ).not.toThrow();
+      expect(() => page.drawCircle({ x: 150, y: 150, color: rgb(0, 0, 1) })).not.toThrow();
     });
   });
 
-  describe('drawSquare() method', () => {
-    it('draws a square with default options', async () => {
+  describe("drawSquare() method", () => {
+    it("draws a square with default options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.drawSquare()).not.toThrow();
     });
 
-    it('draws a square with size and styling', async () => {
+    it("draws a square with size and styling", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -753,17 +747,16 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawSvgPath() method', () => {
-    const svgPath =
-      'M 0,20 L 100,160 Q 130,200 150,120 C 190,-40 200,200 300,150 L 400,90';
+  describe("drawSvgPath() method", () => {
+    const svgPath = "M 0,20 L 100,160 Q 130,200 150,120 C 190,-40 200,200 300,150 L 400,90";
 
-    it('draws an SVG path with default options', async () => {
+    it("draws an SVG path with default options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.drawSvgPath(svgPath)).not.toThrow();
     });
 
-    it('draws an SVG path with all options', async () => {
+    it("draws an SVG path with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() =>
@@ -785,23 +778,23 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('defaults to border-only rendering when neither color nor borderColor specified', async () => {
+    it("defaults to border-only rendering when neither color nor borderColor specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       // When no color or borderColor, it sets borderColor to black
       expect(() => page.drawSvgPath(svgPath, { x: 10, y: 10 })).not.toThrow();
     });
 
-    it('draws an SVG path at the current cursor position', async () => {
+    it("draws an SVG path at the current cursor position", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.moveTo(100, 200);
-      expect(() => page.drawSvgPath('M 0,0 L 50,50')).not.toThrow();
+      expect(() => page.drawSvgPath("M 0,0 L 50,50")).not.toThrow();
     });
   });
 
-  describe('drawImage() with options', () => {
-    it('draws an image with all options', async () => {
+  describe("drawImage() with options", () => {
+    it("draws an image with all options", async () => {
       const pdfDoc = await PDFDocument.create();
       const image = await pdfDoc.embedPng(birdPng);
       const page = pdfDoc.addPage();
@@ -820,7 +813,7 @@ describe('PDFDocument', () => {
       ).not.toThrow();
     });
 
-    it('draws an image at the cursor position when x/y not specified', async () => {
+    it("draws an image at the cursor position when x/y not specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const image = await pdfDoc.embedPng(birdPng);
       const page = pdfDoc.addPage();
@@ -828,7 +821,7 @@ describe('PDFDocument', () => {
       expect(() => page.drawImage(image)).not.toThrow();
     });
 
-    it('uses the image native dimensions when width/height not specified', async () => {
+    it("uses the image native dimensions when width/height not specified", async () => {
       const pdfDoc = await PDFDocument.create();
       const image = await pdfDoc.embedPng(birdPng);
       const page = pdfDoc.addPage();
@@ -836,28 +829,28 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('translateContent() method', () => {
-    it('does not throw when translating content', async () => {
+  describe("translateContent() method", () => {
+    it("does not throw when translating content", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.translateContent(50, 50)).not.toThrow();
     });
 
-    it('can translate by zero', async () => {
+    it("can translate by zero", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.translateContent(0, 0)).not.toThrow();
     });
 
-    it('can translate by negative values', async () => {
+    it("can translate by negative values", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.translateContent(-25, -30)).not.toThrow();
     });
   });
 
-  describe('scale() method', () => {
-    it('scales both size and content', async () => {
+  describe("scale() method", () => {
+    it("scales both size and content", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([200, 400]);
       page.scale(0.5, 0.5);
@@ -865,7 +858,7 @@ describe('PDFDocument', () => {
       expect(page.getHeight()).toBe(200);
     });
 
-    it('can scale up', async () => {
+    it("can scale up", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([100, 200]);
       page.scale(2, 3);
@@ -873,7 +866,7 @@ describe('PDFDocument', () => {
       expect(page.getHeight()).toBe(600);
     });
 
-    it('can scale independently on x and y', async () => {
+    it("can scale independently on x and y", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([200, 400]);
       page.scale(0.5, 1.5);
@@ -882,8 +875,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('scaleContent() method', () => {
-    it('does not change the page size', async () => {
+  describe("scaleContent() method", () => {
+    it("does not change the page size", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([200, 400]);
       page.scaleContent(0.5, 0.5);
@@ -891,29 +884,27 @@ describe('PDFDocument', () => {
       expect(page.getHeight()).toBe(400);
     });
 
-    it('does not throw with valid arguments', async () => {
+    it("does not throw with valid arguments", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.scaleContent(1.5, 2.0)).not.toThrow();
     });
   });
 
-  describe('pushOperators() method', () => {
-    it('pushes a single operator', async () => {
+  describe("pushOperators() method", () => {
+    it("pushes a single operator", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       expect(() => page.pushOperators(pushGraphicsState())).not.toThrow();
     });
 
-    it('pushes multiple operators', async () => {
+    it("pushes multiple operators", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
-      expect(() =>
-        page.pushOperators(pushGraphicsState(), popGraphicsState()),
-      ).not.toThrow();
+      expect(() => page.pushOperators(pushGraphicsState(), popGraphicsState())).not.toThrow();
     });
 
-    it('pushes operators and produces valid PDF bytes', async () => {
+    it("pushes operators and produces valid PDF bytes", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.pushOperators(pushGraphicsState(), popGraphicsState());
@@ -923,8 +914,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('getFont() method', () => {
-    it('returns a font and key, auto-embedding Helvetica if none set', async () => {
+  describe("getFont() method", () => {
+    it("returns a font and key, auto-embedding Helvetica if none set", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const [font, fontKey] = page.getFont();
@@ -932,7 +923,7 @@ describe('PDFDocument', () => {
       expect(fontKey).toBeDefined();
     });
 
-    it('returns the explicitly set font', async () => {
+    it("returns the explicitly set font", async () => {
       const pdfDoc = await PDFDocument.create();
       const courier = await pdfDoc.embedFont(StandardFonts.Courier);
       const page = pdfDoc.addPage();
@@ -942,8 +933,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('end-to-end: draw operations produce saveable PDF', () => {
-    it('saves a PDF with multiple draw operations', async () => {
+  describe("end-to-end: draw operations produce saveable PDF", () => {
+    it("saves a PDF with multiple draw operations", async () => {
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const image = await pdfDoc.embedPng(birdPng);
@@ -955,10 +946,10 @@ describe('PDFDocument', () => {
       page.setLineHeight(20);
 
       page.moveTo(50, 750);
-      page.drawText('Title');
+      page.drawText("Title");
 
       page.moveDown(30);
-      page.drawText('Body text here', { size: 12 });
+      page.drawText("Body text here", { size: 12 });
 
       page.drawRectangle({
         x: 50,
@@ -989,7 +980,7 @@ describe('PDFDocument', () => {
 
       page.drawImage(image, { x: 50, y: 50, width: 100, height: 100 });
 
-      page.drawSvgPath('M 0,0 L 50,50 L 100,0 Z', {
+      page.drawSvgPath("M 0,0 L 50,50 L 100,0 Z", {
         x: 400,
         y: 100,
         color: rgb(0, 1, 0),
@@ -1012,8 +1003,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('rotation persists through save/load', () => {
-    it('rotation is preserved after saving and reloading', async () => {
+  describe("rotation persists through save/load", () => {
+    it("rotation is preserved after saving and reloading", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       page.setRotation(degrees(90));
@@ -1025,8 +1016,8 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('size persists through save/load', () => {
-    it('page dimensions are preserved after saving and reloading', async () => {
+  describe("size persists through save/load", () => {
+    it("page dimensions are preserved after saving and reloading", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([123, 456]);
 
@@ -1038,14 +1029,14 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('translate', () => {
-    it('moves content and annotations together', async () => {
+  describe("translate", () => {
+    it("moves content and annotations together", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([500, 500]);
 
       // Add a link annotation at (100, 100)
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 100,
         y: 100,
         width: 50,
@@ -1058,7 +1049,7 @@ describe('PDFDocument', () => {
       // Check that the annotation was moved
       const annots = page.node.Annots();
       const annotDict = pdfDoc.context.lookup(annots!.get(0)) as any;
-      const rect = annotDict.get(PDFName.of('Rect'));
+      const rect = annotDict.get(PDFName.of("Rect"));
 
       // Original was (100, 100, 150, 120), should now be (150, 130, 200, 150)
       expect(rect.get(0).numberValue).toBe(150);
@@ -1067,13 +1058,13 @@ describe('PDFDocument', () => {
       expect(rect.get(3).numberValue).toBe(150);
     });
 
-    it('translateAnnotations moves only annotations', async () => {
+    it("translateAnnotations moves only annotations", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([500, 500]);
 
       // Add a link annotation
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 10,
         y: 20,
         width: 30,
@@ -1085,7 +1076,7 @@ describe('PDFDocument', () => {
 
       const annots = page.node.Annots();
       const annotDict = pdfDoc.context.lookup(annots!.get(0)) as any;
-      const rect = annotDict.get(PDFName.of('Rect'));
+      const rect = annotDict.get(PDFName.of("Rect"));
 
       // Original was (10, 20, 40, 60), should now be (110, 220, 140, 260)
       expect(rect.get(0).numberValue).toBe(110);
@@ -1095,13 +1086,13 @@ describe('PDFDocument', () => {
     });
   });
 
-  describe('drawLink', () => {
-    it('adds a link annotation to the page', async () => {
+  describe("drawLink", () => {
+    it("adds a link annotation to the page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
 
       page.drawLink({
-        url: 'https://pdf-lib.js.org',
+        url: "https://pdf-lib.js.org",
         x: 50,
         y: 50,
         width: 200,
@@ -1117,12 +1108,12 @@ describe('PDFDocument', () => {
       expect(annotDict).toBeDefined();
     });
 
-    it('creates a link with correct properties', async () => {
+    it("creates a link with correct properties", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 100,
         y: 200,
         width: 150,
@@ -1136,22 +1127,22 @@ describe('PDFDocument', () => {
       const annotDict = pdfDoc.context.lookup(annotRef) as any;
 
       // Check annotation type
-      expect(annotDict.get(PDFName.of('Subtype'))?.decodeText()).toBe('Link');
+      expect(annotDict.get(PDFName.of("Subtype"))?.decodeText()).toBe("Link");
 
       // Check rect
-      const rect = annotDict.get(PDFName.of('Rect'));
+      const rect = annotDict.get(PDFName.of("Rect"));
       expect(rect.get(0).numberValue).toBe(100);
       expect(rect.get(1).numberValue).toBe(200);
       expect(rect.get(2).numberValue).toBe(250); // x + width
       expect(rect.get(3).numberValue).toBe(225); // y + height
     });
 
-    it('preserves link after save and reload', async () => {
+    it("preserves link after save and reload", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
 
       page.drawLink({
-        url: 'https://test.com',
+        url: "https://test.com",
         x: 10,
         y: 20,
         width: 100,

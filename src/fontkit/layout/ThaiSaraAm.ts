@@ -22,16 +22,12 @@ const isAboveBaseMark = (cp: number) => {
   const u = cp & ~0x0080;
 
   return (
-    u === 0x0e31 ||
-    (u >= 0x0e34 && u <= 0x0e37) ||
-    u === 0x0e3b ||
-    (u >= 0x0e47 && u <= 0x0e4e)
+    u === 0x0e31 || (u >= 0x0e34 && u <= 0x0e37) || u === 0x0e3b || (u >= 0x0e47 && u <= 0x0e4e)
   );
 };
 
 const isVariationSelector = (cp: number | undefined) =>
-  cp !== undefined &&
-  ((cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef));
+  cp !== undefined && ((cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef));
 
 /**
  * Rewrites every SARA AM in `codePoints` whose two components the font maps

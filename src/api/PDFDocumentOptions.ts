@@ -1,6 +1,6 @@
-import type { EmbeddedFileOptions } from '../core/embedders/FileEmbedder.js';
-import type { PDFWarningHandler } from '../core/warnings.js';
-import type { TypeFeatures } from '../types/fontkit.js';
+import type { EmbeddedFileOptions } from "../core/embedders/FileEmbedder.js";
+import type { PDFWarningHandler } from "../core/warnings.js";
+import type { TypeFeatures } from "../types/fontkit.js";
 
 export enum ParseSpeeds {
   Fastest = Infinity,

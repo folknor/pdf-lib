@@ -1,23 +1,22 @@
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import type PDFArray from './PDFArray.js';
-import type PDFBool from './PDFBool.js';
-import type PDFHexString from './PDFHexString.js';
-import PDFName from './PDFName.js';
-import PDFNull from './PDFNull.js';
-import type PDFNumber from './PDFNumber.js';
-import PDFObject from './PDFObject.js';
-import type PDFRef from './PDFRef.js';
-import type PDFStream from './PDFStream.js';
-import type PDFString from './PDFString.js';
+import type PDFContext from "../PDFContext.js";
+import CharCodes from "../syntax/CharCodes.js";
+import type PDFArray from "./PDFArray.js";
+import type PDFBool from "./PDFBool.js";
+import type PDFHexString from "./PDFHexString.js";
+import PDFName from "./PDFName.js";
+import PDFNull from "./PDFNull.js";
+import type PDFNumber from "./PDFNumber.js";
+import PDFObject from "./PDFObject.js";
+import type PDFRef from "./PDFRef.js";
+import type PDFStream from "./PDFStream.js";
+import type PDFString from "./PDFString.js";
 
 export type DictMap = Map<PDFName, PDFObject>;
 
 class PDFDict extends PDFObject {
   static withContext = (context: PDFContext) => new PDFDict(new Map(), context);
 
-  static fromMapWithContext = (map: DictMap, context: PDFContext) =>
-    new PDFDict(map, context);
+  static fromMapWithContext = (map: DictMap, context: PDFContext) => new PDFDict(map, context);
 
   readonly context: PDFContext;
 
@@ -70,10 +69,7 @@ class PDFDict extends PDFObject {
   lookupMaybe(key: PDFName, type: typeof PDFArray): PDFArray | undefined;
   lookupMaybe(key: PDFName, type: typeof PDFBool): PDFBool | undefined;
   lookupMaybe(key: PDFName, type: typeof PDFDict): PDFDict | undefined;
-  lookupMaybe(
-    key: PDFName,
-    type: typeof PDFHexString,
-  ): PDFHexString | undefined;
+  lookupMaybe(key: PDFName, type: typeof PDFHexString): PDFHexString | undefined;
   lookupMaybe(key: PDFName, type: typeof PDFName): PDFName | undefined;
   lookupMaybe(key: PDFName, type: typeof PDFNull): typeof PDFNull | undefined;
   lookupMaybe(key: PDFName, type: typeof PDFNumber): PDFNumber | undefined;
@@ -129,11 +125,7 @@ class PDFDict extends PDFObject {
     type1: typeof PDFString,
     type2: typeof PDFHexString,
   ): PDFString | PDFHexString;
-  lookup(
-    ref: PDFName,
-    type1: typeof PDFDict,
-    type2: typeof PDFStream,
-  ): PDFDict | PDFStream;
+  lookup(ref: PDFName, type1: typeof PDFDict, type2: typeof PDFStream): PDFDict | PDFStream;
   lookup(
     ref: PDFName,
     type1: typeof PDFString,
@@ -168,7 +160,7 @@ class PDFDict extends PDFObject {
   }
 
   /** Generate a random key that doesn't exist in current key set */
-  uniqueKey(tag = ''): PDFName {
+  uniqueKey(tag = ""): PDFName {
     const existingKeys = this.keys();
     let key = PDFName.of(this.context.addRandomSuffix(tag, 10));
 
@@ -192,7 +184,7 @@ class PDFDict extends PDFObject {
   }
 
   override toString(): string {
-    let dictString = '<<\n';
+    let dictString = "<<\n";
     const entries = this.entries();
 
     for (let idx = 0, len = entries.length; idx < len; idx++) {
@@ -200,7 +192,7 @@ class PDFDict extends PDFObject {
       dictString += `${key.toString()} ${value.toString()}\n`;
     }
 
-    dictString += '>>';
+    dictString += ">>";
 
     return dictString;
   }

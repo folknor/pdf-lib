@@ -4,8 +4,8 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
 
 // Base type interface for all restructure types
 export interface RType<T = unknown> {
@@ -49,8 +49,7 @@ export class PropertyDescriptor implements PropertyDescriptor {
 
   constructor(opts: Partial<PropertyDescriptor> = {}) {
     for (const key in opts) {
-      (this as Record<string, unknown>)[key] =
-        opts[key as keyof PropertyDescriptor];
+      (this as Record<string, unknown>)[key] = opts[key as keyof PropertyDescriptor];
     }
 
     // Object.defineProperty doesn't allow both accessor (get/set) and data (value/writable) properties

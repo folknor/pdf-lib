@@ -3,14 +3,8 @@
 // MIT LICENSE
 // Updated for pdf-lib & TypeScript by Jeremy Messenger
 
-import type { PDFOperator } from '../core/index.js';
-import {
-  appendBezierCurve,
-  appendQuadraticCurve,
-  closePath,
-  lineTo,
-  moveTo,
-} from './operators.js';
+import type { PDFOperator } from "../core/index.js";
+import { appendBezierCurve, appendQuadraticCurve, closePath, lineTo, moveTo } from "./operators.js";
 
 let cx: number = 0;
 let cy: number = 0;
@@ -20,26 +14,26 @@ let sx: number = 0;
 let sy: number = 0;
 
 const parameters = new Map<string, number>([
-  ['A', 7],
-  ['a', 7],
-  ['C', 6],
-  ['c', 6],
-  ['H', 1],
-  ['h', 1],
-  ['L', 2],
-  ['l', 2],
-  ['M', 2],
-  ['m', 2],
-  ['Q', 4],
-  ['q', 4],
-  ['S', 4],
-  ['s', 4],
-  ['T', 2],
-  ['t', 2],
-  ['V', 1],
-  ['v', 1],
-  ['Z', 0],
-  ['z', 0],
+  ["A", 7],
+  ["a", 7],
+  ["C", 6],
+  ["c", 6],
+  ["H", 1],
+  ["h", 1],
+  ["L", 2],
+  ["l", 2],
+  ["M", 2],
+  ["m", 2],
+  ["Q", 4],
+  ["q", 4],
+  ["S", 4],
+  ["s", 4],
+  ["T", 2],
+  ["t", 2],
+  ["V", 1],
+  ["v", 1],
+  ["Z", 0],
+  ["z", 0],
 ]);
 
 interface Cmd {
@@ -51,7 +45,7 @@ const parse = (path: string) => {
   let cmd;
   const ret: Cmd[] = [];
   let args: number[] = [];
-  let curArg = '';
+  let curArg = "";
   let foundDecimal = false;
   let params = 0;
 
@@ -68,15 +62,15 @@ const parse = (path: string) => {
         ret[ret.length] = { cmd, args };
 
         args = [];
-        curArg = '';
+        curArg = "";
         foundDecimal = false;
       }
 
       cmd = c;
     } else if (
-      [' ', ','].includes(c) ||
-      (c === '-' && curArg.length > 0 && curArg[curArg.length - 1] !== 'e') ||
-      (c === '.' && foundDecimal)
+      [" ", ","].includes(c) ||
+      (c === "-" && curArg.length > 0 && curArg[curArg.length - 1] !== "e") ||
+      (c === "." && foundDecimal)
     ) {
       if (curArg.length === 0) {
         continue;
@@ -88,25 +82,25 @@ const parse = (path: string) => {
         args = [Number(curArg)];
 
         // handle assumed commands
-        if (cmd === 'M') {
-          cmd = 'L';
+        if (cmd === "M") {
+          cmd = "L";
         }
 
-        if (cmd === 'm') {
-          cmd = 'l';
+        if (cmd === "m") {
+          cmd = "l";
         }
       } else {
         args[args.length] = Number(curArg);
       }
 
-      foundDecimal = c === '.';
+      foundDecimal = c === ".";
 
       // fix for negative numbers or repeated decimals with no delimeter between commands
-      curArg = ['-', '.'].includes(c) ? c : '';
+      curArg = ["-", "."].includes(c) ? c : "";
     } else if (
-      (cmd === 'A' || cmd === 'a') &&
+      (cmd === "A" || cmd === "a") &&
       curArg.length === 0 &&
-      (c === '0' || c === '1') &&
+      (c === "0" || c === "1") &&
       [3, 4].includes(args.length === params ? 0 : args.length)
     ) {
       // arc flags (large-arc, sweep) are single characters and may be
@@ -116,7 +110,7 @@ const parse = (path: string) => {
     } else {
       curArg += c;
 
-      if (c === '.') {
+      if (c === ".") {
         foundDecimal = true;
       }
     }
@@ -130,12 +124,12 @@ const parse = (path: string) => {
       args = [Number(curArg)];
 
       // handle assumed commands
-      if (cmd === 'M') {
-        cmd = 'L';
+      if (cmd === "M") {
+        cmd = "L";
       }
 
-      if (cmd === 'm') {
-        cmd = 'l';
+      if (cmd === "m") {
+        cmd = "l";
       }
     } else {
       args[args.length] = Number(curArg);
@@ -157,7 +151,7 @@ const apply = (commands: Cmd[]) => {
   for (let i = 0; i < commands.length; i++) {
     const c = commands[i]!;
 
-    if (c.cmd && typeof runners[c.cmd] === 'function') {
+    if (c.cmd && typeof runners[c.cmd] === "function") {
       const cmd = runners[c.cmd]!(c.args);
 
       if (Array.isArray(cmd)) {
@@ -229,14 +223,7 @@ const runners: CmdToOperatorsMap = {
       py = cy;
     }
 
-    const cmd = appendBezierCurve(
-      cx - (px - cx),
-      cy - (py - cy),
-      a[0]!,
-      a[1]!,
-      a[2]!,
-      a[3]!,
-    );
+    const cmd = appendBezierCurve(cx - (px - cx), cy - (py - cy), a[0]!, a[1]!, a[2]!, a[3]!);
 
     px = a[0]!;
     py = a[1]!;
@@ -279,12 +266,7 @@ const runners: CmdToOperatorsMap = {
   },
 
   q(a) {
-    const cmd = appendQuadraticCurve(
-      a[0]! + cx,
-      a[1]! + cy,
-      a[2]! + cx,
-      a[3]! + cy,
-    );
+    const cmd = appendQuadraticCurve(a[0]! + cx, a[1]! + cy, a[2]! + cx, a[3]! + cy);
 
     px = cx + a[0]!;
     py = cy + a[1]!;
@@ -524,9 +506,7 @@ const segmentToBezier = (
 
   const thHalf = 0.5 * (th1 - th0);
 
-  const t =
-    ((8 / 3) * Math.sin(thHalf * 0.5) * Math.sin(thHalf * 0.5)) /
-    Math.sin(thHalf);
+  const t = ((8 / 3) * Math.sin(thHalf * 0.5) * Math.sin(thHalf * 0.5)) / Math.sin(thHalf);
 
   const x1 = cx1 + Math.cos(th0) - t * Math.sin(th0);
   const y1 = cy1 + Math.sin(th0) + t * Math.cos(th0);

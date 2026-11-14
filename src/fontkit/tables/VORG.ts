@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const VerticalOrigin = new r.Struct({
   glyphIndex: r.uint16,
@@ -10,5 +10,5 @@ export default new r.Struct({
   minorVersion: r.uint16,
   defaultVertOriginY: r.int16,
   numVertOriginYMetrics: r.uint16,
-  metrics: new r.Array(VerticalOrigin, 'numVertOriginYMetrics'),
+  metrics: new r.Array(VerticalOrigin, "numVertOriginYMetrics"),
 });

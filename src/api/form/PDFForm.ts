@@ -18,34 +18,29 @@ import {
   PDFRef,
   PDFStream,
   PDFWidgetAnnotation,
-} from '../../core/index.js';
-import { assertIs, assertOrUndefined, Cache } from '../../utils/index.js';
-import { collectUnreferenced, forEachRef } from '../detach.js';
+} from "../../core/index.js";
+import { assertIs, assertOrUndefined, Cache } from "../../utils/index.js";
+import { collectUnreferenced, forEachRef } from "../detach.js";
 import {
   FieldAlreadyExistsError,
   InvalidFieldNamePartError,
   NoSuchFieldError,
   UnexpectedFieldTypeError,
-} from '../errors.js';
-import { rotateInPlace } from '../operations.js';
-import {
-  drawObject,
-  popGraphicsState,
-  pushGraphicsState,
-  translate,
-} from '../operators.js';
-import PDFDocument from '../PDFDocument.js';
-import PDFFont from '../PDFFont.js';
-import type PDFPage from '../PDFPage.js';
-import { StandardFonts } from '../StandardFonts.js';
-import PDFButton from './PDFButton.js';
-import PDFCheckBox from './PDFCheckBox.js';
-import PDFDropdown from './PDFDropdown.js';
-import type PDFField from './PDFField.js';
-import PDFOptionList from './PDFOptionList.js';
-import PDFRadioGroup from './PDFRadioGroup.js';
-import PDFSignature from './PDFSignature.js';
-import PDFTextField from './PDFTextField.js';
+} from "../errors.js";
+import { rotateInPlace } from "../operations.js";
+import { drawObject, popGraphicsState, pushGraphicsState, translate } from "../operators.js";
+import PDFDocument from "../PDFDocument.js";
+import PDFFont from "../PDFFont.js";
+import type PDFPage from "../PDFPage.js";
+import { StandardFonts } from "../StandardFonts.js";
+import PDFButton from "./PDFButton.js";
+import PDFCheckBox from "./PDFCheckBox.js";
+import PDFDropdown from "./PDFDropdown.js";
+import type PDFField from "./PDFField.js";
+import PDFOptionList from "./PDFOptionList.js";
+import PDFRadioGroup from "./PDFRadioGroup.js";
+import PDFSignature from "./PDFSignature.js";
+import PDFTextField from "./PDFTextField.js";
 
 export interface FlattenOptions {
   /**
@@ -87,8 +82,7 @@ export default class PDFForm {
    * @param acroForm The underlying `PDFAcroForm` for this form.
    * @param doc The document to which the form will belong.
    */
-  static of = (acroForm: PDFAcroForm, doc: PDFDocument) =>
-    new PDFForm(acroForm, doc);
+  static of = (acroForm: PDFAcroForm, doc: PDFDocument) => new PDFForm(acroForm, doc);
 
   /** The low-level PDFAcroForm wrapped by this form. */
   readonly acroForm: PDFAcroForm;
@@ -100,8 +94,8 @@ export default class PDFForm {
   private readonly defaultFontCache: Cache<PDFFont>;
 
   private constructor(acroForm: PDFAcroForm, doc: PDFDocument) {
-    assertIs(acroForm, 'acroForm', [[PDFAcroForm, 'PDFAcroForm']]);
-    assertIs(doc, 'doc', [[PDFDocument, 'PDFDocument']]);
+    assertIs(acroForm, "acroForm", [[PDFAcroForm, "PDFAcroForm"]]);
+    assertIs(doc, "doc", [[PDFDocument, "PDFDocument"]]);
 
     this.acroForm = acroForm;
     this.doc = doc;
@@ -125,7 +119,7 @@ export default class PDFForm {
    * @returns Whether or not this form has XFA data.
    */
   hasXFA(): boolean {
-    return this.acroForm.dict.has(PDFName.of('XFA'));
+    return this.acroForm.dict.has(PDFName.of("XFA"));
   }
 
   /** @internal Remove unsupported XFA before changing AcroForm state.
@@ -134,9 +128,8 @@ export default class PDFForm {
   prepareForMutation(): void {
     if (!this.hasXFA()) return;
     this.doc.context.warn({
-      code: 'xfa-removed',
-      message:
-        'Removing XFA form data as pdf-lib does not support reading or writing XFA',
+      code: "xfa-removed",
+      message: "Removing XFA form data as pdf-lib does not support reading or writing XFA",
     });
     this.deleteXFA();
   }
@@ -160,10 +153,10 @@ export default class PDFForm {
    * ```
    */
   deleteXFA(): void {
-    const XFA = PDFName.of('XFA');
+    const XFA = PDFName.of("XFA");
     const raw = this.acroForm.dict.get(XFA);
     this.acroForm.dict.delete(XFA);
-    this.doc.catalog.delete(PDFName.of('NeedsRendering'));
+    this.doc.catalog.delete(PDFName.of("NeedsRendering"));
 
     if (raw === undefined) return;
     // The raw value is the root, so an indirect packet array goes too.
@@ -215,7 +208,7 @@ export default class PDFForm {
    * @returns The field with the specified name, if one exists.
    */
   getFieldMaybe(name: string): PDFField | undefined {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     // Compare names on the low-level fields and only convert matches, rather
     // than converting every field via getFields(). Same order and name rule
     // as getFields() + PDFField.getName(), so first-match is unchanged.
@@ -224,7 +217,7 @@ export default class PDFForm {
     for (let idx = 0, len = allFields.length; idx < len; idx++) {
       const [acroField, ref] = allFields[idx]!;
 
-      if ((acroField.getFullyQualifiedName() ?? '') !== name) continue;
+      if ((acroField.getFullyQualifiedName() ?? "") !== name) continue;
       const field = convertToPDFField(acroField, ref, this.doc);
 
       if (field) return field;
@@ -244,7 +237,7 @@ export default class PDFForm {
    * @returns The field with the specified name.
    */
   getField(name: string): PDFField {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getFieldMaybe(name);
 
     if (field) return field;
@@ -263,7 +256,7 @@ export default class PDFForm {
    * @returns The button with the specified name.
    */
   getButton(name: string): PDFButton {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFButton) return field;
@@ -284,7 +277,7 @@ export default class PDFForm {
    * @returns The check box with the specified name.
    */
   getCheckBox(name: string): PDFCheckBox {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFCheckBox) return field;
@@ -306,7 +299,7 @@ export default class PDFForm {
    * @returns The dropdown with the specified name.
    */
   getDropdown(name: string): PDFDropdown {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFDropdown) return field;
@@ -328,7 +321,7 @@ export default class PDFForm {
    * @returns The option list with the specified name.
    */
   getOptionList(name: string): PDFOptionList {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFOptionList) return field;
@@ -350,7 +343,7 @@ export default class PDFForm {
    * @returns The radio group with the specified name.
    */
   getRadioGroup(name: string): PDFRadioGroup {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFRadioGroup) return field;
@@ -370,7 +363,7 @@ export default class PDFForm {
    * @returns The signature with the specified name.
    */
   getSignature(name: string): PDFSignature {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFSignature) return field;
@@ -391,7 +384,7 @@ export default class PDFForm {
    * @returns The text field with the specified name.
    */
   getTextField(name: string): PDFTextField {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const field = this.getField(name);
 
     if (field instanceof PDFTextField) return field;
@@ -416,7 +409,7 @@ export default class PDFForm {
    */
   createButton(name: string): PDFButton {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
 
     const nameParts = splitFieldName(name);
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -435,7 +428,7 @@ export default class PDFForm {
    * @returns The existing or newly created button field.
    */
   getOrCreateButton(name: string): PDFButton {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -464,7 +457,7 @@ export default class PDFForm {
    */
   createCheckBox(name: string): PDFCheckBox {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
 
     const nameParts = splitFieldName(name);
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -483,7 +476,7 @@ export default class PDFForm {
    * @returns The existing or newly created check box field.
    */
   getOrCreateCheckBox(name: string): PDFCheckBox {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -512,7 +505,7 @@ export default class PDFForm {
    */
   createDropdown(name: string): PDFDropdown {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
 
     const nameParts = splitFieldName(name);
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -531,7 +524,7 @@ export default class PDFForm {
    * @returns The existing or newly created dropdown field.
    */
   getOrCreateDropdown(name: string): PDFDropdown {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -560,7 +553,7 @@ export default class PDFForm {
    */
   createOptionList(name: string): PDFOptionList {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
 
     const nameParts = splitFieldName(name);
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -579,7 +572,7 @@ export default class PDFForm {
    * @returns The existing or newly created option list field.
    */
   getOrCreateOptionList(name: string): PDFOptionList {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -609,7 +602,7 @@ export default class PDFForm {
    */
   createRadioGroup(name: string): PDFRadioGroup {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const nameParts = splitFieldName(name);
 
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -617,11 +610,7 @@ export default class PDFForm {
     const radioButton = PDFAcroRadioButton.create(this.doc.context);
     radioButton.setPartialName(nameParts.terminal);
 
-    addFieldToParent(
-      parent,
-      [radioButton, radioButton.ref],
-      nameParts.terminal!,
-    );
+    addFieldToParent(parent, [radioButton, radioButton.ref], nameParts.terminal!);
 
     return PDFRadioGroup.of(radioButton, radioButton.ref, this.doc);
   }
@@ -632,7 +621,7 @@ export default class PDFForm {
    * @returns The existing or newly created radio group field.
    */
   getOrCreateRadioGroup(name: string): PDFRadioGroup {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -661,7 +650,7 @@ export default class PDFForm {
    */
   createTextField(name: string): PDFTextField {
     this.prepareForMutation();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const nameParts = splitFieldName(name);
 
     const parent = this.findOrCreateNonTerminals(nameParts.nonTerminal);
@@ -700,7 +689,7 @@ export default class PDFForm {
    * @returns The existing or newly created text field.
    */
   getOrCreateTextField(name: string): PDFTextField {
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     const existing = this.getFieldMaybe(name);
 
     if (existing) {
@@ -764,7 +753,7 @@ export default class PDFForm {
       if (raw instanceof PDFRef) displaced.push(raw);
     }
 
-    const co = this.acroForm.dict.get(PDFName.of('CO'));
+    const co = this.acroForm.dict.get(PDFName.of("CO"));
 
     if (co) forEachRef(co, (ref) => displaced.push(ref));
     const markDirty = options.markFieldsAsDirty ?? true;
@@ -814,8 +803,8 @@ export default class PDFForm {
     // Clean up AcroForm properties that may reference deleted fields
     // /CO (calculation order) contains refs to fields - these become orphans
     // /NeedAppearances is no longer relevant since appearances are baked in
-    this.acroForm.dict.delete(PDFName.of('CO'));
-    this.acroForm.dict.delete(PDFName.of('NeedAppearances'));
+    this.acroForm.dict.delete(PDFName.of("CO"));
+    this.acroForm.dict.delete(PDFName.of("NeedAppearances"));
     collectUnreferenced(this.doc.context, displaced);
   }
 
@@ -893,7 +882,7 @@ export default class PDFForm {
    * @param font Optionally, the font to use when creating new appearances.
    */
   updateFieldAppearances(font?: PDFFont) {
-    assertOrUndefined(font, 'font', [[PDFFont, 'PDFFont']]);
+    assertOrUndefined(font, "font", [[PDFFont, "PDFFont"]]);
 
     font = font ?? this.getDefaultFont();
 
@@ -920,7 +909,7 @@ export default class PDFForm {
    */
   markFieldAsDirty(fieldRef: PDFRef) {
     this.prepareForMutation();
-    assertOrUndefined(fieldRef, 'fieldRef', [[PDFRef, 'PDFRef']]);
+    assertOrUndefined(fieldRef, "fieldRef", [[PDFRef, "PDFRef"]]);
     this.dirtyFields.add(fieldRef);
   }
 
@@ -935,7 +924,7 @@ export default class PDFForm {
    * @param fieldRef The reference to the field that should be marked.
    */
   markFieldAsClean(fieldRef: PDFRef) {
-    assertOrUndefined(fieldRef, 'fieldRef', [[PDFRef, 'PDFRef']]);
+    assertOrUndefined(fieldRef, "fieldRef", [[PDFRef, "PDFRef"]]);
     this.dirtyFields.delete(fieldRef);
   }
 
@@ -950,7 +939,7 @@ export default class PDFForm {
    * @returns Whether or not the specified field is dirty.
    */
   fieldIsDirty(fieldRef: PDFRef): boolean {
-    assertOrUndefined(fieldRef, 'fieldRef', [[PDFRef, 'PDFRef']]);
+    assertOrUndefined(fieldRef, "fieldRef", [[PDFRef, "PDFRef"]]);
 
     return this.dirtyFields.has(fieldRef);
   }
@@ -991,7 +980,7 @@ export default class PDFForm {
     const visit = (dict: PDFDict) => {
       if (visited.has(dict)) return;
       visited.add(dict);
-      const kids = dict.lookupMaybe(PDFName.of('Kids'), PDFArray);
+      const kids = dict.lookupMaybe(PDFName.of("Kids"), PDFArray);
 
       for (const entry of kids?.asArray() ?? []) {
         const child = context.lookup(entry);
@@ -999,11 +988,11 @@ export default class PDFForm {
         if (child instanceof PDFDict) visit(child);
       }
 
-      const parent = context.lookup(dict.get(PDFName.of('Parent')));
+      const parent = context.lookup(dict.get(PDFName.of("Parent")));
 
       if (parent instanceof PDFDict) visit(parent);
 
-      if (!removed.has(dict)) filter(dict, PDFName.of('Kids'));
+      if (!removed.has(dict)) filter(dict, PDFName.of("Kids"));
     };
 
     // Direct and unnamed containers in the registered tree count too.
@@ -1014,8 +1003,8 @@ export default class PDFForm {
     }
 
     for (const dict of removed) visit(dict);
-    filter(this.acroForm.dict, PDFName.of('Fields'));
-    filter(this.acroForm.dict, PDFName.of('CO'));
+    filter(this.acroForm.dict, PDFName.of("Fields"));
+    filter(this.acroForm.dict, PDFName.of("CO"));
 
     // Visit every field container, including duplicate memberships and parents
     // outside the registered tree. Other references (actions, OBJR) stay live.
@@ -1025,7 +1014,7 @@ export default class PDFForm {
       if (
         object instanceof PDFDict &&
         !removed.has(object) &&
-        (object.has(PDFName.of('T')) || object.has(PDFName.of('FT')))
+        (object.has(PDFName.of("T")) || object.has(PDFName.of("FT")))
       ) {
         visit(object);
       }
@@ -1048,17 +1037,10 @@ export default class PDFForm {
     return page;
   }
 
-  private flattenWidgetOntoPage(
-    page: PDFPage,
-    widget: PDFWidgetAnnotation,
-    appearanceRef: PDFRef,
-  ) {
+  private flattenWidgetOntoPage(page: PDFPage, widget: PDFWidgetAnnotation, appearanceRef: PDFRef) {
     this.ensureFormXObject(appearanceRef);
 
-    const xObjectKey = page.node.getOrCreateXObject(
-      'FlatWidget',
-      appearanceRef,
-    );
+    const xObjectKey = page.node.getOrCreateXObject("FlatWidget", appearanceRef);
 
     const rectangle = widget.getRectangle();
 
@@ -1085,12 +1067,12 @@ export default class PDFForm {
     if (!(appearance instanceof PDFStream)) return;
     const { dict } = appearance;
 
-    if (!dict.has(PDFName.of('Type'))) {
-      dict.set(PDFName.of('Type'), PDFName.of('XObject'));
+    if (!dict.has(PDFName.of("Type"))) {
+      dict.set(PDFName.of("Type"), PDFName.of("XObject"));
     }
 
-    if (!dict.has(PDFName.of('Subtype'))) {
-      dict.set(PDFName.of('Subtype'), PDFName.of('Form'));
+    if (!dict.has(PDFName.of("Subtype"))) {
+      dict.set(PDFName.of("Subtype"), PDFName.of("Form"));
     }
   }
 
@@ -1106,7 +1088,7 @@ export default class PDFForm {
     while (node && !seen.has(node)) {
       seen.add(node);
       chain.push(node);
-      const parent: unknown = node.lookup(PDFName.of('Parent'));
+      const parent: unknown = node.lookup(PDFName.of("Parent"));
       node = parent instanceof PDFDict ? parent : undefined;
     }
 
@@ -1139,7 +1121,7 @@ export default class PDFForm {
     const dicts = new Set<PDFDict>();
     const refs = new Set<PDFObject | undefined>();
     const stack: PDFObject[] = [];
-    const fields = this.acroForm.dict.lookup(PDFName.of('Fields'));
+    const fields = this.acroForm.dict.lookup(PDFName.of("Fields"));
 
     if (fields instanceof PDFArray) stack.push(...fields.asArray());
 
@@ -1148,12 +1130,11 @@ export default class PDFForm {
 
       if (item instanceof PDFRef) refs.add(item);
 
-      const dict =
-        item instanceof PDFRef ? this.doc.context.lookup(item) : item;
+      const dict = item instanceof PDFRef ? this.doc.context.lookup(item) : item;
 
       if (!(dict instanceof PDFDict) || dicts.has(dict)) continue;
       dicts.add(dict);
-      const kids = dict.lookup(PDFName.of('Kids'));
+      const kids = dict.lookup(PDFName.of("Kids"));
 
       if (kids instanceof PDFArray) stack.push(...kids.asArray());
     }
@@ -1192,9 +1173,7 @@ export default class PDFForm {
   removeOrphanWidgets(): number {
     const { context } = this.doc;
 
-    const orphans = this.findUnreachableWidgets(
-      this.collectReachableFieldDicts(),
-    );
+    const orphans = this.findUnreachableWidgets(this.collectReachableFieldDicts());
 
     const orphanDicts = new Set<PDFDict>();
 
@@ -1264,12 +1243,11 @@ export default class PDFForm {
       for (let i = 0, len = annots.size(); i < len; i++) {
         const entry = annots.get(i);
 
-        const dict =
-          entry instanceof PDFRef ? this.doc.context.lookup(entry) : entry;
+        const dict = entry instanceof PDFRef ? this.doc.context.lookup(entry) : entry;
 
         if (!(dict instanceof PDFDict)) continue;
 
-        if (dict.lookup(PDFName.of('Subtype')) !== PDFName.of('Widget')) {
+        if (dict.lookup(PDFName.of("Subtype")) !== PDFName.of("Widget")) {
           continue;
         }
 
@@ -1306,17 +1284,13 @@ export default class PDFForm {
       // /Parent refs, since the main pass may have deleted a reachable
       // ancestor and its ref no longer resolves.
       if (
-        chain.some(
-          (d) =>
-            reachable.dicts.has(d) ||
-            reachable.refs.has(d.get(PDFName.of('Parent'))),
-        )
+        chain.some((d) => reachable.dicts.has(d) || reachable.refs.has(d.get(PDFName.of("Parent"))))
       ) {
         continue;
       }
 
       // Only field widgets: /FT on the widget or inherited via /Parent.
-      if (!chain.some((d) => d.has(PDFName.of('FT')))) continue;
+      if (!chain.some((d) => d.has(PDFName.of("FT")))) continue;
 
       const widget = PDFWidgetAnnotation.fromDict(dict);
       // A malformed /AP on one orphan must not abort the whole flatten.
@@ -1347,9 +1321,7 @@ export default class PDFForm {
    * Only returns a ref that resolves to an actual appearance stream, so a
    * dangling or mistyped reference leaves the widget untouched.
    */
-  private findOrphanWidgetAppearanceRef(
-    widget: PDFWidgetAnnotation,
-  ): PDFRef | undefined {
+  private findOrphanWidgetAppearanceRef(widget: PDFWidgetAnnotation): PDFRef | undefined {
     let refOrDict = widget.getNormalAppearance();
 
     if (!refOrDict) return;
@@ -1366,14 +1338,14 @@ export default class PDFForm {
     // here means a state-keyed subdictionary (checkbox / radio).
     if (refOrDict instanceof PDFDict) {
       // /V is inheritable, so resolve it up the /Parent chain.
-      const value = this.lookupInherited(widget.dict, 'V');
+      const value = this.lookupInherited(widget.dict, "V");
 
       const state =
         widget.getAppearanceState() ??
         (value instanceof PDFName ? value : undefined) ??
-        PDFName.of('Off');
+        PDFName.of("Off");
 
-      ref = refOrDict.get(state) ?? refOrDict.get(PDFName.of('Off'));
+      ref = refOrDict.get(state) ?? refOrDict.get(PDFName.of("Off"));
     }
 
     if (!(ref instanceof PDFRef)) return;
@@ -1411,7 +1383,7 @@ export default class PDFForm {
         const ref =
           (appearanceState && refOrDict.get(appearanceState)) ??
           refOrDict.get(fieldValue) ??
-          refOrDict.get(PDFName.of('Off'));
+          refOrDict.get(PDFName.of("Off"));
 
         if (ref instanceof PDFRef) {
           refOrDict = ref;
@@ -1425,9 +1397,7 @@ export default class PDFForm {
   }
 
   private findOrCreateNonTerminals(partialNames: string[]) {
-    let nonTerminal: [PDFAcroForm] | [PDFAcroNonTerminal, PDFRef] = [
-      this.acroForm,
-    ];
+    let nonTerminal: [PDFAcroForm] | [PDFAcroNonTerminal, PDFRef] = [this.acroForm];
 
     for (let idx = 0, len = partialNames.length; idx < len; idx++) {
       const namePart = partialNames[idx]!;
@@ -1472,8 +1442,7 @@ export default class PDFForm {
     return;
   }
 
-  private embedDefaultFont = (): PDFFont =>
-    this.doc.embedStandardFont(StandardFonts.Helvetica);
+  private embedDefaultFont = (): PDFFont => this.doc.embedStandardFont(StandardFonts.Helvetica);
 }
 
 const convertToPDFField = (
@@ -1504,13 +1473,13 @@ const convertToPDFField = (
 
 const splitFieldName = (fullyQualifiedName: string) => {
   if (fullyQualifiedName.length === 0) {
-    throw new Error('PDF field names must not be empty strings');
+    throw new Error("PDF field names must not be empty strings");
   }
 
-  const parts = fullyQualifiedName.split('.');
+  const parts = fullyQualifiedName.split(".");
 
   for (let idx = 0, len = parts.length; idx < len; idx++) {
-    if (parts[idx] === '') {
+    if (parts[idx] === "") {
       throw new Error(
         `Periods in PDF field names must be separated by at least one character: "${fullyQualifiedName}"`,
       );
@@ -1532,9 +1501,7 @@ const addFieldToParent = (
 ) => {
   const entries = parent.normalizedEntries();
 
-  const fields = createPDFAcroFields(
-    'Kids' in entries ? entries.Kids : entries.Fields,
-  );
+  const fields = createPDFAcroFields("Kids" in entries ? entries.Kids : entries.Fields);
 
   for (let idx = 0, len = fields.length; idx < len; idx++) {
     if (fields[idx]![0].getPartialName() === partialName) {

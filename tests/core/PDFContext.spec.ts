@@ -1,4 +1,4 @@
-import { zlibSync } from 'fflate';
+import { zlibSync } from "fflate";
 
 import {
   PDFArray,
@@ -12,20 +12,20 @@ import {
   PDFNumber,
   PDFRef,
   PDFString,
-} from '../../src/core';
-import { mergeIntoTypedArray } from '../../src/utils';
+} from "../../src/core";
+import { mergeIntoTypedArray } from "../../src/utils";
 
-describe('PDFContext', () => {
-  it('retains assigned objects', () => {
+describe("PDFContext", () => {
+  it("retains assigned objects", () => {
     const context = PDFContext.create();
 
     const pdfBool = PDFBool.True;
-    const pdfHexString = PDFHexString.of('ABC123');
-    const pdfName = PDFName.of('Foo#Bar!');
+    const pdfHexString = PDFHexString.of("ABC123");
+    const pdfName = PDFName.of("Foo#Bar!");
     const pdfNull = PDFNull;
     const pdfNumber = PDFNumber.of(-24.179);
-    const pdfString = PDFString.of('foobar');
-    const pdfDict = context.obj({ Foo: PDFName.of('Bar') });
+    const pdfString = PDFString.of("foobar");
+    const pdfDict = context.obj({ Foo: PDFName.of("Bar") });
     const pdfArray = context.obj([PDFBool.True, pdfDict]);
 
     context.assign(PDFRef.of(0), pdfBool);
@@ -47,22 +47,22 @@ describe('PDFContext', () => {
     expect(context.lookup(PDFRef.of(7))).toBe(pdfArray);
   });
 
-  it('does not use object number 0 during registration', () => {
+  it("does not use object number 0 during registration", () => {
     const context = PDFContext.create();
     expect(context.register(PDFBool.True)).toBe(PDFRef.of(1));
   });
 
-  it('returns the given object during lookup if it is not a PDFRef', () => {
+  it("returns the given object during lookup if it is not a PDFRef", () => {
     const context = PDFContext.create();
     const pdfNumber = PDFNumber.of(21);
     expect(context.lookup(pdfNumber)).toBe(pdfNumber);
   });
 
-  it('assigns the next highest object number during registration', () => {
+  it("assigns the next highest object number during registration", () => {
     const context = PDFContext.create();
 
     const pdfBool = PDFBool.True;
-    const pdfName = PDFName.of('FooBar');
+    const pdfName = PDFName.of("FooBar");
     const pdfNumber = PDFNumber.of(-21.436);
 
     const boolRef = context.register(pdfBool);
@@ -76,87 +76,87 @@ describe('PDFContext', () => {
     expect(context.lookup(numberRef)).toBe(pdfNumber);
   });
 
-  it('stream creation', () => {
+  it("stream creation", () => {
     const context = PDFContext.create();
 
-    const stream = context.flateStream('stuff and things!');
+    const stream = context.flateStream("stuff and things!");
     const buffer = new Uint8Array(stream.sizeInBytes());
     stream.copyBytesInto(buffer, 0);
 
-    const compressed = zlibSync(new TextEncoder().encode('stuff and things!'));
+    const compressed = zlibSync(new TextEncoder().encode("stuff and things!"));
     expect(buffer).toEqual(
       mergeIntoTypedArray(
-        '<<\n',
-        '/Filter /FlateDecode\n',
+        "<<\n",
+        "/Filter /FlateDecode\n",
         `/Length ${compressed.length}\n`,
-        '>>\n',
-        'stream\n',
+        ">>\n",
+        "stream\n",
         compressed,
-        '\nendstream',
+        "\nendstream",
       ),
     );
   });
 
-  describe('literal conversions', () => {
+  describe("literal conversions", () => {
     const context = PDFContext.create();
 
-    it('converts null literals to the PDFNull instance', () => {
+    it("converts null literals to the PDFNull instance", () => {
       const literal = null;
       const obj = context.obj(literal);
       expect(obj).toBe(PDFNull);
       expect(context.getLiteral(obj)).toBe(literal);
     });
 
-    it('converts string literals to PDFName instances', () => {
-      const literal = 'foobar';
+    it("converts string literals to PDFName instances", () => {
+      const literal = "foobar";
       const obj = context.obj(literal);
       expect(obj).toBeInstanceOf(PDFName);
       expect(obj.toString()).toBe(`/${literal}`);
       expect(context.getLiteral(obj)).toBe(literal);
     });
 
-    it('converts number literals to PDFNumber instances', () => {
+    it("converts number literals to PDFNumber instances", () => {
       const literal = -21.4e-3;
       const obj = context.obj(literal);
       expect(obj).toBeInstanceOf(PDFNumber);
-      expect(obj.toString()).toBe('-0.0214');
+      expect(obj.toString()).toBe("-0.0214");
       expect(context.getLiteral(obj)).toBe(literal);
     });
 
-    it('converts boolean literals to PDFBool instances', () => {
+    it("converts boolean literals to PDFBool instances", () => {
       expect(context.obj(true)).toBe(PDFBool.True);
       expect(context.getLiteral(PDFBool.True)).toBe(true);
       expect(context.obj(false)).toBe(PDFBool.False);
       expect(context.getLiteral(PDFBool.False)).toBe(false);
     });
 
-    it('converts array literals to PDFArray instances', () => {
+    it("converts array literals to PDFArray instances", () => {
       const array = [
         PDFRef.of(21),
         true,
-        PDFHexString.of('ABC123'),
-        'Foo#Bar!',
+        PDFHexString.of("ABC123"),
+        "Foo#Bar!",
         [null, -24.179],
-        { Foo: PDFName.of('Bar') },
+        { Foo: PDFName.of("Bar") },
       ];
 
       const obj = context.obj(array);
       expect(obj).toBeInstanceOf(PDFArray);
       expect(obj.toString()).toEqual(
-        '[ 21 0 R true <ABC123> /Foo#23Bar! [ null -24.179 ] <<\n/Foo /Bar\n>> ]',
+        "[ 21 0 R true <ABC123> /Foo#23Bar! [ null -24.179 ] <<\n/Foo /Bar\n>> ]",
       );
-      (array[5] as any).Foo = 'Bar';
+      (array[5] as any).Foo = "Bar";
       expect(context.getLiteral(obj)).toEqual(array);
     });
 
-    it('converts object literals to PDFDict instances', () => {
+    it("converts object literals to PDFDict instances", () => {
       const dict = {
         Ref: PDFRef.of(21),
         Boolean: true,
-        HexString: PDFHexString.of('ABC123'),
+        HexString: PDFHexString.of("ABC123"),
         Null: null,
         Number: -24.179,
-        Name: 'Foo#Bar!',
+        Name: "Foo#Bar!",
         Dictionary: { Array: [true, null] },
       };
 
@@ -178,15 +178,15 @@ describe('PDFContext', () => {
       expect(context.getLiteral(obj)).toEqual(dict);
     });
 
-    it('converts PDFObject instances to their literal representation', () => {
+    it("converts PDFObject instances to their literal representation", () => {
       const dict = {
         Ref: PDFRef.of(21),
         Boolean: true,
-        String: PDFString.of('blub'),
-        HexString: PDFHexString.of('ABC123'),
+        String: PDFString.of("blub"),
+        HexString: PDFHexString.of("ABC123"),
         Null: null,
         Number: -3.5e-2,
-        Name: 'Foo#Bar()',
+        Name: "Foo#Bar()",
         Dictionary: { Array: [true, null] },
       };
 
@@ -207,9 +207,9 @@ describe('PDFContext', () => {
       // Extended conversion
       lit = context.getLiteral(obj, { literalRef: true, literalString: true });
       expect(lit.Ref).toBe(21);
-      expect(lit.String).toBe('blub');
-      expect(lit.HexString).toBe('ABC123');
-      const stream = context.stream('foo', dict);
+      expect(lit.String).toBe("blub");
+      expect(lit.HexString).toBe("ABC123");
+      const stream = context.stream("foo", dict);
       lit = context.getLiteral(stream, {
         literalStreamDict: true,
       }) as typeof dict;
@@ -254,14 +254,14 @@ describe('PDFContext', () => {
     expect(context.lookup(ref1)).toBeInstanceOf(PDFContentStream);
   });
 
-  describe('object ordering (issue #951)', () => {
-    it('preserves insertion order when no new objects are created via nextRef', () => {
+  describe("object ordering (issue #951)", () => {
+    it("preserves insertion order when no new objects are created via nextRef", () => {
       const context = PDFContext.create();
 
       // Simulate parser behavior: assign objects in non-sequential order
       context.assign(PDFRef.of(5), PDFBool.True);
       context.assign(PDFRef.of(2), PDFNumber.of(42));
-      context.assign(PDFRef.of(8), PDFString.of('test'));
+      context.assign(PDFRef.of(8), PDFString.of("test"));
 
       // Without calling nextRef, should preserve insertion order
       const objects = context.enumerateIndirectObjects();
@@ -270,16 +270,16 @@ describe('PDFContext', () => {
       expect(objects[2]![0]).toEqual(PDFRef.of(8));
     });
 
-    it('sorts by object number after nextRef is called', () => {
+    it("sorts by object number after nextRef is called", () => {
       const context = PDFContext.create();
 
       // Simulate parser behavior: assign objects in non-sequential order
       context.assign(PDFRef.of(5), PDFBool.True);
       context.assign(PDFRef.of(2), PDFNumber.of(42));
-      context.assign(PDFRef.of(8), PDFString.of('test'));
+      context.assign(PDFRef.of(8), PDFString.of("test"));
 
       // Create a new object - should trigger sorting
-      context.register(PDFName.of('NewObject'));
+      context.register(PDFName.of("NewObject"));
 
       const objects = context.enumerateIndirectObjects();
       // Should now be sorted by object number

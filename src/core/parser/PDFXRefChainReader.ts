@@ -1,30 +1,30 @@
-import { DecodedStreamTooLargeError } from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import PDFContext from '../PDFContext.js';
-import { decodePDFRawStream } from '../streams/decode.js';
-import CharCodes from '../syntax/CharCodes.js';
-import { Keywords } from '../syntax/Keywords.js';
-import { IsDigit } from '../syntax/Numeric.js';
-import { silentWarningHandler } from '../warnings.js';
-import ByteStream from './ByteStream.js';
-import PDFObjectParser from './PDFObjectParser.js';
+import { DecodedStreamTooLargeError } from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import PDFContext from "../PDFContext.js";
+import { decodePDFRawStream } from "../streams/decode.js";
+import CharCodes from "../syntax/CharCodes.js";
+import { Keywords } from "../syntax/Keywords.js";
+import { IsDigit } from "../syntax/Numeric.js";
+import { silentWarningHandler } from "../warnings.js";
+import ByteStream from "./ByteStream.js";
+import PDFObjectParser from "./PDFObjectParser.js";
 
 /** What the effective cross-reference data of a file says about one number. */
 export type XRefDisposition =
-  | { kind: 'inUse'; offset: number; generation: number }
-  | { kind: 'free'; generation: number }
+  | { kind: "inUse"; offset: number; generation: number }
+  | { kind: "free"; generation: number }
   /** A type-2 entry: member `index` of object stream `container`. */
-  | { kind: 'compressed'; container: number; index: number }
+  | { kind: "compressed"; container: number; index: number }
   /**
    * An xref-stream entry of a type ISO 32000-1 7.5.8.3 does not define:
    * a reference to the null object. It shadows older entries like any other.
    */
-  | { kind: 'null' };
+  | { kind: "null" };
 
 /** The trailer keys a reader resolves the document with. */
 export interface EffectiveTrailer {
@@ -52,11 +52,11 @@ export interface EffectiveXRef {
 export class XRefChainError extends Error {
   constructor(reason: string) {
     super(`Cannot read the cross-reference chain of the file: ${reason}`);
-    this.name = 'XRefChainError';
+    this.name = "XRefChainError";
   }
 }
 
-const XRefName = PDFName.of('XRef');
+const XRefName = PDFName.of("XRef");
 
 interface Section {
   entries: [number, XRefDisposition][];
@@ -131,7 +131,7 @@ class PDFXRefChainReader extends PDFObjectParser {
 
       if (section.isStream) hasStreamSection = true;
 
-      for (const key of ['Root', 'Encrypt', 'Info', 'ID'] as const) {
+      for (const key of ["Root", "Encrypt", "Info", "ID"] as const) {
         const value = section.trailer.get(PDFName.of(key));
 
         if (trailer[key] === undefined && value !== undefined) {
@@ -151,11 +151,11 @@ class PDFXRefChainReader extends PDFObjectParser {
       const section = this.readSection(offset);
       newestSize ??= sizeOf(section.trailer);
       merge(section);
-      const xrefStm = section.trailer.get(PDFName.of('XRefStm'));
+      const xrefStm = section.trailer.get(PDFName.of("XRefStm"));
 
       if (xrefStm !== undefined) {
         if (!(xrefStm instanceof PDFNumber)) {
-          throw new XRefChainError('/XRefStm is not a number');
+          throw new XRefChainError("/XRefStm is not a number");
         }
 
         // The supplemental stream's own /Prev is not part of the chain, and
@@ -168,10 +168,10 @@ class PDFXRefChainReader extends PDFObjectParser {
         }
       }
 
-      const prev = section.trailer.get(PDFName.of('Prev'));
+      const prev = section.trailer.get(PDFName.of("Prev"));
 
       if (prev !== undefined && !(prev instanceof PDFNumber)) {
-        throw new XRefChainError('/Prev is not a number');
+        throw new XRefChainError("/Prev is not a number");
       }
 
       offset = prev?.asNumber();
@@ -182,12 +182,10 @@ class PDFXRefChainReader extends PDFObjectParser {
 
     for (const [num, disposition] of entries) {
       if (num >= size) {
-        throw new XRefChainError(
-          `object ${num} is listed but the newest /Size is ${size}`,
-        );
+        throw new XRefChainError(`object ${num} is listed but the newest /Size is ${size}`);
       }
 
-      if (disposition.kind === 'free' && num > highestFree) highestFree = num;
+      if (disposition.kind === "free" && num > highestFree) highestFree = num;
     }
 
     entries.delete(0);
@@ -222,16 +220,11 @@ class PDFXRefChainReader extends PDFObjectParser {
         const type = this.bytes.next();
 
         if (type === CharCodes.n) {
-          entries.push([
-            first + idx,
-            { kind: 'inUse', offset: field1, generation },
-          ]);
+          entries.push([first + idx, { kind: "inUse", offset: field1, generation }]);
         } else if (type === CharCodes.f) {
-          entries.push([first + idx, { kind: 'free', generation }]);
+          entries.push([first + idx, { kind: "free", generation }]);
         } else {
-          throw new XRefChainError(
-            `malformed entry in the xref table at offset ${offset}`,
-          );
+          throw new XRefChainError(`malformed entry in the xref table at offset ${offset}`);
         }
 
         this.skipWhitespaceAndComments();
@@ -239,9 +232,7 @@ class PDFXRefChainReader extends PDFObjectParser {
     }
 
     if (!this.matchKeyword(Keywords.trailer)) {
-      throw new XRefChainError(
-        `no trailer after the table at offset ${offset}`,
-      );
+      throw new XRefChainError(`no trailer after the table at offset ${offset}`);
     }
 
     this.skipWhitespaceAndComments();
@@ -255,8 +246,7 @@ class PDFXRefChainReader extends PDFObjectParser {
     this.bytes.moveTo(offset);
     this.skipWhitespaceAndComments();
 
-    const notASection = () =>
-      new XRefChainError(`no xref section at offset ${offset}`);
+    const notASection = () => new XRefChainError(`no xref section at offset ${offset}`);
 
     if (!IsDigit[this.bytes.peek()]) throw notASection();
     this.parseRawInt();
@@ -267,10 +257,7 @@ class PDFXRefChainReader extends PDFObjectParser {
     if (!this.matchKeyword(Keywords.obj)) throw notASection();
     const stream = this.parseObject();
 
-    if (
-      !(stream instanceof PDFRawStream) ||
-      stream.dict.lookup(PDFName.of('Type')) !== XRefName
-    ) {
+    if (!(stream instanceof PDFRawStream) || stream.dict.lookup(PDFName.of("Type")) !== XRefName) {
       throw notASection();
     }
 
@@ -279,29 +266,25 @@ class PDFXRefChainReader extends PDFObjectParser {
     const bad = (what: string) =>
       new XRefChainError(`${what} in the xref stream at offset ${offset}`);
 
-    const W = dict.get(PDFName.of('W'));
+    const W = dict.get(PDFName.of("W"));
 
-    if (!(W instanceof PDFArray) || W.size() !== 3) throw bad('bad /W');
-    const widths = W.asArray().map((w) => intOf(w, bad('bad /W')));
+    if (!(W instanceof PDFArray) || W.size() !== 3) throw bad("bad /W");
+    const widths = W.asArray().map((w) => intOf(w, bad("bad /W")));
 
     // An offset or generation wider than 6 bytes would lose precision.
-    if (widths.some((w) => w > 6)) throw bad('bad /W');
-    const Index = dict.get(PDFName.of('Index'));
+    if (widths.some((w) => w > 6)) throw bad("bad /W");
+    const Index = dict.get(PDFName.of("Index"));
 
     const ranges: number[] =
       Index === undefined
         ? [0, sizeOf(dict)]
         : Index instanceof PDFArray && Index.size() % 2 === 0
-          ? Index.asArray().map((n) => intOf(n, bad('bad /Index')))
+          ? Index.asArray().map((n) => intOf(n, bad("bad /Index")))
           : [];
 
-    if (ranges.length === 0) throw bad('bad /Index');
+    if (ranges.length === 0) throw bad("bad /Index");
 
-    const [typeWidth, offsetWidth, genWidth] = widths as [
-      number,
-      number,
-      number,
-    ];
+    const [typeWidth, offsetWidth, genWidth] = widths as [number, number, number];
 
     const width = typeWidth + offsetWidth + genWidth;
     let rows = 0;
@@ -311,7 +294,7 @@ class PDFXRefChainReader extends PDFObjectParser {
     // mid-row rather than reconstructing a partial one.
     const data = decodePDFRawStream(stream, { strict: true }).decode();
 
-    if (data.length < rows * width) throw bad('truncated data');
+    if (data.length < rows * width) throw bad("truncated data");
 
     let at = 0;
 
@@ -333,20 +316,14 @@ class PDFXRefChainReader extends PDFObjectParser {
         const num = ranges[i]! + k;
 
         if (type === 0) {
-          entries.push([num, { kind: 'free', generation: field3 }]);
+          entries.push([num, { kind: "free", generation: field3 }]);
         } else if (type === 1) {
-          entries.push([
-            num,
-            { kind: 'inUse', offset: field2, generation: field3 },
-          ]);
+          entries.push([num, { kind: "inUse", offset: field2, generation: field3 }]);
         } else if (type === 2) {
-          entries.push([
-            num,
-            { kind: 'compressed', container: field2, index: field3 },
-          ]);
+          entries.push([num, { kind: "compressed", container: field2, index: field3 }]);
         } else {
           // ISO 32000-1 7.5.8.3: any other type is a reference to null.
-          entries.push([num, { kind: 'null' }]);
+          entries.push([num, { kind: "null" }]);
         }
       }
     }
@@ -367,42 +344,33 @@ const intOf = (object: PDFObject | undefined, error: Error): number => {
 };
 
 const sizeOf = (trailer: PDFDict): number =>
-  intOf(
-    trailer.get(PDFName.of('Size')),
-    new XRefChainError('a section has no valid /Size'),
-  );
+  intOf(trailer.get(PDFName.of("Size")), new XRefChainError("a section has no valid /Size"));
 
 /**
  * A section lists each number once, below its own /Size, with a generation
  * of at most 65535 and an offset that fits a table's 10 digits.
  */
-const checkSection = (
-  entries: [number, XRefDisposition][],
-  trailer: PDFDict,
-  offset: number,
-) => {
+const checkSection = (entries: [number, XRefDisposition][], trailer: PDFDict, offset: number) => {
   const size = sizeOf(trailer);
   const seen = new Set<number>();
 
   for (const [num, disposition] of entries) {
     const fail = (what: string) =>
-      new XRefChainError(
-        `the section at offset ${offset} ${what} for object ${num}`,
-      );
+      new XRefChainError(`the section at offset ${offset} ${what} for object ${num}`);
 
     if (num >= size) throw fail(`exceeds its /Size ${size}`);
 
-    if (seen.has(num)) throw fail('has two entries');
+    if (seen.has(num)) throw fail("has two entries");
     seen.add(num);
 
-    if (disposition.kind === 'compressed' || disposition.kind === 'null') {
+    if (disposition.kind === "compressed" || disposition.kind === "null") {
       continue;
     }
 
-    if (disposition.generation > 65535) throw fail('has a bad generation');
+    if (disposition.generation > 65535) throw fail("has a bad generation");
 
-    if (disposition.kind === 'inUse' && disposition.offset > 9999999999) {
-      throw fail('has an offset too large for a table');
+    if (disposition.kind === "inUse" && disposition.offset > 9999999999) {
+      throw fail("has an offset too large for a table");
     }
   }
 };

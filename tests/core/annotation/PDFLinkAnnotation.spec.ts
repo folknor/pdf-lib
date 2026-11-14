@@ -4,16 +4,16 @@ import {
   PDFDocument,
   PDFLinkAnnotation,
   rgb,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFLinkAnnotation', () => {
-  describe('drawLink() and getLinkAnnotations()', () => {
-    it('can add a link annotation to a page', async () => {
+describe("PDFLinkAnnotation", () => {
+  describe("drawLink() and getLinkAnnotations()", () => {
+    it("can add a link annotation to a page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 150,
@@ -26,12 +26,12 @@ describe('PDFLinkAnnotation', () => {
       expect(links[0]).toBeInstanceOf(PDFLinkAnnotation);
     });
 
-    it('returns PDFLinkAnnotation from annotations() factory', async () => {
+    it("returns PDFLinkAnnotation from annotations() factory", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 150,
@@ -44,12 +44,12 @@ describe('PDFLinkAnnotation', () => {
       expect(annotations[0]!.getSubtype()).toBe(AnnotationTypes.Link);
     });
 
-    it('getUrl() extracts URL from link annotation', async () => {
+    it("getUrl() extracts URL from link annotation", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://pdf-lib.js.org',
+        url: "https://pdf-lib.js.org",
         x: 50,
         y: 300,
         width: 150,
@@ -57,10 +57,10 @@ describe('PDFLinkAnnotation', () => {
       });
 
       const links = page.getLinkAnnotations();
-      expect(links[0]!.getUrl()).toBe('https://pdf-lib.js.org');
+      expect(links[0]!.getUrl()).toBe("https://pdf-lib.js.org");
     });
 
-    it('getUrl() returns undefined for non-URI links', async () => {
+    it("getUrl() returns undefined for non-URI links", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
@@ -70,13 +70,13 @@ describe('PDFLinkAnnotation', () => {
       expect(links.length).toBe(0);
     });
 
-    it('getLinkAnnotations() returns only link annotations', async () => {
+    it("getLinkAnnotations() returns only link annotations", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       // Add a link annotation
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 150,
@@ -110,12 +110,12 @@ describe('PDFLinkAnnotation', () => {
       expect(links[0]!.getSubtype()).toBe(AnnotationTypes.Link);
     });
 
-    it('can add multiple link annotations', async () => {
+    it("can add multiple link annotations", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com/page1',
+        url: "https://example.com/page1",
         x: 50,
         y: 300,
         width: 100,
@@ -123,7 +123,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://example.com/page2',
+        url: "https://example.com/page2",
         x: 200,
         y: 300,
         width: 100,
@@ -132,18 +132,18 @@ describe('PDFLinkAnnotation', () => {
 
       const links = page.getLinkAnnotations();
       expect(links.length).toBe(2);
-      expect(links[0]!.getUrl()).toBe('https://example.com/page1');
-      expect(links[1]!.getUrl()).toBe('https://example.com/page2');
+      expect(links[0]!.getUrl()).toBe("https://example.com/page1");
+      expect(links[1]!.getUrl()).toBe("https://example.com/page2");
     });
   });
 
-  describe('removeAnnotation()', () => {
-    it('removes a specific annotation from the page', async () => {
+  describe("removeAnnotation()", () => {
+    it("removes a specific annotation from the page", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 150,
@@ -160,13 +160,13 @@ describe('PDFLinkAnnotation', () => {
       expect(links.length).toBe(0);
     });
 
-    it('returns false when annotation not found', async () => {
+    it("returns false when annotation not found", async () => {
       const pdfDoc = await PDFDocument.create();
       const page1 = pdfDoc.addPage([600, 400]);
       const page2 = pdfDoc.addPage([600, 400]);
 
       page1.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 150,
@@ -183,12 +183,12 @@ describe('PDFLinkAnnotation', () => {
       expect(page1.getLinkAnnotations().length).toBe(1);
     });
 
-    it('removes the correct annotation when multiple exist', async () => {
+    it("removes the correct annotation when multiple exist", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://first.com',
+        url: "https://first.com",
         x: 50,
         y: 300,
         width: 100,
@@ -196,7 +196,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://second.com',
+        url: "https://second.com",
         x: 200,
         y: 300,
         width: 100,
@@ -204,7 +204,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://third.com',
+        url: "https://third.com",
         x: 350,
         y: 300,
         width: 100,
@@ -216,23 +216,23 @@ describe('PDFLinkAnnotation', () => {
 
       // Remove the middle one
       const secondLink = links[1]!;
-      expect(secondLink.getUrl()).toBe('https://second.com');
+      expect(secondLink.getUrl()).toBe("https://second.com");
       page.removeAnnotation(secondLink);
 
       links = page.getLinkAnnotations();
       expect(links.length).toBe(2);
-      expect(links[0]!.getUrl()).toBe('https://first.com');
-      expect(links[1]!.getUrl()).toBe('https://third.com');
+      expect(links[0]!.getUrl()).toBe("https://first.com");
+      expect(links[1]!.getUrl()).toBe("https://third.com");
     });
   });
 
-  describe('removeAnnotations()', () => {
-    it('removes annotations matching a predicate', async () => {
+  describe("removeAnnotations()", () => {
+    it("removes annotations matching a predicate", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://keep.com/page1',
+        url: "https://keep.com/page1",
         x: 50,
         y: 300,
         width: 100,
@@ -240,7 +240,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://remove.com/page1',
+        url: "https://remove.com/page1",
         x: 200,
         y: 300,
         width: 100,
@@ -248,7 +248,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://remove.com/page2',
+        url: "https://remove.com/page2",
         x: 350,
         y: 300,
         width: 100,
@@ -259,22 +259,22 @@ describe('PDFLinkAnnotation', () => {
         if (annot.getSubtype() !== AnnotationTypes.Link) return false;
         const url = (annot as PDFLinkAnnotation).getUrl();
 
-        return url?.includes('remove.com') ?? false;
+        return url?.includes("remove.com") ?? false;
       });
 
       expect(removed).toBe(2);
 
       const links = page.getLinkAnnotations();
       expect(links.length).toBe(1);
-      expect(links[0]!.getUrl()).toBe('https://keep.com/page1');
+      expect(links[0]!.getUrl()).toBe("https://keep.com/page1");
     });
 
-    it('returns 0 when no annotations match', async () => {
+    it("returns 0 when no annotations match", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 300,
         width: 100,
@@ -284,19 +284,19 @@ describe('PDFLinkAnnotation', () => {
       const removed = page.removeAnnotations((annot) => {
         const url = (annot as PDFLinkAnnotation).getUrl?.();
 
-        return url?.includes('nonexistent') ?? false;
+        return url?.includes("nonexistent") ?? false;
       });
 
       expect(removed).toBe(0);
       expect(page.getLinkAnnotations().length).toBe(1);
     });
 
-    it('can remove all annotations', async () => {
+    it("can remove all annotations", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com/1',
+        url: "https://example.com/1",
         x: 50,
         y: 300,
         width: 100,
@@ -304,7 +304,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://example.com/2',
+        url: "https://example.com/2",
         x: 200,
         y: 300,
         width: 100,
@@ -318,13 +318,13 @@ describe('PDFLinkAnnotation', () => {
     });
   });
 
-  describe('getRectangle()', () => {
-    it('returns the link rectangle', async () => {
+  describe("getRectangle()", () => {
+    it("returns the link rectangle", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://example.com',
+        url: "https://example.com",
         x: 50,
         y: 100,
         width: 200,
@@ -341,13 +341,13 @@ describe('PDFLinkAnnotation', () => {
     });
   });
 
-  describe('PDF roundtrip', () => {
-    it('link annotations persist after save and reload', async () => {
+  describe("PDF roundtrip", () => {
+    it("link annotations persist after save and reload", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://persisted-link.com',
+        url: "https://persisted-link.com",
         x: 50,
         y: 300,
         width: 150,
@@ -362,15 +362,15 @@ describe('PDFLinkAnnotation', () => {
       const links = reloadedPage.getLinkAnnotations();
       expect(links.length).toBe(1);
       expect(links[0]).toBeInstanceOf(PDFLinkAnnotation);
-      expect(links[0]!.getUrl()).toBe('https://persisted-link.com');
+      expect(links[0]!.getUrl()).toBe("https://persisted-link.com");
     });
 
-    it('removed annotations do not persist', async () => {
+    it("removed annotations do not persist", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 400]);
 
       page.drawLink({
-        url: 'https://will-be-removed.com',
+        url: "https://will-be-removed.com",
         x: 50,
         y: 300,
         width: 150,
@@ -378,7 +378,7 @@ describe('PDFLinkAnnotation', () => {
       });
 
       page.drawLink({
-        url: 'https://will-persist.com',
+        url: "https://will-persist.com",
         x: 250,
         y: 300,
         width: 150,
@@ -396,7 +396,7 @@ describe('PDFLinkAnnotation', () => {
 
       const reloadedLinks = reloadedPage.getLinkAnnotations();
       expect(reloadedLinks.length).toBe(1);
-      expect(reloadedLinks[0]!.getUrl()).toBe('https://will-persist.com');
+      expect(reloadedLinks[0]!.getUrl()).toBe("https://will-persist.com");
     });
   });
 });

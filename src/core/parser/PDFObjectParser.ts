@@ -1,49 +1,43 @@
-import { charFromCode } from '../../utils/index.js';
-import type { CipherTransformFactory } from '../crypto.js';
+import { charFromCode } from "../../utils/index.js";
+import type { CipherTransformFactory } from "../crypto.js";
 import {
   PDFObjectParsingError,
   PDFStreamParsingError,
   type Position,
   UnbalancedParenthesisError,
-} from '../errors.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFBool from '../objects/PDFBool.js';
-import PDFDict, { type DictMap } from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName, { decodePdfNameEscapes } from '../objects/PDFName.js';
-import PDFNull from '../objects/PDFNull.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import type PDFStream from '../objects/PDFStream.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import PDFCatalog from '../structures/PDFCatalog.js';
-import PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import PDFPageTree from '../structures/PDFPageTree.js';
-import CharCodes from '../syntax/CharCodes.js';
-import { IsDelimiter } from '../syntax/Delimiters.js';
-import { Keywords } from '../syntax/Keywords.js';
-import { IsDigit, IsNumeric } from '../syntax/Numeric.js';
-import { IsWhitespace } from '../syntax/Whitespace.js';
-import type { PDFWarning } from '../warnings.js';
-import BaseParser from './BaseParser.js';
-import ByteStream from './ByteStream.js';
+} from "../errors.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFBool from "../objects/PDFBool.js";
+import PDFDict, { type DictMap } from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName, { decodePdfNameEscapes } from "../objects/PDFName.js";
+import PDFNull from "../objects/PDFNull.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import type PDFStream from "../objects/PDFStream.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import PDFCatalog from "../structures/PDFCatalog.js";
+import PDFPageLeaf from "../structures/PDFPageLeaf.js";
+import PDFPageTree from "../structures/PDFPageTree.js";
+import CharCodes from "../syntax/CharCodes.js";
+import { IsDelimiter } from "../syntax/Delimiters.js";
+import { Keywords } from "../syntax/Keywords.js";
+import { IsDigit, IsNumeric } from "../syntax/Numeric.js";
+import { IsWhitespace } from "../syntax/Whitespace.js";
+import type { PDFWarning } from "../warnings.js";
+import BaseParser from "./BaseParser.js";
+import ByteStream from "./ByteStream.js";
 
 // TODO: Throw error if eof is reached before finishing object parse...
 class PDFObjectParser extends BaseParser {
-  static forBytes = (
-    bytes: Uint8Array,
-    context: PDFContext,
-    capNumbers?: boolean,
-  ) => new PDFObjectParser(ByteStream.of(bytes), context, capNumbers);
+  static forBytes = (bytes: Uint8Array, context: PDFContext, capNumbers?: boolean) =>
+    new PDFObjectParser(ByteStream.of(bytes), context, capNumbers);
 
-  static forByteStream = (
-    byteStream: ByteStream,
-    context: PDFContext,
-    capNumbers = false,
-  ) => new PDFObjectParser(byteStream, context, capNumbers);
+  static forByteStream = (byteStream: ByteStream, context: PDFContext, capNumbers = false) =>
+    new PDFObjectParser(byteStream, context, capNumbers);
 
   protected readonly context: PDFContext;
   protected readonly cryptoFactory: CipherTransformFactory | undefined;
@@ -93,10 +87,7 @@ class PDFObjectParser extends BaseParser {
 
     const byte = this.bytes.peek();
 
-    if (
-      byte === CharCodes.LessThan &&
-      this.bytes.peekAhead(1) === CharCodes.LessThan
-    ) {
+    if (byte === CharCodes.LessThan && this.bytes.peekAhead(1) === CharCodes.LessThan) {
       return this.parseDictOrStream(ref);
     }
 
@@ -136,7 +127,7 @@ class PDFObjectParser extends BaseParser {
   }
 
   protected parseHexString(ref?: PDFRef): PDFHexString {
-    let value = '';
+    let value = "";
 
     this.bytes.assertNext(CharCodes.LessThan);
 
@@ -154,8 +145,8 @@ class PDFObjectParser extends BaseParser {
 
       const arr = transformer.decryptBytes(PDFHexString.of(value).asBytes());
       value = arr.reduce(
-        (str: string, byte: number) => str + byte.toString(16).padStart(2, '0'),
-        '',
+        (str: string, byte: number) => str + byte.toString(16).padStart(2, "0"),
+        "",
       );
     }
 
@@ -165,7 +156,7 @@ class PDFObjectParser extends BaseParser {
   protected parseString(ref?: PDFRef): PDFString | PDFHexString {
     let nestingLvl = 0;
     let isEscaped = false;
-    let value = '';
+    let value = "";
 
     while (!this.bytes.done()) {
       const byte = this.bytes.next();
@@ -195,9 +186,7 @@ class PDFObjectParser extends BaseParser {
             ref.generationNumber,
           );
 
-          const decrypted = transformer.decryptBytes(
-            PDFString.of(actualValue).asBytes(),
-          );
+          const decrypted = transformer.decryptBytes(PDFString.of(actualValue).asBytes());
 
           // Decrypted bytes are data, not literal-string escape syntax.
           return PDFHexString.fromBytes(decrypted);
@@ -216,7 +205,7 @@ class PDFObjectParser extends BaseParser {
   protected parseName(): PDFName {
     this.bytes.assertNext(CharCodes.ForwardSlash);
 
-    let name = '';
+    let name = "";
 
     while (!this.bytes.done()) {
       const byte = this.bytes.peek();
@@ -261,7 +250,7 @@ class PDFObjectParser extends BaseParser {
     ) {
       const key = this.parseName();
 
-      if (key === PDFName.of('Contents')) contentsPos = this.bytes.position();
+      if (key === PDFName.of("Contents")) contentsPos = this.bytes.position();
       const value = this.parseObject(ref);
       dict.set(key, value);
       this.skipWhitespaceAndComments();
@@ -271,38 +260,33 @@ class PDFObjectParser extends BaseParser {
     this.bytes.assertNext(CharCodes.GreaterThan);
     this.bytes.assertNext(CharCodes.GreaterThan);
 
-    const Type = dict.get(PDFName.of('Type'));
+    const Type = dict.get(PDFName.of("Type"));
 
     // PDF 32000 7.6.2: strings in the /Contents of signature dictionaries are
     // never encrypted. /Type is optional on signature dictionaries, so an
     // untyped dict carrying /ByteRange counts too. /Type may follow
     // /Contents, so re-read the value without decryption once known.
     const isSignatureDict =
-      Type === PDFName.of('Sig') ||
-      Type === PDFName.of('DocTimeStamp') ||
-      (Type === undefined && dict.get(PDFName.of('ByteRange')) !== undefined);
+      Type === PDFName.of("Sig") ||
+      Type === PDFName.of("DocTimeStamp") ||
+      (Type === undefined && dict.get(PDFName.of("ByteRange")) !== undefined);
 
-    if (
-      this.cryptoFactory &&
-      ref &&
-      contentsPos !== undefined &&
-      isSignatureDict
-    ) {
-      const contents = dict.get(PDFName.of('Contents'));
+    if (this.cryptoFactory && ref && contentsPos !== undefined && isSignatureDict) {
+      const contents = dict.get(PDFName.of("Contents"));
 
       if (contents instanceof PDFString || contents instanceof PDFHexString) {
         const resumeAt = this.bytes.position();
         this.bytes.restorePosition(contentsPos);
-        dict.set(PDFName.of('Contents'), this.parseObject());
+        dict.set(PDFName.of("Contents"), this.parseObject());
         this.bytes.restorePosition(resumeAt);
       }
     }
 
-    if (Type === PDFName.of('Catalog')) {
+    if (Type === PDFName.of("Catalog")) {
       return PDFCatalog.fromMapWithContext(dict, this.context);
-    } else if (Type === PDFName.of('Pages')) {
+    } else if (Type === PDFName.of("Pages")) {
       return PDFPageTree.fromMapWithContext(dict, this.context);
-    } else if (Type === PDFName.of('Page')) {
+    } else if (Type === PDFName.of("Page")) {
       return PDFPageLeaf.fromMapWithContext(dict, this.context);
     } else {
       return PDFDict.fromMapWithContext(dict, this.context);
@@ -334,7 +318,7 @@ class PDFObjectParser extends BaseParser {
     // Honour /Length when it is a direct number, or an indirect reference to
     // a number that has already been parsed into the context. Either way the
     // value is only trusted if `endstream` follows it.
-    const Length = dict.get(PDFName.of('Length'));
+    const Length = dict.get(PDFName.of("Length"));
     const length = this.resolveStreamLength(Length);
 
     if (length !== undefined) {

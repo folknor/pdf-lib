@@ -1,5 +1,5 @@
-import { decodeFromBase64DataUri } from './base64.js';
-import { charFromCode } from './strings.js';
+import { decodeFromBase64DataUri } from "./base64.js";
+import { charFromCode } from "./strings.js";
 
 export const last = <T>(array: T[]): T | undefined => array[array.length - 1];
 
@@ -25,8 +25,7 @@ export const mergeIntoTypedArray = (...arrays: (string | Uint8Array)[]) => {
 
   for (let idx = 0; idx < arrayCount; idx++) {
     const element = arrays[idx]!;
-    typedArrays[idx] =
-      element instanceof Uint8Array ? element : typedArrayFor(element);
+    typedArrays[idx] = element instanceof Uint8Array ? element : typedArrayFor(element);
   }
 
   let totalSize = 0;
@@ -69,7 +68,7 @@ export const mergeUint8Arrays = (arrays: Uint8Array[]): Uint8Array => {
 };
 
 export const arrayAsString = (array: Uint8Array | number[]): string => {
-  let str = '';
+  let str = "";
 
   for (let idx = 0, len = array.length; idx < len; idx++) {
     str += charFromCode(array[idx]!);
@@ -160,23 +159,19 @@ export const pluckIndices = <T>(arr: T[], indices: number[]) => {
 export const canBeConvertedToUint8Array = (
   input: any,
 ): input is string | ArrayBuffer | Uint8Array =>
-  input instanceof Uint8Array ||
-  input instanceof ArrayBuffer ||
-  typeof input === 'string';
+  input instanceof Uint8Array || input instanceof ArrayBuffer || typeof input === "string";
 
 export const toUint8Array = (
   input: string | ArrayBuffer | Uint8Array<ArrayBuffer>,
 ): Uint8Array<ArrayBuffer> => {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return decodeFromBase64DataUri(input);
   } else if (input instanceof ArrayBuffer) {
     return new Uint8Array(input);
   } else if (input instanceof Uint8Array) {
     return input;
   } else {
-    throw new TypeError(
-      '`input` must be one of `string | ArrayBuffer | Uint8Array<ArrayBuffer>`',
-    );
+    throw new TypeError("`input` must be one of `string | ArrayBuffer | Uint8Array<ArrayBuffer>`");
   }
 };
 
@@ -186,7 +181,7 @@ export const toUint8Array = (
 const byteToHex: string[] = [];
 
 for (let byte = 0x00; byte <= 0xff; ++byte) {
-  byteToHex[byte] = byte.toString(16).padStart(2, '0');
+  byteToHex[byte] = byte.toString(16).padStart(2, "0");
 }
 
 export const byteArrayToHexString = (array: Uint8Array) => {
@@ -196,5 +191,5 @@ export const byteArrayToHexString = (array: Uint8Array) => {
     hexOctets[idx] = byteToHex[array[idx]!];
   }
 
-  return hexOctets.join('');
+  return hexOctets.join("");
 };

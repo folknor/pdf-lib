@@ -4,10 +4,10 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import type { DecodeStream } from './DecodeStream.js';
-import type { RType } from './types.js';
+import type { DecodeStream } from "./DecodeStream.js";
+import type { RType } from "./types.js";
 
-export { PropertyDescriptor } from './types.js';
+export { PropertyDescriptor } from "./types.js";
 
 export type LengthType =
   | number
@@ -23,24 +23,20 @@ export function resolveLength(
 ): number {
   let res: number;
 
-  if (typeof length === 'number') {
+  if (typeof length === "number") {
     res = length;
-  } else if (typeof length === 'function') {
+  } else if (typeof length === "function") {
     res = length.call(parent, parent);
-  } else if (parent && typeof length === 'string') {
+  } else if (parent && typeof length === "string") {
     res = parent[length] as number;
-  } else if (
-    stream &&
-    length &&
-    typeof (length as RType<number>).decode === 'function'
-  ) {
+  } else if (stream && length && typeof (length as RType<number>).decode === "function") {
     res = (length as RType<number>).decode(stream);
   } else {
     res = NaN;
   }
 
   if (Number.isNaN(res)) {
-    throw new Error('Not a fixed size');
+    throw new Error("Not a fixed size");
   }
 
   return res;

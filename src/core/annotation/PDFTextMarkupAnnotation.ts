@@ -1,11 +1,11 @@
-import type { PDFPageAddTextMarkupAnnotationOptions } from '../../api/PDFPageOptions.js';
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFContext from '../PDFContext.js';
-import type PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import PDFAnnotation from './PDFAnnotation.js';
+import type { PDFPageAddTextMarkupAnnotationOptions } from "../../api/PDFPageOptions.js";
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFContext from "../PDFContext.js";
+import type PDFPageLeaf from "../structures/PDFPageLeaf.js";
+import PDFAnnotation from "./PDFAnnotation.js";
 
 export default class PDFTextMarkupAnnotation extends PDFAnnotation {
   static override fromDict = (dict: PDFDict): PDFTextMarkupAnnotation =>
@@ -20,9 +20,7 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
     const baseAnnotation = PDFAnnotation.createBase(context, page, options);
 
     // Create a new PDFTextMarkupAnnotation with the same dictionary
-    const textmarkupAnnotation = new PDFTextMarkupAnnotation(
-      baseAnnotation.dict,
-    );
+    const textmarkupAnnotation = new PDFTextMarkupAnnotation(baseAnnotation.dict);
 
     const quadPointsArray = context.obj(
       [
@@ -40,13 +38,13 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
       ].map((point) => PDFNumber.of(point)),
     );
 
-    textmarkupAnnotation.dict.set(PDFName.of('QuadPoints'), quadPointsArray);
+    textmarkupAnnotation.dict.set(PDFName.of("QuadPoints"), quadPointsArray);
 
     return textmarkupAnnotation;
   }
 
   QuadPoints(): PDFNumber[] | undefined {
-    const quadPoints = this.dict.lookup(PDFName.of('QuadPoints'));
+    const quadPoints = this.dict.lookup(PDFName.of("QuadPoints"));
 
     if (quadPoints instanceof PDFArray) {
       const numbers: PDFNumber[] = [];
@@ -68,18 +66,7 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
   }
 
   // Overloads: accept a tuple of 8 numbers OR 8 individual number args
-  setQuadPoints(
-    quadPoints: [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ],
-  ): void;
+  setQuadPoints(quadPoints: [number, number, number, number, number, number, number, number]): void;
   setQuadPoints(
     leftBottomX: number,
     leftBottomY: number,
@@ -91,9 +78,7 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
     rightTopY: number,
   ): void;
   setQuadPoints(
-    quadOrLeftBottomX:
-      | number
-      | [number, number, number, number, number, number, number, number],
+    quadOrLeftBottomX: number | [number, number, number, number, number, number, number, number],
     leftBottomY?: number,
     rightBottomX?: number,
     rightBottomY?: number,
@@ -118,19 +103,17 @@ export default class PDFTextMarkupAnnotation extends PDFAnnotation {
         rightTopY,
       ];
 
-      if (coords.length !== 8 || coords.some((n) => typeof n !== 'number')) {
+      if (coords.length !== 8 || coords.some((n) => typeof n !== "number")) {
         throw new Error(
-          'setQuadPoints requires either a tuple of 8 numbers or 8 individual number arguments',
+          "setQuadPoints requires either a tuple of 8 numbers or 8 individual number arguments",
         );
       }
 
       values = coords as number[];
     }
 
-    const quadPointsArray = this.dict.context.obj(
-      values.map((v) => PDFNumber.of(v)),
-    );
+    const quadPointsArray = this.dict.context.obj(values.map((v) => PDFNumber.of(v)));
 
-    this.dict.set(PDFName.of('QuadPoints'), quadPointsArray);
+    this.dict.set(PDFName.of("QuadPoints"), quadPointsArray);
   }
 }

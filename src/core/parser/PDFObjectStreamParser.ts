@@ -1,25 +1,23 @@
-import { waitForTick } from '../../utils/index.js';
-import { ReparseError } from '../errors.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import type PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import ByteStream from './ByteStream.js';
-import PDFObjectParser from './PDFObjectParser.js';
+import { waitForTick } from "../../utils/index.js";
+import { ReparseError } from "../errors.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import type PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import ByteStream from "./ByteStream.js";
+import PDFObjectParser from "./PDFObjectParser.js";
 
 export class ObjectStreamMemberError extends Error {
   constructor(reason: string) {
     super(`Cannot read an object stream member: ${reason}`);
-    this.name = 'ObjectStreamMemberError';
+    this.name = "ObjectStreamMemberError";
   }
 }
 
 class PDFObjectStreamParser extends PDFObjectParser {
-  static forStream = (
-    rawStream: PDFRawStream,
-    shouldWaitForTick?: () => boolean,
-  ) => new PDFObjectStreamParser(rawStream, shouldWaitForTick);
+  static forStream = (rawStream: PDFRawStream, shouldWaitForTick?: () => boolean) =>
+    new PDFObjectStreamParser(rawStream, shouldWaitForTick);
 
   private alreadyParsed: boolean;
   private readonly shouldWaitForTick: () => boolean;
@@ -34,8 +32,8 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
     this.alreadyParsed = false;
     this.shouldWaitForTick = shouldWaitForTick || (() => false);
-    this.firstOffset = dict.lookup(PDFName.of('First'), PDFNumber).asNumber();
-    this.objectCount = dict.lookup(PDFName.of('N'), PDFNumber).asNumber();
+    this.firstOffset = dict.lookup(PDFName.of("First"), PDFNumber).asNumber();
+    this.objectCount = dict.lookup(PDFName.of("N"), PDFNumber).asNumber();
     this.dataLength = this.bytes.size();
   }
 
@@ -68,9 +66,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
       if (found.length !== 1) {
         throw fail(
-          found.length === 0
-            ? 'the stream does not list it'
-            : 'the stream lists it more than once',
+          found.length === 0 ? "the stream does not list it" : "the stream lists it more than once",
         );
       }
 
@@ -80,17 +76,11 @@ class PDFObjectStreamParser extends PDFObjectParser {
     const member = table[at]!;
     const start = this.firstOffset + member.offset;
 
-    const end =
-      at + 1 < table.length
-        ? this.firstOffset + table[at + 1]!.offset
-        : this.dataLength;
+    const end = at + 1 < table.length ? this.firstOffset + table[at + 1]!.offset : this.dataLength;
 
-    if (start > end || end > this.dataLength) throw fail('bad extent');
+    if (start > end || end > this.dataLength) throw fail("bad extent");
 
-    const parser = PDFObjectParser.forBytes(
-      this.bytes.slice(start, end),
-      this.context,
-    );
+    const parser = PDFObjectParser.forBytes(this.bytes.slice(start, end), this.context);
 
     let object: PDFObject;
 
@@ -100,7 +90,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
       throw fail(e instanceof Error ? e.message : String(e));
     }
 
-    if (!parser.atEnd()) throw fail('trailing data');
+    if (!parser.atEnd()) throw fail("trailing data");
 
     return object;
   }
@@ -117,7 +107,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
     const safe = (n: number) => Number.isSafeInteger(n) && n >= 0;
 
     if (!safe(this.firstOffset) || !safe(this.objectCount)) {
-      throw new ObjectStreamMemberError('bad /First or /N');
+      throw new ObjectStreamMemberError("bad /First or /N");
     }
 
     let table: { objectNumber: number; offset: number }[];
@@ -134,14 +124,14 @@ class PDFObjectStreamParser extends PDFObjectParser {
 
     for (const { objectNumber, offset } of table) {
       if (!safe(objectNumber) || !safe(offset) || offset < previous) {
-        throw new ObjectStreamMemberError('bad offset table');
+        throw new ObjectStreamMemberError("bad offset table");
       }
 
       previous = offset;
     }
 
     if (this.bytes.offset() > this.firstOffset) {
-      throw new ObjectStreamMemberError('the offset table overruns /First');
+      throw new ObjectStreamMemberError("the offset table overruns /First");
     }
 
     this.table = table;
@@ -150,11 +140,9 @@ class PDFObjectStreamParser extends PDFObjectParser {
   }
 
   /** Assigns every member; `onAssign` hears of each as it is assigned. */
-  async parseIntoContext(
-    onAssign: (ref: PDFRef) => void = () => {},
-  ): Promise<void> {
+  async parseIntoContext(onAssign: (ref: PDFRef) => void = () => {}): Promise<void> {
     if (this.alreadyParsed) {
-      throw new ReparseError('PDFObjectStreamParser', 'parseIntoContext');
+      throw new ReparseError("PDFObjectStreamParser", "parseIntoContext");
     }
 
     this.alreadyParsed = true;
@@ -177,8 +165,7 @@ class PDFObjectStreamParser extends PDFObjectParser {
     objectNumber: number;
     offset: number;
   }[] {
-    const offsetsAndObjectNumbers: { objectNumber: number; offset: number }[] =
-      [];
+    const offsetsAndObjectNumbers: { objectNumber: number; offset: number }[] = [];
 
     for (let idx = 0, len = this.objectCount; idx < len; idx++) {
       this.skipWhitespaceAndComments();

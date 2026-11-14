@@ -1,6 +1,6 @@
-import * as r from '../../vendors/restructure/index.js';
-import { Device } from './opentype.js';
-import { ItemVariationStore } from './variations.js';
+import * as r from "../../vendors/restructure/index.js";
+import { Device } from "./opentype.js";
+import { ItemVariationStore } from "./variations.js";
 
 const BaseCoord = new r.VersionedStruct(r.uint16, {
   1: {
@@ -25,37 +25,37 @@ const BaseCoord = new r.VersionedStruct(r.uint16, {
 const BaseValues = new r.Struct({
   defaultIndex: r.uint16, // Index of default baseline for this script-same index in the BaseTagList
   baseCoordCount: r.uint16,
-  baseCoords: new r.Array(new r.Pointer(r.uint16, BaseCoord), 'baseCoordCount'),
+  baseCoords: new r.Array(new r.Pointer(r.uint16, BaseCoord), "baseCoordCount"),
 });
 
 const FeatMinMaxRecord = new r.Struct({
   tag: new r.String(4), // 4-byte feature identification tag-must match FeatureTag in FeatureList
-  minCoord: new r.Pointer(r.uint16, BaseCoord, { type: 'parent' }), // May be NULL
-  maxCoord: new r.Pointer(r.uint16, BaseCoord, { type: 'parent' }), // May be NULL
+  minCoord: new r.Pointer(r.uint16, BaseCoord, { type: "parent" }), // May be NULL
+  maxCoord: new r.Pointer(r.uint16, BaseCoord, { type: "parent" }), // May be NULL
 });
 
 const MinMax = new r.Struct({
   minCoord: new r.Pointer(r.uint16, BaseCoord), // May be NULL
   maxCoord: new r.Pointer(r.uint16, BaseCoord), // May be NULL
   featMinMaxCount: r.uint16, // May be 0
-  featMinMaxRecords: new r.Array(FeatMinMaxRecord, 'featMinMaxCount'), // In alphabetical order
+  featMinMaxRecords: new r.Array(FeatMinMaxRecord, "featMinMaxCount"), // In alphabetical order
 });
 
 const BaseLangSysRecord = new r.Struct({
   tag: new r.String(4), // 4-byte language system identification tag
-  minMax: new r.Pointer(r.uint16, MinMax, { type: 'parent' }),
+  minMax: new r.Pointer(r.uint16, MinMax, { type: "parent" }),
 });
 
 const BaseScript = new r.Struct({
   baseValues: new r.Pointer(r.uint16, BaseValues), // May be NULL
   defaultMinMax: new r.Pointer(r.uint16, MinMax), // May be NULL
   baseLangSysCount: r.uint16, // May be 0
-  baseLangSysRecords: new r.Array(BaseLangSysRecord, 'baseLangSysCount'), // in alphabetical order by BaseLangSysTag
+  baseLangSysRecords: new r.Array(BaseLangSysRecord, "baseLangSysCount"), // in alphabetical order by BaseLangSysTag
 });
 
 const BaseScriptRecord = new r.Struct({
   tag: new r.String(4), // 4-byte script identification tag
-  script: new r.Pointer(r.uint16, BaseScript, { type: 'parent' }),
+  script: new r.Pointer(r.uint16, BaseScript, { type: "parent" }),
 });
 
 const BaseScriptList = new r.Array(BaseScriptRecord, r.uint16);

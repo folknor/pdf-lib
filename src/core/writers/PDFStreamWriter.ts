@@ -1,23 +1,23 @@
-import type { DocumentSnapshot } from '../../api/snapshot/index.js';
-import { defaultDocumentSnapshot } from '../../api/snapshot/index.js';
-import { last, waitForTick } from '../../utils/index.js';
-import PDFTrailer from '../document/PDFTrailer.js';
-import { assertPDFAWrite } from '../metadata/pdfa.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFInvalidObject from '../objects/PDFInvalidObject.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import type PDFContext from '../PDFContext.js';
-import { isSignatureDict } from '../security/PDFSecurity.js';
-import PDFCatalog from '../structures/PDFCatalog.js';
-import PDFCrossRefStream from '../structures/PDFCrossRefStream.js';
-import PDFObjectStream from '../structures/PDFObjectStream.js';
-import PDFPageLeaf from '../structures/PDFPageLeaf.js';
-import PDFPageTree from '../structures/PDFPageTree.js';
-import PDFWriter, { freeEntries, writeEncryption } from './PDFWriter.js';
+import type { DocumentSnapshot } from "../../api/snapshot/index.js";
+import { defaultDocumentSnapshot } from "../../api/snapshot/index.js";
+import { last, waitForTick } from "../../utils/index.js";
+import PDFTrailer from "../document/PDFTrailer.js";
+import { assertPDFAWrite } from "../metadata/pdfa.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFInvalidObject from "../objects/PDFInvalidObject.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import type PDFContext from "../PDFContext.js";
+import { isSignatureDict } from "../security/PDFSecurity.js";
+import PDFCatalog from "../structures/PDFCatalog.js";
+import PDFCrossRefStream from "../structures/PDFCrossRefStream.js";
+import PDFObjectStream from "../structures/PDFObjectStream.js";
+import PDFPageLeaf from "../structures/PDFPageLeaf.js";
+import PDFPageTree from "../structures/PDFPageTree.js";
+import PDFWriter, { freeEntries, writeEncryption } from "./PDFWriter.js";
 
 class PDFStreamWriter extends PDFWriter {
   static override forContext = (
@@ -101,10 +101,7 @@ class PDFStreamWriter extends PDFWriter {
 
     size += 1;
 
-    const xrefStream = PDFCrossRefStream.create(
-      this.createTrailerDict(),
-      this.encodeStreams,
-    );
+    const xrefStream = PDFCrossRefStream.create(this.createTrailerDict(), this.encodeStreams);
 
     const uncompressedObjects: [PDFRef, PDFObject][] = [];
     const compressedObjects: [PDFRef, PDFObject][][] = [];
@@ -193,9 +190,7 @@ class PDFStreamWriter extends PDFWriter {
       // container covers them.
       const written: [PDFRef, PDFObject] = [
         ref,
-        security
-          ? security.encryptIndirectObject(ref, objectStream)
-          : objectStream,
+        security ? security.encryptIndirectObject(ref, objectStream) : objectStream,
       ];
 
       xrefStream.addUncompressedEntry(ref, size);
@@ -208,16 +203,10 @@ class PDFStreamWriter extends PDFWriter {
 
     const xrefStreamRef = allocateRef();
     this.highestObjectNumber = xrefStreamRef.objectNumber;
-    xrefStream.dict.set(
-      PDFName.of('Size'),
-      PDFNumber.of(xrefStreamRef.objectNumber + 1),
-    );
+    xrefStream.dict.set(PDFName.of("Size"), PDFNumber.of(xrefStreamRef.objectNumber + 1));
 
     if (this.snapshot.prevStartXRef) {
-      xrefStream.dict.set(
-        PDFName.of('Prev'),
-        PDFNumber.of(this.snapshot.prevStartXRef),
-      );
+      xrefStream.dict.set(PDFName.of("Prev"), PDFNumber.of(this.snapshot.prevStartXRef));
     }
 
     xrefStream.addUncompressedEntry(xrefStreamRef, size);

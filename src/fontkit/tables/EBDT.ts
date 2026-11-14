@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 export const BigMetrics = new r.Struct({
   height: r.uint8,
@@ -29,7 +29,7 @@ const EBDTComponent = new r.Struct({
 const ByteAligned = {} as any;
 const BitAligned = {} as any;
 
-export const glyph = new r.VersionedStruct('version', {
+export const glyph = new r.VersionedStruct("version", {
   1: {
     metrics: SmallMetrics,
     data: ByteAligned,
@@ -61,30 +61,30 @@ export const glyph = new r.VersionedStruct('version', {
     metrics: SmallMetrics,
     pad: new r.Reserved(r.uint8),
     numComponents: r.uint16,
-    components: new r.Array(EBDTComponent, 'numComponents'),
+    components: new r.Array(EBDTComponent, "numComponents"),
   },
 
   9: {
     metrics: BigMetrics,
     pad: new r.Reserved(r.uint8),
     numComponents: r.uint16,
-    components: new r.Array(EBDTComponent, 'numComponents'),
+    components: new r.Array(EBDTComponent, "numComponents"),
   },
 
   17: {
     metrics: SmallMetrics,
     dataLen: r.uint32,
-    data: new r.Buffer('dataLen'),
+    data: new r.Buffer("dataLen"),
   },
 
   18: {
     metrics: BigMetrics,
     dataLen: r.uint32,
-    data: new r.Buffer('dataLen'),
+    data: new r.Buffer("dataLen"),
   },
 
   19: {
     dataLen: r.uint32,
-    data: new r.Buffer('dataLen'),
+    data: new r.Buffer("dataLen"),
   },
 });

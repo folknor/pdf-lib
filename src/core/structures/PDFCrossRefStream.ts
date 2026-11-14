@@ -1,15 +1,9 @@
-import {
-  bytesFor,
-  Cache,
-  reverseArray,
-  sizeInBytes,
-  sum,
-} from '../../utils/index.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import PDFFlateStream from './PDFFlateStream.js';
+import { bytesFor, Cache, reverseArray, sizeInBytes, sum } from "../../utils/index.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import PDFFlateStream from "./PDFFlateStream.js";
 
 export enum EntryType {
   Deleted = 0,
@@ -68,7 +62,7 @@ class PDFCrossRefStream extends PDFFlateStream {
     this.maxByteWidthsCache = Cache.populatedBy(this.computeMaxEntryByteWidths);
     this.indexCache = Cache.populatedBy(this.computeIndex);
 
-    dict.set(PDFName.of('Type'), PDFName.of('XRef'));
+    dict.set(PDFName.of("Type"), PDFName.of("XRef"));
   }
 
   private appendEntry(entry: Entry): void {
@@ -149,13 +143,9 @@ class PDFCrossRefStream extends PDFFlateStream {
   override getContentsString(): string {
     const entryTuples = this.entryTuplesCache.access();
     const byteWidths = this.maxByteWidthsCache.access();
-    let value = '';
+    let value = "";
 
-    for (
-      let entryIdx = 0, entriesLen = entryTuples.length;
-      entryIdx < entriesLen;
-      entryIdx++
-    ) {
+    for (let entryIdx = 0, entriesLen = entryTuples.length; entryIdx < entriesLen; entryIdx++) {
       const [first, second, third] = entryTuples[entryIdx]!;
 
       const firstBytes = reverseArray(bytesFor(first));
@@ -185,11 +175,7 @@ class PDFCrossRefStream extends PDFFlateStream {
 
     let offset = 0;
 
-    for (
-      let entryIdx = 0, entriesLen = entryTuples.length;
-      entryIdx < entriesLen;
-      entryIdx++
-    ) {
+    for (let entryIdx = 0, entriesLen = entryTuples.length; entryIdx < entriesLen; entryIdx++) {
       const [first, second, third] = entryTuples[entryIdx]!;
 
       const firstBytes = reverseArray(bytesFor(first));
@@ -226,8 +212,8 @@ class PDFCrossRefStream extends PDFFlateStream {
     const index = this.indexCache.access();
 
     const { context } = this.dict;
-    this.dict.set(PDFName.of('W'), context.obj(byteWidths));
-    this.dict.set(PDFName.of('Index'), context.obj(index));
+    this.dict.set(PDFName.of("W"), context.obj(byteWidths));
+    this.dict.set(PDFName.of("Index"), context.obj(index));
   }
 
   // Returns an array of integer pairs for each subsection of the cross ref

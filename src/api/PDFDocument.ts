@@ -1,9 +1,5 @@
-import {
-  type HTMLElement,
-  NodeType,
-  parse as parseHtml,
-} from 'node-html-better-parser';
-import { CipherTransformFactory } from '../core/crypto.js';
+import { type HTMLElement, NodeType, parse as parseHtml } from "node-html-better-parser";
+import { CipherTransformFactory } from "../core/crypto.js";
 import {
   compareVersions,
   getEffectiveVersion,
@@ -11,11 +7,9 @@ import {
   type PDFVersion,
   planObjectStreamVersion,
   supportsObjectStreams,
-} from '../core/document/pdfVersion.js';
-import FileEmbedder, {
-  AFRelationship,
-} from '../core/embedders/FileEmbedder.js';
-import JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
+} from "../core/document/pdfVersion.js";
+import FileEmbedder, { AFRelationship } from "../core/embedders/FileEmbedder.js";
+import JavaScriptEmbedder from "../core/embedders/JavaScriptEmbedder.js";
 import {
   type CopyOptions,
   CustomFontEmbedder,
@@ -43,16 +37,16 @@ import {
   PngEmbedder,
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
-} from '../core/index.js';
+} from "../core/index.js";
 import {
   listOptionalContentGroups,
   registerCopiedOptionalContentGroups,
-} from '../core/interactive/OptionalContent.js';
+} from "../core/interactive/OptionalContent.js";
 import {
   FACTUR_X_FILE_NAME,
   readFacturXInvoice,
   writeFacturXMetadata,
-} from '../core/metadata/facturx.js';
+} from "../core/metadata/facturx.js";
 import {
   assertMayEncrypt,
   assertPDFAAttachment,
@@ -65,17 +59,17 @@ import {
   type PDFADeclaration,
   planInfoEdit,
   planPDFA3Edit,
-} from '../core/metadata/pdfa.js';
-import type PDFObject from '../core/objects/PDFObject.js';
-import PDFRef from '../core/objects/PDFRef.js';
+} from "../core/metadata/pdfa.js";
+import type PDFObject from "../core/objects/PDFObject.js";
+import PDFRef from "../core/objects/PDFRef.js";
 import PDFSecurity, {
   BaselineEncryption,
   type SecurityOptions,
-} from '../core/security/PDFSecurity.js';
-import { consoleWarningHandler } from '../core/warnings.js';
-import { savableBaseline, writeEncryption } from '../core/writers/PDFWriter.js';
-import type { Fontkit } from '../types/fontkit.js';
-import type { TransformationMatrix } from '../types/matrix.js';
+} from "../core/security/PDFSecurity.js";
+import { consoleWarningHandler } from "../core/warnings.js";
+import { savableBaseline, writeEncryption } from "../core/writers/PDFWriter.js";
+import type { Fontkit } from "../types/fontkit.js";
+import type { TransformationMatrix } from "../types/matrix.js";
 import {
   assertIs,
   assertIsOneOfOrUndefined,
@@ -88,10 +82,10 @@ import {
   pluckIndices,
   range,
   toUint8Array,
-} from '../utils/index.js';
-import type { Color } from './colors.js';
-import { collectUnreferenced, detachSavedAttachments } from './detach.js';
-import type Embeddable from './Embeddable.js';
+} from "../utils/index.js";
+import type { Color } from "./colors.js";
+import { collectUnreferenced, detachSavedAttachments } from "./detach.js";
+import type Embeddable from "./Embeddable.js";
 import {
   EncryptedPDFCopyError,
   EncryptedPDFError,
@@ -99,18 +93,10 @@ import {
   ForeignPageError,
   InvalidFontkitError,
   RemovePageFromEmptyDocumentError,
-} from './errors.js';
-import {
-  type EmbedFacturXOptions,
-  facturXRelationship,
-  planFacturXAttachment,
-} from './facturx.js';
-import PDFForm from './form/PDFForm.js';
-import {
-  checkCatalogNameUnused,
-  DuplicateNameError,
-  readCatalogNameTree,
-} from './nameTree.js';
+} from "./errors.js";
+import { type EmbedFacturXOptions, facturXRelationship, planFacturXAttachment } from "./facturx.js";
+import PDFForm from "./form/PDFForm.js";
+import { checkCatalogNameUnused, DuplicateNameError, readCatalogNameTree } from "./nameTree.js";
 import {
   type AttachmentOptions,
   type Base64SaveOptions,
@@ -121,23 +107,20 @@ import {
   ParseSpeeds,
   type SaveOptions,
   type SetTitleOptions,
-} from './PDFDocumentOptions.js';
-import PDFEmbeddedFile, { checkAttachable } from './PDFEmbeddedFile.js';
-import PDFEmbeddedPage from './PDFEmbeddedPage.js';
-import PDFFont from './PDFFont.js';
-import PDFImage from './PDFImage.js';
-import PDFJavaScript from './PDFJavaScript.js';
-import PDFOptionalContentGroup from './PDFOptionalContentGroup.js';
-import PDFPage from './PDFPage.js';
-import PDFSeparation from './PDFSeparation.js';
-import PDFSvg from './PDFSvg.js';
-import type { StandardFonts } from './StandardFonts.js';
-import { PageSizes } from './sizes.js';
-import type { DocumentSnapshot } from './snapshot/index.js';
-import {
-  defaultDocumentSnapshot,
-  IncrementalDocumentSnapshot,
-} from './snapshot/index.js';
+} from "./PDFDocumentOptions.js";
+import PDFEmbeddedFile, { checkAttachable } from "./PDFEmbeddedFile.js";
+import PDFEmbeddedPage from "./PDFEmbeddedPage.js";
+import PDFFont from "./PDFFont.js";
+import PDFImage from "./PDFImage.js";
+import PDFJavaScript from "./PDFJavaScript.js";
+import PDFOptionalContentGroup from "./PDFOptionalContentGroup.js";
+import PDFPage from "./PDFPage.js";
+import PDFSeparation from "./PDFSeparation.js";
+import PDFSvg from "./PDFSvg.js";
+import type { StandardFonts } from "./StandardFonts.js";
+import { PageSizes } from "./sizes.js";
+import type { DocumentSnapshot } from "./snapshot/index.js";
+import { defaultDocumentSnapshot, IncrementalDocumentSnapshot } from "./snapshot/index.js";
 
 export type BasePDFAttachment = {
   name: string;
@@ -239,18 +222,15 @@ export default class PDFDocument {
       copyStreams = true,
     } = options;
 
-    assertIs(pdf, 'pdf', ['string', Uint8Array, ArrayBuffer]);
-    assertIs(maxDecodedStreamSize, 'maxDecodedStreamSize', [
-      'number',
-      'undefined',
-    ]);
-    assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
-    assertIs(parseSpeed, 'parseSpeed', ['number']);
-    assertIs(throwOnInvalidObject, 'throwOnInvalidObject', ['boolean']);
-    assertIs(onWarning, 'onWarning', ['function']);
-    assertIs(password, 'password', ['string', 'undefined']);
-    assertIs(forIncrementalUpdate, 'forIncrementalUpdate', ['boolean']);
-    assertIs(copyStreams, 'copyStreams', ['boolean']);
+    assertIs(pdf, "pdf", ["string", Uint8Array, ArrayBuffer]);
+    assertIs(maxDecodedStreamSize, "maxDecodedStreamSize", ["number", "undefined"]);
+    assertIs(ignoreEncryption, "ignoreEncryption", ["boolean"]);
+    assertIs(parseSpeed, "parseSpeed", ["number"]);
+    assertIs(throwOnInvalidObject, "throwOnInvalidObject", ["boolean"]);
+    assertIs(onWarning, "onWarning", ["function"]);
+    assertIs(password, "password", ["string", "undefined"]);
+    assertIs(forIncrementalUpdate, "forIncrementalUpdate", ["boolean"]);
+    assertIs(copyStreams, "copyStreams", ["boolean"]);
 
     const bytes = toUint8Array(pdf);
 
@@ -313,9 +293,7 @@ export default class PDFDocument {
         cryptoFactory,
         forIncrementalUpdate,
         maxDecodedStreamSize,
-        context.trailerInfo.Encrypt instanceof PDFRef
-          ? context.trailerInfo.Encrypt
-          : undefined,
+        context.trailerInfo.Encrypt instanceof PDFRef ? context.trailerInfo.Encrypt : undefined,
         copyStreams,
       );
 
@@ -338,7 +316,7 @@ export default class PDFDocument {
       return pdfDoc;
     } else {
       if (encrypted) {
-        context.baselineEncryption = 'keyless';
+        context.baselineEncryption = "keyless";
       }
 
       context.deliverWarnings(onWarning);
@@ -355,10 +333,9 @@ export default class PDFDocument {
    * @returns Resolves with the newly created document.
    */
   static async create(options: CreateOptions = {}) {
-    const { updateMetadata = true, onWarning = consoleWarningHandler } =
-      options;
+    const { updateMetadata = true, onWarning = consoleWarningHandler } = options;
 
-    assertIs(onWarning, 'onWarning', ['function']);
+    assertIs(onWarning, "onWarning", ["function"]);
 
     const context = PDFContext.create();
     context.onWarning = onWarning;
@@ -380,7 +357,7 @@ export default class PDFDocument {
   readonly isEncrypted: boolean;
 
   /** The default word breaks used in PDFPage.drawText */
-  defaultWordBreaks: string[] = [' '];
+  defaultWordBreaks: string[] = [" "];
 
   private saveInProgress = false;
   private fontkit?: Fontkit;
@@ -398,13 +375,9 @@ export default class PDFDocument {
   /** Whether the last saveIncremental wrote a cross-reference stream. */
   private lastIncrementUsedObjectStreams = false;
 
-  private constructor(
-    context: PDFContext,
-    ignoreEncryption: boolean,
-    updateMetadata: boolean,
-  ) {
-    assertIs(context, 'context', [[PDFContext, 'PDFContext']]);
-    assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
+  private constructor(context: PDFContext, ignoreEncryption: boolean, updateMetadata: boolean) {
+    assertIs(context, "context", [[PDFContext, "PDFContext"]]);
+    assertIs(ignoreEncryption, "ignoreEncryption", ["boolean"]);
 
     this.context = context;
     this.catalog = context.lookup(context.trailerInfo.Root) as PDFCatalog;
@@ -450,11 +423,7 @@ export default class PDFDocument {
    * @param fontkit The fontkit instance to be registered.
    */
   registerFontkit(fontkit: Fontkit): void {
-    if (
-      !fontkit ||
-      typeof fontkit !== 'object' ||
-      typeof fontkit.create !== 'function'
-    ) {
+    if (!fontkit || typeof fontkit !== "object" || typeof fontkit.create !== "function") {
       throw new InvalidFontkitError();
     }
 
@@ -598,7 +567,7 @@ export default class PDFDocument {
    *          if it has one.
    */
   getLanguage(): string | undefined {
-    const language = this.catalog.get(PDFName.of('Lang'));
+    const language = this.catalog.get(PDFName.of("Lang"));
 
     if (!language) return;
     assertIsLiteralOrHexString(language);
@@ -661,8 +630,8 @@ export default class PDFDocument {
    * @param options The options to be used when setting the title.
    */
   setTitle(title: string, options?: SetTitleOptions): void {
-    assertIs(title, 'title', ['string']);
-    const key = 'Title';
+    assertIs(title, "title", ["string"]);
+    const key = "Title";
     this.setInfo(key, PDFHexString.fromText(title), title);
 
     // Indicate that readers should display the title rather than the filename
@@ -681,8 +650,8 @@ export default class PDFDocument {
    * @param author The author of this document.
    */
   setAuthor(author: string): void {
-    assertIs(author, 'author', ['string']);
-    const key = 'Author';
+    assertIs(author, "author", ["string"]);
+    const key = "Author";
     this.setInfo(key, PDFHexString.fromText(author), author);
   }
 
@@ -695,8 +664,8 @@ export default class PDFDocument {
    * @param subject The subject of this document.
    */
   setSubject(subject: string): void {
-    assertIs(subject, 'author', ['string']);
-    const key = 'Subject';
+    assertIs(subject, "author", ["string"]);
+    const key = "Subject";
     this.setInfo(key, PDFHexString.fromText(subject), subject);
   }
 
@@ -709,9 +678,9 @@ export default class PDFDocument {
    * @param keywords An array of keywords associated with this document.
    */
   setKeywords(keywords: string[]): void {
-    assertIs(keywords, 'keywords', [Array]);
-    const key = 'Keywords';
-    const joined = keywords.join(' ');
+    assertIs(keywords, "keywords", [Array]);
+    const key = "Keywords";
+    const joined = keywords.join(" ");
     this.setInfo(key, PDFHexString.fromText(joined), joined);
   }
 
@@ -724,8 +693,8 @@ export default class PDFDocument {
    * @param creator The creator of this document.
    */
   setCreator(creator: string): void {
-    assertIs(creator, 'creator', ['string']);
-    const key = 'Creator';
+    assertIs(creator, "creator", ["string"]);
+    const key = "Creator";
     this.setInfo(key, PDFHexString.fromText(creator), creator);
   }
 
@@ -738,8 +707,8 @@ export default class PDFDocument {
    * @param producer The producer of this document.
    */
   setProducer(producer: string): void {
-    assertIs(producer, 'producer', ['string']);
-    const key = 'Producer';
+    assertIs(producer, "producer", ["string"]);
+    const key = "Producer";
     this.setInfo(key, PDFHexString.fromText(producer), producer);
   }
 
@@ -754,8 +723,8 @@ export default class PDFDocument {
    *                 document, or an empty string if the language is unknown.
    */
   setLanguage(language: string): void {
-    assertIs(language, 'language', ['string']);
-    const key = PDFName.of('Lang');
+    assertIs(language, "language", ["string"]);
+    const key = PDFName.of("Lang");
     this.catalog.set(key, PDFString.of(language));
   }
 
@@ -768,8 +737,8 @@ export default class PDFDocument {
    * @param creationDate The date this document was created.
    */
   setCreationDate(creationDate: Date): void {
-    assertIs(creationDate, 'creationDate', [[Date, 'Date']]);
-    const key = 'CreationDate';
+    assertIs(creationDate, "creationDate", [[Date, "Date"]]);
+    const key = "CreationDate";
     this.setInfo(key, PDFString.fromDate(creationDate), creationDate);
   }
 
@@ -783,8 +752,8 @@ export default class PDFDocument {
    * @param modificationDate The date this document was last modified.
    */
   setModificationDate(modificationDate: Date): void {
-    assertIs(modificationDate, 'modificationDate', [[Date, 'Date']]);
-    const key = 'ModDate';
+    assertIs(modificationDate, "modificationDate", [[Date, "Date"]]);
+    const key = "ModDate";
     this.setInfo(key, PDFString.fromDate(modificationDate), modificationDate);
   }
 
@@ -828,7 +797,7 @@ export default class PDFDocument {
    */
   getPage(index: number): PDFPage {
     const pages = this.getPages();
-    assertRange(index, 'index', 0, pages.length - 1);
+    assertRange(index, "index", 0, pages.length - 1);
 
     return pages[index]!;
   }
@@ -867,7 +836,7 @@ export default class PDFDocument {
     const pageCount = this.getPageCount();
 
     if (this.pageCount === 0) throw new RemovePageFromEmptyDocumentError();
-    assertRange(index, 'index', 0, pageCount - 1);
+    assertRange(index, "index", 0, pageCount - 1);
     const page = this.getPages()[index]!;
     this.catalog.removeLeafNode(index);
     this.context.delete(page.ref);
@@ -907,7 +876,7 @@ export default class PDFDocument {
    * @returns The newly created (or existing) page.
    */
   addPage(page?: PDFPage | [number, number]): PDFPage {
-    assertIs(page, 'page', ['undefined', [PDFPage, 'PDFPage'], Array]);
+    assertIs(page, "page", ["undefined", [PDFPage, "PDFPage"], Array]);
 
     return this.insertPage(this.getPageCount(), page);
   }
@@ -946,8 +915,8 @@ export default class PDFDocument {
    */
   insertPage(index: number, page?: PDFPage | [number, number]): PDFPage {
     const pageCount = this.getPageCount();
-    assertRange(index, 'index', 0, pageCount);
-    assertIs(page, 'page', ['undefined', [PDFPage, 'PDFPage'], Array]);
+    assertRange(index, "index", 0, pageCount);
+    assertIs(page, "page", ["undefined", [PDFPage, "PDFPage"], Array]);
 
     if (!page || Array.isArray(page)) {
       const dims = Array.isArray(page) ? page : PageSizes.A4;
@@ -1005,8 +974,8 @@ export default class PDFDocument {
     indices: number[],
     options?: CopyOptions,
   ): Promise<PDFPage[]> {
-    assertIs(srcDoc, 'srcDoc', [[PDFDocument, 'PDFDocument']]);
-    assertIs(indices, 'indices', [Array]);
+    assertIs(srcDoc, "srcDoc", [[PDFDocument, "PDFDocument"]]);
+    assertIs(indices, "indices", [Array]);
 
     // Check if source is encrypted but not decrypted (fixes #1390)
     if (srcDoc.isEncrypted && !srcDoc.context.isDecrypted) {
@@ -1019,9 +988,7 @@ export default class PDFDocument {
 
     // Copy each page in a separate thread
     const copiedPageNodes = await Promise.all(
-      indices
-        .map((i) => srcPages[i]!)
-        .map(async (page) => copier.copy(page.node)),
+      indices.map((i) => srcPages[i]!).map(async (page) => copier.copy(page.node)),
     );
 
     const unlinked = registerCopiedOptionalContentGroups(
@@ -1065,10 +1032,9 @@ export default class PDFDocument {
         if (!(annotDict instanceof PDFDict)) continue;
 
         // Check if this is a widget annotation
-        const subtype = annotDict.get(PDFName.of('Subtype'));
+        const subtype = annotDict.get(PDFName.of("Subtype"));
 
-        if (!(subtype instanceof PDFName) || subtype.decodeText() !== 'Widget')
-          continue;
+        if (!(subtype instanceof PDFName) || subtype.decodeText() !== "Widget") continue;
 
         // Find the root field (topmost parent or the widget itself if merged)
         const rootFieldResult = this.findRootField(annotDict);
@@ -1107,15 +1073,13 @@ export default class PDFDocument {
    * Find the root field dictionary and ref for a widget annotation.
    * Returns undefined if no field is found.
    */
-  private findRootField(
-    widgetDict: PDFDict,
-  ): { dict: PDFDict; ref: PDFRef } | undefined {
+  private findRootField(widgetDict: PDFDict): { dict: PDFDict; ref: PDFRef } | undefined {
     let currentDict = widgetDict;
     let currentRef = this.context.getObjectRef(widgetDict);
 
     // Traverse up the parent chain to find the root
     while (true) {
-      const parentEntry = currentDict.get(PDFName.of('Parent'));
+      const parentEntry = currentDict.get(PDFName.of("Parent"));
 
       if (!parentEntry) break;
 
@@ -1125,7 +1089,7 @@ export default class PDFDocument {
 
       // Check if this parent is a field (has /T) or just the AcroForm
       // AcroForm won't have a /T entry
-      const hasT = parentDict.has(PDFName.of('T'));
+      const hasT = parentDict.has(PDFName.of("T"));
 
       if (!hasT) break;
 
@@ -1162,13 +1126,12 @@ export default class PDFDocument {
 
     // For the transform, we only need to change the partial name of this field
     // Extract the new partial name
-    const lastDot = newFullName.lastIndexOf('.');
+    const lastDot = newFullName.lastIndexOf(".");
 
-    const newPartialName =
-      lastDot >= 0 ? newFullName.slice(lastDot + 1) : newFullName;
+    const newPartialName = lastDot >= 0 ? newFullName.slice(lastDot + 1) : newFullName;
 
     // Update the /T entry with the new partial name
-    fieldDict.set(PDFName.of('T'), PDFHexString.fromText(newPartialName));
+    fieldDict.set(PDFName.of("T"), PDFHexString.fromText(newPartialName));
   }
 
   /**
@@ -1180,7 +1143,7 @@ export default class PDFDocument {
     let currentDict: PDFDict | undefined = fieldDict;
 
     while (currentDict) {
-      const tEntry = currentDict.get(PDFName.of('T'));
+      const tEntry = currentDict.get(PDFName.of("T"));
 
       if (tEntry) {
         let partialName: string | undefined;
@@ -1196,13 +1159,10 @@ export default class PDFDocument {
         }
       }
 
-      const parentRef: PDFObject | undefined = currentDict.get(
-        PDFName.of('Parent'),
-      );
+      const parentRef: PDFObject | undefined = currentDict.get(PDFName.of("Parent"));
 
       if (parentRef) {
-        const parentDict: PDFObject | undefined =
-          this.context.lookup(parentRef);
+        const parentDict: PDFObject | undefined = this.context.lookup(parentRef);
 
         currentDict = parentDict instanceof PDFDict ? parentDict : undefined;
       } else {
@@ -1210,7 +1170,7 @@ export default class PDFDocument {
       }
     }
 
-    return parts.join('.');
+    return parts.join(".");
   }
 
   /**
@@ -1298,15 +1258,13 @@ export default class PDFDocument {
    *   at full tint.
    */
   embedSeparation(name: string, alternate: Color): PDFSeparation {
-    assertIs(name, 'name', ['string']);
-    assertIs(alternate, 'alternate', [[Object, 'Color']]);
+    assertIs(name, "name", ["string"]);
+    assertIs(alternate, "alternate", [[Object, "Color"]]);
     const existing = this.separations.get(name);
 
     if (existing) {
       if (existing.hasAlternate(alternate)) return existing;
-      throw new Error(
-        `Colourant "${name}" is already defined with a different alternate colour`,
-      );
+      throw new Error(`Colourant "${name}" is already defined with a different alternate colour`);
     }
 
     // Separation is PDF 1.2, its type 2 tint transform PDF 1.3. Both the
@@ -1320,7 +1278,7 @@ export default class PDFDocument {
       compareVersions(getIncrementVersion(this.context), floor) < 0
     ) {
       throw new Error(
-        'Separation colour spaces need PDF 1.3 or later (raise the catalog /Version of an older file)',
+        "Separation colour spaces need PDF 1.3 or later (raise the catalog /Version of an older file)",
       );
     }
 
@@ -1359,10 +1317,10 @@ export default class PDFDocument {
    * @param script The JavaScript to execute.
    */
   addJavaScript(name: string, script: string) {
-    assertIs(name, 'name', ['string']);
-    assertIs(script, 'script', ['string']);
+    assertIs(name, "name", ["string"]);
+    assertIs(script, "script", ["string"]);
 
-    const JavaScript = PDFName.of('JavaScript');
+    const JavaScript = PDFName.of("JavaScript");
     checkCatalogNameUnused(this.catalog, JavaScript, name);
 
     for (const js of this.javaScripts) {
@@ -1454,27 +1412,19 @@ export default class PDFDocument {
     options: AttachmentOptions = {},
   ): Promise<void> {
     this.assertNotSaving();
-    assertIs(attachment, 'attachment', ['string', Uint8Array, ArrayBuffer]);
-    assertIs(name, 'name', ['string']);
-    assertOrUndefined(options.mimeType, 'mimeType', ['string']);
-    assertOrUndefined(options.description, 'description', ['string']);
-    assertOrUndefined(options.creationDate, 'options.creationDate', [Date]);
-    assertOrUndefined(options.modificationDate, 'options.modificationDate', [
-      Date,
-    ]);
-    assertIsOneOfOrUndefined(
-      options.afRelationship,
-      'options.afRelationship',
-      AFRelationship,
-    );
+    assertIs(attachment, "attachment", ["string", Uint8Array, ArrayBuffer]);
+    assertIs(name, "name", ["string"]);
+    assertOrUndefined(options.mimeType, "mimeType", ["string"]);
+    assertOrUndefined(options.description, "description", ["string"]);
+    assertOrUndefined(options.creationDate, "options.creationDate", [Date]);
+    assertOrUndefined(options.modificationDate, "options.modificationDate", [Date]);
+    assertIsOneOfOrUndefined(options.afRelationship, "options.afRelationship", AFRelationship);
 
-    for (const key of ['creationDate', 'modificationDate'] as const) {
+    for (const key of ["creationDate", "modificationDate"] as const) {
       const year = options[key]?.getUTCFullYear();
 
       if (year !== undefined && !(year >= 0 && year <= 9999)) {
-        throw new Error(
-          `options.${key} must be a valid date with a year from 0 to 9999`,
-        );
+        throw new Error(`options.${key} must be a valid date with a year from 0 to 9999`);
       }
     }
 
@@ -1482,7 +1432,7 @@ export default class PDFDocument {
 
     for (const file of this.embeddedFiles) {
       if (!file.getAlreadyEmbedded() && file.getEmbedder().fileName === name) {
-        throw new DuplicateNameError(PDFName.of('EmbeddedFiles'), name);
+        throw new DuplicateNameError(PDFName.of("EmbeddedFiles"), name);
       }
     }
 
@@ -1496,10 +1446,7 @@ export default class PDFDocument {
   }
 
   private getSavedAttachments(): SavedPDFAttachment[] {
-    const entries = readCatalogNameTree(
-      this.catalog,
-      PDFName.of('EmbeddedFiles'),
-    );
+    const entries = readCatalogNameTree(this.catalog, PDFName.of("EmbeddedFiles"));
 
     const attachments: SavedPDFAttachment[] = [];
 
@@ -1507,15 +1454,15 @@ export default class PDFDocument {
       const fileSpec = this.context.lookup(value);
 
       if (!(fileSpec instanceof PDFDict)) continue; // Skip invalid/null entries
-      const efDict = fileSpec.lookup(PDFName.of('EF'));
+      const efDict = fileSpec.lookup(PDFName.of("EF"));
 
       if (!(efDict instanceof PDFDict)) continue;
 
-      const stream = efDict.lookup(PDFName.of('F'));
+      const stream = efDict.lookup(PDFName.of("F"));
 
       if (!(stream instanceof PDFStream)) continue;
 
-      const afr = fileSpec.lookup(PDFName.of('AFRelationship'));
+      const afr = fileSpec.lookup(PDFName.of("AFRelationship"));
 
       const afRelationship =
         afr instanceof PDFName
@@ -1525,7 +1472,7 @@ export default class PDFDocument {
             : undefined;
 
       const embeddedFileDict = stream.dict;
-      const subtype = embeddedFileDict.lookup(PDFName.of('Subtype'));
+      const subtype = embeddedFileDict.lookup(PDFName.of("Subtype"));
 
       const mimeType =
         subtype instanceof PDFName
@@ -1534,7 +1481,7 @@ export default class PDFDocument {
             ? subtype.decodeText()
             : undefined;
 
-      const paramsDict = embeddedFileDict.lookup(PDFName.of('Params'));
+      const paramsDict = embeddedFileDict.lookup(PDFName.of("Params"));
 
       const readDate = (name: string): Date | undefined => {
         if (!(paramsDict instanceof PDFDict)) return undefined;
@@ -1551,7 +1498,7 @@ export default class PDFDocument {
         }
       };
 
-      const descRaw = fileSpec.lookup(PDFName.of('Desc'));
+      const descRaw = fileSpec.lookup(PDFName.of("Desc"));
 
       const description =
         descRaw instanceof PDFString || descRaw instanceof PDFHexString
@@ -1565,8 +1512,8 @@ export default class PDFDocument {
         ),
         afRelationship: afRelationship as AFRelationship,
         description,
-        creationDate: readDate('CreationDate'),
-        modificationDate: readDate('ModDate'),
+        creationDate: readDate("CreationDate"),
+        modificationDate: readDate("ModDate"),
         embeddedFileDict: efDict,
         specRef: value instanceof PDFRef ? value : undefined,
       } as SavedPDFAttachment;
@@ -1577,12 +1524,11 @@ export default class PDFDocument {
       // A failure is kept and rethrown by `data`, so one unreadable stream
       // does not stop the others being listed.
       try {
-        (attachment as { data: Uint8Array<ArrayBuffer> }).data =
-          decodePDFRawStream(
-            stream as PDFRawStream,
-          ).decode() as Uint8Array<ArrayBuffer>;
+        (attachment as { data: Uint8Array<ArrayBuffer> }).data = decodePDFRawStream(
+          stream as PDFRawStream,
+        ).decode() as Uint8Array<ArrayBuffer>;
       } catch (error) {
-        Object.defineProperty(attachment, 'data', {
+        Object.defineProperty(attachment, "data", {
           enumerable: true,
           get: () => {
             throw error;
@@ -1650,7 +1596,7 @@ export default class PDFDocument {
    */
   detach(name: string): void {
     this.assertNotSaving();
-    assertIs(name, 'name', ['string']);
+    assertIs(name, "name", ["string"]);
     // Saved first: it is the part that can refuse, and a refusal must leave
     // the pending attachments in place too.
     detachSavedAttachments(this.context, this.catalog, name);
@@ -1710,9 +1656,9 @@ export default class PDFDocument {
   ): Promise<PDFFont> {
     const { subset = false, customName, features, postscriptName } = options;
 
-    assertIs(font, 'font', ['string', Uint8Array, ArrayBuffer]);
-    assertIs(subset, 'subset', ['boolean']);
-    assertOrUndefined(postscriptName, 'postscriptName', ['string']);
+    assertIs(font, "font", ["string", Uint8Array, ArrayBuffer]);
+    assertIs(subset, "subset", ["boolean"]);
+    assertOrUndefined(postscriptName, "postscriptName", ["string"]);
 
     let embedder: CustomFontEmbedder | StandardFontEmbedder;
 
@@ -1740,7 +1686,7 @@ export default class PDFDocument {
           );
     } else {
       throw new TypeError(
-        '`font` must be one of `StandardFonts | string | Uint8Array | ArrayBuffer`',
+        "`font` must be one of `StandardFonts | string | Uint8Array | ArrayBuffer`",
       );
     }
 
@@ -1763,10 +1709,10 @@ export default class PDFDocument {
    * @returns The embedded font.
    */
   embedStandardFont(font: StandardFonts, customName?: string): PDFFont {
-    assertIs(font, 'font', ['string']);
+    assertIs(font, "font", ["string"]);
 
     if (!isStandardFont(font)) {
-      throw new TypeError('`font` must be one of type `StandardFonts`');
+      throw new TypeError("`font` must be one of type `StandardFonts`");
     }
 
     const embedder = StandardFontEmbedder.for(font, customName);
@@ -1808,10 +1754,8 @@ export default class PDFDocument {
    * @param jpg The input data for a JPEG image.
    * @returns Resolves with the embedded image.
    */
-  async embedJpg(
-    jpg: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
-  ): Promise<PDFImage> {
-    assertIs(jpg, 'jpg', ['string', Uint8Array, ArrayBuffer]);
+  async embedJpg(jpg: string | Uint8Array<ArrayBuffer> | ArrayBuffer): Promise<PDFImage> {
+    assertIs(jpg, "jpg", ["string", Uint8Array, ArrayBuffer]);
     const bytes = toUint8Array(jpg);
     const embedder = await JpegEmbedder.for(bytes);
     const ref = this.context.nextRef();
@@ -1856,16 +1800,11 @@ export default class PDFDocument {
    * @param png The input data for a PNG image.
    * @returns Resolves with the embedded image.
    */
-  async embedPng(
-    png: string | Uint8Array<ArrayBuffer> | ArrayBuffer,
-  ): Promise<PDFImage> {
-    assertIs(png, 'png', ['string', Uint8Array, ArrayBuffer]);
+  async embedPng(png: string | Uint8Array<ArrayBuffer> | ArrayBuffer): Promise<PDFImage> {
+    assertIs(png, "png", ["string", Uint8Array, ArrayBuffer]);
     const bytes = toUint8Array(png);
 
-    const embedder = await PngEmbedder.for(
-      bytes,
-      this.context.maxDecodedStreamSize,
-    );
+    const embedder = await PngEmbedder.for(bytes, this.context.maxDecodedStreamSize);
 
     const ref = this.context.nextRef();
     const pdfImage = PDFImage.of(ref, this, embedder);
@@ -1879,7 +1818,7 @@ export default class PDFDocument {
     const parsedSvg = parseHtml(svg);
 
     const findImages = (element: HTMLElement): HTMLElement[] => {
-      if (element.tagName === 'image') return [element];
+      if (element.tagName === "image") return [element];
       else {
         return element.childNodes.flatMap((child) =>
           child.nodeType === NodeType.ELEMENT_NODE ? findImages(child) : [],
@@ -1892,14 +1831,12 @@ export default class PDFDocument {
 
     await Promise.all(
       images.map(async (image) => {
-        const href = image.attributes['href'] ?? image.attributes['xlink:href'];
+        const href = image.attributes["href"] ?? image.attributes["xlink:href"];
 
         if (!href || imagesDict[href]) return;
         const isPng = href.match(/\.png(\?|$)|^data:image\/png;base64/gim);
 
-        const pdfImage = isPng
-          ? await this.embedPng(href)
-          : await this.embedJpg(href);
+        const pdfImage = isPng ? await this.embedPng(href) : await this.embedJpg(href);
 
         imagesDict[href] = pdfImage;
       }),
@@ -1931,13 +1868,8 @@ export default class PDFDocument {
     pdf: string | Uint8Array<ArrayBuffer> | ArrayBuffer | PDFDocument,
     indices: number[] = [0],
   ): Promise<PDFEmbeddedPage[]> {
-    assertIs(pdf, 'pdf', [
-      'string',
-      Uint8Array,
-      ArrayBuffer,
-      [PDFDocument, 'PDFDocument'],
-    ]);
-    assertIs(indices, 'indices', [Array]);
+    assertIs(pdf, "pdf", ["string", Uint8Array, ArrayBuffer, [PDFDocument, "PDFDocument"]]);
+    assertIs(indices, "indices", [Array]);
 
     const srcDoc =
       pdf instanceof PDFDocument
@@ -1986,7 +1918,7 @@ export default class PDFDocument {
     boundingBox?: PageBoundingBox,
     transformationMatrix?: TransformationMatrix,
   ): Promise<PDFEmbeddedPage> {
-    assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertIs(page, "page", [[PDFPage, "PDFPage"]]);
 
     const [embeddedPage] = (await this.embedPages(
       [page],
@@ -2180,22 +2112,13 @@ export default class PDFDocument {
    *                EXTENDED), an expected profile, a description and a
    *                modification date.
    */
-  embedFacturX(
-    xml: string | Uint8Array | ArrayBuffer,
-    options: EmbedFacturXOptions = {},
-  ): void {
+  embedFacturX(xml: string | Uint8Array | ArrayBuffer, options: EmbedFacturXOptions = {}): void {
     this.assertNotSaving();
-    assertIs(xml, 'xml', ['string', Uint8Array, ArrayBuffer]);
-    assertOrUndefined(options.conformanceLevel, 'conformanceLevel', ['string']);
-    assertIsOneOfOrUndefined(
-      options.afRelationship,
-      'options.afRelationship',
-      AFRelationship,
-    );
-    assertOrUndefined(options.description, 'options.description', ['string']);
-    assertOrUndefined(options.modificationDate, 'options.modificationDate', [
-      Date,
-    ]);
+    assertIs(xml, "xml", ["string", Uint8Array, ArrayBuffer]);
+    assertOrUndefined(options.conformanceLevel, "conformanceLevel", ["string"]);
+    assertIsOneOfOrUndefined(options.afRelationship, "options.afRelationship", AFRelationship);
+    assertOrUndefined(options.description, "options.description", ["string"]);
+    assertOrUndefined(options.modificationDate, "options.modificationDate", [Date]);
     savableBaseline(this.context);
 
     const { bytes, profile } = readFacturXInvoice(
@@ -2203,44 +2126,36 @@ export default class PDFDocument {
     );
 
     const expected =
-      options.conformanceLevel === 'BASIC_WL'
-        ? 'BASIC WL'
-        : options.conformanceLevel;
+      options.conformanceLevel === "BASIC_WL" ? "BASIC WL" : options.conformanceLevel;
 
     if (expected !== undefined && expected !== profile) {
-      throw new Error(
-        `The invoice XML is a Factur-X ${profile} invoice, not ${expected}.`,
-      );
+      throw new Error(`The invoice XML is a Factur-X ${profile} invoice, not ${expected}.`);
     }
 
     const relationship = facturXRelationship(profile, options.afRelationship);
 
-    const modificationDate = new Date(
-      options.modificationDate?.getTime() ?? Date.now(),
-    );
+    const modificationDate = new Date(options.modificationDate?.getTime() ?? Date.now());
 
     const year = modificationDate.getUTCFullYear();
 
     if (Number.isNaN(year) || year < 0 || year > 9999) {
-      throw new Error(
-        'options.modificationDate is not a date a PDF can state (years 0 to 9999).',
-      );
+      throw new Error("options.modificationDate is not a date a PDF can state (years 0 to 9999).");
     }
 
     const { description } = options;
 
     const pending = this.embeddedFiles.filter((f) => !f.getAlreadyEmbedded());
 
-    if (pending.some((f) => f.getEmbedder().fileName === 'xrechnung.xml')) {
+    if (pending.some((f) => f.getEmbedder().fileName === "xrechnung.xml")) {
       throw new Error(
-        'Cannot embed a Factur-X invoice: the document has an xrechnung.xml attachment, and XRECHNUNG is not supported.',
+        "Cannot embed a Factur-X invoice: the document has an xrechnung.xml attachment, and XRECHNUNG is not supported.",
       );
     }
 
     const applyMetadata = planPDFA3Edit(
       this.context,
       this.readInfo,
-      'embed a Factur-X invoice',
+      "embed a Factur-X invoice",
       (packet) => writeFacturXMetadata(packet, profile),
     );
 
@@ -2263,21 +2178,21 @@ export default class PDFDocument {
 
   private readonly readInfo = (key: InfoKey): string | Date | undefined => {
     switch (key) {
-      case 'Title':
+      case "Title":
         return this.getTitle();
-      case 'Author':
+      case "Author":
         return this.getAuthor();
-      case 'Subject':
+      case "Subject":
         return this.getSubject();
-      case 'Keywords':
+      case "Keywords":
         return this.getKeywords();
-      case 'Creator':
+      case "Creator":
         return this.getCreator();
-      case 'Producer':
+      case "Producer":
         return this.getProducer();
-      case 'CreationDate':
+      case "CreationDate":
         return this.getCreationDate();
-      case 'ModDate':
+      case "ModDate":
         return this.getModificationDate();
     }
   };
@@ -2306,11 +2221,11 @@ export default class PDFDocument {
   getPDFADeclaration(): PDFADeclaration | undefined {
     const state = getPDFAState(this.context);
 
-    if (state.kind === 'unreadable') {
+    if (state.kind === "unreadable") {
       throw new Error(`The catalog XMP cannot be read: ${state.reason}`);
     }
 
-    return state.kind === 'declared' ? { ...state.declaration } : undefined;
+    return state.kind === "declared" ? { ...state.declaration } : undefined;
   }
 
   /**
@@ -2354,9 +2269,7 @@ export default class PDFDocument {
     return this.withSaveGuard(() => this.saveDocument(options));
   }
 
-  private async saveDocument(
-    options: SaveOptions,
-  ): Promise<Uint8Array<ArrayBuffer>> {
+  private async saveDocument(options: SaveOptions): Promise<Uint8Array<ArrayBuffer>> {
     const {
       addDefaultPage = true,
       objectsPerTick = 50,
@@ -2388,19 +2301,17 @@ export default class PDFDocument {
       useObjectStreams =
         !forbidsObjectStreams(getPDFAState(this.context)) &&
         supportsObjectStreams(
-          incrementalUpdate
-            ? getIncrementVersion(this.context)
-            : getEffectiveVersion(this.context),
+          incrementalUpdate ? getIncrementVersion(this.context) : getEffectiveVersion(this.context),
         );
     }
 
-    assertIs(useObjectStreams, 'useObjectStreams', ['boolean']);
-    assertIs(addDefaultPage, 'addDefaultPage', ['boolean']);
-    assertIs(objectsPerTick, 'objectsPerTick', ['number']);
-    assertIs(updateFieldAppearances, 'updateFieldAppearances', ['boolean']);
-    assertIs(rewrite, 'rewrite', ['boolean']);
-    assertIs(compress, 'compress', ['boolean']);
-    assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
+    assertIs(useObjectStreams, "useObjectStreams", ["boolean"]);
+    assertIs(addDefaultPage, "addDefaultPage", ["boolean"]);
+    assertIs(objectsPerTick, "objectsPerTick", ["number"]);
+    assertIs(updateFieldAppearances, "updateFieldAppearances", ["boolean"]);
+    assertIs(rewrite, "rewrite", ["boolean"]);
+    assertIs(compress, "compress", ["boolean"]);
+    assertIs(fillXrefGaps, "fillXrefGaps", ["boolean"]);
     assertPDFAWrite(this.context, {
       encrypted: encryption.Encrypt !== undefined,
       objectStreams: useObjectStreams,
@@ -2432,15 +2343,11 @@ export default class PDFDocument {
         ).serializeToBuffer();
 
         const result = new Uint8Array(
-          this.context.pdfFileDetails.originalBytes!.byteLength +
-            increment.byteLength,
+          this.context.pdfFileDetails.originalBytes!.byteLength + increment.byteLength,
         );
 
         result.set(this.context.pdfFileDetails.originalBytes!);
-        result.set(
-          increment,
-          this.context.pdfFileDetails.originalBytes!.byteLength,
-        );
+        result.set(increment, this.context.pdfFileDetails.originalBytes!.byteLength);
 
         return result;
       }
@@ -2465,24 +2372,16 @@ export default class PDFDocument {
         const increment = await writer.serializeToBuffer();
 
         const result = new Uint8Array(
-          this.context.pdfFileDetails.originalBytes!.byteLength +
-            increment.byteLength,
+          this.context.pdfFileDetails.originalBytes!.byteLength + increment.byteLength,
         );
 
         result.set(this.context.pdfFileDetails.originalBytes!);
-        result.set(
-          increment,
-          this.context.pdfFileDetails.originalBytes!.byteLength,
-        );
+        result.set(increment, this.context.pdfFileDetails.originalBytes!.byteLength);
 
         return result;
       }
 
-      const writer = PDFWriter.forContext(
-        this.context,
-        objectsPerTick,
-        compress,
-      );
+      const writer = PDFWriter.forContext(this.context, objectsPerTick, compress);
 
       writer.fillXrefGaps = fillXrefGaps;
 
@@ -2522,9 +2421,7 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
-    return this.withSaveGuard(
-      async () => (await this.writeIncrement(snapshot, options)).bytes,
-    );
+    return this.withSaveGuard(async () => (await this.writeIncrement(snapshot, options)).bytes);
   }
 
   /** saveIncremental(), also reporting the highest object number written. */
@@ -2539,25 +2436,21 @@ export default class PDFDocument {
   }> {
     if (!this.context.pdfFileDetails.originalBytes) {
       throw new Error(
-        'saveIncremental() requires the document to be loaded with forIncrementalUpdate: true',
+        "saveIncremental() requires the document to be loaded with forIncrementalUpdate: true",
       );
     }
 
     if (snapshot !== this.context.snapshot) {
       throw new Error(
-        'saveIncremental() requires the installed snapshot for this document serialized bytes; the snapshot may belong to another document or an earlier commit',
+        "saveIncremental() requires the installed snapshot for this document serialized bytes; the snapshot may belong to another document or an earlier commit",
       );
     }
 
-    const {
-      objectsPerTick = 50,
-      compress = false,
-      fillXrefGaps = false,
-    } = options;
+    const { objectsPerTick = 50, compress = false, fillXrefGaps = false } = options;
 
-    assertIs(objectsPerTick, 'objectsPerTick', ['number']);
-    assertIs(compress, 'compress', ['boolean']);
-    assertIs(fillXrefGaps, 'fillXrefGaps', ['boolean']);
+    assertIs(objectsPerTick, "objectsPerTick", ["number"]);
+    assertIs(compress, "compress", ["boolean"]);
+    assertIs(fillXrefGaps, "fillXrefGaps", ["boolean"]);
     // Refuse before prepareForSave changes anything.
     const encryption = writeEncryption(this.context, snapshot, true);
 
@@ -2594,12 +2487,7 @@ export default class PDFDocument {
           50,
           compress,
         )
-      : PDFWriter.forContextWithSnapshot(
-          this.context,
-          objectsPerTick,
-          snapshot,
-          compress,
-        );
+      : PDFWriter.forContextWithSnapshot(this.context, objectsPerTick, snapshot, compress);
 
     if (!saveOptions.useObjectStreams) writer.fillXrefGaps = fillXrefGaps;
     const bytes = await writer.serializeToBuffer();
@@ -2662,18 +2550,14 @@ export default class PDFDocument {
    * @param options The options to be used when committing changes.
    * @returns Resolves with the complete PDF bytes including all updates.
    */
-  async commit(
-    options: IncrementalSaveOptions = {},
-  ): Promise<Uint8Array<ArrayBuffer>> {
+  async commit(options: IncrementalSaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
     return this.withSaveGuard(() => this.commitDocument(options));
   }
 
-  private async commitDocument(
-    options: IncrementalSaveOptions,
-  ): Promise<Uint8Array<ArrayBuffer>> {
+  private async commitDocument(options: IncrementalSaveOptions): Promise<Uint8Array<ArrayBuffer>> {
     if (!(this.context.snapshot && this.context.pdfFileDetails.originalBytes)) {
       throw new Error(
-        'commit() requires the document to be loaded with forIncrementalUpdate: true',
+        "commit() requires the document to be loaded with forIncrementalUpdate: true",
       );
     }
 
@@ -2702,9 +2586,7 @@ export default class PDFDocument {
 
     const originalBytes = this.context.pdfFileDetails.originalBytes;
 
-    const newPdfBytes = new Uint8Array(
-      originalBytes.byteLength + incrementalBytes.byteLength,
-    );
+    const newPdfBytes = new Uint8Array(originalBytes.byteLength + incrementalBytes.byteLength);
 
     newPdfBytes.set(originalBytes);
     newPdfBytes.set(incrementalBytes, originalBytes.byteLength);
@@ -2729,8 +2611,8 @@ export default class PDFDocument {
   private async prepareForSave(options: SaveOptions): Promise<void> {
     const { addDefaultPage = true, updateFieldAppearances = true } = options;
 
-    assertIs(addDefaultPage, 'addDefaultPage', ['boolean']);
-    assertIs(updateFieldAppearances, 'updateFieldAppearances', ['boolean']);
+    assertIs(addDefaultPage, "addDefaultPage", ["boolean"]);
+    assertIs(updateFieldAppearances, "updateFieldAppearances", ["boolean"]);
 
     if (addDefaultPage && this.getPageCount() === 0) this.addPage();
 
@@ -2760,7 +2642,7 @@ export default class PDFDocument {
    */
   async saveAsBase64(options: Base64SaveOptions = {}): Promise<string> {
     const { dataUri = false, ...otherOptions } = options;
-    assertIs(dataUri, 'dataUri', ['boolean']);
+    assertIs(dataUri, "dataUri", ["boolean"]);
     const bytes = await this.save(otherOptions);
     const base64 = encodeToBase64(bytes);
 
@@ -2784,9 +2666,7 @@ export default class PDFDocument {
 
   private assertNotSaving(): void {
     if (this.saveInProgress) {
-      throw new Error(
-        'Cannot mutate or save this document while a save is in progress',
-      );
+      throw new Error("Cannot mutate or save this document while a save is in progress");
     }
   }
 
@@ -2812,19 +2692,19 @@ export default class PDFDocument {
     // exactly as loaded: changing Info here would have to change XMP too,
     // could erase an Info/XMP conflict a declaration must see, and would be
     // made before an incremental load installs its snapshot.
-    if (getPDFAState(this.context).kind !== 'none') return;
+    if (getPDFAState(this.context).kind !== "none") return;
 
-    const pdfLib = 'pdf-lib (https://github.com/Hopding/pdf-lib)';
+    const pdfLib = "pdf-lib (https://github.com/Hopding/pdf-lib)";
     const now = new Date();
 
     const info = this.getInfoDict();
 
-    if (!info.get(PDFName.of('Producer'))) this.setProducer(pdfLib);
+    if (!info.get(PDFName.of("Producer"))) this.setProducer(pdfLib);
     this.setModificationDate(now);
 
-    if (!info.get(PDFName.of('Creator'))) this.setCreator(pdfLib);
+    if (!info.get(PDFName.of("Creator"))) this.setCreator(pdfLib);
 
-    if (!info.get(PDFName.of('CreationDate'))) this.setCreationDate(now);
+    if (!info.get(PDFName.of("CreationDate"))) this.setCreationDate(now);
   }
 
   /**

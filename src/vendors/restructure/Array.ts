@@ -4,11 +4,11 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import { NumberT } from './Number.js';
-import * as utils from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import { NumberT } from "./Number.js";
+import * as utils from "./utils.js";
 
 type LengthType = number | string | NumberT | ((parent: unknown) => number);
 
@@ -31,13 +31,9 @@ interface EncodeArrayContext {
 export class ArrayT<T = unknown> extends Base<T[]> {
   type: Base<T>;
   length: LengthType | undefined;
-  lengthType: 'count' | 'bytes';
+  lengthType: "count" | "bytes";
 
-  constructor(
-    type: Base<T>,
-    length?: LengthType,
-    lengthType: 'count' | 'bytes' = 'count',
-  ) {
+  constructor(type: Base<T>, length?: LengthType, lengthType: "count" | "bytes" = "count") {
     super();
     this.type = type;
     this.length = length;
@@ -52,11 +48,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
     let ctx: unknown = parent;
 
     if (this.length != null) {
-      length = utils.resolveLength(
-        this.length,
-        stream,
-        parent as Record<string, unknown> | null,
-      );
+      length = utils.resolveLength(this.length, stream, parent as Record<string, unknown> | null);
     }
 
     if (this.length instanceof NumberT) {
@@ -69,13 +61,12 @@ export class ArrayT<T = unknown> extends Base<T[]> {
       ctx = res;
     }
 
-    if (length == null || this.lengthType === 'bytes') {
+    if (length == null || this.lengthType === "bytes") {
       const target =
         length != null
           ? stream.pos + length
           : (parent as ArrayContext)?._length
-            ? (parent as ArrayContext)._startOffset +
-              (parent as ArrayContext)._length
+            ? (parent as ArrayContext)._startOffset + (parent as ArrayContext)._length
             : stream.length;
 
       while (stream.pos < target) {
@@ -98,11 +89,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
     if (!array) {
       return (
         this.type.size(null, ctx) *
-        utils.resolveLength(
-          this.length,
-          null,
-          ctx as Record<string, unknown> | null,
-        )
+        utils.resolveLength(this.length, null, ctx as Record<string, unknown> | null)
       );
     }
 
@@ -138,11 +125,7 @@ export class ArrayT<T = unknown> extends Base<T[]> {
 
       encodeCtx.pointerOffset =
         stream.pos +
-        this.size(
-          array,
-          encodeCtx as { parent?: unknown; pointerSize: number },
-          false,
-        );
+        this.size(array, encodeCtx as { parent?: unknown; pointerSize: number }, false);
       this.length.encode(stream, array.length);
       ctx = encodeCtx;
     }

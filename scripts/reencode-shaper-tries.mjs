@@ -36,20 +36,20 @@
 // Run from the repo root:
 //   node scripts/reencode-shaper-tries.mjs
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { unzlibSync, zlibSync } from 'fflate';
-import { buildUseTrie } from './gen-use-trie.mjs';
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { unzlibSync, zlibSync } from "fflate";
+import { buildUseTrie } from "./gen-use-trie.mjs";
 
 const require = createRequire(import.meta.url);
-const OldUnicodeTrie = require('unicode-trie');
+const OldUnicodeTrie = require("unicode-trie");
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const shaperDir = join(root, 'src/fontkit/opentype/shapers');
-const fixturePath = join(root, 'tests/fontkit/shaperTries.fixture.json');
-const ucdDir = join(root, 'scripts/ucd-cache/9004b7fa6d');
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const shaperDir = join(root, "src/fontkit/opentype/shapers");
+const fixturePath = join(root, "tests/fontkit/shaperTries.fixture.json");
+const ucdDir = join(root, "scripts/ucd-cache/9004b7fa6d");
 
 // Must match INDEX_1_OFFSET in the vendored reader; the v2 reader derives it.
 const VENDORED_INDEX_1_OFFSET = 0x840;
@@ -82,7 +82,7 @@ function fail(msg) {
 }
 
 function readBlob(file) {
-  const src = readFileSync(join(shaperDir, file), 'utf8');
+  const src = readFileSync(join(shaperDir, file), "utf8");
   const m = /^export default '([A-Za-z0-9+/=]+)';?\s*$/.exec(src);
 
   if (!m) fail(`${file}: unexpected file layout`);
@@ -94,7 +94,7 @@ function readBlob(file) {
 // with the 2.x constructor (same double-inflate + u32le data), then the
 // header fields it misread as little-endian are replaced.
 function loadOld(file, b64) {
-  const outer = Buffer.from(unzlibSync(Buffer.from(b64, 'base64')));
+  const outer = Buffer.from(unzlibSync(Buffer.from(b64, "base64")));
 
   if (outer.length < 12) fail(`${file}: blob too short`);
   let trie;
@@ -130,15 +130,15 @@ function encodeNew(t) {
     view.setUint32(8 + i * 4, t.data[i], true);
   }
 
-  return Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
+  return Buffer.from(zlibSync(bytes, { level: 9 })).toString("base64");
 }
 
 // Independent parse of the new format, mirroring the vendored reader,
 // then evaluated with the reference lookup algorithm.
 function loadNew(b64) {
-  const raw = unzlibSync(Buffer.from(b64, 'base64'));
+  const raw = unzlibSync(Buffer.from(b64, "base64"));
 
-  if ((raw.length - 8) % 4 !== 0) fail('new blob payload not 4-byte aligned');
+  if ((raw.length - 8) % 4 !== 0) fail("new blob payload not 4-byte aligned");
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const highStart = view.getUint32(0, true);
   const errorValue = view.getUint32(4, true);
@@ -169,7 +169,11 @@ function compareAll(label, get1, get2, maxReport = 10) {
 }
 
 function verify(file, srcTrie, newTrie) {
-  let n = compareAll(file, (cp) => srcTrie.get(cp), (cp) => newTrie.get(cp));
+  let n = compareAll(
+    file,
+    (cp) => srcTrie.get(cp),
+    (cp) => newTrie.get(cp),
+  );
 
   for (const cp of [-1, 0x110000, 0x7fffffff]) {
     if (srcTrie.get(cp) !== newTrie.get(cp)) {
@@ -184,17 +188,30 @@ function verify(file, srcTrie, newTrie) {
 // Expected Arabic joining values per fontkit's generate-data.js.
 function arabicReference() {
   const SC = {
-    Non_Joining: 0, Left_Joining: 1, Right_Joining: 2, Dual_Joining: 3,
-    Join_Causing: 3, ALAPH: 4, 'DALATH RISH': 5, Transparent: 6,
+    Non_Joining: 0,
+    Left_Joining: 1,
+    Right_Joining: 2,
+    Dual_Joining: 3,
+    Join_Causing: 3,
+    ALAPH: 4,
+    "DALATH RISH": 5,
+    Transparent: 6,
   };
 
-  const JT = { U: 'Non_Joining', L: 'Left_Joining', R: 'Right_Joining', D: 'Dual_Joining', C: 'Join_Causing', T: 'Transparent' };
+  const JT = {
+    U: "Non_Joining",
+    L: "Left_Joining",
+    R: "Right_Joining",
+    D: "Dual_Joining",
+    C: "Join_Causing",
+    T: "Transparent",
+  };
   const assigned = new Set();
   let rangeStart = -1;
 
-  for (const line of readFileSync(join(ucdDir, 'UnicodeData.txt'), 'ascii').split('\n')) {
+  for (const line of readFileSync(join(ucdDir, "UnicodeData.txt"), "ascii").split("\n")) {
     if (!line) continue;
-    const [hex, name] = line.split(';');
+    const [hex, name] = line.split(";");
     const cp = parseInt(hex, 16);
 
     if (rangeStart >= 0) {
@@ -206,13 +223,13 @@ function arabicReference() {
 
   const map = new Map();
 
-  for (const line of readFileSync(join(ucdDir, 'ArabicShaping.txt'), 'ascii').split('\n')) {
-    if (!line || line[0] === '#') continue;
-    const [hex, , jt, group] = line.replace(/\s*#.*$/, '').split(/\s*;\s*/);
+  for (const line of readFileSync(join(ucdDir, "ArabicShaping.txt"), "ascii").split("\n")) {
+    if (!line || line[0] === "#") continue;
+    const [hex, , jt, group] = line.replace(/\s*#.*$/, "").split(/\s*;\s*/);
     const cp = parseInt(hex, 16);
 
     if (!assigned.has(cp)) continue;
-    const v = group === 'ALAPH' || group === 'DALATH RISH' ? SC[group] + 1 : SC[JT[jt]] + 1;
+    const v = group === "ALAPH" || group === "DALATH RISH" ? SC[group] + 1 : SC[JT[jt]] + 1;
     map.set(cp, v);
   }
 
@@ -233,12 +250,12 @@ function sampleCodePoints() {
 }
 
 // sanity: the vendored reader hard-codes INDEX_1_OFFSET
-if (2080 + 32 !== VENDORED_INDEX_1_OFFSET) fail('INDEX_1_OFFSET mismatch');
+if (2080 + 32 !== VENDORED_INDEX_1_OFFSET) fail("INDEX_1_OFFSET mismatch");
 
 // --- sources ---------------------------------------------------------------
-const oldTrieTs = loadOld('trie.ts', readBlob('trie.ts'));
-const oldIndic = loadOld('trieIndic.ts', readBlob('trieIndic.ts'));
-const oldUse = loadOld('trieUse.ts', readBlob('trieUse.ts'));
+const oldTrieTs = loadOld("trie.ts", readBlob("trie.ts"));
+const oldIndic = loadOld("trieIndic.ts", readBlob("trieIndic.ts"));
+const oldUse = loadOld("trieUse.ts", readBlob("trieUse.ts"));
 
 // The old trie.ts (unicode-properties packed data, not Arabic joining types)
 // is discarded; see scripts/probe-old-trie-ts.mjs for the evidence.
@@ -247,18 +264,20 @@ void oldTrieTs;
 const arabicRef = arabicReference();
 
 {
-  const n = compareAll('old trieUse.ts vs ArabicShaping', (cp) => oldUse.trie.get(cp), arabicRef);
+  const n = compareAll("old trieUse.ts vs ArabicShaping", (cp) => oldUse.trie.get(cp), arabicRef);
 
   if (n) fail(`old trieUse.ts is not the Arabic joining trie (${n} mismatches)`);
-  console.log('old trieUse.ts == Arabic joining trie (generate-data.js, Unicode 12): all code points');
+  console.log(
+    "old trieUse.ts == Arabic joining trie (generate-data.js, Unicode 12): all code points",
+  );
 }
 
 const useGen = buildUseTrie(ucdDir).trie;
 
 const targets = [
-  ['trie.ts', oldUse.trie],
-  ['trieIndic.ts', oldIndic.trie],
-  ['trieUse.ts', useGen],
+  ["trie.ts", oldUse.trie],
+  ["trieIndic.ts", oldIndic.trie],
+  ["trieUse.ts", useGen],
 ];
 
 // HEAD behaviour, for the record.
@@ -270,13 +289,15 @@ const targets = [
   });
 
   const headIndicBroken = compareAll(
-    'HEAD trieIndic',
+    "HEAD trieIndic",
     (cp) => oldIndic.trie.get(cp),
     (cp) => head.get(cp),
     0,
   );
 
-  console.log(`HEAD trieIndic.ts: ${headIndicBroken} code points wrong due to the LE header misread`);
+  console.log(
+    `HEAD trieIndic.ts: ${headIndicBroken} code points wrong due to the LE header misread`,
+  );
 }
 
 const cps = sampleCodePoints();
@@ -300,6 +321,6 @@ for (const [file, newB64] of results) {
 
 mkdirSync(dirname(fixturePath), { recursive: true });
 
-writeFileSync(fixturePath, JSON.stringify(fixture) + '\n');
+writeFileSync(fixturePath, JSON.stringify(fixture) + "\n");
 
 console.log(`wrote ${fixturePath} (${cps.length} code points)`);

@@ -1,19 +1,11 @@
-import {
-  distance,
-  isColinear,
-  norm,
-  plus,
-  scalar,
-  times,
-  vector,
-} from '../maths.js';
+import { distance, isColinear, norm, plus, scalar, times, vector } from "../maths.js";
 
-import GraphElement from './GraphElement.js';
-import Line from './Line.js';
-import Point from './Point.js';
+import GraphElement from "./GraphElement.js";
+import Line from "./Line.js";
+import Point from "./Point.js";
 
 export default class Segment extends GraphElement {
-  static type = 'Segment';
+  static type = "Segment";
   A: Point;
   B: Point;
   constructor(A: Point = new Point(), B: Point = new Point()) {
@@ -47,8 +39,7 @@ export default class Segment extends GraphElement {
 
     return (
       element instanceof Segment &&
-      ((o.isEqual(oE) && dest.isEqual(destE)) ||
-        (o.isEqual(destE) && dest.isEqual(oE)))
+      ((o.isEqual(oE) && dest.isEqual(destE)) || (o.isEqual(destE) && dest.isEqual(oE)))
     );
   }
 
@@ -73,9 +64,7 @@ export default class Segment extends GraphElement {
   }
 
   middle() {
-    const mid = new Point(
-      plus(this.origin().toCoords(), times(this.dirVect(), 0.5)),
-    );
+    const mid = new Point(plus(this.origin().toCoords(), times(this.dirVect(), 0.5)));
 
     return mid;
   }

@@ -1,8 +1,8 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const WOFFDirectoryEntry = new r.Struct({
   tag: new r.String(4),
-  offset: new r.Pointer(r.uint32, 'void', { type: 'global' }),
+  offset: new r.Pointer(r.uint32, "void", { type: "global" }),
   compLength: r.uint32,
   length: r.uint32,
   origChecksum: r.uint32,
@@ -22,17 +22,17 @@ const WOFFDirectory = new r.Struct({
   metaOrigLength: r.uint32,
   privOffset: r.uint32,
   privLength: r.uint32,
-  tables: new r.Array(WOFFDirectoryEntry, 'numTables'),
+  tables: new r.Array(WOFFDirectoryEntry, "numTables"),
 });
 
 WOFFDirectory.process = function (this: Record<string, unknown>) {
   const processedTables: Record<string, unknown> = {};
 
-  for (const table of this['tables'] as any[]) {
+  for (const table of this["tables"] as any[]) {
     processedTables[table.tag] = table;
   }
 
-  this['tables'] = processedTables;
+  this["tables"] = processedTables;
 };
 
 export default WOFFDirectory;

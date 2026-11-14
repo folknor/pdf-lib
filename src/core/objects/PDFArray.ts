@@ -1,17 +1,17 @@
-import { PDFArrayIsNotRectangleError } from '../errors.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import type PDFBool from './PDFBool.js';
-import type PDFDict from './PDFDict.js';
-import type PDFHexString from './PDFHexString.js';
-import type PDFName from './PDFName.js';
-import type PDFNull from './PDFNull.js';
-import PDFNumber from './PDFNumber.js';
-import PDFObject from './PDFObject.js';
-import type PDFRawStream from './PDFRawStream.js';
-import type PDFRef from './PDFRef.js';
-import type PDFStream from './PDFStream.js';
-import type PDFString from './PDFString.js';
+import { PDFArrayIsNotRectangleError } from "../errors.js";
+import type PDFContext from "../PDFContext.js";
+import CharCodes from "../syntax/CharCodes.js";
+import type PDFBool from "./PDFBool.js";
+import type PDFDict from "./PDFDict.js";
+import type PDFHexString from "./PDFHexString.js";
+import type PDFName from "./PDFName.js";
+import type PDFNull from "./PDFNull.js";
+import PDFNumber from "./PDFNumber.js";
+import PDFObject from "./PDFObject.js";
+import type PDFRawStream from "./PDFRawStream.js";
+import type PDFRef from "./PDFRef.js";
+import type PDFStream from "./PDFStream.js";
+import type PDFString from "./PDFString.js";
 
 class PDFArray extends PDFObject {
   static withContext = (context: PDFContext) => new PDFArray(context);
@@ -66,18 +66,12 @@ class PDFArray extends PDFObject {
   lookupMaybe(index: number, type: typeof PDFArray): PDFArray | undefined;
   lookupMaybe(index: number, type: typeof PDFBool): PDFBool | undefined;
   lookupMaybe(index: number, type: typeof PDFDict): PDFDict | undefined;
-  lookupMaybe(
-    index: number,
-    type: typeof PDFHexString,
-  ): PDFHexString | undefined;
+  lookupMaybe(index: number, type: typeof PDFHexString): PDFHexString | undefined;
   lookupMaybe(index: number, type: typeof PDFName): PDFName | undefined;
   lookupMaybe(index: number, type: typeof PDFNull): typeof PDFNull | undefined;
   lookupMaybe(index: number, type: typeof PDFNumber): PDFNumber | undefined;
   lookupMaybe(index: number, type: typeof PDFStream): PDFStream | undefined;
-  lookupMaybe(
-    index: number,
-    type: typeof PDFRawStream,
-  ): PDFRawStream | undefined;
+  lookupMaybe(index: number, type: typeof PDFRawStream): PDFRawStream | undefined;
   lookupMaybe(index: number, type: typeof PDFRef): PDFRef | undefined;
   lookupMaybe(index: number, type: typeof PDFString): PDFString | undefined;
   lookupMaybe(
@@ -151,14 +145,14 @@ class PDFArray extends PDFObject {
   }
 
   override toString(): string {
-    let arrayString = '[ ';
+    let arrayString = "[ ";
 
     for (let idx = 0, len = this.size(); idx < len; idx++) {
       arrayString += this.get(idx).toString();
-      arrayString += ' ';
+      arrayString += " ";
     }
 
-    arrayString += ']';
+    arrayString += "]";
 
     return arrayString;
   }

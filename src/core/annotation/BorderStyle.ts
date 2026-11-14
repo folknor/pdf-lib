@@ -1,7 +1,7 @@
-import PDFArray from '../objects/PDFArray.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
+import PDFArray from "../objects/PDFArray.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
 
 /**
  * Border style types as defined in the PDF specification.
@@ -12,11 +12,11 @@ import PDFNumber from '../objects/PDFNumber.js';
  * - U: Underline border
  */
 export enum BorderStyleType {
-  Solid = 'S',
-  Dashed = 'D',
-  Beveled = 'B',
-  Inset = 'I',
-  Underline = 'U',
+  Solid = "S",
+  Dashed = "D",
+  Beveled = "B",
+  Inset = "I",
+  Underline = "U",
 }
 
 class BorderStyle {
@@ -29,7 +29,7 @@ class BorderStyle {
   }
 
   W(): PDFNumber | undefined {
-    const W = this.dict.lookup(PDFName.of('W'));
+    const W = this.dict.lookup(PDFName.of("W"));
 
     if (W instanceof PDFNumber) return W;
 
@@ -37,7 +37,7 @@ class BorderStyle {
   }
 
   S(): PDFName | undefined {
-    const S = this.dict.lookup(PDFName.of('S'));
+    const S = this.dict.lookup(PDFName.of("S"));
 
     if (S instanceof PDFName) return S;
 
@@ -45,7 +45,7 @@ class BorderStyle {
   }
 
   D(): PDFArray | undefined {
-    const D = this.dict.lookup(PDFName.of('D'));
+    const D = this.dict.lookup(PDFName.of("D"));
 
     if (D instanceof PDFArray) return D;
 
@@ -58,7 +58,7 @@ class BorderStyle {
 
   setWidth(width: number) {
     const W = this.dict.context.obj(width);
-    this.dict.set(PDFName.of('W'), W);
+    this.dict.set(PDFName.of("W"), W);
   }
 
   /**
@@ -71,13 +71,13 @@ class BorderStyle {
     if (!S) return BorderStyleType.Solid;
     const value = S.decodeText();
 
-    if (value === 'D') return BorderStyleType.Dashed;
+    if (value === "D") return BorderStyleType.Dashed;
 
-    if (value === 'B') return BorderStyleType.Beveled;
+    if (value === "B") return BorderStyleType.Beveled;
 
-    if (value === 'I') return BorderStyleType.Inset;
+    if (value === "I") return BorderStyleType.Inset;
 
-    if (value === 'U') return BorderStyleType.Underline;
+    if (value === "U") return BorderStyleType.Underline;
 
     return BorderStyleType.Solid;
   }
@@ -87,7 +87,7 @@ class BorderStyle {
    * @param style The border style to set.
    */
   setStyle(style: BorderStyleType) {
-    this.dict.set(PDFName.of('S'), PDFName.of(style));
+    this.dict.set(PDFName.of("S"), PDFName.of(style));
   }
 
   /**
@@ -119,7 +119,7 @@ class BorderStyle {
    */
   setDashPattern(pattern: number[]) {
     const D = this.dict.context.obj(pattern);
-    this.dict.set(PDFName.of('D'), D);
+    this.dict.set(PDFName.of("D"), D);
   }
 }
 

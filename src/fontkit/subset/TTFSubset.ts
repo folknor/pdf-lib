@@ -1,7 +1,7 @@
-import { toTrueTypeOutline } from '../glyph/quadraticOutline.js';
-import TTFGlyphEncoder from '../glyph/TTFGlyphEncoder.js';
-import { encodeSfnt } from '../tables/directory.js';
-import Subset from './Subset.js';
+import { toTrueTypeOutline } from "../glyph/quadraticOutline.js";
+import TTFGlyphEncoder from "../glyph/TTFGlyphEncoder.js";
+import { encodeSfnt } from "../tables/directory.js";
+import Subset from "./Subset.js";
 
 interface LocaTable {
   offsets: number[];
@@ -63,7 +63,7 @@ export default class TTFSubset extends Subset {
   get _outlineless(): boolean {
     const tables = this.font.directory.tables;
 
-    return !tables.glyf && !tables['CFF '] && !tables.CFF2;
+    return !tables.glyf && !tables["CFF "] && !tables.CFF2;
   }
 
   _addGlyph(gid: number): number {
@@ -72,10 +72,8 @@ export default class TTFSubset extends Subset {
 
       // Only CBDT stubs get metrics without outline tables; an sbix glyph
       // reads its bounding box from glyf.
-      if (glyph?.type !== 'CBDT') {
-        throw new Error(
-          'Cannot subset a font with neither outlines nor CBDT/EBDT bitmaps',
-        );
+      if (glyph?.type !== "CBDT") {
+        throw new Error("Cannot subset a font with neither outlines nor CBDT/EBDT bitmaps");
       }
 
       this._pushGlyph(glyph, new Uint8Array(0));
@@ -124,7 +122,7 @@ export default class TTFSubset extends Subset {
     const curOffset = this.font.loca.offsets[gid];
     const nextOffset = this.font.loca.offsets[gid + 1];
 
-    const stream = this.font._getTableStream('glyf');
+    const stream = this.font._getTableStream("glyf");
     stream.pos += curOffset;
 
     buffer = stream.readBuffer(nextOffset - curOffset);
@@ -159,11 +157,7 @@ export default class TTFSubset extends Subset {
     for (const buffer of this.glyf) {
       if (buffer.length < 10) continue;
 
-      const view = new DataView(
-        buffer.buffer,
-        buffer.byteOffset,
-        buffer.byteLength,
-      );
+      const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
       const contours = view.getInt16(0);
 
@@ -208,10 +202,7 @@ export default class TTFSubset extends Subset {
       xMax = Math.max(xMax, gxMax);
       yMax = Math.max(yMax, view.getInt16(8));
       minLeftSideBearing = Math.min(minLeftSideBearing, bearing);
-      minRightSideBearing = Math.min(
-        minRightSideBearing,
-        advance - (bearing + gxMax - gxMin),
-      );
+      minRightSideBearing = Math.min(minRightSideBearing, advance - (bearing + gxMax - gxMin));
       xMaxExtent = Math.max(xMaxExtent, bearing + gxMax - gxMin);
     });
     const any = xMin !== Infinity;
@@ -224,11 +215,7 @@ export default class TTFSubset extends Subset {
     hhea.minRightSideBearing = any ? minRightSideBearing : 0;
     hhea.xMaxExtent = any ? xMaxExtent : 0;
 
-    for (const key of [
-      'minLeftSideBearing',
-      'minRightSideBearing',
-      'xMaxExtent',
-    ] as const) {
+    for (const key of ["minLeftSideBearing", "minRightSideBearing", "xMaxExtent"] as const) {
       if (hhea[key] < -32768 || hhea[key] > 32767) {
         throw new Error(`hhea ${key} ${hhea[key]} does not fit an int16`);
       }
@@ -265,9 +252,7 @@ export default class TTFSubset extends Subset {
   // rounding and all written points, off-curve ones included. This also
   // keeps a cloned head.flags bit 1 (lsb equals xMin) true.
   static _encodedXMin(buffer: Uint8Array): number {
-    return buffer.length > 0
-      ? new DataView(buffer.buffer, buffer.byteOffset).getInt16(2)
-      : 0;
+    return buffer.length > 0 ? new DataView(buffer.buffer, buffer.byteOffset).getInt16(2) : 0;
   }
 
   _pushGlyph(
@@ -311,11 +296,7 @@ export default class TTFSubset extends Subset {
       // Flattened glyphs have new sizes (and a transformed WOFF2 loca is
       // empty); long offsets are always valid.
       // Outlineless subsets have no loca to follow; every offset is 0.
-      version: this._outlineless
-        ? 0
-        : this._flattenGlyphs
-          ? 1
-          : this.font.loca.version,
+      version: this._outlineless ? 0 : this._flattenGlyphs ? 1 : this.font.loca.version,
     };
 
     this.hmtx = {
@@ -390,7 +371,7 @@ export default class TTFSubset extends Subset {
       maxp,
       // The synthesized maxp declares no instruction resources, so no
       // programs go with it.
-      'cvt ': outlineless ? undefined : this.font['cvt '],
+      "cvt ": outlineless ? undefined : this.font["cvt "],
       prep: outlineless ? undefined : this.font.prep,
       glyf: this.glyf,
       hmtx: this.hmtx,

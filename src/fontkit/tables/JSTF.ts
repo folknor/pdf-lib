@@ -1,6 +1,6 @@
-import * as r from '../../vendors/restructure/index.js';
-import { GPOSLookup } from './GPOS.js';
-import { LookupList } from './opentype.js';
+import * as r from "../../vendors/restructure/index.js";
+import { GPOSLookup } from "./GPOS.js";
+import { LookupList } from "./opentype.js";
 
 const JstfGSUBModList = new r.Array(r.uint16, r.uint16);
 
@@ -9,24 +9,15 @@ const JstfPriority = new r.Struct({
   shrinkageDisableGSUB: new r.Pointer(r.uint16, JstfGSUBModList),
   shrinkageEnableGPOS: new r.Pointer(r.uint16, JstfGSUBModList),
   shrinkageDisableGPOS: new r.Pointer(r.uint16, JstfGSUBModList),
-  shrinkageJstfMax: new r.Pointer(
-    r.uint16,
-    new (LookupList as any)(GPOSLookup),
-  ),
+  shrinkageJstfMax: new r.Pointer(r.uint16, new (LookupList as any)(GPOSLookup)),
   extensionEnableGSUB: new r.Pointer(r.uint16, JstfGSUBModList),
   extensionDisableGSUB: new r.Pointer(r.uint16, JstfGSUBModList),
   extensionEnableGPOS: new r.Pointer(r.uint16, JstfGSUBModList),
   extensionDisableGPOS: new r.Pointer(r.uint16, JstfGSUBModList),
-  extensionJstfMax: new r.Pointer(
-    r.uint16,
-    new (LookupList as any)(GPOSLookup),
-  ),
+  extensionJstfMax: new r.Pointer(r.uint16, new (LookupList as any)(GPOSLookup)),
 });
 
-const JstfLangSys = new r.Array(
-  new r.Pointer(r.uint16, JstfPriority),
-  r.uint16,
-);
+const JstfLangSys = new r.Array(new r.Pointer(r.uint16, JstfPriority), r.uint16);
 
 const JstfLangSysRecord = new r.Struct({
   tag: new r.String(4),
@@ -37,16 +28,16 @@ const JstfScript = new r.Struct({
   extenderGlyphs: new r.Pointer(r.uint16, new r.Array(r.uint16, r.uint16)), // array of glyphs to extend line length
   defaultLangSys: new r.Pointer(r.uint16, JstfLangSys),
   langSysCount: r.uint16,
-  langSysRecords: new r.Array(JstfLangSysRecord, 'langSysCount'),
+  langSysRecords: new r.Array(JstfLangSysRecord, "langSysCount"),
 });
 
 const JstfScriptRecord = new r.Struct({
   tag: new r.String(4),
-  script: new r.Pointer(r.uint16, JstfScript, { type: 'parent' }),
+  script: new r.Pointer(r.uint16, JstfScript, { type: "parent" }),
 });
 
 export default new r.Struct({
   version: r.uint32, // should be 0x00010000
   scriptCount: r.uint16,
-  scriptList: new r.Array(JstfScriptRecord, 'scriptCount'),
+  scriptList: new r.Array(JstfScriptRecord, "scriptCount"),
 });

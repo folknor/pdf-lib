@@ -1,6 +1,6 @@
-import PDFName from '../objects/PDFName.js';
-import { IsDelimiter } from '../syntax/Delimiters.js';
-import { IsWhitespace } from '../syntax/Whitespace.js';
+import PDFName from "../objects/PDFName.js";
+import { IsDelimiter } from "../syntax/Delimiters.js";
+import { IsWhitespace } from "../syntax/Whitespace.js";
 
 /**
  * Reads the operator grammar of content streams (ISO 32000-1 7.8.2, 8.9.7),
@@ -24,18 +24,18 @@ import { IsWhitespace } from '../syntax/Whitespace.js';
  */
 
 export interface ContentName {
-  readonly type: 'name';
+  readonly type: "name";
   readonly name: PDFName;
 }
 
 export interface ContentString {
-  readonly type: 'string';
+  readonly type: "string";
   readonly bytes: Uint8Array;
   readonly hex: boolean;
 }
 
 export interface ContentDict {
-  readonly type: 'dict';
+  readonly type: "dict";
   readonly entries: Map<PDFName, ContentOperand>;
 }
 
@@ -79,23 +79,20 @@ const MAX_NESTING = 256;
 const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)$/;
 
 const isHexDigit = (b: number) =>
-  (b >= 0x30 && b <= 0x39) ||
-  (b >= 0x41 && b <= 0x46) ||
-  (b >= 0x61 && b <= 0x66);
+  (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x46) || (b >= 0x61 && b <= 0x66);
 
-const hexValue = (b: number) =>
-  b <= 0x39 ? b - 0x30 : b <= 0x46 ? b - 0x37 : b - 0x57;
+const hexValue = (b: number) => (b <= 0x39 ? b - 0x30 : b <= 0x46 ? b - 0x37 : b - 0x57);
 
 class Incomplete extends Error {}
 
 type Token =
-  | { kind: 'operand'; value: ContentOperand }
-  | { kind: 'keyword'; value: string }
-  | { kind: 'arrayEnd' }
-  | { kind: 'dictEnd' };
+  | { kind: "operand"; value: ContentOperand }
+  | { kind: "keyword"; value: string }
+  | { kind: "arrayEnd" }
+  | { kind: "dictEnd" };
 
 const latin1 = (bytes: Uint8Array, start: number, end: number) => {
-  let s = '';
+  let s = "";
 
   for (let i = start; i < end; i++) s += String.fromCharCode(bytes[i]!);
 
@@ -104,24 +101,24 @@ const latin1 = (bytes: Uint8Array, start: number, end: number) => {
 
 /** Inline-image keys and their abbreviations (ISO 32000-1 Table 93). */
 const INLINE_ALIASES: ReadonlyArray<readonly [string, string]> = [
-  ['BitsPerComponent', 'BPC'],
-  ['ColorSpace', 'CS'],
-  ['Decode', 'D'],
-  ['DecodeParms', 'DP'],
-  ['Filter', 'F'],
-  ['Height', 'H'],
-  ['ImageMask', 'IM'],
-  ['Interpolate', 'I'],
-  ['Width', 'W'],
+  ["BitsPerComponent", "BPC"],
+  ["ColorSpace", "CS"],
+  ["Decode", "D"],
+  ["DecodeParms", "DP"],
+  ["Filter", "F"],
+  ["Height", "H"],
+  ["ImageMask", "IM"],
+  ["Interpolate", "I"],
+  ["Width", "W"],
 ];
 
 const DEVICE_COMPONENTS: ReadonlyMap<string, number> = new Map([
-  ['G', 1],
-  ['DeviceGray', 1],
-  ['RGB', 3],
-  ['DeviceRGB', 3],
-  ['CMYK', 4],
-  ['DeviceCMYK', 4],
+  ["G", 1],
+  ["DeviceGray", 1],
+  ["RGB", 3],
+  ["DeviceRGB", 3],
+  ["CMYK", 4],
+  ["DeviceCMYK", 4],
 ]);
 
 class Parser {
@@ -139,21 +136,21 @@ class Parser {
 
         if (token === undefined) break;
 
-        if (token.kind === 'operand') {
+        if (token.kind === "operand") {
           operands.push(token.value);
           continue;
         }
 
-        if (token.kind !== 'keyword') throw new Incomplete();
+        if (token.kind !== "keyword") throw new Incomplete();
 
-        if (token.value === 'ID' || token.value === 'EI') {
+        if (token.value === "ID" || token.value === "EI") {
           throw new Incomplete();
         }
 
-        if (token.value === 'BI') {
+        if (token.value === "BI") {
           if (operands.length > 0) throw new Incomplete();
           operations.push({
-            operator: 'BI',
+            operator: "BI",
             operands,
             inlineImage: this.parseInlineImage(),
           });
@@ -182,11 +179,7 @@ class Parser {
       if (IsWhitespace[b]) {
         this.pos++;
       } else if (b === 0x25 /* % */) {
-        while (
-          this.pos < bytes.length &&
-          bytes[this.pos] !== 0x0a &&
-          bytes[this.pos] !== 0x0d
-        ) {
+        while (this.pos < bytes.length && bytes[this.pos] !== 0x0a && bytes[this.pos] !== 0x0d) {
           this.pos++;
         }
       } else {
@@ -205,45 +198,44 @@ class Parser {
 
     switch (b) {
       case 0x2f /* / */:
-        return { kind: 'operand', value: this.parseName() };
+        return { kind: "operand", value: this.parseName() };
       case 0x28 /* ( */:
-        return { kind: 'operand', value: this.parseLiteralString() };
-      case 0x5b /* [ */:
-        {
-          this.pos++;
-          const items: ContentOperand[] = [];
+        return { kind: "operand", value: this.parseLiteralString() };
+      case 0x5b /* [ */: {
+        this.pos++;
+        const items: ContentOperand[] = [];
 
-          for (;;) {
-            const t = this.nextToken(depth + 1);
+        for (;;) {
+          const t = this.nextToken(depth + 1);
 
-            if (t === undefined) throw new Incomplete();
+          if (t === undefined) throw new Incomplete();
 
-            if (t.kind === 'arrayEnd') break;
+          if (t.kind === "arrayEnd") break;
 
-            if (t.kind !== 'operand') throw new Incomplete();
-            items.push(t.value);
-          }
-
-          return { kind: 'operand', value: items };
+          if (t.kind !== "operand") throw new Incomplete();
+          items.push(t.value);
         }
+
+        return { kind: "operand", value: items };
+      }
 
       case 0x5d /* ] */:
         this.pos++;
 
-        return { kind: 'arrayEnd' };
+        return { kind: "arrayEnd" };
       case 0x3c /* < */:
         if (bytes[this.pos + 1] === 0x3c) {
           this.pos += 2;
 
-          return { kind: 'operand', value: this.parseDict(depth) };
+          return { kind: "operand", value: this.parseDict(depth) };
         }
 
-        return { kind: 'operand', value: this.parseHexString() };
+        return { kind: "operand", value: this.parseHexString() };
       case 0x3e /* > */:
         if (bytes[this.pos + 1] === 0x3e) {
           this.pos += 2;
 
-          return { kind: 'dictEnd' };
+          return { kind: "dictEnd" };
         }
 
         throw new Incomplete();
@@ -275,28 +267,28 @@ class Parser {
 
       if (!Number.isFinite(value)) throw new Incomplete();
 
-      return { kind: 'operand', value };
+      return { kind: "operand", value };
     }
 
     // No operator starts like a number; `1.2.3` or `-` is a broken number.
     if (/^[+\-.\d]/.test(text)) throw new Incomplete();
 
-    if (text === 'true') return { kind: 'operand', value: true };
+    if (text === "true") return { kind: "operand", value: true };
 
-    if (text === 'false') return { kind: 'operand', value: false };
+    if (text === "false") return { kind: "operand", value: false };
 
-    if (text === 'null') return { kind: 'operand', value: null };
+    if (text === "null") return { kind: "operand", value: null };
 
     // A bare keyword inside an array or dictionary is not an operand.
     if (depth > 0) throw new Incomplete();
 
-    return { kind: 'keyword', value: text };
+    return { kind: "keyword", value: text };
   }
 
   private parseName(): ContentName {
     const { bytes } = this;
     this.pos++;
-    let value = '';
+    let value = "";
 
     while (
       this.pos < bytes.length &&
@@ -309,12 +301,7 @@ class Parser {
 
       if (c === 0x23 /* # */) {
         // Since PDF 1.2 `#` always introduces two hex digits.
-        if (
-          h1 === undefined ||
-          h2 === undefined ||
-          !isHexDigit(h1) ||
-          !isHexDigit(h2)
-        ) {
+        if (h1 === undefined || h2 === undefined || !isHexDigit(h1) || !isHexDigit(h2)) {
           throw new Incomplete();
         }
 
@@ -326,7 +313,7 @@ class Parser {
       }
     }
 
-    return { type: 'name', name: PDFName.fromDecoded(value) };
+    return { type: "name", name: PDFName.fromDecoded(value) };
   }
 
   private parseLiteralString(): ContentString {
@@ -345,7 +332,7 @@ class Parser {
         nesting--;
 
         if (nesting === 0) {
-          return { type: 'string', bytes: Uint8Array.from(out), hex: false };
+          return { type: "string", bytes: Uint8Array.from(out), hex: false };
         }
 
         out.push(c);
@@ -416,7 +403,7 @@ class Parser {
       if (c === 0x3e) {
         if (high !== undefined) out.push(high * 16);
 
-        return { type: 'string', bytes: Uint8Array.from(out), hex: true };
+        return { type: "string", bytes: Uint8Array.from(out), hex: true };
       }
 
       if (IsWhitespace[c]) continue;
@@ -442,15 +429,15 @@ class Parser {
 
       if (key === undefined) throw new Incomplete();
 
-      if (key.kind === 'dictEnd') return { type: 'dict', entries };
+      if (key.kind === "dictEnd") return { type: "dict", entries };
 
-      if (key.kind !== 'operand' || !isName(key.value)) {
+      if (key.kind !== "operand" || !isName(key.value)) {
         throw new Incomplete();
       }
 
       const value = this.nextToken(depth + 1);
 
-      if (value === undefined || value.kind !== 'operand') {
+      if (value === undefined || value.kind !== "operand") {
         throw new Incomplete();
       }
 
@@ -466,15 +453,15 @@ class Parser {
 
       if (key === undefined) throw new Incomplete();
 
-      if (key.kind === 'keyword' && key.value === 'ID') break;
+      if (key.kind === "keyword" && key.value === "ID") break;
 
-      if (key.kind !== 'operand' || !isName(key.value)) {
+      if (key.kind !== "operand" || !isName(key.value)) {
         throw new Incomplete();
       }
 
       const value = this.nextToken(1);
 
-      if (value === undefined || value.kind !== 'operand') {
+      if (value === undefined || value.kind !== "operand") {
         throw new Incomplete();
       }
 
@@ -519,12 +506,10 @@ class Parser {
 }
 
 const isName = (v: ContentOperand): v is ContentName =>
-  typeof v === 'object' && v !== null && !Array.isArray(v) && v.type === 'name';
+  typeof v === "object" && v !== null && !Array.isArray(v) && v.type === "name";
 
 /** Inline-image entries by full key; aliases written twice are refused. */
-const inlineEntries = (
-  dict: Map<PDFName, ContentOperand>,
-): Map<string, ContentOperand> => {
+const inlineEntries = (dict: Map<PDFName, ContentOperand>): Map<string, ContentOperand> => {
   const out = new Map<string, ContentOperand>();
 
   for (const [key, value] of dict) {
@@ -540,12 +525,12 @@ const inlineEntries = (
 };
 
 const singleFilter = (f: ContentOperand | undefined): string | undefined => {
-  if (f === undefined) return '';
+  if (f === undefined) return "";
 
   if (isName(f)) return f.name.decodeText();
 
   if (Array.isArray(f)) {
-    if (f.length === 0) return '';
+    if (f.length === 0) return "";
 
     if (f.length === 1 && isName(f[0]!)) return f[0].name.decodeText();
   }
@@ -554,7 +539,7 @@ const singleFilter = (f: ContentOperand | undefined): string | undefined => {
 };
 
 const positiveInt = (v: ContentOperand | undefined): number | undefined =>
-  typeof v === 'number' && Number.isSafeInteger(v) && v > 0 ? v : undefined;
+  typeof v === "number" && Number.isSafeInteger(v) && v > 0 ? v : undefined;
 
 /**
  * The end offset of inline image data starting at `start`, when it can be
@@ -568,11 +553,11 @@ const inlineDataEnd = (
   start: number,
   entries: Map<string, ContentOperand>,
 ): number | undefined => {
-  const filter = singleFilter(entries.get('Filter'));
+  const filter = singleFilter(entries.get("Filter"));
 
   if (filter === undefined) return;
 
-  if (filter === 'AHx' || filter === 'ASCIIHexDecode') {
+  if (filter === "AHx" || filter === "ASCIIHexDecode") {
     for (let i = start; i < bytes.length; i++) {
       const c = bytes[i]!;
 
@@ -584,7 +569,7 @@ const inlineDataEnd = (
     return;
   }
 
-  if (filter === 'A85' || filter === 'ASCII85Decode') {
+  if (filter === "A85" || filter === "ASCII85Decode") {
     let group = 0;
     let value = 0;
 
@@ -625,28 +610,28 @@ const inlineDataEnd = (
     return;
   }
 
-  if (filter !== '') return;
+  if (filter !== "") return;
 
-  const width = positiveInt(entries.get('Width'));
-  const height = positiveInt(entries.get('Height'));
+  const width = positiveInt(entries.get("Width"));
+  const height = positiveInt(entries.get("Height"));
 
   if (width === undefined || height === undefined) return;
 
   let components: number;
   let bpc: number | undefined;
-  const mask = entries.get('ImageMask');
+  const mask = entries.get("ImageMask");
 
   if (mask === true) {
-    const declared = entries.get('BitsPerComponent');
+    const declared = entries.get("BitsPerComponent");
 
     if (declared !== undefined && declared !== 1) return;
 
-    if (entries.has('ColorSpace')) return;
+    if (entries.has("ColorSpace")) return;
     components = 1;
     bpc = 1;
   } else {
     if (mask !== undefined && mask !== false) return;
-    const cs = entries.get('ColorSpace');
+    const cs = entries.get("ColorSpace");
 
     if (cs !== undefined && isName(cs)) {
       const n = DEVICE_COMPONENTS.get(cs.name.decodeText());
@@ -657,14 +642,14 @@ const inlineDataEnd = (
       Array.isArray(cs) &&
       cs.length === 4 &&
       isName(cs[0]!) &&
-      (cs[0].name.decodeText() === 'I' || cs[0].name.decodeText() === 'Indexed')
+      (cs[0].name.decodeText() === "I" || cs[0].name.decodeText() === "Indexed")
     ) {
       components = 1;
     } else {
       return;
     }
 
-    const b = entries.get('BitsPerComponent');
+    const b = entries.get("BitsPerComponent");
     bpc = b === 1 || b === 2 || b === 4 || b === 8 || b === 16 ? b : undefined;
 
     if (bpc === undefined) return;

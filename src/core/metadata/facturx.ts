@@ -5,8 +5,8 @@ import {
   textContent,
   type XmlDocument,
   XmlError,
-} from './xml.js';
-import { type ExtensionSchema, XmpError, type XmpPacket } from './xmp.js';
+} from "./xml.js";
+import { type ExtensionSchema, XmpError, type XmpPacket } from "./xmp.js";
 
 /**
  * Factur-X / ZUGFeRD 2 support, written from the Factur-X specification
@@ -16,92 +16,81 @@ import { type ExtensionSchema, XmpError, type XmpPacket } from './xmp.js';
  * as plain XML rather than as a hybrid PDF.
  */
 
-export type FacturXProfile =
-  | 'MINIMUM'
-  | 'BASIC WL'
-  | 'BASIC'
-  | 'EN 16931'
-  | 'EXTENDED';
+export type FacturXProfile = "MINIMUM" | "BASIC WL" | "BASIC" | "EN 16931" | "EXTENDED";
 
 /** The guideline identifier each profile's invoice XML states. */
 const profileByGuideline: Record<string, FacturXProfile> = {
-  'urn:factur-x.eu:1p0:minimum': 'MINIMUM',
-  'urn:factur-x.eu:1p0:basicwl': 'BASIC WL',
-  'urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic': 'BASIC',
-  'urn:cen.eu:en16931:2017': 'EN 16931',
-  'urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended': 'EXTENDED',
+  "urn:factur-x.eu:1p0:minimum": "MINIMUM",
+  "urn:factur-x.eu:1p0:basicwl": "BASIC WL",
+  "urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic": "BASIC",
+  "urn:cen.eu:en16931:2017": "EN 16931",
+  "urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended": "EXTENDED",
 };
 
-const RSM_NS = 'urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100';
+const RSM_NS = "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100";
 
-const RAM_NS =
-  'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100';
+const RAM_NS = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100";
 
-export const FACTUR_X_NS =
-  'urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#';
+export const FACTUR_X_NS = "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#";
 
-export const FACTUR_X_FILE_NAME = 'factur-x.xml';
+export const FACTUR_X_FILE_NAME = "factur-x.xml";
 
 /** Earlier ZUGFeRD / Factur-X namespaces; a packet using one is refused. */
 const legacyNamespaces = [
-  'urn:ferd:pdfa:CrossIndustryDocument:invoice:1p0#',
-  'urn:zugferd:pdfa:CrossIndustryDocument:invoice:1p0#',
-  'urn:zugferd:pdfa:CrossIndustryDocument:invoice:2p0#',
+  "urn:ferd:pdfa:CrossIndustryDocument:invoice:1p0#",
+  "urn:zugferd:pdfa:CrossIndustryDocument:invoice:1p0#",
+  "urn:zugferd:pdfa:CrossIndustryDocument:invoice:2p0#",
 ];
 
 const facturXSchema: ExtensionSchema = {
-  schema: 'Factur-X PDFA Extension Schema',
+  schema: "Factur-X PDFA Extension Schema",
   namespaceURI: FACTUR_X_NS,
-  prefix: 'fx',
+  prefix: "fx",
   properties: [
     {
-      name: 'DocumentFileName',
-      valueType: 'Text',
-      category: 'external',
-      description: 'The name of the embedded XML invoice file',
+      name: "DocumentFileName",
+      valueType: "Text",
+      category: "external",
+      description: "The name of the embedded XML invoice file",
     },
     {
-      name: 'DocumentType',
-      valueType: 'Text',
-      category: 'external',
-      description: 'The type of the hybrid document: INVOICE',
+      name: "DocumentType",
+      valueType: "Text",
+      category: "external",
+      description: "The type of the hybrid document: INVOICE",
     },
     {
-      name: 'Version',
-      valueType: 'Text',
-      category: 'external',
-      description: 'The version of the Factur-X XMP schema',
+      name: "Version",
+      valueType: "Text",
+      category: "external",
+      description: "The version of the Factur-X XMP schema",
     },
     {
-      name: 'ConformanceLevel',
-      valueType: 'Text',
-      category: 'external',
-      description: 'The Factur-X profile of the embedded XML invoice',
+      name: "ConformanceLevel",
+      valueType: "Text",
+      category: "external",
+      description: "The Factur-X profile of the embedded XML invoice",
     },
   ],
 };
 
-const utf8 = new TextDecoder('utf-8', { fatal: true });
+const utf8 = new TextDecoder("utf-8", { fatal: true });
 
 /** Check an XML declaration, if any: XML 1.0, UTF-8. */
 const checkDeclaration = (doc: XmlDocument) => {
   const [first] = doc.prolog;
 
-  if (first?.kind !== 'pi' || first.target !== 'xml') return;
+  if (first?.kind !== "pi" || first.target !== "xml") return;
   const version = /version\s*=\s*["']([^"']*)["']/.exec(first.data)?.[1];
 
-  if (version !== '1.0') {
-    throw new Error(
-      `The invoice XML declares version ${version}; only XML 1.0 is supported.`,
-    );
+  if (version !== "1.0") {
+    throw new Error(`The invoice XML declares version ${version}; only XML 1.0 is supported.`);
   }
 
   const encoding = /encoding\s*=\s*["']([^"']*)["']/.exec(first.data)?.[1];
 
-  if (encoding !== undefined && encoding.toLowerCase() !== 'utf-8') {
-    throw new Error(
-      `The invoice XML declares encoding ${encoding}; only UTF-8 is supported.`,
-    );
+  if (encoding !== undefined && encoding.toLowerCase() !== "utf-8") {
+    throw new Error(`The invoice XML declares encoding ${encoding}; only UTF-8 is supported.`);
   }
 };
 
@@ -116,11 +105,9 @@ export const readFacturXInvoice = (
   let text: string;
   let bytes: Uint8Array;
 
-  if (typeof xml === 'string') {
+  if (typeof xml === "string") {
     if (!isXmlText(xml)) {
-      throw new Error(
-        'The invoice XML contains characters XML cannot represent.',
-      );
+      throw new Error("The invoice XML contains characters XML cannot represent.");
     }
 
     // A leading byte order mark is kept in the bytes (as a UTF-8 one) but
@@ -135,7 +122,7 @@ export const readFacturXInvoice = (
       // a malformed UTF-8 sequence.
       text = utf8.decode(bytes);
     } catch {
-      throw new Error('The invoice XML is not valid UTF-8.');
+      throw new Error("The invoice XML is not valid UTF-8.");
     }
   }
 
@@ -154,35 +141,31 @@ export const readFacturXInvoice = (
   checkDeclaration(doc);
   const { root } = doc;
 
-  if (root.ns !== RSM_NS || root.local !== 'CrossIndustryInvoice') {
+  if (root.ns !== RSM_NS || root.local !== "CrossIndustryInvoice") {
     throw new Error(
-      'The invoice XML is not a Cross Industry Invoice (rsm:CrossIndustryInvoice, D16B).',
+      "The invoice XML is not a Cross Industry Invoice (rsm:CrossIndustryInvoice, D16B).",
     );
   }
 
   const ids = childElements(root)
-    .filter((e) => e.ns === RSM_NS && e.local === 'ExchangedDocumentContext')
+    .filter((e) => e.ns === RSM_NS && e.local === "ExchangedDocumentContext")
     .flatMap((c) =>
       childElements(c).filter(
-        (e) =>
-          e.ns === RAM_NS &&
-          e.local === 'GuidelineSpecifiedDocumentContextParameter',
+        (e) => e.ns === RAM_NS && e.local === "GuidelineSpecifiedDocumentContextParameter",
       ),
     )
-    .flatMap((p) =>
-      childElements(p).filter((e) => e.ns === RAM_NS && e.local === 'ID'),
-    );
+    .flatMap((p) => childElements(p).filter((e) => e.ns === RAM_NS && e.local === "ID"));
 
   if (ids.length !== 1) {
     throw new Error(
-      `The invoice XML states ${ids.length === 0 ? 'no' : 'more than one'} guideline identifier (GuidelineSpecifiedDocumentContextParameter/ID).`,
+      `The invoice XML states ${ids.length === 0 ? "no" : "more than one"} guideline identifier (GuidelineSpecifiedDocumentContextParameter/ID).`,
     );
   }
 
   const id = ids[0]!;
 
   if (childElements(id).length > 0) {
-    throw new Error('The invoice XML guideline identifier is not plain text.');
+    throw new Error("The invoice XML guideline identifier is not plain text.");
   }
 
   const guideline = textContent(id).trim();
@@ -204,34 +187,26 @@ export const readFacturXInvoice = (
  * whatever prefix they use. Refuses a packet that uses an earlier
  * ZUGFeRD / Factur-X namespace, or names another invoice file.
  */
-export const writeFacturXMetadata = (
-  packet: XmpPacket,
-  profile: FacturXProfile,
-): void => {
+export const writeFacturXMetadata = (packet: XmpPacket, profile: FacturXProfile): void => {
   const declared = packet.extensionSchemaNamespaces();
 
   for (const ns of legacyNamespaces) {
     if (packet.hasNamespace(ns) || declared.includes(ns)) {
-      throw new XmpError(
-        `the XMP uses the earlier ZUGFeRD / Factur-X namespace ${ns}`,
-      );
+      throw new XmpError(`the XMP uses the earlier ZUGFeRD / Factur-X namespace ${ns}`);
     }
   }
 
-  const fileName = packet.readText(FACTUR_X_NS, 'DocumentFileName');
+  const fileName = packet.readText(FACTUR_X_NS, "DocumentFileName");
 
-  if (
-    fileName.kind === 'text' &&
-    fileName.value.trim() !== FACTUR_X_FILE_NAME
-  ) {
+  if (fileName.kind === "text" && fileName.value.trim() !== FACTUR_X_FILE_NAME) {
     throw new XmpError(
       `the XMP names the invoice file ${fileName.value.trim()}, not ${FACTUR_X_FILE_NAME}`,
     );
   }
 
-  packet.setText(FACTUR_X_NS, 'DocumentType', 'INVOICE', 'fx');
-  packet.setText(FACTUR_X_NS, 'DocumentFileName', FACTUR_X_FILE_NAME, 'fx');
-  packet.setText(FACTUR_X_NS, 'Version', '1.0', 'fx');
-  packet.setText(FACTUR_X_NS, 'ConformanceLevel', profile, 'fx');
+  packet.setText(FACTUR_X_NS, "DocumentType", "INVOICE", "fx");
+  packet.setText(FACTUR_X_NS, "DocumentFileName", FACTUR_X_FILE_NAME, "fx");
+  packet.setText(FACTUR_X_NS, "Version", "1.0", "fx");
+  packet.setText(FACTUR_X_NS, "ConformanceLevel", profile, "fx");
   packet.ensureExtensionSchema(facturXSchema);
 };

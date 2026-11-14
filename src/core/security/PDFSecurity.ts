@@ -1,5 +1,5 @@
-import { arrayAsString, mergeUint8Arrays } from '../../utils/arrays.js';
-import { getRandomBytes } from '../../utils/rng.js';
+import { arrayAsString, mergeUint8Arrays } from "../../utils/arrays.js";
+import { getRandomBytes } from "../../utils/rng.js";
 import {
   AES128Cipher,
   AES256Cipher,
@@ -8,8 +8,8 @@ import {
   type CryptMethod,
   calculateMD5,
   PDF20,
-} from '../crypto.js';
-import PDFHeader from '../document/PDFHeader.js';
+} from "../crypto.js";
+import PDFHeader from "../document/PDFHeader.js";
 import {
   compareVersions,
   getCatalog,
@@ -18,24 +18,24 @@ import {
   type PDFVersion,
   parsePDFVersion,
   versionString,
-} from '../document/pdfVersion.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import { prepareR6PasswordForWriting } from './passwordPrep.js';
+} from "../document/pdfVersion.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import { prepareR6PasswordForWriting } from "./passwordPrep.js";
 import {
   computeStreamRoles,
   type StreamCryptPlan,
   type StreamRoles,
   selectStreamCrypt,
-} from './streamCrypt.js';
+} from "./streamCrypt.js";
 
 /**
  * Interface representing user permissions.
@@ -48,7 +48,7 @@ interface UserPermissions {
    * For Security handlers of revision <= 2 : Boolean
    * For Security handlers of revision >= 3 : 'lowResolution' or 'highResolution'
    */
-  printing?: boolean | 'lowResolution' | 'highResolution';
+  printing?: boolean | "lowResolution" | "highResolution";
   /**
    * Modify Content Permission (Other than 'annotating', 'fillingForms' and 'documentAssembly')
    */
@@ -122,7 +122,7 @@ type KeyBits = 40 | 128 | 256;
  * `'RC4-128'` and `'RC4-40'` are broken ciphers, removed from ISO 32000-2;
  * they offer no confidentiality and exist only for readers that predate AES.
  */
-export type EncryptionAlgorithm = 'AES-256' | 'AES-128' | 'RC4-128' | 'RC4-40';
+export type EncryptionAlgorithm = "AES-256" | "AES-128" | "RC4-128" | "RC4-40";
 
 type AlgorithmProfile = {
   v: Algorithm;
@@ -133,10 +133,10 @@ type AlgorithmProfile = {
 };
 
 const ALGORITHM_PROFILES: Record<EncryptionAlgorithm, AlgorithmProfile> = {
-  'AES-256': { v: 5, r: 6, keyBits: 256, minVersion: [1, 7] },
-  'AES-128': { v: 4, r: 4, keyBits: 128, minVersion: [1, 6] },
-  'RC4-128': { v: 2, r: 3, keyBits: 128, minVersion: [1, 4] },
-  'RC4-40': { v: 1, r: 2, keyBits: 40, minVersion: [1, 1] },
+  "AES-256": { v: 5, r: 6, keyBits: 256, minVersion: [1, 7] },
+  "AES-128": { v: 4, r: 4, keyBits: 128, minVersion: [1, 6] },
+  "RC4-128": { v: 2, r: 3, keyBits: 128, minVersion: [1, 4] },
+  "RC4-40": { v: 1, r: 2, keyBits: 40, minVersion: [1, 1] },
 };
 
 /** Adobe extension level 8 (Acrobat X) defines the R6 handler on PDF 1.7. */
@@ -152,8 +152,8 @@ type Encryption = {
   Length?: number;
   CF?: {
     StdCF: {
-      AuthEvent: 'DocOpen';
-      CFM: 'AESV2' | 'AESV3';
+      AuthEvent: "DocOpen";
+      CFM: "AESV2" | "AESV3";
       Length: number;
     };
   };
@@ -181,9 +181,7 @@ class PDFSecurity {
 
   constructor(context: PDFContext, options: SecurityOptions) {
     if (!(options.ownerPassword || options.userPassword)) {
-      throw new Error(
-        'Either an owner password or a user password must be specified.',
-      );
+      throw new Error("Either an owner password or a user password must be specified.");
     }
 
     this.context = context;
@@ -199,7 +197,7 @@ class PDFSecurity {
     version is raised to suit the cipher, never the reverse.
   */
   private initialize(options: SecurityOptions) {
-    const algorithm = options.algorithm ?? 'AES-256';
+    const algorithm = options.algorithm ?? "AES-256";
 
     const profile = Object.hasOwn(ALGORITHM_PROFILES, algorithm)
       ? ALGORITHM_PROFILES[algorithm]
@@ -222,21 +220,16 @@ class PDFSecurity {
     }
   }
 
-  private initializeV1V2V4(
-    profile: AlgorithmProfile,
-    options: SecurityOptions,
-  ): Encryption {
+  private initializeV1V2V4(profile: AlgorithmProfile, options: SecurityOptions): Encryption {
     const encryption = {
-      Filter: 'Standard',
+      Filter: "Standard",
     } as Encryption;
 
     const { v, r } = profile;
     this.keyBits = profile.keyBits;
 
     const permissions =
-      r === 2
-        ? getPermissionsR2(options.permissions)
-        : getPermissionsR3(options.permissions);
+      r === 2 ? getPermissionsR2(options.permissions) : getPermissionsR3(options.permissions);
 
     const paddedUserPassword = processPasswordR2R3R4(options.userPassword);
 
@@ -277,13 +270,13 @@ class PDFSecurity {
     if (v === 4) {
       encryption.CF = {
         StdCF: {
-          AuthEvent: 'DocOpen',
-          CFM: 'AESV2',
+          AuthEvent: "DocOpen",
+          CFM: "AESV2",
           Length: this.keyBits / 8,
         },
       };
-      encryption.StmF = 'StdCF';
-      encryption.StrF = 'StdCF';
+      encryption.StmF = "StdCF";
+      encryption.StrF = "StdCF";
     }
 
     encryption.R = r;
@@ -298,15 +291,13 @@ class PDFSecurity {
   /** ISO 32000-2 Algorithms 8, 9 and 10: the revision 6 handler. */
   private initializeV5(options: SecurityOptions): Encryption {
     const encryption = {
-      Filter: 'Standard',
+      Filter: "Standard",
     } as Encryption;
 
     // An omitted owner password takes the user's; one supplied but empty
     // after preparation is refused rather than silently allowing anyone
     // owner access.
-    const userPassword = prepareR6PasswordForWriting(
-      options.userPassword ?? '',
-    );
+    const userPassword = prepareR6PasswordForWriting(options.userPassword ?? "");
 
     let ownerPassword = userPassword;
 
@@ -314,12 +305,12 @@ class PDFSecurity {
       ownerPassword = prepareR6PasswordForWriting(options.ownerPassword);
 
       if (ownerPassword.length === 0) {
-        throw new Error('The owner password is empty after preparation.');
+        throw new Error("The owner password is empty after preparation.");
       }
     }
 
     if (ownerPassword.length === 0) {
-      throw new Error('The user password is empty after preparation.');
+      throw new Error("The user password is empty after preparation.");
     }
 
     this.keyBits = 256;
@@ -357,22 +348,19 @@ class PDFSecurity {
 
     const permissions = getPermissionsR3(options.permissions);
 
-    const permissionsEntry = getEncryptedPermissions(
-      permissions,
-      this.encryptionKey,
-    );
+    const permissionsEntry = getEncryptedPermissions(permissions, this.encryptionKey);
 
     encryption.V = 5;
     encryption.Length = this.keyBits;
     encryption.CF = {
       StdCF: {
-        AuthEvent: 'DocOpen',
-        CFM: 'AESV3',
+        AuthEvent: "DocOpen",
+        CFM: "AESV3",
         Length: this.keyBits / 8,
       },
     };
-    encryption.StmF = 'StdCF';
-    encryption.StrF = 'StdCF';
+    encryption.StmF = "StdCF";
+    encryption.StrF = "StdCF";
 
     encryption.R = 6;
 
@@ -389,12 +377,12 @@ class PDFSecurity {
   getEncryptFn(obj: number, gen: number): EncryptFn {
     const v = this.encryption.V;
 
-    if (v === 5) return objectEncryptFn('AESV3', this.encryptionKey, obj, gen);
+    if (v === 5) return objectEncryptFn("AESV3", this.encryptionKey, obj, gen);
 
-    if (v === 4) return objectEncryptFn('AESV2', this.encryptionKey, obj, gen);
+    if (v === 4) return objectEncryptFn("AESV2", this.encryptionKey, obj, gen);
 
     if (v === 1 || v === 2) {
-      return objectEncryptFn('V2', this.encryptionKey, obj, gen);
+      return objectEncryptFn("V2", this.encryptionKey, obj, gen);
     }
 
     throw new Error(`Unsupported algorithm '${v}'.`);
@@ -459,27 +447,24 @@ class EncryptedStream extends PDFStream {
 
 /** A /Sig or /DocTimeStamp dict, or an untyped one carrying /ByteRange. */
 export const isSignatureDict = (dict: PDFDict): boolean => {
-  const type = dict.get(PDFName.of('Type'));
+  const type = dict.get(PDFName.of("Type"));
 
   return (
-    type === PDFName.of('Sig') ||
-    type === PDFName.of('DocTimeStamp') ||
-    (type === undefined && dict.get(PDFName.of('ByteRange')) !== undefined)
+    type === PDFName.of("Sig") ||
+    type === PDFName.of("DocTimeStamp") ||
+    (type === undefined && dict.get(PDFName.of("ByteRange")) !== undefined)
   );
 };
 
 /** The dict's entries with strings encrypted; a new map, never the dict's. */
-const encryptDictEntries = (
-  dict: PDFDict,
-  encryptFn: EncryptFn,
-): Map<PDFName, PDFObject> => {
+const encryptDictEntries = (dict: PDFDict, encryptFn: EncryptFn): Map<PDFName, PDFObject> => {
   const keepContents = isSignatureDict(dict);
   const map = new Map<PDFName, PDFObject>();
 
   for (const [key, value] of dict.entries()) {
     const keep =
       keepContents &&
-      key === PDFName.of('Contents') &&
+      key === PDFName.of("Contents") &&
       (value instanceof PDFString || value instanceof PDFHexString);
 
     map.set(key, keep ? value : encryptStrings(value, encryptFn));
@@ -533,7 +518,7 @@ const encryptObject = (
   streamFn: (dict: PDFDict) => EncryptFn | undefined,
 ): PDFObject => {
   if (object instanceof PDFStream) {
-    if (object.dict.get(PDFName.Type) === PDFName.of('XRef')) return object;
+    if (object.dict.get(PDFName.Type) === PDFName.of("XRef")) return object;
     const bodyFn = streamFn(object.dict);
     const plain = object.getContents();
     const contents = bodyFn ? bodyFn(plain) : plain;
@@ -557,9 +542,9 @@ const objectEncryptFn = (
   obj: number,
   gen: number,
 ): EncryptFn => {
-  if (method === 'None') return (buffer) => buffer;
+  if (method === "None") return (buffer) => buffer;
 
-  if (method === 'AESV3') return aesEncryptFn(key);
+  if (method === "AESV3") return aesEncryptFn(key);
 
   const digest = mergeUint8Arrays([
     key,
@@ -572,7 +557,7 @@ const objectEncryptFn = (
     ]),
   ]);
 
-  if (method === 'AESV2') {
+  if (method === "AESV2") {
     return aesEncryptFn(md5(mergeUint8Arrays([digest, AESV2_SALT])));
   }
 
@@ -634,9 +619,7 @@ export class BaselineEncryption implements ObjectEncryptor {
     const encryptRef = firstPass.trailerInfo.Encrypt;
     this.encryptRef = encryptRef instanceof PDFRef ? encryptRef : undefined;
     this.id = firstPass.trailerInfo.ID;
-    this.encryptionRefs = this.encryptRef
-      ? reachableRefs(firstPass, this.encryptRef)
-      : [];
+    this.encryptionRefs = this.encryptRef ? reachableRefs(firstPass, this.encryptRef) : [];
     this.factory = factory;
     this.plans = new Map(plans);
   }
@@ -666,16 +649,14 @@ export class BaselineEncryption implements ObjectEncryptor {
   ): void {
     if (!this.encryptRef) {
       throw new Error(
-        'An encrypted file with a direct /Encrypt dictionary cannot be updated incrementally.',
+        "An encrypted file with a direct /Encrypt dictionary cannot be updated incrementally.",
       );
     }
 
     const guardedRefs = this.guardedRefs;
     const guarded = new Set(guardedRefs.map((ref) => ref.objectNumber));
 
-    let touched = guardedRefs.some((ref) =>
-      snapshot.shouldSave(ref.objectNumber),
-    );
+    let touched = guardedRefs.some((ref) => snapshot.shouldSave(ref.objectNumber));
 
     for (const ref of snapshot.deletedRefs()) {
       if (guarded.has(ref.objectNumber)) touched = true;
@@ -683,13 +664,11 @@ export class BaselineEncryption implements ObjectEncryptor {
 
     if (touched) {
       throw new Error(
-        'An incremental update cannot change or delete the encryption dictionary of the file it extends.',
+        "An incremental update cannot change or delete the encryption dictionary of the file it extends.",
       );
     }
 
-    const deleted = new Set(
-      snapshot.deletedRefs().map((ref) => ref.objectNumber),
-    );
+    const deleted = new Set(snapshot.deletedRefs().map((ref) => ref.objectNumber));
 
     const roles = computeStreamRoles(context);
 
@@ -705,8 +684,7 @@ export class BaselineEncryption implements ObjectEncryptor {
         if (
           plan.dependencies.some(
             (dependency) =>
-              snapshot.shouldSave(dependency.objectNumber) ||
-              deleted.has(dependency.objectNumber),
+              snapshot.shouldSave(dependency.objectNumber) || deleted.has(dependency.objectNumber),
           )
         ) {
           snapshot.markRefForSave(ref);
@@ -717,17 +695,11 @@ export class BaselineEncryption implements ObjectEncryptor {
 
       const type = object.dict.get(PDFName.Type);
 
-      if (type === PDFName.of('XRef')) {
+      if (type === PDFName.of("XRef")) {
         continue;
       }
 
-      const name = selectStreamCrypt(
-        this.factory,
-        roles,
-        ref,
-        object.dict,
-        undefined,
-      );
+      const name = selectStreamCrypt(this.factory, roles, ref, object.dict, undefined);
 
       if (this.factory.methodOf(name) !== plan.method) {
         // Loaded bodies have already been decrypted using the old plan.
@@ -751,10 +723,7 @@ export class BaselineEncryption implements ObjectEncryptor {
     deletedRefs: () => PDFRef[];
   }): void {
     for (const objectNumber of [...this.plans.keys()]) {
-      if (
-        snapshot.shouldSave(objectNumber) &&
-        !this.emitted.get(objectNumber)
-      ) {
+      if (snapshot.shouldSave(objectNumber) && !this.emitted.get(objectNumber)) {
         this.plans.delete(objectNumber);
       }
     }
@@ -775,8 +744,7 @@ export class BaselineEncryption implements ObjectEncryptor {
     const { objectNumber: obj, generationNumber: gen } = ref;
     const { factory } = this;
 
-    const fnFor = (method: CryptMethod) =>
-      objectEncryptFn(method, factory.encryptionKey, obj, gen);
+    const fnFor = (method: CryptMethod) => objectEncryptFn(method, factory.encryptionKey, obj, gen);
 
     const stringFn = fnFor(factory.methodOf(factory.strf ?? Identity));
     this.emitted.set(obj, null);
@@ -793,24 +761,22 @@ export class BaselineEncryption implements ObjectEncryptor {
       const method = factory.methodOf(name);
       this.emitted.set(obj, { method });
 
-      return method === 'None' ? undefined : fnFor(method);
+      return method === "None" ? undefined : fnFor(method);
     });
   }
 }
 
-const Identity = PDFName.of('Identity');
+const Identity = PDFName.of("Identity");
 
 /** Whether `dict`'s filter chain names /Crypt, directly or indirectly. */
 const namesCryptFilter = (dict: PDFDict): boolean => {
-  const filter = dict.lookup(PDFName.of('Filter'));
+  const filter = dict.lookup(PDFName.of("Filter"));
 
-  if (filter === PDFName.of('Crypt')) return true;
+  if (filter === PDFName.of("Crypt")) return true;
 
   return (
     filter instanceof PDFArray &&
-    filter
-      .asArray()
-      .some((name) => dict.context.lookup(name) === PDFName.of('Crypt'))
+    filter.asArray().some((name) => dict.context.lookup(name) === PDFName.of("Crypt"))
   );
 };
 
@@ -898,11 +864,11 @@ const getPermissionsR2 = (permissions: UserPermissions = {}) => {
 const getPermissionsR3 = (permissions: UserPermissions = {}) => {
   let flags = 0xfffff0c0 >> 0;
 
-  if (permissions.printing === 'lowResolution' || permissions.printing) {
+  if (permissions.printing === "lowResolution" || permissions.printing) {
     flags |= 0b000000000100;
   }
 
-  if (permissions.printing === 'highResolution') {
+  if (permissions.printing === "highResolution") {
     flags |= 0b100000000100;
   }
 
@@ -936,10 +902,7 @@ const getPermissionsR3 = (permissions: UserPermissions = {}) => {
 const getUserPasswordR2 = (encryptionKey: Uint8Array) =>
   rc4(encryptionKey, processPasswordR2R3R4());
 
-const getUserPasswordR3R4 = (
-  documentId: Uint8Array,
-  encryptionKey: Uint8Array,
-) => {
+const getUserPasswordR3R4 = (documentId: Uint8Array, encryptionKey: Uint8Array) => {
   let cipher = md5(mergeUint8Arrays([processPasswordR2R3R4(), documentId]));
   const key = new Uint8Array(encryptionKey.length);
 
@@ -1005,11 +968,7 @@ const getEncryptionKeyR2R3R4 = (
  * ISO 32000-2 Algorithm 2.B over password || salt || udata, where udata is
  * the 48-byte /U entry for owner computations and empty for user ones.
  */
-const r6Hash = (
-  password: Uint8Array,
-  salt: Uint8Array,
-  udata: Uint8Array,
-): Uint8Array =>
+const r6Hash = (password: Uint8Array, salt: Uint8Array, udata: Uint8Array): Uint8Array =>
   new PDF20().hash(password, mergeUint8Arrays([password, salt, udata]), udata);
 
 /**
@@ -1017,21 +976,14 @@ const r6Hash = (
  * encrypted), 'adb' and four random bytes as one AES-256 block. A single
  * block of CBC with a zero IV is the ECB the spec asks for.
  */
-const getEncryptedPermissions = (
-  permissions: number,
-  encryptionKey: Uint8Array,
-) =>
+const getEncryptedPermissions = (permissions: number, encryptionKey: Uint8Array) =>
   aesCbcEncrypt(
     encryptionKey,
     ZERO_IV,
-    mergeUint8Arrays([
-      lsbFirstBytes(permissions),
-      PERMS_SUFFIX,
-      getRandomBytes(4),
-    ]),
+    mergeUint8Arrays([lsbFirstBytes(permissions), PERMS_SUFFIX, getRandomBytes(4)]),
   );
 
-const processPasswordR2R3R4 = (password = '') => {
+const processPasswordR2R3R4 = (password = "") => {
   const out = new Uint8Array(32);
   const length = password.length;
   let index = 0;
@@ -1040,7 +992,7 @@ const processPasswordR2R3R4 = (password = '') => {
     const code = password.charCodeAt(index);
 
     if (code > 0xff) {
-      throw new Error('Password contains one or more invalid characters.');
+      throw new Error("Password contains one or more invalid characters.");
     }
 
     out[index] = code;
@@ -1055,20 +1007,13 @@ const processPasswordR2R3R4 = (password = '') => {
   return out;
 };
 
-const md5 = (data: Uint8Array): Uint8Array =>
-  calculateMD5(data, 0, data.length);
+const md5 = (data: Uint8Array): Uint8Array => calculateMD5(data, 0, data.length);
 
-const rc4 = (key: Uint8Array, data: Uint8Array): Uint8Array =>
-  new ARCFourCipher(key).encrypt(data);
+const rc4 = (key: Uint8Array, data: Uint8Array): Uint8Array => new ARCFourCipher(key).encrypt(data);
 
 /** AES-CBC. Discards any trailing partial block, so `data` must be padded. */
-const aesCbcEncrypt = (
-  key: Uint8Array,
-  iv: Uint8Array,
-  data: Uint8Array,
-): Uint8Array => {
-  const cipher =
-    key.length === 32 ? new AES256Cipher(key) : new AES128Cipher(key);
+const aesCbcEncrypt = (key: Uint8Array, iv: Uint8Array, data: Uint8Array): Uint8Array => {
+  const cipher = key.length === 32 ? new AES256Cipher(key) : new AES128Cipher(key);
 
   return cipher.encrypt(data, iv);
 };
@@ -1084,12 +1029,7 @@ const pkcs7Pad = (data: Uint8Array): Uint8Array => {
 
 /** Serializes a 32-bit integer low order byte first. */
 const lsbFirstBytes = (data: number): Uint8Array =>
-  new Uint8Array([
-    data & 0xff,
-    (data >> 8) & 0xff,
-    (data >> 16) & 0xff,
-    (data >> 24) & 0xff,
-  ]);
+  new Uint8Array([data & 0xff, (data >> 8) & 0xff, (data >> 16) & 0xff, (data >> 24) & 0xff]);
 
 const ZERO_IV = new Uint8Array(16);
 
@@ -1099,9 +1039,7 @@ const EMPTY_BYTES = new Uint8Array(0);
 const AESV2_SALT = new Uint8Array([0x73, 0x41, 0x6c, 0x54]);
 
 /* 0xffffffff followed by 'Tadb', as required by ISO 32000-2 Algorithm 10 */
-const PERMS_SUFFIX = new Uint8Array([
-  0xff, 0xff, 0xff, 0xff, 0x54, 0x61, 0x64, 0x62,
-]);
+const PERMS_SUFFIX = new Uint8Array([0xff, 0xff, 0xff, 0xff, 0x54, 0x61, 0x64, 0x62]);
 
 /*
   7.6.3.3 Encryption Key Algorithm
@@ -1110,9 +1048,8 @@ const PERMS_SUFFIX = new Uint8Array([
   the password to exactly 32 bytes
 */
 const PASSWORD_PADDING = [
-  0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff,
-  0xfa, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c,
-  0xa9, 0xfe, 0x64, 0x53, 0x69, 0x7a,
+  0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa, 0x01, 0x08,
+  0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c, 0xa9, 0xfe, 0x64, 0x53, 0x69, 0x7a,
 ];
 
 /**
@@ -1123,38 +1060,30 @@ const PASSWORD_PADDING = [
  * declaration. Anything it cannot safely merge throws here, before encrypt()
  * changes the document.
  */
-const planVersionDeclaration = (
-  context: PDFContext,
-  profile: AlgorithmProfile,
-): (() => void) => {
+const planVersionDeclaration = (context: PDFContext, profile: AlgorithmProfile): (() => void) => {
   const headerText = context.header.getVersionString();
   const header = parsePDFVersion(headerText);
 
   if (!header) {
-    throw new Error(
-      `Cannot encrypt: unrecognised PDF header version '${headerText}'.`,
-    );
+    throw new Error(`Cannot encrypt: unrecognised PDF header version '${headerText}'.`);
   }
 
   const catalogVersion = getCatalogVersion(context);
 
-  if (catalogVersion === 'malformed') {
-    throw new Error('Cannot encrypt: the catalog /Version is malformed.');
+  if (catalogVersion === "malformed") {
+    throw new Error("Cannot encrypt: the catalog /Version is malformed.");
   }
 
   const declared = catalogVersion ? maxVersion(header, catalogVersion) : header;
   const raiseHeader = compareVersions(header, profile.minVersion) < 0;
 
   const raiseCatalog =
-    catalogVersion !== undefined &&
-    compareVersions(catalogVersion, profile.minVersion) < 0;
+    catalogVersion !== undefined && compareVersions(catalogVersion, profile.minVersion) < 0;
 
   const effective = maxVersion(declared, profile.minVersion);
 
   const declareExtension =
-    profile.v === 5 && effective[0] < 2
-      ? planAdobeExtension(context)
-      : () => {};
+    profile.v === 5 && effective[0] < 2 ? planAdobeExtension(context) : () => {};
 
   return () => {
     const [major, minor] = profile.minVersion;
@@ -1163,7 +1092,7 @@ const planVersionDeclaration = (
 
     if (raiseCatalog) {
       getCatalog(context)!.set(
-        PDFName.of('Version'),
+        PDFName.of("Version"),
         PDFName.of(versionString(profile.minVersion)),
       );
     }
@@ -1177,27 +1106,23 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
 
   if (!catalog) {
     throw new Error(
-      'Cannot encrypt with AES-256: there is no catalog to declare Adobe extension level 8 in.',
+      "Cannot encrypt with AES-256: there is no catalog to declare Adobe extension level 8 in.",
     );
   }
 
-  const extensionsKey = PDFName.of('Extensions');
-  const adbeKey = PDFName.of('ADBE');
-  const levelKey = PDFName.of('ExtensionLevel');
+  const extensionsKey = PDFName.of("Extensions");
+  const adbeKey = PDFName.of("ADBE");
+  const levelKey = PDFName.of("ExtensionLevel");
   const level8 = () => PDFNumber.of(AES256_EXTENSION_LEVEL);
 
   const extensions = catalog.lookup(extensionsKey);
 
   if (extensions === undefined) {
-    return () =>
-      catalog.set(
-        extensionsKey,
-        context.obj({ ADBE: adobeExtension(context) }),
-      );
+    return () => catalog.set(extensionsKey, context.obj({ ADBE: adobeExtension(context) }));
   }
 
   if (!(extensions instanceof PDFDict)) {
-    throw new Error('Cannot encrypt: the catalog /Extensions is malformed.');
+    throw new Error("Cannot encrypt: the catalog /Extensions is malformed.");
   }
 
   const adbe = extensions.lookup(adbeKey);
@@ -1207,14 +1132,14 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
   }
 
   if (!(adbe instanceof PDFDict)) {
-    throw new Error('Cannot encrypt: the /ADBE extension entry is malformed.');
+    throw new Error("Cannot encrypt: the /ADBE extension entry is malformed.");
   }
 
-  const base = adbe.lookup(PDFName.of('BaseVersion'));
+  const base = adbe.lookup(PDFName.of("BaseVersion"));
 
-  if (!(base instanceof PDFName && base.decodeText() === '1.7')) {
+  if (!(base instanceof PDFName && base.decodeText() === "1.7")) {
     throw new Error(
-      'Cannot encrypt with AES-256: the document declares an Adobe extension to a base version other than 1.7.',
+      "Cannot encrypt with AES-256: the document declares an Adobe extension to a base version other than 1.7.",
     );
   }
 
@@ -1227,9 +1152,7 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
     !Number.isInteger(level.asNumber()) ||
     level.asNumber() < 1
   ) {
-    throw new Error(
-      'Cannot encrypt: the /ADBE /ExtensionLevel is not a positive integer.',
-    );
+    throw new Error("Cannot encrypt: the /ADBE /ExtensionLevel is not a positive integer.");
   }
 
   if (level.asNumber() >= AES256_EXTENSION_LEVEL) return () => {};
@@ -1239,7 +1162,7 @@ const planAdobeExtension = (context: PDFContext): (() => void) => {
 
 const adobeExtension = (context: PDFContext): PDFDict =>
   context.obj({
-    BaseVersion: '1.7',
+    BaseVersion: "1.7",
     ExtensionLevel: AES256_EXTENSION_LEVEL,
   });
 

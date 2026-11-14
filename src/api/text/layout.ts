@@ -1,8 +1,8 @@
-import type { EncodedText, TextSpacing } from '../../core/index.js';
-import { cleanText, lineSplit, mergeLines } from '../../utils/index.js';
-import { CombedTextLayoutError } from '../errors.js';
-import type PDFFont from '../PDFFont.js';
-import { TextAlignment } from './alignment.js';
+import type { EncodedText, TextSpacing } from "../../core/index.js";
+import { cleanText, lineSplit, mergeLines } from "../../utils/index.js";
+import { CombedTextLayoutError } from "../errors.js";
+import type PDFFont from "../PDFFont.js";
+import { TextAlignment } from "./alignment.js";
 
 export interface TextPosition {
   text: string;
@@ -35,7 +35,7 @@ const findFontSize = (fits: (size: number) => boolean) => {
       size /= 2;
     }
 
-    throw new Error('Cannot fit text into the supplied bounds');
+    throw new Error("Cannot fit text into the supplied bounds");
   }
 
   for (let size = MIN_FONT_SIZE + 1; size <= MAX_FONT_SIZE; size++) {
@@ -52,7 +52,7 @@ const computeFontSize = (
   inclusiveWidth = false,
 ) => {
   if (!(bounds.width > 0) || !(bounds.height > 0)) {
-    throw new Error('Cannot auto size text into nonpositive bounds');
+    throw new Error("Cannot auto size text into nonpositive bounds");
   }
 
   return findFontSize((size) => {
@@ -66,7 +66,7 @@ const computeFontSize = (
   });
 };
 
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
 const computeCombedFontSize = (
   clusters: string[],
@@ -159,19 +159,14 @@ const splitOutLines = (
     let width = widths.get(end);
 
     if (width === undefined) {
-      width = font.widthOfTextAtSize(
-        input.substring(0, end),
-        fontSize,
-        spacing,
-      );
+      width = font.widthOfTextAtSize(input.substring(0, end), fontSize, spacing);
       widths.set(end, width);
     }
 
     return width;
   };
 
-  const fits = (idx: number) =>
-    hasBreak(idx) && widthUpTo(breaks[idx]!) < maxWidth;
+  const fits = (idx: number) => hasBreak(idx) && widthUpTo(breaks[idx]!) < maxWidth;
 
   let found = -1;
 
@@ -260,21 +255,11 @@ export const layoutMultilineText = (
 
   let y = bounds.y + bounds.height;
 
-  for (const { line, width } of wrapLines(
-    lines,
-    bounds.width,
-    font,
-    fontSize,
-    spacing,
-  )) {
+  for (const { line, width } of wrapLines(lines, bounds.width, font, fontSize, spacing)) {
     const raw = font.encodeText(line);
 
     const encoded = spacing
-      ? raw.withSpacing(
-          spacing.characterSpacing ?? 0,
-          spacing.wordSpacing ?? 0,
-          fontSize,
-        )
+      ? raw.withSpacing(spacing.characterSpacing ?? 0, spacing.wordSpacing ?? 0, fontSize)
       : raw;
 
     // prettier-ignore
@@ -333,23 +318,14 @@ export const layoutCombedText = (
 ): CombedTextLayout => {
   const line = mergeLines(cleanText(text));
 
-  const clusters = Array.from(
-    graphemes.segment(line),
-    ({ segment }) => segment,
-  );
+  const clusters = Array.from(graphemes.segment(line), ({ segment }) => segment);
 
   if (clusters.length > cellCount) {
     throw new CombedTextLayoutError(clusters.length, cellCount);
   }
 
   if (fontSize === undefined || fontSize === 0) {
-    fontSize = computeCombedFontSize(
-      clusters,
-      font,
-      bounds,
-      cellCount,
-      spacing,
-    );
+    fontSize = computeCombedFontSize(clusters, font, bounds, cellCount, spacing);
   }
 
   const cellWidth = bounds.width / cellCount;
@@ -367,16 +343,12 @@ export const layoutCombedText = (
   let cellOffset = 0;
 
   while (cellOffset < cellCount) {
-    const char = clusters[cellOffset] ?? '';
+    const char = clusters[cellOffset] ?? "";
 
     const raw = font.encodeText(char);
 
     const encoded = spacing
-      ? raw.withSpacing(
-          spacing.characterSpacing ?? 0,
-          spacing.wordSpacing ?? 0,
-          fontSize,
-        )
+      ? raw.withSpacing(spacing.characterSpacing ?? 0, spacing.wordSpacing ?? 0, fontSize)
       : raw;
 
     const width = font.widthOfTextAtSize(char, fontSize, spacing);
@@ -440,11 +412,7 @@ export const layoutSinglelineText = (
   const raw = font.encodeText(line);
 
   const encoded = spacing
-    ? raw.withSpacing(
-        spacing.characterSpacing ?? 0,
-        spacing.wordSpacing ?? 0,
-        fontSize,
-      )
+    ? raw.withSpacing(spacing.characterSpacing ?? 0, spacing.wordSpacing ?? 0, fontSize)
     : raw;
 
   const width = font.widthOfTextAtSize(line, fontSize, spacing);

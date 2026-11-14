@@ -1,19 +1,11 @@
-import { toHexString, toHexStringOfMinLength } from '../../utils/index.js';
-import {
-  hasSurrogates,
-  highSurrogate,
-  isWithinBMP,
-  lowSurrogate,
-} from '../../utils/unicode.js';
+import { toHexString, toHexStringOfMinLength } from "../../utils/index.js";
+import { hasSurrogates, highSurrogate, isWithinBMP, lowSurrogate } from "../../utils/unicode.js";
 
 /** [fontId, codePoint] */
 type BfChar = [string, string];
 
 /** A ToUnicode entry: a two-byte character code and the text it stands for. */
-export type ToUnicodeEntry = readonly [
-  code: number,
-  codePoints: readonly number[],
-];
+export type ToUnicodeEntry = readonly [code: number, codePoints: readonly number[]];
 
 /**
  * `entries` should be sorted by code, one per code, each with at least one
@@ -49,7 +41,7 @@ begincmap
 <0000><ffff>
 endcodespacerange
 ${bfChars.length} beginbfchar
-${bfChars.map(([glyphId, codePoint]) => `${glyphId} ${codePoint}`).join('\n')}
+${bfChars.map(([glyphId, codePoint]) => `${glyphId} ${codePoint}`).join("\n")}
 endbfchar
 endcmap
 CMapName currentdict /CMap defineresource pop
@@ -59,7 +51,7 @@ end\
 
 /* =============================== Utilities ================================ */
 
-const cmapHexFormat = (...values: string[]) => `<${values.join('')}>`;
+const cmapHexFormat = (...values: string[]) => `<${values.join("")}>`;
 
 const cmapHexString = (value: number) => toHexStringOfMinLength(value, 4);
 

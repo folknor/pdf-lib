@@ -1,5 +1,5 @@
-import Path from '../../src/fontkit/glyph/Path';
-import TTFGlyphEncoder from '../../src/fontkit/glyph/TTFGlyphEncoder';
+import Path from "../../src/fontkit/glyph/Path";
+import TTFGlyphEncoder from "../../src/fontkit/glyph/TTFGlyphEncoder";
 
 const header = (bytes: Uint8Array) => {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -13,8 +13,8 @@ const header = (bytes: Uint8Array) => {
   };
 };
 
-describe('TTFGlyphEncoder.encodeSimple', () => {
-  it('includes off-curve control points in the glyph bbox', () => {
+describe("TTFGlyphEncoder.encodeSimple", () => {
+  it("includes off-curve control points in the glyph bbox", () => {
     const path = new Path();
     path.moveTo(0, 0);
     path.quadraticCurveTo(100, 200, 200, 0);
@@ -31,7 +31,7 @@ describe('TTFGlyphEncoder.encodeSimple', () => {
     });
   });
 
-  it('rounds fractional coordinates into the bbox', () => {
+  it("rounds fractional coordinates into the bbox", () => {
     const path = new Path();
     path.moveTo(0.4, -0.6);
     path.lineTo(10.5, 3.2);

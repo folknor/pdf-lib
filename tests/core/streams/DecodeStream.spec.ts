@@ -1,13 +1,11 @@
-import DecodeStream, {
-  DEFAULT_MAX_DECODED_SIZE,
-} from '../../../src/core/streams/DecodeStream';
-import { DecodedStreamTooLargeError } from '../../../src/core/errors';
-import Stream from '../../../src/core/streams/Stream';
-import FlateStream from '../../../src/core/streams/FlateStream';
-import LZWStream from '../../../src/core/streams/LZWStream';
-import AsciiHexStream from '../../../src/core/streams/AsciiHexStream';
-import RunLengthStream from '../../../src/core/streams/RunLengthStream';
-import { zlibSync } from 'fflate';
+import DecodeStream, { DEFAULT_MAX_DECODED_SIZE } from "../../../src/core/streams/DecodeStream";
+import { DecodedStreamTooLargeError } from "../../../src/core/errors";
+import Stream from "../../../src/core/streams/Stream";
+import FlateStream from "../../../src/core/streams/FlateStream";
+import LZWStream from "../../../src/core/streams/LZWStream";
+import AsciiHexStream from "../../../src/core/streams/AsciiHexStream";
+import RunLengthStream from "../../../src/core/streams/RunLengthStream";
+import { zlibSync } from "fflate";
 
 /**
  * A minimal concrete subclass of DecodeStream used for testing.
@@ -48,9 +46,9 @@ class TestDecodeStream extends DecodeStream {
   }
 }
 
-describe('DecodeStream', () => {
-  describe('getByte()', () => {
-    it('reads individual bytes in sequence with correct values', () => {
+describe("DecodeStream", () => {
+  describe("getByte()", () => {
+    it("reads individual bytes in sequence with correct values", () => {
       const data = Uint8Array.from([10, 20, 30, 40, 50]);
       const stream = new TestDecodeStream(data);
 
@@ -61,7 +59,7 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(50);
     });
 
-    it('returns -1 when all bytes have been consumed (EOF)', () => {
+    it("returns -1 when all bytes have been consumed (EOF)", () => {
       const data = Uint8Array.from([0xff]);
       const stream = new TestDecodeStream(data);
 
@@ -70,12 +68,12 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(-1);
     });
 
-    it('returns -1 immediately for an empty stream', () => {
+    it("returns -1 immediately for an empty stream", () => {
       const stream = new TestDecodeStream(new Uint8Array(0));
       expect(stream.getByte()).toBe(-1);
     });
 
-    it('correctly reads byte value 0', () => {
+    it("correctly reads byte value 0", () => {
       const data = Uint8Array.from([0, 1, 0]);
       const stream = new TestDecodeStream(data);
 
@@ -85,8 +83,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('getBytes(length)', () => {
-    it('reads the exact number of bytes requested', () => {
+  describe("getBytes(length)", () => {
+    it("reads the exact number of bytes requested", () => {
       const data = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]);
       const stream = new TestDecodeStream(data);
 
@@ -94,7 +92,7 @@ describe('DecodeStream', () => {
       expect(bytes).toEqual(Uint8Array.from([1, 2, 3, 4]));
     });
 
-    it('reads remaining bytes with sequential calls', () => {
+    it("reads remaining bytes with sequential calls", () => {
       const data = Uint8Array.from([10, 20, 30, 40, 50, 60]);
       const stream = new TestDecodeStream(data);
 
@@ -105,7 +103,7 @@ describe('DecodeStream', () => {
       expect(second).toEqual(Uint8Array.from([40, 50, 60]));
     });
 
-    it('returns all remaining bytes when length is 0', () => {
+    it("returns all remaining bytes when length is 0", () => {
       const data = Uint8Array.from([100, 200, 150]);
       const stream = new TestDecodeStream(data);
 
@@ -113,7 +111,7 @@ describe('DecodeStream', () => {
       expect(bytes).toEqual(Uint8Array.from([100, 200, 150]));
     });
 
-    it('returns remaining bytes when length is 0 after partial reads', () => {
+    it("returns remaining bytes when length is 0 after partial reads", () => {
       const data = Uint8Array.from([1, 2, 3, 4, 5]);
       const stream = new TestDecodeStream(data);
 
@@ -122,7 +120,7 @@ describe('DecodeStream', () => {
       expect(rest).toEqual(Uint8Array.from([3, 4, 5]));
     });
 
-    it('returns fewer bytes than requested when stream ends early', () => {
+    it("returns fewer bytes than requested when stream ends early", () => {
       const data = Uint8Array.from([10, 20]);
       const stream = new TestDecodeStream(data);
 
@@ -130,7 +128,7 @@ describe('DecodeStream', () => {
       expect(bytes).toEqual(Uint8Array.from([10, 20]));
     });
 
-    it('returns Uint8ClampedArray when forceClamped is true', () => {
+    it("returns Uint8ClampedArray when forceClamped is true", () => {
       const data = Uint8Array.from([1, 2, 3]);
       const stream = new TestDecodeStream(data);
 
@@ -143,8 +141,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('getUint16()', () => {
-    it('reads a big-endian 16-bit unsigned integer', () => {
+  describe("getUint16()", () => {
+    it("reads a big-endian 16-bit unsigned integer", () => {
       // 0x01 << 8 + 0x02 = 258
       const data = Uint8Array.from([0x01, 0x02]);
       const stream = new TestDecodeStream(data);
@@ -152,43 +150,43 @@ describe('DecodeStream', () => {
       expect(stream.getUint16()).toBe(258);
     });
 
-    it('reads 0x0000 correctly', () => {
+    it("reads 0x0000 correctly", () => {
       const data = Uint8Array.from([0x00, 0x00]);
       const stream = new TestDecodeStream(data);
 
       expect(stream.getUint16()).toBe(0);
     });
 
-    it('reads 0xFFFF correctly', () => {
+    it("reads 0xFFFF correctly", () => {
       const data = Uint8Array.from([0xff, 0xff]);
       const stream = new TestDecodeStream(data);
 
       expect(stream.getUint16()).toBe(65535);
     });
 
-    it('reads multiple uint16 values in sequence', () => {
+    it("reads multiple uint16 values in sequence", () => {
       const data = Uint8Array.from([0x00, 0x01, 0x02, 0x00]);
       const stream = new TestDecodeStream(data);
 
-      expect(stream.getUint16()).toBe(1);     // (0 << 8) + 1
-      expect(stream.getUint16()).toBe(512);   // (2 << 8) + 0
+      expect(stream.getUint16()).toBe(1); // (0 << 8) + 1
+      expect(stream.getUint16()).toBe(512); // (2 << 8) + 0
     });
 
-    it('returns -1 when there are not enough bytes', () => {
+    it("returns -1 when there are not enough bytes", () => {
       const data = Uint8Array.from([0x42]);
       const stream = new TestDecodeStream(data);
 
       expect(stream.getUint16()).toBe(-1);
     });
 
-    it('returns -1 for an empty stream', () => {
+    it("returns -1 for an empty stream", () => {
       const stream = new TestDecodeStream(new Uint8Array(0));
       expect(stream.getUint16()).toBe(-1);
     });
   });
 
-  describe('getInt32()', () => {
-    it('reads a big-endian 32-bit signed integer', () => {
+  describe("getInt32()", () => {
+    it("reads a big-endian 32-bit signed integer", () => {
       // (1 << 24) + (1 << 16) + (1 << 8) + 1 = 16843009
       const data = Uint8Array.from([1, 1, 1, 1]);
       const stream = new TestDecodeStream(data);
@@ -196,29 +194,29 @@ describe('DecodeStream', () => {
       expect(stream.getInt32()).toBe(16843009);
     });
 
-    it('reads 0x00000000 correctly', () => {
+    it("reads 0x00000000 correctly", () => {
       const data = Uint8Array.from([0, 0, 0, 0]);
       const stream = new TestDecodeStream(data);
 
       expect(stream.getInt32()).toBe(0);
     });
 
-    it('reads 0xFFFFFFFF as -1', () => {
+    it("reads 0xFFFFFFFF as -1", () => {
       const data = Uint8Array.from([255, 255, 255, 255]);
       const stream = new TestDecodeStream(data);
 
       expect(stream.getInt32()).toBe(-1);
     });
 
-    it('reads multiple int32 values in sequence', () => {
+    it("reads multiple int32 values in sequence", () => {
       const data = Uint8Array.from([0, 0, 1, 0, 0, 0, 0, 2]);
       const stream = new TestDecodeStream(data);
 
-      expect(stream.getInt32()).toBe(256);  // (0<<24)+(0<<16)+(1<<8)+0
-      expect(stream.getInt32()).toBe(2);    // (0<<24)+(0<<16)+(0<<8)+2
+      expect(stream.getInt32()).toBe(256); // (0<<24)+(0<<16)+(1<<8)+0
+      expect(stream.getInt32()).toBe(2); // (0<<24)+(0<<16)+(0<<8)+2
     });
 
-    it('handles insufficient bytes by including -1 values in calculation', () => {
+    it("handles insufficient bytes by including -1 values in calculation", () => {
       // When stream has fewer than 4 bytes, getByte() returns -1 for missing bytes
       const data = Uint8Array.from([0x01]);
       const stream = new TestDecodeStream(data);
@@ -226,13 +224,13 @@ describe('DecodeStream', () => {
       // getByte returns: 1, -1, -1, -1
       // (1 << 24) + (-1 << 16) + (-1 << 8) + (-1)
       const result = stream.getInt32();
-      const expected = (1 << 24) + (-1 << 16) + (-1 << 8) + (-1);
+      const expected = (1 << 24) + (-1 << 16) + (-1 << 8) + -1;
       expect(result).toBe(expected);
     });
   });
 
-  describe('peekByte()', () => {
-    it('returns the next byte without advancing position', () => {
+  describe("peekByte()", () => {
+    it("returns the next byte without advancing position", () => {
       const data = Uint8Array.from([42, 99]);
       const stream = new TestDecodeStream(data);
 
@@ -241,7 +239,7 @@ describe('DecodeStream', () => {
       expect(stream.peekByte()).toBe(42);
     });
 
-    it('does not affect subsequent getByte() calls', () => {
+    it("does not affect subsequent getByte() calls", () => {
       const data = Uint8Array.from([10, 20, 30]);
       const stream = new TestDecodeStream(data);
 
@@ -251,14 +249,14 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(20);
     });
 
-    it('returns -1 for an empty stream', () => {
+    it("returns -1 for an empty stream", () => {
       const stream = new TestDecodeStream(new Uint8Array(0));
       expect(stream.peekByte()).toBe(-1);
     });
   });
 
-  describe('peekBytes(length)', () => {
-    it('returns bytes without advancing position', () => {
+  describe("peekBytes(length)", () => {
+    it("returns bytes without advancing position", () => {
       const data = Uint8Array.from([1, 2, 3, 4, 5]);
       const stream = new TestDecodeStream(data);
 
@@ -270,7 +268,7 @@ describe('DecodeStream', () => {
       expect(read).toEqual(Uint8Array.from([1, 2, 3]));
     });
 
-    it('can be called multiple times without advancing', () => {
+    it("can be called multiple times without advancing", () => {
       const data = Uint8Array.from([10, 20, 30]);
       const stream = new TestDecodeStream(data);
 
@@ -280,7 +278,7 @@ describe('DecodeStream', () => {
       expect(peek2).toEqual(Uint8Array.from([10, 20]));
     });
 
-    it('returns Uint8ClampedArray when forceClamped is true', () => {
+    it("returns Uint8ClampedArray when forceClamped is true", () => {
       const data = Uint8Array.from([5, 10, 15]);
       const stream = new TestDecodeStream(data);
 
@@ -292,8 +290,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('skip(n)', () => {
-    it('advances position by n bytes', () => {
+  describe("skip(n)", () => {
+    it("advances position by n bytes", () => {
       const data = Uint8Array.from([1, 2, 3, 4, 5]);
       const stream = new TestDecodeStream(data);
 
@@ -301,7 +299,7 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(3);
     });
 
-    it('defaults to skipping 1 byte when n is 0', () => {
+    it("defaults to skipping 1 byte when n is 0", () => {
       const data = Uint8Array.from([1, 2, 3]);
       const stream = new TestDecodeStream(data);
 
@@ -309,7 +307,7 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(2);
     });
 
-    it('can skip multiple times', () => {
+    it("can skip multiple times", () => {
       const data = Uint8Array.from([10, 20, 30, 40, 50]);
       const stream = new TestDecodeStream(data);
 
@@ -318,7 +316,7 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(40);
     });
 
-    it('skipping past end causes subsequent reads to return EOF', () => {
+    it("skipping past end causes subsequent reads to return EOF", () => {
       const data = Uint8Array.from([1, 2]);
       const stream = new TestDecodeStream(data);
 
@@ -327,8 +325,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('reset()', () => {
-    it('resets position back to the start of the stream', () => {
+  describe("reset()", () => {
+    it("resets position back to the start of the stream", () => {
       const data = Uint8Array.from([11, 22, 33]);
       const stream = new TestDecodeStream(data);
 
@@ -342,7 +340,7 @@ describe('DecodeStream', () => {
       expect(stream.getByte()).toBe(33);
     });
 
-    it('allows re-reading the entire stream with getBytes after reset', () => {
+    it("allows re-reading the entire stream with getBytes after reset", () => {
       const data = Uint8Array.from([5, 10, 15, 20]);
       const stream = new TestDecodeStream(data);
 
@@ -356,25 +354,25 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('isEmpty', () => {
-    it('returns true for a stream with no data', () => {
+  describe("isEmpty", () => {
+    it("returns true for a stream with no data", () => {
       const stream = new TestDecodeStream(new Uint8Array(0));
       expect(stream.isEmpty).toBe(true);
     });
 
-    it('returns false for a stream with data', () => {
+    it("returns false for a stream with data", () => {
       const stream = new TestDecodeStream(Uint8Array.from([1, 2, 3]));
       expect(stream.isEmpty).toBe(false);
     });
 
-    it('returns false for a stream with a single byte', () => {
+    it("returns false for a stream with a single byte", () => {
       const stream = new TestDecodeStream(Uint8Array.from([0]));
       expect(stream.isEmpty).toBe(false);
     });
   });
 
-  describe('decode()', () => {
-    it('reads the entire stream content into a Uint8Array', () => {
+  describe("decode()", () => {
+    it("reads the entire stream content into a Uint8Array", () => {
       const data = Uint8Array.from([10, 20, 30, 40, 50]);
       const stream = new TestDecodeStream(data);
 
@@ -382,13 +380,13 @@ describe('DecodeStream', () => {
       expect(decoded).toEqual(data);
     });
 
-    it('returns an empty subarray for an empty stream', () => {
+    it("returns an empty subarray for an empty stream", () => {
       const stream = new TestDecodeStream(new Uint8Array(0));
       const decoded = stream.decode();
       expect(decoded.length).toBe(0);
     });
 
-    it('decodes a large stream correctly', () => {
+    it("decodes a large stream correctly", () => {
       const data = new Uint8Array(2000);
 
       for (let i = 0; i < data.length; i++) {
@@ -402,8 +400,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('ensureBuffer (tested indirectly)', () => {
-    it('grows the buffer when reading data larger than initial buffer', () => {
+  describe("ensureBuffer (tested indirectly)", () => {
+    it("grows the buffer when reading data larger than initial buffer", () => {
       // The default minBufferLength is 512. A stream with 2000 bytes should
       // trigger buffer growth via ensureBuffer.
       const data = new Uint8Array(2000);
@@ -419,7 +417,7 @@ describe('DecodeStream', () => {
       expect(decoded).toEqual(data);
     });
 
-    it('handles data that exactly matches the minimum buffer length', () => {
+    it("handles data that exactly matches the minimum buffer length", () => {
       const data = new Uint8Array(512);
 
       for (let i = 0; i < data.length; i++) {
@@ -432,7 +430,7 @@ describe('DecodeStream', () => {
       expect(decoded).toEqual(data);
     });
 
-    it('handles data delivered in small chunks that cumulatively exceed initial buffer', () => {
+    it("handles data delivered in small chunks that cumulatively exceed initial buffer", () => {
       const data = new Uint8Array(1500);
 
       for (let i = 0; i < data.length; i++) {
@@ -447,91 +445,85 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('maxDecodedSize', () => {
+  describe("maxDecodedSize", () => {
     const original = DecodeStream.maxDecodedSize;
     afterEach(() => {
       DecodeStream.maxDecodedSize = original;
     });
 
-    it('has a generous default', () => {
+    it("has a generous default", () => {
       expect(DEFAULT_MAX_DECODED_SIZE).toBe(512 * 1024 * 1024);
       expect(DecodeStream.maxDecodedSize).toBe(DEFAULT_MAX_DECODED_SIZE);
     });
 
-    it('throws when the decoded data would exceed the cap', () => {
+    it("throws when the decoded data would exceed the cap", () => {
       DecodeStream.maxDecodedSize = 1000;
       const stream = new TestDecodeStream(new Uint8Array(2000));
       expect(() => stream.decode()).toThrow(DecodedStreamTooLargeError);
     });
 
-    it('allows data exactly at the cap, even when not a power of two', () => {
+    it("allows data exactly at the cap, even when not a power of two", () => {
       DecodeStream.maxDecodedSize = 1000;
       const data = new Uint8Array(1000).fill(7);
       const stream = new TestDecodeStream(data, undefined, 100);
       expect(stream.decode()).toEqual(data);
     });
 
-    it('stops a flate decompression bomb', () => {
+    it("stops a flate decompression bomb", () => {
       DecodeStream.maxDecodedSize = 64 * 1024;
       const compressed = zlibSync(new Uint8Array(1024 * 1024));
       const flateStream = new FlateStream(new Stream(compressed));
       expect(() => flateStream.decode()).toThrow(DecodedStreamTooLargeError);
     });
 
-    it('stops a bomb far larger than the reservation slack', () => {
+    it("stops a bomb far larger than the reservation slack", () => {
       DecodeStream.maxDecodedSize = 64 * 1024;
       const compressed = zlibSync(new Uint8Array(16 << 20));
       const flateStream = new FlateStream(new Stream(compressed));
       expect(() => flateStream.decode()).toThrow(DecodedStreamTooLargeError);
     });
 
-    it('honours a per-instance limit over the static default', () => {
+    it("honours a per-instance limit over the static default", () => {
       const stream = new TestDecodeStream(new Uint8Array(2000));
       stream.maxDecodedSize = 1000;
       expect(() => stream.decode()).toThrow(DecodedStreamTooLargeError);
     });
 
-    it('does not reject getBytes(n) reservations beyond the cap', () => {
+    it("does not reject getBytes(n) reservations beyond the cap", () => {
       DecodeStream.maxDecodedSize = 1000;
 
-      const flateStream = new FlateStream(
-        new Stream(zlibSync(Uint8Array.of(42))),
-      );
+      const flateStream = new FlateStream(new Stream(zlibSync(Uint8Array.of(42))));
 
       expect(flateStream.getBytes(1001)).toEqual(Uint8Array.of(42));
     });
 
-    it('does not reject LZW up-front reservations on an empty stream', () => {
+    it("does not reject LZW up-front reservations on an empty stream", () => {
       DecodeStream.maxDecodedSize = 100;
       const lzw = new LZWStream(new Stream(new Uint8Array(0)), undefined, 1);
       expect(lzw.decode().length).toBe(0);
     });
 
-    it('does not reject ASCIIHex worst-case reservations', () => {
+    it("does not reject ASCIIHex worst-case reservations", () => {
       DecodeStream.maxDecodedSize = 1;
 
       // '4 1' decodes to one byte but reserves (len+1)>>1 = 3 bytes
-      const hex = new AsciiHexStream(
-        new Stream(Uint8Array.from([0x34, 0x20, 0x31, 0x20, 0x3e])),
-      );
+      const hex = new AsciiHexStream(new Stream(Uint8Array.from([0x34, 0x20, 0x31, 0x20, 0x3e])));
 
       expect(hex.decode()).toEqual(Uint8Array.of(0x41));
     });
 
-    it('does not reject RunLength reservations', () => {
+    it("does not reject RunLength reservations", () => {
       DecodeStream.maxDecodedSize = 2;
 
       // repeat run: 255 => 'A' x2, but reserves n+1 = 3 bytes; then EOD
-      const rl = new RunLengthStream(
-        new Stream(Uint8Array.of(255, 0x41, 128, 0)),
-      );
+      const rl = new RunLengthStream(new Stream(Uint8Array.of(255, 0x41, 128, 0)));
 
       expect(rl.decode()).toEqual(Uint8Array.of(0x41, 0x41));
     });
   });
 
-  describe('makeSubStream(start, length)', () => {
-    it('creates a sub-stream from the decoded buffer', () => {
+  describe("makeSubStream(start, length)", () => {
+    it("creates a sub-stream from the decoded buffer", () => {
       const data = Uint8Array.from([10, 20, 30, 40, 50]);
       const stream = new TestDecodeStream(data);
 
@@ -542,7 +534,7 @@ describe('DecodeStream', () => {
       expect(sub.getByte()).toBe(-1);
     });
 
-    it('returns a Stream instance', () => {
+    it("returns a Stream instance", () => {
       const data = Uint8Array.from([1, 2, 3]);
       const stream = new TestDecodeStream(data);
 
@@ -557,8 +549,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('constructor with custom minBufferLength', () => {
-    it('rounds up minBufferLength to the next power of two', () => {
+  describe("constructor with custom minBufferLength", () => {
+    it("rounds up minBufferLength to the next power of two", () => {
       // Passing maybeMinBufferLength = 600, the internal minBufferLength
       // should become 1024 (next power of 2 >= 600 starting from 512).
       const data = new Uint8Array(800);
@@ -574,8 +566,8 @@ describe('DecodeStream', () => {
     });
   });
 
-  describe('readBlock() base implementation', () => {
-    it('throws MethodNotImplementedError when readBlock is not overridden', () => {
+  describe("readBlock() base implementation", () => {
+    it("throws MethodNotImplementedError when readBlock is not overridden", () => {
       // Use DecodeStream directly (not the TestDecodeStream subclass)
       // Since DecodeStream is not abstract in the JS sense, we can instantiate it
       // indirectly through a minimal subclass that doesn't override readBlock.
@@ -587,13 +579,13 @@ describe('DecodeStream', () => {
       }
 
       const stream = new BareDecodeStream();
-      expect(() => stream.getByte()).toThrow('not implemented');
+      expect(() => stream.getByte()).toThrow("not implemented");
     });
   });
 
-  describe('integration with FlateStream (real DecodeStream subclass)', () => {
-    it('decodes flate-compressed data via all DecodeStream methods', () => {
-      const originalData = new TextEncoder().encode('Hello, DecodeStream!');
+  describe("integration with FlateStream (real DecodeStream subclass)", () => {
+    it("decodes flate-compressed data via all DecodeStream methods", () => {
+      const originalData = new TextEncoder().encode("Hello, DecodeStream!");
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
@@ -602,28 +594,28 @@ describe('DecodeStream', () => {
       expect(decoded).toEqual(originalData);
     });
 
-    it('reads individual bytes from flate-compressed data', () => {
-      const originalData = Uint8Array.from([0xDE, 0xAD, 0xBE, 0xEF]);
+    it("reads individual bytes from flate-compressed data", () => {
+      const originalData = Uint8Array.from([0xde, 0xad, 0xbe, 0xef]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
-      expect(flateStream.getByte()).toBe(0xDE);
-      expect(flateStream.getByte()).toBe(0xAD);
-      expect(flateStream.getByte()).toBe(0xBE);
-      expect(flateStream.getByte()).toBe(0xEF);
+      expect(flateStream.getByte()).toBe(0xde);
+      expect(flateStream.getByte()).toBe(0xad);
+      expect(flateStream.getByte()).toBe(0xbe);
+      expect(flateStream.getByte()).toBe(0xef);
       expect(flateStream.getByte()).toBe(-1);
     });
 
-    it('reads uint16 from flate-compressed data', () => {
+    it("reads uint16 from flate-compressed data", () => {
       // 0xAB << 8 + 0xCD = 43981
-      const originalData = Uint8Array.from([0xAB, 0xCD]);
+      const originalData = Uint8Array.from([0xab, 0xcd]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
 
-      expect(flateStream.getUint16()).toBe(0xABCD);
+      expect(flateStream.getUint16()).toBe(0xabcd);
     });
 
-    it('peeks at bytes from flate-compressed data without advancing', () => {
+    it("peeks at bytes from flate-compressed data without advancing", () => {
       const originalData = Uint8Array.from([1, 2, 3, 4]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
@@ -634,7 +626,7 @@ describe('DecodeStream', () => {
       expect(flateStream.peekByte()).toBe(2);
     });
 
-    it('supports skip and reset with flate-compressed data', () => {
+    it("supports skip and reset with flate-compressed data", () => {
       const originalData = Uint8Array.from([10, 20, 30, 40, 50]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
@@ -646,7 +638,7 @@ describe('DecodeStream', () => {
       expect(flateStream.getByte()).toBe(10);
     });
 
-    it('isEmpty returns false for non-empty flate-compressed data', () => {
+    it("isEmpty returns false for non-empty flate-compressed data", () => {
       const originalData = Uint8Array.from([42]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));
@@ -654,7 +646,7 @@ describe('DecodeStream', () => {
       expect(flateStream.isEmpty).toBe(false);
     });
 
-    it('getBytes returns exact slice from flate-compressed data', () => {
+    it("getBytes returns exact slice from flate-compressed data", () => {
       const originalData = Uint8Array.from([5, 10, 15, 20, 25, 30]);
       const compressed = zlibSync(originalData);
       const flateStream = new FlateStream(new Stream(compressed));

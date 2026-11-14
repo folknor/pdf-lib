@@ -1,6 +1,6 @@
-import { isMark } from '../../vendors/unicode-properties/index.js';
-import { copyOccurrence, type Occurrence } from '../layout/Occurrence.js';
-import OTProcessor from './OTProcessor.js';
+import { isMark } from "../../vendors/unicode-properties/index.js";
+import { copyOccurrence, type Occurrence } from "../layout/Occurrence.js";
+import OTProcessor from "./OTProcessor.js";
 
 export default class GlyphInfo implements Occurrence {
   _font: any;
@@ -51,7 +51,7 @@ export default class GlyphInfo implements Occurrence {
         const feature = features[i]!;
         this.features[feature] = true;
       }
-    } else if (typeof features === 'object') {
+    } else if (typeof features === "object") {
       Object.assign(this.features, features);
     }
 
@@ -93,11 +93,6 @@ export default class GlyphInfo implements Occurrence {
   }
 
   copy(): GlyphInfo {
-    return new GlyphInfo(
-      this._font,
-      this.id,
-      copyOccurrence(this),
-      this.features,
-    );
+    return new GlyphInfo(this._font, this.id, copyOccurrence(this), this.features);
   }
 }

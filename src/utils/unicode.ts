@@ -1,4 +1,4 @@
-import { toHexString } from './strings.js';
+import { toHexString } from "./strings.js";
 
 /**
  * Encodes a string to UTF-8.
@@ -92,7 +92,7 @@ export const utf8Encode = (input: string, byteOrderMark = true): Uint8Array => {
 
   if (byteOrderMark) encoded.push(0xef, 0xbb, 0xbf);
 
-  for (let idx = 0, len = input.length; idx < len; ) {
+  for (let idx = 0, len = input.length; idx < len;) {
     const codePoint = input.codePointAt(idx)!;
 
     // One byte encoding
@@ -200,15 +200,12 @@ export const utf8Encode = (input: string, byteOrderMark = true): Uint8Array => {
  *   - [3] https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/length#Description
  *
  */
-export const utf16Encode = (
-  input: string,
-  byteOrderMark = true,
-): Uint16Array => {
+export const utf16Encode = (input: string, byteOrderMark = true): Uint16Array => {
   const encoded: number[] = [];
 
   if (byteOrderMark) encoded.push(0xfeff);
 
-  for (let idx = 0, len = input.length; idx < len; ) {
+  for (let idx = 0, len = input.length; idx < len;) {
     const codePoint = input.codePointAt(idx)!;
 
     // Two byte encoding
@@ -238,8 +235,7 @@ export const utf16Encode = (
  *
  * Reference: https://en.wikipedia.org/wiki/UTF-16#Description
  */
-export const isWithinBMP = (codePoint: number) =>
-  codePoint >= 0 && codePoint <= 0xffff;
+export const isWithinBMP = (codePoint: number) => codePoint >= 0 && codePoint <= 0xffff;
 
 /**
  * Returns `true` if the given `codePoint` is valid and must be represented
@@ -248,8 +244,7 @@ export const isWithinBMP = (codePoint: number) =>
  *
  * Reference: https://en.wikipedia.org/wiki/UTF-16#Description
  */
-export const hasSurrogates = (codePoint: number) =>
-  codePoint >= 0x010000 && codePoint <= 0x10ffff;
+export const hasSurrogates = (codePoint: number) => codePoint >= 0x010000 && codePoint <= 0x10ffff;
 
 // From Unicode 3.0 spec, section 3.7:
 //   http://unicode.org/versions/Unicode3.0.0/ch03.pdf
@@ -258,15 +253,14 @@ export const highSurrogate = (codePoint: number) =>
 
 // From Unicode 3.0 spec, section 3.7:
 //   http://unicode.org/versions/Unicode3.0.0/ch03.pdf
-export const lowSurrogate = (codePoint: number) =>
-  ((codePoint - 0x10000) % 0x400) + 0xdc00;
+export const lowSurrogate = (codePoint: number) => ((codePoint - 0x10000) % 0x400) + 0xdc00;
 
 enum ByteOrder {
-  BigEndian = 'BigEndian',
-  LittleEndian = 'LittleEndian',
+  BigEndian = "BigEndian",
+  LittleEndian = "LittleEndian",
 }
 
-const REPLACEMENT = '�'.codePointAt(0)!;
+const REPLACEMENT = "�".codePointAt(0)!;
 
 /**
  * Decodes a Uint8Array of data to a string using UTF-16.
@@ -280,10 +274,7 @@ const REPLACEMENT = '�'.codePointAt(0)!;
  *                      at the start of the encoding. (default `true`)
  * @returns The decoded string.
  */
-export const utf16Decode = (
-  input: Uint8Array,
-  byteOrderMark = true,
-): string => {
+export const utf16Decode = (input: Uint8Array, byteOrderMark = true): string => {
   // Need at least 2 bytes of data in UTF-16 encodings
   if (input.length <= 1) return String.fromCodePoint(REPLACEMENT);
 
@@ -332,7 +323,7 @@ export const utf16Decode = (
     return String.fromCodePoint(...codePoints);
   }
 
-  let result = '';
+  let result = "";
 
   for (let i = 0; i < codePoints.length; i += chunkSize) {
     result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));
@@ -347,8 +338,7 @@ export const utf16Decode = (
  *
  * Reference: https://en.wikipedia.org/wiki/UTF-16#Description
  */
-const isHighSurrogate = (codePoint: number) =>
-  codePoint >= 0xd800 && codePoint <= 0xdbff;
+const isHighSurrogate = (codePoint: number) => codePoint >= 0xd800 && codePoint <= 0xdbff;
 
 /**
  * Returns `true` if the given `codePoint` is a low surrogate.
@@ -356,8 +346,7 @@ const isHighSurrogate = (codePoint: number) =>
  *
  * Reference: https://en.wikipedia.org/wiki/UTF-16#Description
  */
-const isLowSurrogate = (codePoint: number) =>
-  codePoint >= 0xdc00 && codePoint <= 0xdfff;
+const isLowSurrogate = (codePoint: number) => codePoint >= 0xdc00 && codePoint <= 0xdfff;
 
 /**
  * Decodes the given utf-16 values first and second using the specified
@@ -393,11 +382,9 @@ const readBOM = (bytes: Uint8Array): ByteOrder =>
       ? ByteOrder.LittleEndian
       : ByteOrder.BigEndian;
 
-const hasUtf16BigEndianBOM = (bytes: Uint8Array) =>
-  bytes[0] === 0xfe && bytes[1] === 0xff;
+const hasUtf16BigEndianBOM = (bytes: Uint8Array) => bytes[0] === 0xfe && bytes[1] === 0xff;
 
-const hasUtf16LittleEndianBOM = (bytes: Uint8Array) =>
-  bytes[0] === 0xff && bytes[1] === 0xfe;
+const hasUtf16LittleEndianBOM = (bytes: Uint8Array) => bytes[0] === 0xff && bytes[1] === 0xfe;
 
 export const hasUtf16BOM = (bytes: Uint8Array) =>
   hasUtf16BigEndianBOM(bytes) || hasUtf16LittleEndianBOM(bytes);
@@ -419,8 +406,8 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
   const bytes = input.subarray(start);
 
   // Use TextDecoder if available (Node.js and modern browsers)
-  if (typeof TextDecoder !== 'undefined') {
-    return new TextDecoder('utf-8').decode(bytes);
+  if (typeof TextDecoder !== "undefined") {
+    return new TextDecoder("utf-8").decode(bytes);
   }
 
   // Fallback manual UTF-8 decoding
@@ -445,8 +432,7 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
       const byte2 = bytes[idx + 1] ?? 0;
       const byte3 = bytes[idx + 2] ?? 0;
 
-      const codePoint =
-        ((byte1 & 0x0f) << 12) | ((byte2 & 0x3f) << 6) | (byte3 & 0x3f);
+      const codePoint = ((byte1 & 0x0f) << 12) | ((byte2 & 0x3f) << 6) | (byte3 & 0x3f);
 
       codePoints.push(codePoint);
       idx += 3;
@@ -457,10 +443,7 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
       const byte4 = bytes[idx + 3] ?? 0;
 
       const codePoint =
-        ((byte1 & 0x07) << 18) |
-        ((byte2 & 0x3f) << 12) |
-        ((byte3 & 0x3f) << 6) |
-        (byte4 & 0x3f);
+        ((byte1 & 0x07) << 18) | ((byte2 & 0x3f) << 12) | ((byte3 & 0x3f) << 6) | (byte4 & 0x3f);
 
       codePoints.push(codePoint);
       idx += 4;
@@ -478,7 +461,7 @@ export const utf8Decode = (input: Uint8Array, byteOrderMark = true): string => {
     return String.fromCodePoint(...codePoints);
   }
 
-  let result = '';
+  let result = "";
 
   for (let i = 0; i < codePoints.length; i += chunkSize) {
     result += String.fromCodePoint(...codePoints.slice(i, i + chunkSize));

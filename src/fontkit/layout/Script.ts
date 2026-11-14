@@ -1,136 +1,136 @@
-import { getScript } from '../../vendors/unicode-properties/index.js';
+import { getScript } from "../../vendors/unicode-properties/index.js";
 
 // This maps the Unicode Script property to an OpenType script tag
 // Data from http://www.microsoft.com/typography/otspec/scripttags.htm
 // and http://www.unicode.org/Public/UNIDATA/PropertyValueAliases.txt.
 const UNICODE_SCRIPTS: Record<string, string | string[]> = {
-  Caucasian_Albanian: 'aghb',
-  Arabic: 'arab',
-  Imperial_Aramaic: 'armi',
-  Armenian: 'armn',
-  Avestan: 'avst',
-  Balinese: 'bali',
-  Bamum: 'bamu',
-  Bassa_Vah: 'bass',
-  Batak: 'batk',
-  Bengali: ['bng2', 'beng'],
-  Bopomofo: 'bopo',
-  Brahmi: 'brah',
-  Braille: 'brai',
-  Buginese: 'bugi',
-  Buhid: 'buhd',
-  Chakma: 'cakm',
-  Canadian_Aboriginal: 'cans',
-  Carian: 'cari',
-  Cham: 'cham',
-  Cherokee: 'cher',
-  Coptic: 'copt',
-  Cypriot: 'cprt',
-  Cyrillic: 'cyrl',
-  Devanagari: ['dev2', 'deva'],
-  Deseret: 'dsrt',
-  Duployan: 'dupl',
-  Egyptian_Hieroglyphs: 'egyp',
-  Elbasan: 'elba',
-  Ethiopic: 'ethi',
-  Georgian: 'geor',
-  Glagolitic: 'glag',
-  Gothic: 'goth',
-  Grantha: 'gran',
-  Greek: 'grek',
-  Gujarati: ['gjr2', 'gujr'],
-  Gurmukhi: ['gur2', 'guru'],
-  Hangul: 'hang',
-  Han: 'hani',
-  Hanunoo: 'hano',
-  Hebrew: 'hebr',
-  Hiragana: 'hira',
-  Pahawh_Hmong: 'hmng',
-  Katakana_Or_Hiragana: 'hrkt',
-  Old_Italic: 'ital',
-  Javanese: 'java',
-  Kayah_Li: 'kali',
-  Katakana: 'kana',
-  Kharoshthi: 'khar',
-  Khmer: 'khmr',
-  Khojki: 'khoj',
-  Kannada: ['knd2', 'knda'],
-  Kaithi: 'kthi',
-  Tai_Tham: 'lana',
-  Lao: 'lao ',
-  Latin: 'latn',
-  Lepcha: 'lepc',
-  Limbu: 'limb',
-  Linear_A: 'lina',
-  Linear_B: 'linb',
-  Lisu: 'lisu',
-  Lycian: 'lyci',
-  Lydian: 'lydi',
-  Mahajani: 'mahj',
-  Mandaic: 'mand',
-  Manichaean: 'mani',
-  Mende_Kikakui: 'mend',
-  Meroitic_Cursive: 'merc',
-  Meroitic_Hieroglyphs: 'mero',
-  Malayalam: ['mlm2', 'mlym'],
-  Modi: 'modi',
-  Mongolian: 'mong',
-  Mro: 'mroo',
-  Meetei_Mayek: 'mtei',
-  Myanmar: ['mym2', 'mymr'],
-  Old_North_Arabian: 'narb',
-  Nabataean: 'nbat',
-  Nko: 'nko ',
-  Ogham: 'ogam',
-  Ol_Chiki: 'olck',
-  Old_Turkic: 'orkh',
-  Oriya: ['ory2', 'orya'],
-  Osmanya: 'osma',
-  Palmyrene: 'palm',
-  Pau_Cin_Hau: 'pauc',
-  Old_Permic: 'perm',
-  Phags_Pa: 'phag',
-  Inscriptional_Pahlavi: 'phli',
-  Psalter_Pahlavi: 'phlp',
-  Phoenician: 'phnx',
-  Miao: 'plrd',
-  Inscriptional_Parthian: 'prti',
-  Rejang: 'rjng',
-  Runic: 'runr',
-  Samaritan: 'samr',
-  Old_South_Arabian: 'sarb',
-  Saurashtra: 'saur',
-  Shavian: 'shaw',
-  Sharada: 'shrd',
-  Siddham: 'sidd',
-  Khudawadi: 'sind',
-  Sinhala: 'sinh',
-  Sora_Sompeng: 'sora',
-  Sundanese: 'sund',
-  Syloti_Nagri: 'sylo',
-  Syriac: 'syrc',
-  Tagbanwa: 'tagb',
-  Takri: 'takr',
-  Tai_Le: 'tale',
-  New_Tai_Lue: 'talu',
-  Tamil: ['tml2', 'taml'],
-  Tai_Viet: 'tavt',
-  Telugu: ['tel2', 'telu'],
-  Tifinagh: 'tfng',
-  Tagalog: 'tglg',
-  Thaana: 'thaa',
-  Thai: 'thai',
-  Tibetan: 'tibt',
-  Tirhuta: 'tirh',
-  Ugaritic: 'ugar',
-  Vai: 'vai ',
-  Warang_Citi: 'wara',
-  Old_Persian: 'xpeo',
-  Cuneiform: 'xsux',
-  Yi: 'yi  ',
-  Inherited: 'zinh',
-  Common: 'zyyy',
-  Unknown: 'zzzz',
+  Caucasian_Albanian: "aghb",
+  Arabic: "arab",
+  Imperial_Aramaic: "armi",
+  Armenian: "armn",
+  Avestan: "avst",
+  Balinese: "bali",
+  Bamum: "bamu",
+  Bassa_Vah: "bass",
+  Batak: "batk",
+  Bengali: ["bng2", "beng"],
+  Bopomofo: "bopo",
+  Brahmi: "brah",
+  Braille: "brai",
+  Buginese: "bugi",
+  Buhid: "buhd",
+  Chakma: "cakm",
+  Canadian_Aboriginal: "cans",
+  Carian: "cari",
+  Cham: "cham",
+  Cherokee: "cher",
+  Coptic: "copt",
+  Cypriot: "cprt",
+  Cyrillic: "cyrl",
+  Devanagari: ["dev2", "deva"],
+  Deseret: "dsrt",
+  Duployan: "dupl",
+  Egyptian_Hieroglyphs: "egyp",
+  Elbasan: "elba",
+  Ethiopic: "ethi",
+  Georgian: "geor",
+  Glagolitic: "glag",
+  Gothic: "goth",
+  Grantha: "gran",
+  Greek: "grek",
+  Gujarati: ["gjr2", "gujr"],
+  Gurmukhi: ["gur2", "guru"],
+  Hangul: "hang",
+  Han: "hani",
+  Hanunoo: "hano",
+  Hebrew: "hebr",
+  Hiragana: "hira",
+  Pahawh_Hmong: "hmng",
+  Katakana_Or_Hiragana: "hrkt",
+  Old_Italic: "ital",
+  Javanese: "java",
+  Kayah_Li: "kali",
+  Katakana: "kana",
+  Kharoshthi: "khar",
+  Khmer: "khmr",
+  Khojki: "khoj",
+  Kannada: ["knd2", "knda"],
+  Kaithi: "kthi",
+  Tai_Tham: "lana",
+  Lao: "lao ",
+  Latin: "latn",
+  Lepcha: "lepc",
+  Limbu: "limb",
+  Linear_A: "lina",
+  Linear_B: "linb",
+  Lisu: "lisu",
+  Lycian: "lyci",
+  Lydian: "lydi",
+  Mahajani: "mahj",
+  Mandaic: "mand",
+  Manichaean: "mani",
+  Mende_Kikakui: "mend",
+  Meroitic_Cursive: "merc",
+  Meroitic_Hieroglyphs: "mero",
+  Malayalam: ["mlm2", "mlym"],
+  Modi: "modi",
+  Mongolian: "mong",
+  Mro: "mroo",
+  Meetei_Mayek: "mtei",
+  Myanmar: ["mym2", "mymr"],
+  Old_North_Arabian: "narb",
+  Nabataean: "nbat",
+  Nko: "nko ",
+  Ogham: "ogam",
+  Ol_Chiki: "olck",
+  Old_Turkic: "orkh",
+  Oriya: ["ory2", "orya"],
+  Osmanya: "osma",
+  Palmyrene: "palm",
+  Pau_Cin_Hau: "pauc",
+  Old_Permic: "perm",
+  Phags_Pa: "phag",
+  Inscriptional_Pahlavi: "phli",
+  Psalter_Pahlavi: "phlp",
+  Phoenician: "phnx",
+  Miao: "plrd",
+  Inscriptional_Parthian: "prti",
+  Rejang: "rjng",
+  Runic: "runr",
+  Samaritan: "samr",
+  Old_South_Arabian: "sarb",
+  Saurashtra: "saur",
+  Shavian: "shaw",
+  Sharada: "shrd",
+  Siddham: "sidd",
+  Khudawadi: "sind",
+  Sinhala: "sinh",
+  Sora_Sompeng: "sora",
+  Sundanese: "sund",
+  Syloti_Nagri: "sylo",
+  Syriac: "syrc",
+  Tagbanwa: "tagb",
+  Takri: "takr",
+  Tai_Le: "tale",
+  New_Tai_Lue: "talu",
+  Tamil: ["tml2", "taml"],
+  Tai_Viet: "tavt",
+  Telugu: ["tel2", "telu"],
+  Tifinagh: "tfng",
+  Tagalog: "tglg",
+  Thaana: "thaa",
+  Thai: "thai",
+  Tibetan: "tibt",
+  Tirhuta: "tirh",
+  Ugaritic: "ugar",
+  Vai: "vai ",
+  Warang_Citi: "wara",
+  Old_Persian: "xpeo",
+  Cuneiform: "xsux",
+  Yi: "yi  ",
+  Inherited: "zinh",
+  Common: "zyyy",
+  Unknown: "zzzz",
 };
 
 const OPENTYPE_SCRIPTS: Record<string, string> = {};
@@ -175,12 +175,12 @@ export function forString(string: string): string | string[] {
 
     const script = getScript(code);
 
-    if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
+    if (script !== "Common" && script !== "Inherited" && script !== "Unknown") {
+      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS["Unknown"]!;
     }
   }
 
-  return UNICODE_SCRIPTS['Unknown']!;
+  return UNICODE_SCRIPTS["Unknown"]!;
 }
 
 export function forCodePoints(codePoints: number[]): string | string[] {
@@ -188,12 +188,12 @@ export function forCodePoints(codePoints: number[]): string | string[] {
     const codePoint = codePoints[i]!;
     const script = getScript(codePoint);
 
-    if (script !== 'Common' && script !== 'Inherited' && script !== 'Unknown') {
-      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS['Unknown']!;
+    if (script !== "Common" && script !== "Inherited" && script !== "Unknown") {
+      return UNICODE_SCRIPTS[script] ?? UNICODE_SCRIPTS["Unknown"]!;
     }
   }
 
-  return UNICODE_SCRIPTS['Unknown']!;
+  return UNICODE_SCRIPTS["Unknown"]!;
 }
 
 // The scripts in this map are written from right to left
@@ -205,7 +205,7 @@ const RTL: Record<string, boolean> = {
   cprt: true, // Cypriot Syllabary
   khar: true, // Kharosthi
   phnx: true, // Phoenician
-  'nko ': true, // N'Ko
+  "nko ": true, // N'Ko
   lydi: true, // Lydian
   avst: true, // Avestan
   armi: true, // Imperial Aramaic
@@ -227,12 +227,12 @@ const RTL: Record<string, boolean> = {
   phlp: true, // Psalter Pahlavi
 };
 
-export function direction(script: string | string[]): 'ltr' | 'rtl' {
+export function direction(script: string | string[]): "ltr" | "rtl" {
   const scriptKey = Array.isArray(script) ? script[0] : script;
 
   if (scriptKey && RTL[scriptKey]) {
-    return 'rtl';
+    return "rtl";
   }
 
-  return 'ltr';
+  return "ltr";
 }

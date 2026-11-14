@@ -27,11 +27,11 @@ const MAX_RANDOM_BYTES_PER_CALL = 65536;
 const getWebCrypto = (): Crypto => {
   const webCrypto = (globalThis as { crypto?: Crypto }).crypto;
 
-  if (!webCrypto || typeof webCrypto.getRandomValues !== 'function') {
+  if (!webCrypto || typeof webCrypto.getRandomValues !== "function") {
     throw new Error(
-      'Web Crypto API is unavailable, so cryptographically secure random bytes ' +
-        'cannot be generated. A `crypto.getRandomValues` polyfill is required ' +
-        'to encrypt documents in this environment.',
+      "Web Crypto API is unavailable, so cryptographically secure random bytes " +
+        "cannot be generated. A `crypto.getRandomValues` polyfill is required " +
+        "to encrypt documents in this environment.",
     );
   }
 
@@ -52,11 +52,7 @@ export const getRandomBytes = (byteCount: number): Uint8Array => {
   const webCrypto = getWebCrypto();
   const bytes = new Uint8Array(byteCount);
 
-  for (
-    let offset = 0;
-    offset < byteCount;
-    offset += MAX_RANDOM_BYTES_PER_CALL
-  ) {
+  for (let offset = 0; offset < byteCount; offset += MAX_RANDOM_BYTES_PER_CALL) {
     const end = Math.min(offset + MAX_RANDOM_BYTES_PER_CALL, byteCount);
     webCrypto.getRandomValues(bytes.subarray(offset, end));
   }

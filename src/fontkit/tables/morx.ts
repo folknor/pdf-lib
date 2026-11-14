@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import { LookupTable, StateTable, UnboundedArray } from './aat.js';
+import * as r from "../../vendors/restructure/index.js";
+import { LookupTable, StateTable, UnboundedArray } from "./aat.js";
 
 const LigatureData = {
   action: r.uint16,
@@ -19,7 +19,7 @@ const SubstitutionTable = new r.Struct({
   items: new UnboundedArray(new r.Pointer(r.uint32, LookupTable())) as any,
 });
 
-const SubtableData = new r.VersionedStruct('type', {
+const SubtableData = new r.VersionedStruct("type", {
   0: {
     // Indic Rearrangement Subtable
     stateTable: StateTable(),
@@ -34,10 +34,7 @@ const SubtableData = new r.VersionedStruct('type', {
   2: {
     // Ligature subtable
     stateTable: StateTable(LigatureData),
-    ligatureActions: new r.Pointer(
-      r.uint32,
-      new UnboundedArray(r.uint32) as any,
-    ),
+    ligatureActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint32) as any),
     components: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
     ligatureList: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
   },
@@ -50,10 +47,7 @@ const SubtableData = new r.VersionedStruct('type', {
   5: {
     // Glyph Insertion Subtable
     stateTable: StateTable(InsertionData),
-    insertionActions: new r.Pointer(
-      r.uint32,
-      new UnboundedArray(r.uint16) as any,
-    ),
+    insertionActions: new r.Pointer(r.uint32, new UnboundedArray(r.uint16) as any),
   },
 });
 
@@ -78,13 +72,13 @@ const MorxChain = new r.Struct({
   chainLength: r.uint32,
   nFeatureEntries: r.uint32,
   nSubtables: r.uint32,
-  features: new r.Array(FeatureEntry, 'nFeatureEntries'),
-  subtables: new r.Array(Subtable, 'nSubtables'),
+  features: new r.Array(FeatureEntry, "nFeatureEntries"),
+  subtables: new r.Array(Subtable, "nSubtables"),
 });
 
 export default new r.Struct({
   version: r.uint16,
   unused: new r.Reserved(r.uint16),
   nChains: r.uint32,
-  chains: new r.Array(MorxChain, 'nChains'),
+  chains: new r.Array(MorxChain, "nChains"),
 });

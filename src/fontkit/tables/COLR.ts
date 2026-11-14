@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const LayerRecord = new r.Struct({
   gid: r.uint16, // Glyph ID of layer glyph (must be in z-order from bottom to top).
@@ -19,14 +19,9 @@ const BaseGlyphRecord = new r.Struct({
 export default new r.Struct({
   version: r.uint16,
   numBaseGlyphRecords: r.uint16,
-  baseGlyphRecord: new r.Pointer(
-    r.uint32,
-    new r.Array(BaseGlyphRecord, 'numBaseGlyphRecords'),
-  ),
-  layerRecords: new r.Pointer(
-    r.uint32,
-    new r.Array(LayerRecord, 'numLayerRecords'),
-    { lazy: true },
-  ),
+  baseGlyphRecord: new r.Pointer(r.uint32, new r.Array(BaseGlyphRecord, "numBaseGlyphRecords")),
+  layerRecords: new r.Pointer(r.uint32, new r.Array(LayerRecord, "numLayerRecords"), {
+    lazy: true,
+  }),
   numLayerRecords: r.uint16,
 });

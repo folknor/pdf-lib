@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from "fs";
 import {
   cmyk,
   PDFArray,
@@ -10,13 +10,13 @@ import {
   PDFName,
   PDFNumber,
   type PDFPage,
-} from '../../src/index';
+} from "../../src/index";
 
-const birdPng = fs.readFileSync('assets/images/greyscale_bird.png');
+const birdPng = fs.readFileSync("assets/images/greyscale_bird.png");
 
 const graphicsStates = (page: PDFPage): PDFDict[] => {
   const resources = page.node.Resources();
-  const dict = resources?.lookupMaybe(PDFName.of('ExtGState'), PDFDict);
+  const dict = resources?.lookupMaybe(PDFName.of("ExtGState"), PDFDict);
 
   if (!dict) return [];
 
@@ -35,18 +35,18 @@ const overprintOf = (page: PDFPage) => {
     return v === undefined ? undefined : v === PDFBool.True;
   };
 
-  const opm = state.get(PDFName.of('OPM'));
+  const opm = state.get(PDFName.of("OPM"));
 
   return {
-    OP: flag('OP'),
-    op: flag('op'),
+    OP: flag("OP"),
+    op: flag("op"),
     OPM: opm instanceof PDFNumber ? opm.asNumber() : undefined,
   };
 };
 
 const contentOf = (page: PDFPage): string => {
   const contents = page.node.Contents() as PDFArray;
-  let text = '';
+  let text = "";
 
   for (let i = 0; i < contents.size(); i++) {
     const stream = contents.lookup(i);
@@ -57,23 +57,23 @@ const contentOf = (page: PDFPage): string => {
   return text;
 };
 
-describe('Overprint options', () => {
-  it('overprints a text fill with mode 1 by default', async () => {
+describe("Overprint options", () => {
+  it("overprints a text fill with mode 1 by default", async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage();
-    page.drawText('Black', { color: cmyk(0, 0, 0, 1), overprint: true });
+    page.drawText("Black", { color: cmyk(0, 0, 0, 1), overprint: true });
     expect(overprintOf(page)).toEqual({ OP: false, op: true, OPM: 1 });
     expect(contentOf(page)).toMatch(/\/GS\S* gs/);
   });
 
-  it('maps text strokeOverprint to OP', async () => {
+  it("maps text strokeOverprint to OP", async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage();
-    page.drawText('x', { strokeOverprint: true });
+    page.drawText("x", { strokeOverprint: true });
     expect(overprintOf(page)).toEqual({ OP: true, op: false, OPM: 1 });
   });
 
-  it('maps shape fill to op and border to OP', async () => {
+  it("maps shape fill to op and border to OP", async () => {
     const doc = await PDFDocument.create();
 
     const draws: ((p: PDFPage) => void)[] = [
@@ -81,7 +81,7 @@ describe('Overprint options', () => {
       (p) => p.drawSquare({ overprint: true }),
       (p) => p.drawEllipse({ overprint: true }),
       (p) => p.drawCircle({ overprint: true }),
-      (p) => p.drawSvgPath('M 0 0 L 10 10', { overprint: true }),
+      (p) => p.drawSvgPath("M 0 0 L 10 10", { overprint: true }),
     ];
 
     for (const draw of draws) {
@@ -95,7 +95,7 @@ describe('Overprint options', () => {
     expect(overprintOf(page)).toEqual({ OP: true, op: false, OPM: 1 });
   });
 
-  it('maps a line to OP, an image to op and an embedded page to both', async () => {
+  it("maps a line to OP, an image to op and an embedded page to both", async () => {
     const doc = await PDFDocument.create();
     const line = doc.addPage();
     line.drawLine({ start: { x: 0, y: 0 }, end: { x: 9, y: 9 }, overprint: true });
@@ -113,7 +113,7 @@ describe('Overprint options', () => {
     expect(overprintOf(drawn)).toEqual({ OP: true, op: true, OPM: 1 });
   });
 
-  it('honours an explicit mode and leaves OPM unset when nothing overprints', async () => {
+  it("honours an explicit mode and leaves OPM unset when nothing overprints", async () => {
     const doc = await PDFDocument.create();
     const zero = doc.addPage();
     zero.drawRectangle({ overprint: true, overprintMode: 0 });
@@ -132,23 +132,23 @@ describe('Overprint options', () => {
     });
   });
 
-  it('adds no graphics state without overprint options', async () => {
+  it("adds no graphics state without overprint options", async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage();
     page.drawRectangle({});
-    page.drawText('x');
+    page.drawText("x");
     expect(graphicsStates(page)).toEqual([]);
   });
 
-  it('refuses bad values before drawing anything', async () => {
+  it("refuses bad values before drawing anything", async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage();
-    expect(() =>
-      page.drawRectangle({ overprint: 'yes' as unknown as boolean }),
-    ).toThrow(/overprint/);
-    expect(() =>
-      page.drawText('x', { strokeOverprint: 1 as unknown as boolean }),
-    ).toThrow(/strokeOverprint/);
+    expect(() => page.drawRectangle({ overprint: "yes" as unknown as boolean })).toThrow(
+      /overprint/,
+    );
+    expect(() => page.drawText("x", { strokeOverprint: 1 as unknown as boolean })).toThrow(
+      /strokeOverprint/,
+    );
     expect(() =>
       page.drawLine({
         start: { x: 0, y: 0 },
@@ -160,7 +160,7 @@ describe('Overprint options', () => {
     expect(page.node.Contents()).toBeUndefined();
   });
 
-  it('refuses documents older than PDF 1.3', async () => {
+  it("refuses documents older than PDF 1.3", async () => {
     const doc = await PDFDocument.create();
     doc.context.header = PDFHeader.forVersion(1, 2);
     const page = doc.addPage();

@@ -1,13 +1,13 @@
-import * as r from '../../vendors/restructure/index.js';
-import type { NumberT } from '../../vendors/restructure/Number.js';
-import type { ForceLargeValue } from './CFFOperand.js';
+import * as r from "../../vendors/restructure/index.js";
+import type { NumberT } from "../../vendors/restructure/Number.js";
+import type { ForceLargeValue } from "./CFFOperand.js";
 
 // CFFPointer uses a custom approach where offsetType is dynamically replaced
 // with partial implementations. We cast to any to allow this flexibility.
 export default class CFFPointer extends r.Pointer {
   constructor(type: any, options: Record<string, any> = {}) {
-    if (options['type'] == null) {
-      options['type'] = 'global';
+    if (options["type"] == null) {
+      options["type"] = "global";
     }
 
     // Pass a dummy NumberT - it will be replaced dynamically

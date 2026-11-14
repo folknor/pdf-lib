@@ -1,10 +1,8 @@
-import { PDFDocument, PDFEmbeddedPage } from '../../src/index';
+import { PDFDocument, PDFEmbeddedPage } from "../../src/index";
 
 // Helper: creates a source document with content on its pages so embedding works.
 // Pages must have a Contents stream or PDFPageEmbedder throws.
-async function createSourceDoc(
-  pageSizes: [number, number][],
-): Promise<Uint8Array> {
+async function createSourceDoc(pageSizes: [number, number][]): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
 
   for (const [w, h] of pageSizes) {
@@ -16,7 +14,7 @@ async function createSourceDoc(
   return doc.save();
 }
 
-describe('PDFEmbeddedPage', () => {
+describe("PDFEmbeddedPage", () => {
   let embeddedPage: PDFEmbeddedPage;
   let dstDoc: PDFDocument;
 
@@ -28,66 +26,66 @@ describe('PDFEmbeddedPage', () => {
     embeddedPage = page;
   });
 
-  it('is an instance of PDFEmbeddedPage', () => {
+  it("is an instance of PDFEmbeddedPage", () => {
     expect(embeddedPage).toBeInstanceOf(PDFEmbeddedPage);
   });
 
-  it('has the correct width and height from the source page', () => {
+  it("has the correct width and height from the source page", () => {
     expect(embeddedPage.width).toBe(500);
     expect(embeddedPage.height).toBe(300);
   });
 
-  describe('size() method', () => {
-    it('returns the width and height of the embedded page', () => {
+  describe("size() method", () => {
+    it("returns the width and height of the embedded page", () => {
       const size = embeddedPage.size();
       expect(size).toEqual({ width: 500, height: 300 });
     });
   });
 
-  describe('scale() method', () => {
-    it('returns the width and height scaled by the given factor', () => {
+  describe("scale() method", () => {
+    it("returns the width and height scaled by the given factor", () => {
       const scaled = embeddedPage.scale(0.5);
       expect(scaled).toEqual({ width: 250, height: 150 });
     });
 
-    it('scales up when factor is greater than 1', () => {
+    it("scales up when factor is greater than 1", () => {
       const scaled = embeddedPage.scale(2);
       expect(scaled).toEqual({ width: 1000, height: 600 });
     });
 
-    it('returns zero dimensions when factor is 0', () => {
+    it("returns zero dimensions when factor is 0", () => {
       const scaled = embeddedPage.scale(0);
       expect(scaled).toEqual({ width: 0, height: 0 });
     });
 
-    it('returns the original dimensions when factor is 1', () => {
+    it("returns the original dimensions when factor is 1", () => {
       const scaled = embeddedPage.scale(1);
       expect(scaled).toEqual({ width: 500, height: 300 });
     });
 
-    it('handles fractional scale factors', () => {
+    it("handles fractional scale factors", () => {
       const scaled = embeddedPage.scale(0.1);
       expect(scaled).toEqual({ width: 50, height: 30 });
     });
 
-    it('throws an error when factor is not a number', () => {
-      expect(() => embeddedPage.scale('2' as any)).toThrow();
+    it("throws an error when factor is not a number", () => {
+      expect(() => embeddedPage.scale("2" as any)).toThrow();
     });
   });
 
-  describe('embed() method', () => {
-    it('embeds the page without throwing an error', async () => {
+  describe("embed() method", () => {
+    it("embeds the page without throwing an error", async () => {
       await expect(embeddedPage.embed()).resolves.not.toThrow();
     });
 
-    it('can be called multiple times without error', async () => {
+    it("can be called multiple times without error", async () => {
       await embeddedPage.embed();
       await expect(embeddedPage.embed()).resolves.not.toThrow();
     });
   });
 
-  describe('static of() method', () => {
-    it('creates an embedded page via embedPdf that has a ref and doc', async () => {
+  describe("static of() method", () => {
+    it("creates an embedded page via embedPdf that has a ref and doc", async () => {
       const srcBytes = await createSourceDoc([[200, 400]]);
       const src = await PDFDocument.load(srcBytes);
 
@@ -102,8 +100,8 @@ describe('PDFEmbeddedPage', () => {
     });
   });
 
-  describe('embedding multiple pages', () => {
-    it('embeds specified pages from a multi-page source document', async () => {
+  describe("embedding multiple pages", () => {
+    it("embeds specified pages from a multi-page source document", async () => {
       const srcBytes = await createSourceDoc([
         [100, 200],
         [300, 400],
@@ -125,8 +123,8 @@ describe('PDFEmbeddedPage', () => {
     });
   });
 
-  describe('saving a document with embedded pages', () => {
-    it('can save a document after embedding and drawing a page', async () => {
+  describe("saving a document with embedded pages", () => {
+    it("can save a document after embedding and drawing a page", async () => {
       const srcBytes = await createSourceDoc([[500, 300]]);
       const src = await PDFDocument.load(srcBytes);
 

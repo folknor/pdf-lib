@@ -6,13 +6,13 @@ import {
   COMPOSITION,
   DECOMPOSITION,
   STRINGPREP_TABLES,
-} from './passwordPrepData.js';
+} from "./passwordPrepData.js";
 
-const MAPPED_TO_NOTHING = STRINGPREP_TABLES['B.1']!;
-const NON_ASCII_SPACES = STRINGPREP_TABLES['C.1.2']!;
+const MAPPED_TO_NOTHING = STRINGPREP_TABLES["B.1"]!;
+const NON_ASCII_SPACES = STRINGPREP_TABLES["C.1.2"]!;
 
 const PROHIBITED = Object.entries(STRINGPREP_TABLES)
-  .filter(([name]) => name.startsWith('C.') && name !== 'C.1.1')
+  .filter(([name]) => name.startsWith("C.") && name !== "C.1.1")
   .flatMap(([, ranges]) => ranges);
 
 /*
@@ -29,23 +29,21 @@ const RIGHT_TO_LEFT: ReadonlyArray<readonly [number, number]> = [
   [0x1e800, 0x1efff],
 ];
 
-const inRanges = (
-  code: number,
-  ranges: ReadonlyArray<readonly [number, number]>,
-): boolean => ranges.some(([lo, hi]) => code >= lo && code <= hi);
+const inRanges = (code: number, ranges: ReadonlyArray<readonly [number, number]>): boolean =>
+  ranges.some(([lo, hi]) => code >= lo && code <= hi);
 
 const isProhibited = (code: number): boolean =>
   inRanges(code, PROHIBITED) || (code & 0xfffe) === 0xfffe;
 
 /** RFC 4013 section 2.1 mapping. B.1 is checked first: U+200B is in both. */
 const mapPassword = (password: string): string => {
-  let mapped = '';
+  let mapped = "";
 
   for (const char of password) {
     const code = char.codePointAt(0)!;
 
     if (inRanges(code, MAPPED_TO_NOTHING)) continue;
-    mapped += inRanges(code, NON_ASCII_SPACES) ? ' ' : char;
+    mapped += inRanges(code, NON_ASCII_SPACES) ? " " : char;
   }
 
   return mapped;
@@ -69,8 +67,7 @@ const normalize32 = (input: string): string => {
       const cls = COMBINING_CLASS[code] ?? 0;
       let at = decomposed.length;
 
-      while (cls && at && (COMBINING_CLASS[decomposed[at - 1]!] ?? 0) > cls)
-        at--;
+      while (cls && at && (COMBINING_CLASS[decomposed[at - 1]!] ?? 0) > cls) at--;
       decomposed.splice(at, 0, code);
     }
   };
@@ -98,11 +95,7 @@ const normalize32 = (input: string): string => {
       combined = base + code - 0x11a7;
     }
 
-    if (
-      starter >= 0 &&
-      combined !== undefined &&
-      (lastClass === 0 || lastClass < cls)
-    ) {
+    if (starter >= 0 && combined !== undefined && (lastClass === 0 || lastClass < cls)) {
       result[starter] = combined;
     } else {
       if (cls === 0) starter = result.length;
@@ -111,7 +104,7 @@ const normalize32 = (input: string): string => {
     }
   }
 
-  return result.map((code) => String.fromCodePoint(code)).join('');
+  return result.map((code) => String.fromCodePoint(code)).join("");
 };
 
 const saslprep = (password: string): string | undefined => {
@@ -119,11 +112,11 @@ const saslprep = (password: string): string | undefined => {
   const codes = Array.from(prepared, (char) => char.codePointAt(0)!);
 
   if (codes.some(isProhibited)) return undefined;
-  const randAL = (code: number) => inRanges(code, STRINGPREP_TABLES['D.1']!);
+  const randAL = (code: number) => inRanges(code, STRINGPREP_TABLES["D.1"]!);
 
   if (
     codes.some(randAL) &&
-    (codes.some((code) => inRanges(code, STRINGPREP_TABLES['D.2']!)) ||
+    (codes.some((code) => inRanges(code, STRINGPREP_TABLES["D.2"]!)) ||
       !randAL(codes[0]!) ||
       !randAL(codes[codes.length - 1]!))
   )
@@ -142,10 +135,8 @@ const encodePrepared = (prepared: string): Uint8Array =>
 export const prepareR6PasswordForWriting = (password: string): Uint8Array => {
   const mapped = mapPassword(password);
 
-  if (mapped.normalize('NFKC') !== mapped) {
-    throw new Error(
-      'AES-256 passwords must be in Unicode normalization form NFKC.',
-    );
+  if (mapped.normalize("NFKC") !== mapped) {
+    throw new Error("AES-256 passwords must be in Unicode normalization form NFKC.");
   }
 
   for (const char of mapped) {
@@ -153,14 +144,12 @@ export const prepareR6PasswordForWriting = (password: string): Uint8Array => {
 
     if (isProhibited(code)) {
       throw new Error(
-        `AES-256 passwords may not contain U+${code.toString(16).toUpperCase().padStart(4, '0')}.`,
+        `AES-256 passwords may not contain U+${code.toString(16).toUpperCase().padStart(4, "0")}.`,
       );
     }
 
     if (inRanges(code, RIGHT_TO_LEFT)) {
-      throw new Error(
-        'AES-256 passwords may not contain right-to-left characters.',
-      );
+      throw new Error("AES-256 passwords may not contain right-to-left characters.");
     }
   }
 
@@ -176,8 +165,7 @@ export const r6PasswordCandidates = (password: string): Uint8Array[] => {
   if (value === undefined) return [raw];
   const prepared = encodePrepared(value);
 
-  const same =
-    prepared.length === raw.length && prepared.every((b, i) => b === raw[i]);
+  const same = prepared.length === raw.length && prepared.every((b, i) => b === raw[i]);
 
   return same ? [prepared] : [prepared, raw];
 };

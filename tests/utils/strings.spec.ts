@@ -1,83 +1,76 @@
-import fontkit from 'src/fontkit.js';
-import { FontNames } from '../../src/vendors/standard-fonts/index.js';
-import fs from 'fs';
+import fontkit from "src/fontkit.js";
+import { FontNames } from "../../src/vendors/standard-fonts/index.js";
+import fs from "fs";
 
-import { CustomFontEmbedder, StandardFontEmbedder } from '../../src/core';
-import { breakTextIntoLines } from '../../src/utils';
-import { cleanText, lineSplit, parseDate } from '../../src/utils/strings';
+import { CustomFontEmbedder, StandardFontEmbedder } from "../../src/core";
+import { breakTextIntoLines } from "../../src/utils";
+import { cleanText, lineSplit, parseDate } from "../../src/utils/strings";
 
 const font = StandardFontEmbedder.for(FontNames.Helvetica);
 
 const textSize = 24;
 
-const computeTextWidth = (text: string) =>
-  font.widthOfTextAtSize(text, textSize);
+const computeTextWidth = (text: string) => font.widthOfTextAtSize(text, textSize);
 
-describe('breakTextIntoLines', () => {
-  it('handles empty wordBreaks arrays', () => {
-    const input = 'foobar-quxbaz';
-    const expected = ['foobar-quxbaz'];
+describe("breakTextIntoLines", () => {
+  it("handles empty wordBreaks arrays", () => {
+    const input = "foobar-quxbaz";
+    const expected = ["foobar-quxbaz"];
     const actual = breakTextIntoLines(input, [], 21, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('handles trailing newlines', () => {
-    const input = 'foo\n';
-    const expected = ['foo'];
+  it("handles trailing newlines", () => {
+    const input = "foo\n";
+    const expected = ["foo"];
     const actual = breakTextIntoLines(input, [], 21, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('handles trailing carriage returns', () => {
-    const input = 'foo\r';
-    const expected = ['foo'];
+  it("handles trailing carriage returns", () => {
+    const input = "foo\r";
+    const expected = ["foo"];
     const actual = breakTextIntoLines(input, [], 21, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('preserves empty lines between consecutive newlines', () => {
-    const input = 'foo\n\nbar';
-    const expected = ['foo', '', 'bar'];
+  it("preserves empty lines between consecutive newlines", () => {
+    const input = "foo\n\nbar";
+    const expected = ["foo", "", "bar"];
     const actual = breakTextIntoLines(input, [], 90000, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('preserves multiple consecutive empty lines', () => {
-    const input = 'foo\n\n\nbar';
-    const expected = ['foo', '', '', 'bar'];
+  it("preserves multiple consecutive empty lines", () => {
+    const input = "foo\n\n\nbar";
+    const expected = ["foo", "", "", "bar"];
     const actual = breakTextIntoLines(input, [], 90000, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('always breaks lines when EOLs are encountered', () => {
-    const input = 'foo\nbar-qux\rbaz\n';
-    const expected = ['foo', 'bar-qux', 'baz'];
+  it("always breaks lines when EOLs are encountered", () => {
+    const input = "foo\nbar-qux\rbaz\n";
+    const expected = ["foo", "bar-qux", "baz"];
     const actual = breakTextIntoLines(input, [], 90000, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
   it("breaks at the last possible 'wordBreak' before exceeding 'maxWidth' (1)", () => {
-    const input =
-      'Lorem Test ipsum dolor sit amet, consectetur adipiscing\nelit';
+    const input = "Lorem Test ipsum dolor sit amet, consectetur adipiscing\nelit";
 
     // Lines are measured whole, so the kerned "Te" pair lets "Lorem Te" fit.
     const expected = [
-      'Lorem Te',
-      'st ipsum ',
-      'dolor sit ',
-      'amet, co',
-      'nsectetur',
-      ' adipisci',
-      'ng',
-      'elit',
+      "Lorem Te",
+      "st ipsum ",
+      "dolor sit ",
+      "amet, co",
+      "nsectetur",
+      " adipisci",
+      "ng",
+      "elit",
     ];
 
-    const actual = breakTextIntoLines(
-      input,
-      ['', 'Test'],
-      100,
-      computeTextWidth,
-    );
+    const actual = breakTextIntoLines(input, ["", "Test"], 100, computeTextWidth);
 
     expect(actual).toEqual(expected);
 
@@ -86,64 +79,53 @@ describe('breakTextIntoLines', () => {
     }
   });
 
-  it('measures a candidate line whole, kerning across a break included', () => {
+  it("measures a candidate line whole, kerning across a break included", () => {
     // Helvetica kerns "space V": "A " + "V" sums wider than "A V".
-    const whole = computeTextWidth('A V');
-    expect(computeTextWidth('A ') + computeTextWidth('V')).toBeGreaterThan(
-      whole,
-    );
-    expect(breakTextIntoLines('A V', [' '], whole, computeTextWidth)).toEqual([
-      'A V',
-    ]);
+    const whole = computeTextWidth("A V");
+    expect(computeTextWidth("A ") + computeTextWidth("V")).toBeGreaterThan(whole);
+    expect(breakTextIntoLines("A V", [" "], whole, computeTextWidth)).toEqual(["A V"]);
   });
 
-  it('ends a line at the first overflowing candidate', () => {
+  it("ends a line at the first overflowing candidate", () => {
     // Widths that shrink as the line grows: a skipping search would pass
     // over the overflowing "bb " candidate.
-    const widths: Record<string, number> = { 'a ': 100, 'a bb ': 300 };
+    const widths: Record<string, number> = { "a ": 100, "a bb ": 300 };
     const measure = (t: string) => widths[t] ?? 150;
-    expect(breakTextIntoLines('a bb c', [' '], 200, measure)).toEqual([
-      'a ',
-      'bb c',
-    ]);
+    expect(breakTextIntoLines("a bb c", [" "], 200, measure)).toEqual(["a ", "bb c"]);
   });
 
   it("takes a line's first token whatever its width", () => {
-    const measure = (t: string) => (t === 'a' ? 300 : 150);
-    expect(breakTextIntoLines('ab', [''], 200, measure)).toEqual(['ab']);
+    const measure = (t: string) => (t === "a" ? 300 : 150);
+    expect(breakTextIntoLines("ab", [""], 200, measure)).toEqual(["ab"]);
   });
 
   it("breaks at the last possible 'wordBreak' before exceeding 'maxWidth' (2)", () => {
-    const input = 'Foo%bar%baz';
-    const expected = ['Foo%', 'bar%baz'];
-    const actual = breakTextIntoLines(input, ['%'], 100, computeTextWidth);
+    const input = "Foo%bar%baz";
+    const expected = ["Foo%", "bar%baz"];
+    const actual = breakTextIntoLines(input, ["%"], 100, computeTextWidth);
     expect(actual).toEqual(expected);
   });
 
-  it('handles non-ascii code points and empty breaks', async () => {
+  it("handles non-ascii code points and empty breaks", async () => {
     const sourceHansBytes = fs.readFileSync(
-      'assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
+      "assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf",
     );
 
-    const sourceHansFont = await CustomFontEmbedder.for(
-      fontkit,
-      sourceHansBytes,
-    );
+    const sourceHansFont = await CustomFontEmbedder.for(fontkit, sourceHansBytes);
 
-    const input =
-      '遅未亮惑職界転藤柔索名午納，問通桑転加料演載満経信回込町者訟窃。';
+    const input = "遅未亮惑職界転藤柔索名午納，問通桑転加料演載満経信回込町者訟窃。";
 
     const expected = [
-      '遅未亮惑職',
-      '界転藤柔索',
-      '名午納，問',
-      '通桑転加料',
-      '演載満経信',
-      '回込町者訟',
-      '窃。',
+      "遅未亮惑職",
+      "界転藤柔索",
+      "名午納，問",
+      "通桑転加料",
+      "演載満経信",
+      "回込町者訟",
+      "窃。",
     ];
 
-    const actual = breakTextIntoLines(input, [''], 125, (text: string) =>
+    const actual = breakTextIntoLines(input, [""], 125, (text: string) =>
       sourceHansFont.widthOfTextAtSize(text, 24),
     );
 
@@ -151,33 +133,33 @@ describe('breakTextIntoLines', () => {
   });
 });
 
-describe('cleanText', () => {
-  it('normalizes \\r\\n to \\n', () => {
-    expect(cleanText('Line 1\r\nLine 2')).toBe('Line 1\nLine 2');
+describe("cleanText", () => {
+  it("normalizes \\r\\n to \\n", () => {
+    expect(cleanText("Line 1\r\nLine 2")).toBe("Line 1\nLine 2");
   });
 
-  it('normalizes multiple \\r\\n sequences', () => {
-    expect(cleanText('A\r\nB\r\nC')).toBe('A\nB\nC');
+  it("normalizes multiple \\r\\n sequences", () => {
+    expect(cleanText("A\r\nB\r\nC")).toBe("A\nB\nC");
   });
 
-  it('preserves standalone \\n', () => {
-    expect(cleanText('A\nB')).toBe('A\nB');
+  it("preserves standalone \\n", () => {
+    expect(cleanText("A\nB")).toBe("A\nB");
   });
 
-  it('preserves standalone \\r', () => {
-    expect(cleanText('A\rB')).toBe('A\rB');
-  });
-});
-
-describe('lineSplit', () => {
-  it('splits \\r\\n-cleaned text into the correct number of lines', () => {
-    const text = cleanText('Line 1\r\nLine 2\r\nLine 3');
-    expect(lineSplit(text)).toEqual(['Line 1', 'Line 2', 'Line 3']);
+  it("preserves standalone \\r", () => {
+    expect(cleanText("A\rB")).toBe("A\rB");
   });
 });
 
-describe('parseDate', () => {
-  it('parses a full PDF date string', () => {
+describe("lineSplit", () => {
+  it("splits \\r\\n-cleaned text into the correct number of lines", () => {
+    const text = cleanText("Line 1\r\nLine 2\r\nLine 3");
+    expect(lineSplit(text)).toEqual(["Line 1", "Line 2", "Line 3"]);
+  });
+});
+
+describe("parseDate", () => {
+  it("parses a full PDF date string", () => {
     const date = parseDate("D:20210514143134-05'00'");
     expect(date).toBeInstanceOf(Date);
     expect(date!.getUTCFullYear()).toBe(2021);
@@ -185,26 +167,26 @@ describe('parseDate', () => {
     expect(date!.getUTCDate()).toBe(14);
   });
 
-  it('parses a date with single-digit timezone offset hour', () => {
+  it("parses a date with single-digit timezone offset hour", () => {
     const date = parseDate("D:20210514143134-5'00'");
     expect(date).toBeInstanceOf(Date);
     expect(date!.getUTCFullYear()).toBe(2021);
   });
 
-  it('parses a date with Z timezone', () => {
-    const date = parseDate('D:20210514143134Z');
+  it("parses a date with Z timezone", () => {
+    const date = parseDate("D:20210514143134Z");
     expect(date).toBeInstanceOf(Date);
     expect(date!.getUTCHours()).toBe(14);
   });
 
-  it('parses a minimal date (year only)', () => {
-    const date = parseDate('D:2021');
+  it("parses a minimal date (year only)", () => {
+    const date = parseDate("D:2021");
     expect(date).toBeInstanceOf(Date);
     expect(date!.getUTCFullYear()).toBe(2021);
   });
 
-  it('returns undefined for invalid date strings', () => {
-    expect(parseDate('not a date')).toBeUndefined();
-    expect(parseDate('2021')).toBeUndefined();
+  it("returns undefined for invalid date strings", () => {
+    expect(parseDate("not a date")).toBeUndefined();
+    expect(parseDate("2021")).toBeUndefined();
   });
 });

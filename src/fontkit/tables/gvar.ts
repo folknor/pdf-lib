@@ -1,6 +1,6 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
-const shortFrac = new r.Fixed(16, 'BE', 14);
+const shortFrac = new r.Fixed(16, "BE", 14);
 
 class Offset {
   static decode(stream: any, parent: any): number {
@@ -18,13 +18,13 @@ const gvar = new r.Struct({
   globalCoordCount: r.uint16,
   globalCoords: new r.Pointer(
     r.uint32,
-    new r.Array(new r.Array(shortFrac, 'axisCount'), 'globalCoordCount'),
+    new r.Array(new r.Array(shortFrac, "axisCount"), "globalCoordCount"),
   ),
   glyphCount: r.uint16,
   flags: r.uint16,
   offsetToData: r.uint32,
   offsets: new r.Array(
-    new r.Pointer(Offset as any, 'void', {
+    new r.Pointer(Offset as any, "void", {
       relativeTo: (ctx: any) => ctx.offsetToData,
       allowNull: false,
     }),

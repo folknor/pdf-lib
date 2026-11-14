@@ -1,6 +1,6 @@
-import { copyStringIntoBuffer } from '../../utils/index.js';
-import { PrivateConstructorError } from '../errors.js';
-import PDFObject from '../objects/PDFObject.js';
+import { copyStringIntoBuffer } from "../../utils/index.js";
+import { PrivateConstructorError } from "../errors.js";
+import PDFObject from "../objects/PDFObject.js";
 
 const ENFORCER = {};
 const pool = new Map<string, PDFRef>();
@@ -23,12 +23,8 @@ class PDFRef extends PDFObject {
   readonly generationNumber: number;
   readonly tag: string;
 
-  private constructor(
-    enforcer: any,
-    objectNumber: number,
-    generationNumber: number,
-  ) {
-    if (enforcer !== ENFORCER) throw new PrivateConstructorError('PDFRef');
+  private constructor(enforcer: any, objectNumber: number, generationNumber: number) {
+    if (enforcer !== ENFORCER) throw new PrivateConstructorError("PDFRef");
     super();
     this.objectNumber = objectNumber;
     this.generationNumber = generationNumber;

@@ -5,28 +5,28 @@
  */
 
 // Array types
-export { Array, ArrayT } from './Array.js';
+export { Array, ArrayT } from "./Array.js";
 
 // Base class
-export { Base } from './Base.js';
+export { Base } from "./Base.js";
 
 // Other types
-export { Bitfield } from './Bitfield.js';
+export { Bitfield } from "./Bitfield.js";
 
 // Boolean type
-export { Boolean, BooleanT } from './Boolean.js';
+export { Boolean, BooleanT } from "./Boolean.js";
 
 // Buffer type
-export { Buffer, BufferT } from './Buffer.js';
+export { Buffer, BufferT } from "./Buffer.js";
 
 // Core streams
-export { DecodeStream, TYPES } from './DecodeStream.js';
+export { DecodeStream, TYPES } from "./DecodeStream.js";
 
-export { EncodeStream } from './EncodeStream.js';
+export { EncodeStream } from "./EncodeStream.js";
 
-export { Enum } from './Enum.js';
+export { Enum } from "./Enum.js";
 
-export { LazyArray } from './LazyArray.js';
+export { LazyArray } from "./LazyArray.js";
 
 // Number types
 export {
@@ -65,32 +65,27 @@ export {
   uint32,
   uint32be,
   uint32le,
-} from './Number.js';
+} from "./Number.js";
 
-export { Optional } from './Optional.js';
+export { Optional } from "./Optional.js";
 
 // Pointer types
-export { Pointer, VoidPointer } from './Pointer.js';
+export { Pointer, VoidPointer } from "./Pointer.js";
 
-export { Reserved } from './Reserved.js';
+export { Reserved } from "./Reserved.js";
 
 // String type
-export { String, StringT } from './String.js';
+export { String, StringT } from "./String.js";
 
 // Struct types
-export { type FieldDefinition, type Fields, Struct } from './Struct.js';
+export { type FieldDefinition, type Fields, Struct } from "./Struct.js";
 
 // Types
-export type {
-  DecodeContext,
-  EncodeContext,
-  RType,
-  SizeContext,
-} from './types.js';
+export type { DecodeContext, EncodeContext, RType, SizeContext } from "./types.js";
 
-export { PropertyDescriptor } from './types.js';
+export { PropertyDescriptor } from "./types.js";
 
 // Utilities
-export { resolveLength } from './utils.js';
+export { resolveLength } from "./utils.js";
 
-export { VersionedStruct } from './VersionedStruct.js';
+export { VersionedStruct } from "./VersionedStruct.js";

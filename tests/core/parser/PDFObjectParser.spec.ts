@@ -1,6 +1,6 @@
-import { vi } from 'vitest';
-import ByteStream from '../../../src/core/parser/ByteStream';
-import PDFPageLeaf from '../../../src/core/structures/PDFPageLeaf';
+import { vi } from "vitest";
+import ByteStream from "../../../src/core/parser/ByteStream";
+import PDFPageLeaf from "../../../src/core/structures/PDFPageLeaf";
 import {
   mergeIntoTypedArray,
   numberToString,
@@ -19,18 +19,14 @@ import {
   PDFRef,
   PDFString,
   typedArrayFor,
-} from '../../../src/index';
+} from "../../../src/index";
 
 type ParseOptions = { capNumbers?: boolean };
 
 const parse = (value: string | Uint8Array, options: ParseOptions = {}) => {
   const context = PDFContext.create();
 
-  const parser = PDFObjectParser.forBytes(
-    typedArrayFor(value),
-    context,
-    options.capNumbers,
-  );
+  const parser = PDFObjectParser.forBytes(typedArrayFor(value), context, options.capNumbers);
 
   return parser.parseObject();
 };
@@ -41,13 +37,11 @@ const expectParse = (value: string | Uint8Array, options?: ParseOptions) =>
 const expectParseStr = (value: string | Uint8Array, options?: ParseOptions) =>
   expect(String(parse(value, options)));
 
-describe('PDFObjectParser', () => {
+describe("PDFObjectParser", () => {
   const origConsoleWarn = console.warn;
 
   beforeAll(() => {
-    const ignoredWarnings = [
-      'Parsed number that is too large for some PDF readers:',
-    ];
+    const ignoredWarnings = ["Parsed number that is too large for some PDF readers:"];
 
     console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
@@ -64,55 +58,55 @@ describe('PDFObjectParser', () => {
     console.warn = origConsoleWarn;
   });
 
-  it('throws an error when given empty input', () => {
-    expect(() => parse('')).toThrow();
+  it("throws an error when given empty input", () => {
+    expect(() => parse("")).toThrow();
   });
 
-  it('throws an error for invalid input', () => {
-    expect(() => parse('I_AM_INVAL')).toThrow();
+  it("throws an error for invalid input", () => {
+    expect(() => parse("I_AM_INVAL")).toThrow();
   });
 
-  describe('when parsing true booleans', () => {
+  describe("when parsing true booleans", () => {
     it("handles just the 'true' keyword", () => {
-      expectParse('true').toBe(PDFBool.True);
+      expectParse("true").toBe(PDFBool.True);
     });
 
     it("handles whitespace before and after the 'true' keyword", () => {
-      expectParse('\0\t\n\f\r true\0\t\n\f\r ').toBe(PDFBool.True);
+      expectParse("\0\t\n\f\r true\0\t\n\f\r ").toBe(PDFBool.True);
     });
 
     it("handles comments before and after the 'true' keyword", () => {
-      expectParse('% Lulz wut?\ntrue% Lulz wut?\n').toBe(PDFBool.True);
+      expectParse("% Lulz wut?\ntrue% Lulz wut?\n").toBe(PDFBool.True);
     });
   });
 
-  describe('when parsing false booleans', () => {
+  describe("when parsing false booleans", () => {
     it("handles just the 'false' keyword", () => {
-      expectParse('false').toBe(PDFBool.False);
+      expectParse("false").toBe(PDFBool.False);
     });
 
     it("handles whitespace before and after the 'false' keyword", () => {
-      expectParse('\0\t\n\f\r false\0\t\n\f\r ').toBe(PDFBool.False);
+      expectParse("\0\t\n\f\r false\0\t\n\f\r ").toBe(PDFBool.False);
     });
 
     it("handles comments before and after the 'false' keyword", () => {
-      expectParse('% Lulz wut?\nfalse% Lulz wut?\n').toBe(PDFBool.False);
+      expectParse("% Lulz wut?\nfalse% Lulz wut?\n").toBe(PDFBool.False);
     });
   });
 
-  describe('when parsing numbers', () => {
+  describe("when parsing numbers", () => {
     for (const [input, output] of [
-      ['123', '123'],
-      ['43445', '43445'],
-      ['+17', '17'],
-      ['-98', '-98'],
-      ['0', '0'],
-      ['34.5', '34.5'],
-      ['-3.62', '-3.62'],
-      ['+123.6', '123.6'],
-      ['4.', '4'],
-      ['-.002', '-0.002'],
-      ['0.', '0'],
+      ["123", "123"],
+      ["43445", "43445"],
+      ["+17", "17"],
+      ["-98", "-98"],
+      ["0", "0"],
+      ["34.5", "34.5"],
+      ["-3.62", "-3.62"],
+      ["+123.6", "123.6"],
+      ["4.", "4"],
+      ["-.002", "-0.002"],
+      ["0.", "0"],
     ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFNumber);
@@ -120,98 +114,90 @@ describe('PDFObjectParser', () => {
       });
     }
 
-    it('handles whitespace before and after the number', () => {
-      expectParse('\0\t\n\f\r -.5\0\t\n\f\r ').toBeInstanceOf(PDFNumber);
-      expectParseStr('\0\t\n\f\r -.5\0\t\n\f\r ').toBe('-0.5');
+    it("handles whitespace before and after the number", () => {
+      expectParse("\0\t\n\f\r -.5\0\t\n\f\r ").toBeInstanceOf(PDFNumber);
+      expectParseStr("\0\t\n\f\r -.5\0\t\n\f\r ").toBe("-0.5");
     });
 
-    it('handles comments before and after the number', () => {
-      expectParse('% Lulz wut?\n-.5% Lulz wut?\n').toBeInstanceOf(PDFNumber);
-      expectParseStr('% Lulz wut?\n-.5% Lulz wut?\n').toBe('-0.5');
+    it("handles comments before and after the number", () => {
+      expectParse("% Lulz wut?\n-.5% Lulz wut?\n").toBeInstanceOf(PDFNumber);
+      expectParseStr("% Lulz wut?\n-.5% Lulz wut?\n").toBe("-0.5");
     });
 
-    it('stops parsing the number when whitespace is encountered', () => {
-      expectParseStr('12\0' + '3').toBe('12');
-      expectParseStr('12\t3').toBe('12');
-      expectParseStr('12\n3').toBe('12');
-      expectParseStr('12\f3').toBe('12');
-      expectParseStr('12\r3').toBe('12');
-      expectParseStr('12 3').toBe('12');
+    it("stops parsing the number when whitespace is encountered", () => {
+      expectParseStr("12\0" + "3").toBe("12");
+      expectParseStr("12\t3").toBe("12");
+      expectParseStr("12\n3").toBe("12");
+      expectParseStr("12\f3").toBe("12");
+      expectParseStr("12\r3").toBe("12");
+      expectParseStr("12 3").toBe("12");
     });
 
-    it('stops parsing the number when a delimiter is encountered', () => {
-      expectParseStr('12(3').toBe('12');
-      expectParseStr('12)3').toBe('12');
-      expectParseStr('12<3').toBe('12');
-      expectParseStr('12>3').toBe('12');
-      expectParseStr('12[3').toBe('12');
-      expectParseStr('12]3').toBe('12');
-      expectParseStr('12{3').toBe('12');
-      expectParseStr('12}3').toBe('12');
-      expectParseStr('12/3').toBe('12');
-      expectParseStr('12%3').toBe('12');
+    it("stops parsing the number when a delimiter is encountered", () => {
+      expectParseStr("12(3").toBe("12");
+      expectParseStr("12)3").toBe("12");
+      expectParseStr("12<3").toBe("12");
+      expectParseStr("12>3").toBe("12");
+      expectParseStr("12[3").toBe("12");
+      expectParseStr("12]3").toBe("12");
+      expectParseStr("12{3").toBe("12");
+      expectParseStr("12}3").toBe("12");
+      expectParseStr("12/3").toBe("12");
+      expectParseStr("12%3").toBe("12");
     });
 
-    it('can parse several numbers mashed together', () => {
-      const input = typedArrayFor('0.01.123+2.1-3..1-2.-.1');
+    it("can parse several numbers mashed together", () => {
+      const input = typedArrayFor("0.01.123+2.1-3..1-2.-.1");
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(input, context);
-      expect(parser.parseObject().toString()).toBe('0.01');
-      expect(parser.parseObject().toString()).toBe('0.123');
-      expect(parser.parseObject().toString()).toBe('2.1');
-      expect(parser.parseObject().toString()).toBe('-3');
-      expect(parser.parseObject().toString()).toBe('0.1');
-      expect(parser.parseObject().toString()).toBe('-2');
-      expect(parser.parseObject().toString()).toBe('-0.1');
+      expect(parser.parseObject().toString()).toBe("0.01");
+      expect(parser.parseObject().toString()).toBe("0.123");
+      expect(parser.parseObject().toString()).toBe("2.1");
+      expect(parser.parseObject().toString()).toBe("-3");
+      expect(parser.parseObject().toString()).toBe("0.1");
+      expect(parser.parseObject().toString()).toBe("-2");
+      expect(parser.parseObject().toString()).toBe("-0.1");
     });
 
-    it('caps numbers at Number.MAX_SAFE_INTEGER when capNumbers=true', () => {
+    it("caps numbers at Number.MAX_SAFE_INTEGER when capNumbers=true", () => {
       expectParseStr(numberToString(Number.MAX_SAFE_INTEGER - 1), {
         capNumbers: true,
-      }).toBe('9007199254740990');
+      }).toBe("9007199254740990");
       expectParseStr(numberToString(Number.MAX_SAFE_INTEGER), {
         capNumbers: true,
-      }).toBe('9007199254740991');
+      }).toBe("9007199254740991");
       expectParseStr(numberToString(Number.MAX_SAFE_INTEGER + 1), {
         capNumbers: true,
-      }).toBe('9007199254740991');
-      expectParseStr('340282346638528900000000000000000000000', {
+      }).toBe("9007199254740991");
+      expectParseStr("340282346638528900000000000000000000000", {
         capNumbers: true,
-      }).toBe('9007199254740991');
-      expectParseStr('340282346638528859811704183484516925440', {
+      }).toBe("9007199254740991");
+      expectParseStr("340282346638528859811704183484516925440", {
         capNumbers: true,
-      }).toBe('9007199254740991');
+      }).toBe("9007199254740991");
     });
 
-    it('does not cap numbers at Number.MAX_SAFE_INTEGER when capNumbers=false', () => {
-      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER - 1)).toBe(
-        '9007199254740990',
+    it("does not cap numbers at Number.MAX_SAFE_INTEGER when capNumbers=false", () => {
+      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER - 1)).toBe("9007199254740990");
+      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER)).toBe("9007199254740991");
+      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER + 1)).toBe("9007199254740992");
+      expectParseStr("340282346638528900000000000000000000000").toBe(
+        "340282346638528900000000000000000000000",
       );
-      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER)).toBe(
-        '9007199254740991',
-      );
-      expectParseStr(numberToString(Number.MAX_SAFE_INTEGER + 1)).toBe(
-        '9007199254740992',
-      );
-      expectParseStr('340282346638528900000000000000000000000').toBe(
-        '340282346638528900000000000000000000000',
-      );
-      expectParseStr('340282346638528859811704183484516925440').toBe(
-        '340282346638528900000000000000000000000',
+      expectParseStr("340282346638528859811704183484516925440").toBe(
+        "340282346638528900000000000000000000000",
       );
     });
   });
 
-  describe('when parsing literal strings', () => {
+  describe("when parsing literal strings", () => {
     for (const [input] of [
-      ['(This is a string)'],
-      ['(Strings may contain newlines\nand such.)'],
-      [
-        '(Strings may contain balanced parentheses ( ) and special characters (*!&}^% and so on).)',
-      ],
-      ['(The following is an empty string.)'],
-      ['()'],
-      ['(It has zero (0) length.)'],
+      ["(This is a string)"],
+      ["(Strings may contain newlines\nand such.)"],
+      ["(Strings may contain balanced parentheses ( ) and special characters (*!&}^% and so on).)"],
+      ["(The following is an empty string.)"],
+      ["()"],
+      ["(It has zero (0) length.)"],
     ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFString);
@@ -219,64 +205,62 @@ describe('PDFObjectParser', () => {
       });
     }
 
-    it('handles whitespace before and after the string', () => {
-      expectParse('\0\t\n\f\r (testing)\0\t\n\f\r ').toBeInstanceOf(PDFString);
-      expectParseStr('\0\t\n\f\r (testing)\0\t\n\f\r ').toBe('(testing)');
+    it("handles whitespace before and after the string", () => {
+      expectParse("\0\t\n\f\r (testing)\0\t\n\f\r ").toBeInstanceOf(PDFString);
+      expectParseStr("\0\t\n\f\r (testing)\0\t\n\f\r ").toBe("(testing)");
     });
 
-    it('handles comments before and after the string', () => {
-      expectParse('% Lulz wut?\n(testing)% Lulz wut?\n').toBeInstanceOf(
-        PDFString,
-      );
-      expectParseStr('% Lulz wut?\n(testing)% Lulz wut?\n').toBe('(testing)');
+    it("handles comments before and after the string", () => {
+      expectParse("% Lulz wut?\n(testing)% Lulz wut?\n").toBeInstanceOf(PDFString);
+      expectParseStr("% Lulz wut?\n(testing)% Lulz wut?\n").toBe("(testing)");
     });
 
-    it('does not stop parsing the string when whitespace is encountered', () => {
-      expectParseStr('(foo\0bar)').toBe('(foo\0bar)');
-      expectParseStr('(foo\tbar)').toBe('(foo\tbar)');
-      expectParseStr('(foo\nbar)').toBe('(foo\nbar)');
-      expectParseStr('(foo\fbar)').toBe('(foo\fbar)');
-      expectParseStr('(foo\rbar)').toBe('(foo\rbar)');
-      expectParseStr('(foo bar)').toBe('(foo bar)');
+    it("does not stop parsing the string when whitespace is encountered", () => {
+      expectParseStr("(foo\0bar)").toBe("(foo\0bar)");
+      expectParseStr("(foo\tbar)").toBe("(foo\tbar)");
+      expectParseStr("(foo\nbar)").toBe("(foo\nbar)");
+      expectParseStr("(foo\fbar)").toBe("(foo\fbar)");
+      expectParseStr("(foo\rbar)").toBe("(foo\rbar)");
+      expectParseStr("(foo bar)").toBe("(foo bar)");
     });
 
-    it('does not stop parsing the string when a delimiter is encountered', () => {
-      expectParseStr('(foo<bar)').toBe('(foo<bar)');
-      expectParseStr('(foo>bar)').toBe('(foo>bar)');
-      expectParseStr('(foo[bar)').toBe('(foo[bar)');
-      expectParseStr('(foo]bar)').toBe('(foo]bar)');
-      expectParseStr('(foo{bar)').toBe('(foo{bar)');
-      expectParseStr('(foo}bar)').toBe('(foo}bar)');
-      expectParseStr('(foo/bar)').toBe('(foo/bar)');
-      expectParseStr('(foo%bar)').toBe('(foo%bar)');
+    it("does not stop parsing the string when a delimiter is encountered", () => {
+      expectParseStr("(foo<bar)").toBe("(foo<bar)");
+      expectParseStr("(foo>bar)").toBe("(foo>bar)");
+      expectParseStr("(foo[bar)").toBe("(foo[bar)");
+      expectParseStr("(foo]bar)").toBe("(foo]bar)");
+      expectParseStr("(foo{bar)").toBe("(foo{bar)");
+      expectParseStr("(foo}bar)").toBe("(foo}bar)");
+      expectParseStr("(foo/bar)").toBe("(foo/bar)");
+      expectParseStr("(foo%bar)").toBe("(foo%bar)");
     });
 
-    it('handles comments embedded within the string', () => {
-      expectParse('(stuff% and things\n)').toBeInstanceOf(PDFString);
-      expectParseStr('(stuff% and things\n)').toBe('(stuff% and things\n)');
+    it("handles comments embedded within the string", () => {
+      expectParse("(stuff% and things\n)").toBeInstanceOf(PDFString);
+      expectParseStr("(stuff% and things\n)").toBe("(stuff% and things\n)");
     });
 
-    it('handles nested parenthesis', () => {
-      expectParse('(FOO(BAR(QUX)(BAZ)))').toBeInstanceOf(PDFString);
-      expectParseStr('(FOO(BAR(QUX)(BAZ)))').toBe('(FOO(BAR(QUX)(BAZ)))');
+    it("handles nested parenthesis", () => {
+      expectParse("(FOO(BAR(QUX)(BAZ)))").toBeInstanceOf(PDFString);
+      expectParseStr("(FOO(BAR(QUX)(BAZ)))").toBe("(FOO(BAR(QUX)(BAZ)))");
     });
 
-    it('respects escaped parenthesis', () => {
-      expectParse('(FOO\\(BAR)').toBeInstanceOf(PDFString);
-      expectParseStr('(FOO\\(BAR)').toBe('(FOO\\(BAR)');
+    it("respects escaped parenthesis", () => {
+      expectParse("(FOO\\(BAR)").toBeInstanceOf(PDFString);
+      expectParseStr("(FOO\\(BAR)").toBe("(FOO\\(BAR)");
     });
 
-    it('respects escaped backslashes', () => {
-      expect(() => parse('(FOO\\\\(BAR)')).toThrow();
+    it("respects escaped backslashes", () => {
+      expect(() => parse("(FOO\\\\(BAR)")).toThrow();
     });
   });
 
-  describe('when parsing hex strings', () => {
+  describe("when parsing hex strings", () => {
     for (const [input] of [
-      ['<4E6F762073686D6F7A206B6120706F702E>'],
-      ['<901FA3>'],
-      ['<901FA>'],
-      ['<01\n23\r45\f67\t89\0ab cdefABCDEF>'],
+      ["<4E6F762073686D6F7A206B6120706F702E>"],
+      ["<901FA3>"],
+      ["<901FA>"],
+      ["<01\n23\r45\f67\t89\0ab cdefABCDEF>"],
     ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBeInstanceOf(PDFHexString);
@@ -284,48 +268,41 @@ describe('PDFObjectParser', () => {
       });
     }
 
-    it('handles whitespace before and after the hex string', () => {
-      expectParse('\0\t\n\f\r <ABC123>\0\t\n\f\r ').toBeInstanceOf(
-        PDFHexString,
-      );
-      expectParseStr('\0\t\n\f\r <ABC123>\0\t\n\f\r ').toBe('<ABC123>');
+    it("handles whitespace before and after the hex string", () => {
+      expectParse("\0\t\n\f\r <ABC123>\0\t\n\f\r ").toBeInstanceOf(PDFHexString);
+      expectParseStr("\0\t\n\f\r <ABC123>\0\t\n\f\r ").toBe("<ABC123>");
     });
 
-    it('handles comments before and after the hex string', () => {
-      expectParse('% Lulz wut?\n<ABC123>% Lulz wut?\n').toBeInstanceOf(
-        PDFHexString,
-      );
-      expectParseStr('% Lulz wut?\n<ABC123>% Lulz wut?\n').toBe('<ABC123>');
+    it("handles comments before and after the hex string", () => {
+      expectParse("% Lulz wut?\n<ABC123>% Lulz wut?\n").toBeInstanceOf(PDFHexString);
+      expectParseStr("% Lulz wut?\n<ABC123>% Lulz wut?\n").toBe("<ABC123>");
     });
 
-    it('does not stop parsing the hex string when whitespace is encountered', () => {
-      expectParseStr('<ABC\0D>').toBe('<ABC\0D>');
-      expectParseStr('<ABC\tD>').toBe('<ABC\tD>');
-      expectParseStr('<ABC\nD>').toBe('<ABC\nD>');
-      expectParseStr('<ABC\fD>').toBe('<ABC\fD>');
-      expectParseStr('<ABC\rD>').toBe('<ABC\rD>');
-      expectParseStr('<ABC D>').toBe('<ABC D>');
+    it("does not stop parsing the hex string when whitespace is encountered", () => {
+      expectParseStr("<ABC\0D>").toBe("<ABC\0D>");
+      expectParseStr("<ABC\tD>").toBe("<ABC\tD>");
+      expectParseStr("<ABC\nD>").toBe("<ABC\nD>");
+      expectParseStr("<ABC\fD>").toBe("<ABC\fD>");
+      expectParseStr("<ABC\rD>").toBe("<ABC\rD>");
+      expectParseStr("<ABC D>").toBe("<ABC D>");
     });
   });
 
-  describe('when parsing names', () => {
+  describe("when parsing names", () => {
     for (const [input, output] of [
-      ['/Name1', 'Name1'],
-      ['/ASomewhatLongerName', 'ASomewhatLongerName'],
-      [
-        '/A;Name_With-Various***Characters?',
-        'A;Name_With-Various***Characters?',
-      ],
-      ['/1.2', '1.2'],
-      ['/$$', '$$'],
-      ['/@pattern', '@pattern'],
-      ['/.notdef', '.notdef'],
-      ['/lime#20Green', 'lime Green'],
-      ['/paired#28#29parentheses', 'paired()parentheses'],
-      ['/The_Key_of_F#23_Minor', 'The_Key_of_F#_Minor'],
-      ['/A#42', 'AB'],
-      ['/#4a', 'J'],
-      ['/Identity#2dH', 'Identity-H'],
+      ["/Name1", "Name1"],
+      ["/ASomewhatLongerName", "ASomewhatLongerName"],
+      ["/A;Name_With-Various***Characters?", "A;Name_With-Various***Characters?"],
+      ["/1.2", "1.2"],
+      ["/$$", "$$"],
+      ["/@pattern", "@pattern"],
+      ["/.notdef", ".notdef"],
+      ["/lime#20Green", "lime Green"],
+      ["/paired#28#29parentheses", "paired()parentheses"],
+      ["/The_Key_of_F#23_Minor", "The_Key_of_F#_Minor"],
+      ["/A#42", "AB"],
+      ["/#4a", "J"],
+      ["/Identity#2dH", "Identity-H"],
     ]) {
       it(`handles ${input}`, () => {
         expectParse(input).toBe(PDFName.of(output));
@@ -333,69 +310,69 @@ describe('PDFObjectParser', () => {
     }
 
     it("handles names consisting of a single '/'", () => {
-      expectParse('/').toBe(PDFName.of(''));
+      expectParse("/").toBe(PDFName.of(""));
     });
 
-    it('handles whitespace before and after the name', () => {
-      expectParse('\0\t\n\f\r /Foo\0\t\n\f\r ').toBe(PDFName.of('Foo'));
+    it("handles whitespace before and after the name", () => {
+      expectParse("\0\t\n\f\r /Foo\0\t\n\f\r ").toBe(PDFName.of("Foo"));
     });
 
-    it('handles comments before and after the name', () => {
-      expectParse('% Lulz wut?\n/Foo% Lulz wut?\n').toBe(PDFName.of('Foo'));
+    it("handles comments before and after the name", () => {
+      expectParse("% Lulz wut?\n/Foo% Lulz wut?\n").toBe(PDFName.of("Foo"));
     });
 
-    it('stops parsing the name when whitespace is encountered', () => {
-      expectParse('/Foo\0Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo\tBar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo\nBar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo\fBar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo\rBar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo Bar').toBe(PDFName.of('Foo'));
+    it("stops parsing the name when whitespace is encountered", () => {
+      expectParse("/Foo\0Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo\tBar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo\nBar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo\fBar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo\rBar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo Bar").toBe(PDFName.of("Foo"));
     });
 
-    it('stops parsing the name when a delimiter is encountered', () => {
-      expectParse('/Foo(Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo)Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo<Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo>Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo[Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo]Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo{Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo}Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo/Bar').toBe(PDFName.of('Foo'));
-      expectParse('/Foo%Bar').toBe(PDFName.of('Foo'));
+    it("stops parsing the name when a delimiter is encountered", () => {
+      expectParse("/Foo(Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo)Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo<Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo>Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo[Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo]Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo{Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo}Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo/Bar").toBe(PDFName.of("Foo"));
+      expectParse("/Foo%Bar").toBe(PDFName.of("Foo"));
     });
 
-    it('can parse several names mashed together', () => {
-      const input = typedArrayFor('/Foo/Bar/Qux//Baz/Bing/Bang');
+    it("can parse several names mashed together", () => {
+      const input = typedArrayFor("/Foo/Bar/Qux//Baz/Bing/Bang");
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(input, context);
-      expect(parser.parseObject()).toBe(PDFName.of('Foo'));
-      expect(parser.parseObject()).toBe(PDFName.of('Bar'));
-      expect(parser.parseObject()).toBe(PDFName.of('Qux'));
-      expect(parser.parseObject()).toBe(PDFName.of(''));
-      expect(parser.parseObject()).toBe(PDFName.of('Baz'));
-      expect(parser.parseObject()).toBe(PDFName.of('Bing'));
-      expect(parser.parseObject()).toBe(PDFName.of('Bang'));
+      expect(parser.parseObject()).toBe(PDFName.of("Foo"));
+      expect(parser.parseObject()).toBe(PDFName.of("Bar"));
+      expect(parser.parseObject()).toBe(PDFName.of("Qux"));
+      expect(parser.parseObject()).toBe(PDFName.of(""));
+      expect(parser.parseObject()).toBe(PDFName.of("Baz"));
+      expect(parser.parseObject()).toBe(PDFName.of("Bing"));
+      expect(parser.parseObject()).toBe(PDFName.of("Bang"));
     });
 
-    it('handles names containing non-ASCII characters', () => {
-      expectParse('/ABCDEE+»ªÎÄÖÐËÎ').toBe(PDFName.of('ABCDEE+»ªÎÄÖÐËÎ'));
+    it("handles names containing non-ASCII characters", () => {
+      expectParse("/ABCDEE+»ªÎÄÖÐËÎ").toBe(PDFName.of("ABCDEE+»ªÎÄÖÐËÎ"));
     });
   });
 
-  describe('when parsing arrays', () => {
-    it('handles empty arrays', () => {
-      expectParse('[]').toBeInstanceOf(PDFArray);
-      expectParseStr('[]').toBe('[ ]');
+  describe("when parsing arrays", () => {
+    it("handles empty arrays", () => {
+      expectParse("[]").toBeInstanceOf(PDFArray);
+      expectParseStr("[]").toBe("[ ]");
     });
 
-    it('handles empty arrays with whitespace between braces', () => {
-      expectParse('[\0\t\n\f\r ]').toBeInstanceOf(PDFArray);
-      expectParseStr('[\0\t\n\f\r ]').toBe('[ ]');
+    it("handles empty arrays with whitespace between braces", () => {
+      expectParse("[\0\t\n\f\r ]").toBeInstanceOf(PDFArray);
+      expectParseStr("[\0\t\n\f\r ]").toBe("[ ]");
     });
 
-    it('handles arrays of all value types seperated by whitespace and (multiple) comments', () => {
+    it("handles arrays of all value types seperated by whitespace and (multiple) comments", () => {
       const input = `% Comment
         \0\t\n\f\r % Comment
         [
@@ -426,7 +403,7 @@ describe('PDFObjectParser', () => {
 
       const array = object as PDFArray;
       expect(array.size()).toBe(9);
-      expect(array.get(0)).toBe(PDFName.of('Foo'));
+      expect(array.get(0)).toBe(PDFName.of("Foo"));
       expect(array.get(1)).toBeInstanceOf(PDFDict);
       expect(array.get(2)).toBeInstanceOf(PDFArray);
       expect(array.get(3)).toBeInstanceOf(PDFString);
@@ -437,40 +414,38 @@ describe('PDFObjectParser', () => {
       expect(array.get(8)).toBe(PDFNull);
     });
 
-    it('handles arrays with no whitespace or comments', () => {
-      expectParse('[true/FooBar[]<</Foo/Bar>>21.null]').toBeInstanceOf(
-        PDFArray,
-      );
-      expectParseStr('[true/FooBar[]<</Foo/Bar>>21.null]').toBe(
-        '[ true /FooBar [ ] <<\n/Foo /Bar\n>> 21 null ]',
+    it("handles arrays with no whitespace or comments", () => {
+      expectParse("[true/FooBar[]<</Foo/Bar>>21.null]").toBeInstanceOf(PDFArray);
+      expectParseStr("[true/FooBar[]<</Foo/Bar>>21.null]").toBe(
+        "[ true /FooBar [ ] <<\n/Foo /Bar\n>> 21 null ]",
       );
     });
 
-    it('throws an error when closing delimiter is missing', () => {
-      expect(() => parse('[/Foo')).toThrow();
+    it("throws an error when closing delimiter is missing", () => {
+      expect(() => parse("[/Foo")).toThrow();
     });
 
-    it('throws an error for mismatches delimiters', () => {
-      expect(() => parse('[[]')).toThrow();
+    it("throws an error for mismatches delimiters", () => {
+      expect(() => parse("[[]")).toThrow();
     });
 
-    it('throws an error when an invalid element is detected', () => {
-      expect(() => parse('[/Foo I_AM_INVALID]')).toThrow();
+    it("throws an error when an invalid element is detected", () => {
+      expect(() => parse("[/Foo I_AM_INVALID]")).toThrow();
     });
   });
 
-  describe('when parsing dictionaries', () => {
-    it('handles empty dictionaries', () => {
-      expectParse('<<>>').toBeInstanceOf(PDFDict);
-      expectParseStr('<<>>').toBe('<<\n>>');
+  describe("when parsing dictionaries", () => {
+    it("handles empty dictionaries", () => {
+      expectParse("<<>>").toBeInstanceOf(PDFDict);
+      expectParseStr("<<>>").toBe("<<\n>>");
     });
 
-    it('handles empty dictionaries with whitespace between brackets', () => {
-      expectParse('<<\0\t\n\f\r >>').toBeInstanceOf(PDFDict);
-      expectParseStr('<<\0\t\n\f\r >>').toBe('<<\n>>');
+    it("handles empty dictionaries with whitespace between brackets", () => {
+      expectParse("<<\0\t\n\f\r >>").toBeInstanceOf(PDFDict);
+      expectParseStr("<<\0\t\n\f\r >>").toBe("<<\n>>");
     });
 
-    it('handles dictionaries of all value types seperated by whitespace and (multiplecomments', () => {
+    it("handles dictionaries of all value types seperated by whitespace and (multiplecomments", () => {
       const input = `% Comment
       \0\t\n\f\r % Comment
       <<
@@ -520,72 +495,61 @@ describe('PDFObjectParser', () => {
 
       const dict = object as PDFDict;
       expect(dict.entries().length).toBe(9);
-      expect(dict.get(PDFName.of('PDFName'))).toBe(PDFName.of('Foo'));
-      expect(dict.get(PDFName.of('PDFDictionary'))).toBeInstanceOf(PDFDict);
-      expect(dict.get(PDFName.of('PDFArray'))).toBeInstanceOf(PDFArray);
-      expect(dict.get(PDFName.of('PDFString'))).toBeInstanceOf(PDFString);
-      expect(dict.get(PDFName.of('PDFRef'))).toBe(PDFRef.of(21));
-      expect(dict.get(PDFName.of('PDFNumber'))).toBeInstanceOf(PDFNumber);
-      expect(dict.get(PDFName.of('PDFHexString'))).toBeInstanceOf(PDFHexString);
-      expect(dict.get(PDFName.of('PDFBool'))).toBe(PDFBool.True);
-      expect(dict.get(PDFName.of('PDFNull'))).toBe(undefined);
+      expect(dict.get(PDFName.of("PDFName"))).toBe(PDFName.of("Foo"));
+      expect(dict.get(PDFName.of("PDFDictionary"))).toBeInstanceOf(PDFDict);
+      expect(dict.get(PDFName.of("PDFArray"))).toBeInstanceOf(PDFArray);
+      expect(dict.get(PDFName.of("PDFString"))).toBeInstanceOf(PDFString);
+      expect(dict.get(PDFName.of("PDFRef"))).toBe(PDFRef.of(21));
+      expect(dict.get(PDFName.of("PDFNumber"))).toBeInstanceOf(PDFNumber);
+      expect(dict.get(PDFName.of("PDFHexString"))).toBeInstanceOf(PDFHexString);
+      expect(dict.get(PDFName.of("PDFBool"))).toBe(PDFBool.True);
+      expect(dict.get(PDFName.of("PDFNull"))).toBe(undefined);
     });
 
-    it('handles dictionaries with no whitespace or comments', () => {
-      expectParse(
-        '<</Foo true/Bar[]/Qux<<>>/Baz 21./Bing null>>',
-      ).toBeInstanceOf(PDFDict);
-      expectParseStr('<</Foo true/Bar[]/Qux<<>>/Baz 21./Bing null>>').toBe(
-        '<<\n/Foo true\n/Bar [ ]\n/Qux <<\n>>\n/Baz 21\n/Bing null\n>>',
+    it("handles dictionaries with no whitespace or comments", () => {
+      expectParse("<</Foo true/Bar[]/Qux<<>>/Baz 21./Bing null>>").toBeInstanceOf(PDFDict);
+      expectParseStr("<</Foo true/Bar[]/Qux<<>>/Baz 21./Bing null>>").toBe(
+        "<<\n/Foo true\n/Bar [ ]\n/Qux <<\n>>\n/Baz 21\n/Bing null\n>>",
       );
     });
 
     it("returns the correct subclass based on the dictionary's 'Type'", () => {
-      expectParse('<< >>').toBeInstanceOf(PDFDict);
-      expectParse('<< /Type /Catalog >>').toBeInstanceOf(PDFCatalog);
-      expectParse('<< /Type /Pages >>').toBeInstanceOf(PDFPageTree);
-      expectParse('<< /Type /Page >>').toBeInstanceOf(PDFPageLeaf);
+      expectParse("<< >>").toBeInstanceOf(PDFDict);
+      expectParse("<< /Type /Catalog >>").toBeInstanceOf(PDFCatalog);
+      expectParse("<< /Type /Pages >>").toBeInstanceOf(PDFPageTree);
+      expectParse("<< /Type /Page >>").toBeInstanceOf(PDFPageLeaf);
     });
 
-    it('throws an error when closing delimiter is missing', () => {
-      expect(() => parse('<</Foo/Bar')).toThrow();
+    it("throws an error when closing delimiter is missing", () => {
+      expect(() => parse("<</Foo/Bar")).toThrow();
     });
 
-    it('throws an error for mismatched delimiters', () => {
-      expect(() => parse('<<>')).toThrow();
+    it("throws an error for mismatched delimiters", () => {
+      expect(() => parse("<<>")).toThrow();
     });
 
-    it('throws an error when an invalid key is detected', () => {
-      expect(() => parse('<</Foo/Bar I_AM_INVALID>>')).toThrow();
+    it("throws an error when an invalid key is detected", () => {
+      expect(() => parse("<</Foo/Bar I_AM_INVALID>>")).toThrow();
     });
 
-    it('throws an error when an invalid value is detected', () => {
-      expect(() => parse('<</Foo I_AM_INVALID>>')).toThrow();
+    it("throws an error when an invalid value is detected", () => {
+      expect(() => parse("<</Foo I_AM_INVALID>>")).toThrow();
     });
   });
 
-  describe('when parsing streams', () => {
+  describe("when parsing streams", () => {
     for (const [input, output] of [
       [
-        '<< >>\nstream\nstream foobar endstream\nendstream',
-        '<<\n/Length 23\n>>\nstream\nstream foobar endstream\nendstream',
+        "<< >>\nstream\nstream foobar endstream\nendstream",
+        "<<\n/Length 23\n>>\nstream\nstream foobar endstream\nendstream",
       ],
       [
-        '<</Length 2>>\r\nstream\r\nquxbaz\r\nendstream',
-        '<<\n/Length 6\n>>\nstream\nquxbaz\nendstream',
+        "<</Length 2>>\r\nstream\r\nquxbaz\r\nendstream",
+        "<<\n/Length 6\n>>\nstream\nquxbaz\nendstream",
       ],
-      [
-        '<<>>streamfoobarendstream',
-        '<<\n/Length 6\n>>\nstream\nfoobar\nendstream',
-      ],
-      [
-        '<<>>\rstream\rstuff\rendstream',
-        '<<\n/Length 5\n>>\nstream\nstuff\nendstream',
-      ],
-      [
-        '<<>>\n\rstream\n\rthingz\n\rendstream',
-        '<<\n/Length 8\n>>\nstream\n\rthingz\n\nendstream',
-      ],
+      ["<<>>streamfoobarendstream", "<<\n/Length 6\n>>\nstream\nfoobar\nendstream"],
+      ["<<>>\rstream\rstuff\rendstream", "<<\n/Length 5\n>>\nstream\nstuff\nendstream"],
+      ["<<>>\n\rstream\n\rthingz\n\rendstream", "<<\n/Length 8\n>>\nstream\n\rthingz\n\nendstream"],
     ]) {
       it(`can parse ${JSON.stringify(input)}`, () => {
         const object = parse(typedArrayFor(input));
@@ -601,53 +565,53 @@ describe('PDFObjectParser', () => {
     // technically invalid (per the specification). But some PDFs have it, so
     // we will support it anyways.
     it("handles streams with a space, carriage return, and a newline following the 'stream' keyword", () => {
-      expectParse('<<>>\r\nstream \r\n Stuff and Things \nendstream');
-      expectParseStr('<<>>\r\nstream \r\n Stuff and Things \nendstream').toBe(
-        '<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream',
+      expectParse("<<>>\r\nstream \r\n Stuff and Things \nendstream");
+      expectParseStr("<<>>\r\nstream \r\n Stuff and Things \nendstream").toBe(
+        "<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream",
       );
     });
 
     it("handles streams with a carriage return and a newline following the 'stream' keyword", () => {
-      expectParse('<<>>\r\nstream\r\n Stuff and Things \nendstream');
-      expectParseStr('<<>>\r\nstream\r\n Stuff and Things \nendstream').toBe(
-        '<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream',
+      expectParse("<<>>\r\nstream\r\n Stuff and Things \nendstream");
+      expectParseStr("<<>>\r\nstream\r\n Stuff and Things \nendstream").toBe(
+        "<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream",
       );
     });
 
     it("handles streams with only a carriage return following the 'stream' keyword", () => {
-      expectParse('<<>>\rstream\r Stuff and Things \nendstream');
-      expectParseStr('<<>>\nstream\n Stuff and Things \nendstream').toBe(
-        '<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream',
+      expectParse("<<>>\rstream\r Stuff and Things \nendstream");
+      expectParseStr("<<>>\nstream\n Stuff and Things \nendstream").toBe(
+        "<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream",
       );
     });
 
     it("handles streams with a carriage return preceding the 'endstream' keyword", () => {
-      expectParse('<<>>\r\nstream\r\n Stuff and Things \rendstream');
-      expectParseStr('<<>>\r\nstream\r\n Stuff and Things \rendstream').toBe(
-        '<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream',
+      expectParse("<<>>\r\nstream\r\n Stuff and Things \rendstream");
+      expectParseStr("<<>>\r\nstream\r\n Stuff and Things \rendstream").toBe(
+        "<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream",
       );
     });
 
     it("handles comments and whitespace preceding the 'stream' keyword", () => {
       expectParse(
-        '<<>>\0\t\n\f\r % I am a comment\0\t\n\f\r stream\r\n Stuff and Things \nendstream',
+        "<<>>\0\t\n\f\r % I am a comment\0\t\n\f\r stream\r\n Stuff and Things \nendstream",
       );
       expectParseStr(
-        '<<>>\0\t\n\f\r % I am a comment\0\t\n\f\r stream\r\n Stuff and Things \nendstream',
-      ).toBe('<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream');
+        "<<>>\0\t\n\f\r % I am a comment\0\t\n\f\r stream\r\n Stuff and Things \nendstream",
+      ).toBe("<<\n/Length 18\n>>\nstream\n Stuff and Things \nendstream");
     });
 
-    it('handles binary stream content', () => {
+    it("handles binary stream content", () => {
       const input = mergeIntoTypedArray(
-        '<<>>stream',
+        "<<>>stream",
         new Uint8Array([12, 492, 0, 129]),
-        'endstream',
+        "endstream",
       );
 
       const output = mergeIntoTypedArray(
-        '<<\n/Length 4\n>>\nstream\n',
+        "<<\n/Length 4\n>>\nstream\n",
         new Uint8Array([12, 492, 0, 129]),
-        '\nendstream',
+        "\nendstream",
       );
 
       const object = parse(typedArrayFor(input));
@@ -662,28 +626,27 @@ describe('PDFObjectParser', () => {
       // This tests the fix for issue #1215/#1206
       // Font license text containing "bitstream" was incorrectly counted as
       // a nested stream, causing incorrect Length calculations
-      const input = '<<>>\nstream\nThis is a bitstream font license text\nendstream';
+      const input = "<<>>\nstream\nThis is a bitstream font license text\nendstream";
       const object = parse(input);
       expect(object).toBeInstanceOf(PDFRawStream);
       expect(String(object)).toBe(
-        '<<\n/Length 37\n>>\nstream\nThis is a bitstream font license text\nendstream',
+        "<<\n/Length 37\n>>\nstream\nThis is a bitstream font license text\nendstream",
       );
     });
 
     it('handles streams containing multiple embedded "stream" words', () => {
       // Multiple occurrences of "stream" within words should not affect parsing
-      const input =
-        '<<>>\nstream\nbitstream upstream downstream mainstream\nendstream';
+      const input = "<<>>\nstream\nbitstream upstream downstream mainstream\nendstream";
 
       const object = parse(input);
       expect(object).toBeInstanceOf(PDFRawStream);
       expect(String(object)).toBe(
-        '<<\n/Length 40\n>>\nstream\nbitstream upstream downstream mainstream\nendstream',
+        "<<\n/Length 40\n>>\nstream\nbitstream upstream downstream mainstream\nendstream",
       );
     });
   });
 
-  describe('when parsing streams with an indirect /Length (#180)', () => {
+  describe("when parsing streams with an indirect /Length (#180)", () => {
     const parseWithLength = (input: string, length?: PDFNumber | PDFDict) => {
       const context = PDFContext.create();
 
@@ -693,25 +656,25 @@ describe('PDFObjectParser', () => {
       return parser.parseObject() as PDFRawStream;
     };
 
-    const input = '<< /Length 5 0 R >>\nstream\nabc\r\nendstream';
+    const input = "<< /Length 5 0 R >>\nstream\nabc\r\nendstream";
 
-    it('keeps a trailing \\r when the referenced length is available', () => {
+    it("keeps a trailing \\r when the referenced length is available", () => {
       const stream = parseWithLength(input, PDFNumber.of(4));
-      expect(stream.getContentsString()).toBe('abc\r');
+      expect(stream.getContentsString()).toBe("abc\r");
     });
 
-    it('re-slices a forward-referenced length once it becomes available', () => {
+    it("re-slices a forward-referenced length once it becomes available", () => {
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
       const stream = parser.parseObject() as PDFRawStream;
       // Not resolvable yet: scanning fallback is used for now.
-      expect(stream.getContentsString()).toBe('abc');
+      expect(stream.getContentsString()).toBe("abc");
       context.assign(PDFRef.of(5), PDFNumber.of(4));
       parser.resolvePendingStreamLengths();
-      expect(stream.getContentsString()).toBe('abc\r');
+      expect(stream.getContentsString()).toBe("abc\r");
     });
 
-    it('leaves stream bodies raw for the document parser to decrypt', () => {
+    it("leaves stream bodies raw for the document parser to decrypt", () => {
       const xorFactory = {
         createCipherTransform: () => ({
           decryptBytes: (bytes: Uint8Array) => bytes.map((b) => b ^ 1),
@@ -732,34 +695,31 @@ describe('PDFObjectParser', () => {
       parser.resolvePendingStreamLengths();
       // Which crypt filter applies depends on the whole document
       // (PDFParser.decryptStreams), so the re-slice stays raw.
-      expect(stream.getContentsString()).toBe('abc\r');
+      expect(stream.getContentsString()).toBe("abc\r");
     });
 
-    it('keeps the fallback when a forward-referenced length never resolves', () => {
+    it("keeps the fallback when a forward-referenced length never resolves", () => {
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(typedArrayFor(input), context);
       const stream = parser.parseObject() as PDFRawStream;
       parser.resolvePendingStreamLengths();
-      expect(stream.getContentsString()).toBe('abc');
+      expect(stream.getContentsString()).toBe("abc");
     });
 
-    it('falls back when the referenced length is not followed by endstream', () => {
+    it("falls back when the referenced length is not followed by endstream", () => {
       const stream = parseWithLength(input, PDFNumber.of(2));
-      expect(stream.getContentsString()).toBe('abc');
+      expect(stream.getContentsString()).toBe("abc");
     });
 
-    it('falls back when the referenced object is not a valid length', () => {
+    it("falls back when the referenced object is not a valid length", () => {
+      expect(parseWithLength(input, PDFNumber.of(-1)).getContentsString()).toBe("abc");
       expect(
-        parseWithLength(input, PDFNumber.of(-1)).getContentsString(),
-      ).toBe('abc');
-      expect(
-        parseWithLength(input, PDFDict.withContext(PDFContext.create()))
-          .getContentsString(),
-      ).toBe('abc');
+        parseWithLength(input, PDFDict.withContext(PDFContext.create())).getContentsString(),
+      ).toBe("abc");
     });
   });
 
-  describe('when decrypting signature dictionaries (#172)', () => {
+  describe("when decrypting signature dictionaries (#172)", () => {
     // Fake cipher: XORs every byte with 1, so decryption is observable.
     const xorFactory = {
       createCipherTransform: () => ({
@@ -780,91 +740,87 @@ describe('PDFObjectParser', () => {
       return parser.parseObject(PDFRef.of(1)) as PDFDict;
     };
 
-    it('does not decrypt hex /Contents of a /Sig dict (Type after Contents)', () => {
-      const dict = parseEncrypted(
-        '<< /Contents <0A0B> /Name (ab) /Type /Sig >>',
-      );
+    it("does not decrypt hex /Contents of a /Sig dict (Type after Contents)", () => {
+      const dict = parseEncrypted("<< /Contents <0A0B> /Name (ab) /Type /Sig >>");
 
-      expect(dict.get(PDFName.of('Contents'))).toBeInstanceOf(PDFHexString);
-      expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
+      expect(dict.get(PDFName.of("Contents"))).toBeInstanceOf(PDFHexString);
+      expect(String(dict.get(PDFName.of("Contents")))).toBe("<0A0B>");
       // Other strings are still decrypted: 'a'^1='`', 'b'^1='c'
-      expect(String(dict.get(PDFName.of('Name')))).toBe('<6063>');
+      expect(String(dict.get(PDFName.of("Name")))).toBe("<6063>");
     });
 
-    it('does not decrypt /Contents of an untyped dict with /ByteRange', () => {
-      const dict = parseEncrypted(
-        '<< /Contents <0A0B> /ByteRange [0 1 2 3] >>',
-      );
+    it("does not decrypt /Contents of an untyped dict with /ByteRange", () => {
+      const dict = parseEncrypted("<< /Contents <0A0B> /ByteRange [0 1 2 3] >>");
 
-      expect(String(dict.get(PDFName.of('Contents')))).toBe('<0A0B>');
+      expect(String(dict.get(PDFName.of("Contents")))).toBe("<0A0B>");
     });
 
-    it('does not decrypt literal /Contents of a /DocTimeStamp dict', () => {
-      const dict = parseEncrypted('<< /Type /DocTimeStamp /Contents (ab) >>');
-      expect(String(dict.get(PDFName.of('Contents')))).toBe('(ab)');
+    it("does not decrypt literal /Contents of a /DocTimeStamp dict", () => {
+      const dict = parseEncrypted("<< /Type /DocTimeStamp /Contents (ab) >>");
+      expect(String(dict.get(PDFName.of("Contents")))).toBe("(ab)");
     });
 
-    it('still decrypts /Contents of non-signature dicts', () => {
-      const dict = parseEncrypted('<< /Type /Annot /Contents (ab) >>');
-      expect(String(dict.get(PDFName.of('Contents')))).toBe('<6063>');
+    it("still decrypts /Contents of non-signature dicts", () => {
+      const dict = parseEncrypted("<< /Type /Annot /Contents (ab) >>");
+      expect(String(dict.get(PDFName.of("Contents")))).toBe("<6063>");
     });
   });
 
-  describe('when parsing null', () => {
+  describe("when parsing null", () => {
     it("handles just the 'null' keyword", () => {
-      expectParse('null').toBe(PDFNull);
+      expectParse("null").toBe(PDFNull);
     });
 
     it("handles whitespace before and after the 'null' keyword", () => {
-      expectParse('\0\t\n\f\r null\0\t\n\f\r ').toBe(PDFNull);
+      expectParse("\0\t\n\f\r null\0\t\n\f\r ").toBe(PDFNull);
     });
 
     it("handles comments before and after the 'null' keyword", () => {
-      expectParse('% Lulz wut?\nnull% Lulz wut?\n').toBe(PDFNull);
+      expectParse("% Lulz wut?\nnull% Lulz wut?\n").toBe(PDFNull);
     });
   });
 
-  describe('when parsing indirect object references', () => {
-    it('handles whitespace before and after the ref', () => {
-      expectParse('\0\t\n\f\r 1 2 R\0\t\n\f\r ').toBe(PDFRef.of(1, 2));
+  describe("when parsing indirect object references", () => {
+    it("handles whitespace before and after the ref", () => {
+      expectParse("\0\t\n\f\r 1 2 R\0\t\n\f\r ").toBe(PDFRef.of(1, 2));
     });
 
-    it('handles whitespace within the ref', () => {
-      expectParse('1\0\t\n\f\r2\0\t\n\f\rR').toBe(PDFRef.of(1, 2));
+    it("handles whitespace within the ref", () => {
+      expectParse("1\0\t\n\f\r2\0\t\n\f\rR").toBe(PDFRef.of(1, 2));
     });
 
-    it('handles comments before and after the ref', () => {
-      expectParse('% Lulz wut?\n1 2 R% Lulz wut?\n').toBe(PDFRef.of(1, 2));
+    it("handles comments before and after the ref", () => {
+      expectParse("% Lulz wut?\n1 2 R% Lulz wut?\n").toBe(PDFRef.of(1, 2));
     });
 
-    it('handles comments within the ref', () => {
-      expectParse('1% Lulz wut?\r2% Lulz wut?\rR').toBe(PDFRef.of(1, 2));
+    it("handles comments within the ref", () => {
+      expectParse("1% Lulz wut?\r2% Lulz wut?\rR").toBe(PDFRef.of(1, 2));
     });
 
-    it('does not stop parsing the ref when whitespace is encountered', () => {
-      expectParse('1\0' + '2\0R').toBe(PDFRef.of(1, 2));
-      expectParse('1\t2\tR').toBe(PDFRef.of(1, 2));
-      expectParse('1\n2\nR').toBe(PDFRef.of(1, 2));
-      expectParse('1\f2\fR').toBe(PDFRef.of(1, 2));
-      expectParse('1\r2\rR').toBe(PDFRef.of(1, 2));
-      expectParse('1 2 R').toBe(PDFRef.of(1, 2));
+    it("does not stop parsing the ref when whitespace is encountered", () => {
+      expectParse("1\0" + "2\0R").toBe(PDFRef.of(1, 2));
+      expectParse("1\t2\tR").toBe(PDFRef.of(1, 2));
+      expectParse("1\n2\nR").toBe(PDFRef.of(1, 2));
+      expectParse("1\f2\fR").toBe(PDFRef.of(1, 2));
+      expectParse("1\r2\rR").toBe(PDFRef.of(1, 2));
+      expectParse("1 2 R").toBe(PDFRef.of(1, 2));
     });
 
-    it('stops parsing the ref when a delimiter is encountered', () => {
-      expectParseStr('1 2(R').toBe('1');
-      expectParseStr('1 2)R').toBe('1');
-      expectParseStr('1 2<R').toBe('1');
-      expectParseStr('1 2>R').toBe('1');
-      expectParseStr('1 2[R').toBe('1');
-      expectParseStr('1 2]R').toBe('1');
-      expectParseStr('1 2{R').toBe('1');
-      expectParseStr('1 2}R').toBe('1');
-      expectParseStr('1 2/R').toBe('1');
-      expectParseStr('1 2%R').toBe('1');
+    it("stops parsing the ref when a delimiter is encountered", () => {
+      expectParseStr("1 2(R").toBe("1");
+      expectParseStr("1 2)R").toBe("1");
+      expectParseStr("1 2<R").toBe("1");
+      expectParseStr("1 2>R").toBe("1");
+      expectParseStr("1 2[R").toBe("1");
+      expectParseStr("1 2]R").toBe("1");
+      expectParseStr("1 2{R").toBe("1");
+      expectParseStr("1 2}R").toBe("1");
+      expectParseStr("1 2/R").toBe("1");
+      expectParseStr("1 2%R").toBe("1");
     });
 
-    it('can parse several refs mashed together', () => {
-      const input = typedArrayFor('0 0R1 1R 2 2R');
+    it("can parse several refs mashed together", () => {
+      const input = typedArrayFor("0 0R1 1R 2 2R");
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(input, context);
       expect(parser.parseObject()).toBe(PDFRef.of(0, 0));
@@ -872,21 +828,21 @@ describe('PDFObjectParser', () => {
       expect(parser.parseObject()).toBe(PDFRef.of(2, 2));
     });
 
-    it('can parse a number, then a ref, then a number', () => {
-      const input = typedArrayFor('0 21 0 R 42');
+    it("can parse a number, then a ref, then a number", () => {
+      const input = typedArrayFor("0 21 0 R 42");
       const context = PDFContext.create();
       const parser = PDFObjectParser.forBytes(input, context);
 
       const object1 = parser.parseObject();
       expect(object1).toBeInstanceOf(PDFNumber);
-      expect(object1.toString()).toBe('0');
+      expect(object1.toString()).toBe("0");
 
       const object2 = parser.parseObject();
       expect(object2).toBe(PDFRef.of(21));
 
       const object3 = parser.parseObject();
       expect(object3).toBeInstanceOf(PDFNumber);
-      expect(object3.toString()).toBe('42');
+      expect(object3.toString()).toBe("42");
     });
   });
 });

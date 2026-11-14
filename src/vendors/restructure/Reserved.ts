@@ -4,11 +4,11 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import type { NumberT } from './Number.js';
-import * as utils from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import type { NumberT } from "./Number.js";
+import * as utils from "./utils.js";
 
 type CountType = number | string | ((parent: unknown) => number);
 
@@ -29,11 +29,7 @@ export class Reserved extends Base<undefined> {
   }
 
   size(_data?: unknown, parent?: unknown): number {
-    const count = utils.resolveLength(
-      this.count,
-      null,
-      parent as Record<string, unknown> | null,
-    );
+    const count = utils.resolveLength(this.count, null, parent as Record<string, unknown> | null);
 
     return this.type.size() * count;
   }

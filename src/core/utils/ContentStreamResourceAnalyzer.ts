@@ -2,21 +2,21 @@ import {
   type ContentOperand,
   type ContentOperation,
   parseContentStream,
-} from '../content/ContentStreamParser.js';
-import { getEffectiveVersion } from '../document/pdfVersion.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import type PDFContext from '../PDFContext.js';
-import DecodeStream from '../streams/DecodeStream.js';
-import { decodePDFRawStream } from '../streams/decode.js';
-import PDFContentStream from '../structures/PDFContentStream.js';
-import type PDFPageLeaf from '../structures/PDFPageLeaf.js';
+} from "../content/ContentStreamParser.js";
+import { getEffectiveVersion } from "../document/pdfVersion.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import type PDFContext from "../PDFContext.js";
+import DecodeStream from "../streams/DecodeStream.js";
+import { decodePDFRawStream } from "../streams/decode.js";
+import PDFContentStream from "../structures/PDFContentStream.js";
+import type PDFPageLeaf from "../structures/PDFPageLeaf.js";
 
 /**
  * Resource pruning for copyPages({ optimizeResources: true }).
@@ -40,25 +40,25 @@ import type PDFPageLeaf from '../structures/PDFPageLeaf.js';
  */
 
 const FILTERABLE: ReadonlyMap<PDFName, string> = new Map([
-  [PDFName.Font, 'Font'],
-  [PDFName.XObject, 'XObject'],
-  [PDFName.ExtGState, 'ExtGState'],
-  [PDFName.ColorSpace, 'ColorSpace'],
-  [PDFName.of('Pattern'), 'Pattern'],
-  [PDFName.of('Shading'), 'Shading'],
-  [PDFName.of('Properties'), 'Properties'],
+  [PDFName.Font, "Font"],
+  [PDFName.XObject, "XObject"],
+  [PDFName.ExtGState, "ExtGState"],
+  [PDFName.ColorSpace, "ColorSpace"],
+  [PDFName.of("Pattern"), "Pattern"],
+  [PDFName.of("Shading"), "Shading"],
+  [PDFName.of("Properties"), "Properties"],
 ]);
 
 /** Used implicitly by the device colour operators (ISO 32000-1 8.6.5.6). */
-const DEFAULT_COLOR_SPACES = ['DefaultGray', 'DefaultRGB', 'DefaultCMYK'];
+const DEFAULT_COLOR_SPACES = ["DefaultGray", "DefaultRGB", "DefaultCMYK"];
 
 /** Every operator of ISO 32000-1 Table A.1, less ID and EI (part of BI). */
 const KNOWN_OPERATORS = new Set(
   (
-    'b B b* B* BDC BI BMC BT BX c cm CS cs d d0 d1 Do DP EMC ET EX f F f* G ' +
-    'g gs h i j J K k l m M MP n q Q re RG rg ri s S SC sc SCN scn sh T* Tc ' +
-    'Td TD Tf Tj TJ TL Tm Tr Ts Tw Tz v w W W* y \' "'
-  ).split(' '),
+    "b B b* B* BDC BI BMC BT BX c cm CS cs d d0 d1 Do DP EMC ET EX f F f* G " +
+    "g gs h i j J K k l m M MP n q Q re RG rg ri s S SC sc SCN scn sh T* Tc " +
+    "Td TD Tf Tj TJ TL Tm Tr Ts Tw Tz v w W W* y ' \""
+  ).split(" "),
 );
 
 /** Upper bound on objects walked per page. */
@@ -66,10 +66,8 @@ const MAX_WALKED_OBJECTS = 200_000;
 
 class GiveUp extends Error {}
 
-const isName = (
-  v: ContentOperand | undefined,
-): v is { type: 'name'; name: PDFName } =>
-  typeof v === 'object' && v !== null && !Array.isArray(v) && v.type === 'name';
+const isName = (v: ContentOperand | undefined): v is { type: "name"; name: PDFName } =>
+  typeof v === "object" && v !== null && !Array.isArray(v) && v.type === "name";
 
 const nameOperand = (v: ContentOperand | undefined): PDFName => {
   if (!isName(v)) throw new GiveUp();
@@ -118,7 +116,7 @@ class PageResourceAnalysis {
     }
 
     for (const name of DEFAULT_COLOR_SPACES) {
-      this.select('ColorSpace', PDFName.of(name));
+      this.select("ColorSpace", PDFName.of(name));
     }
 
     for (const [key, value] of this.resources.entries()) {
@@ -190,9 +188,7 @@ class PageResourceAnalysis {
     if (stream && !this.ownResources(dict)) {
       const subtype = this.context.lookup(dict.get(PDFName.Subtype));
 
-      const patternType = this.context.lookup(
-        dict.get(PDFName.of('PatternType')),
-      );
+      const patternType = this.context.lookup(dict.get(PDFName.of("PatternType")));
 
       if (
         subtype === PDFName.Form ||
@@ -204,8 +200,8 @@ class PageResourceAnalysis {
 
     const subtype = this.context.lookup(dict.get(PDFName.Subtype));
 
-    if (subtype === PDFName.of('Type3')) {
-      const charProcs = this.context.lookup(dict.get(PDFName.of('CharProcs')));
+    if (subtype === PDFName.of("Type3")) {
+      const charProcs = this.context.lookup(dict.get(PDFName.of("CharProcs")));
 
       if (charProcs !== undefined && !(charProcs instanceof PDFDict)) {
         throw new GiveUp();
@@ -218,10 +214,10 @@ class PageResourceAnalysis {
       }
     }
 
-    const ap = this.context.lookup(dict.get(PDFName.of('AP')));
+    const ap = this.context.lookup(dict.get(PDFName.of("AP")));
 
     if (ap instanceof PDFDict) {
-      for (const key of ['N', 'R', 'D']) {
+      for (const key of ["N", "R", "D"]) {
         const appearance = this.context.lookup(ap.get(PDFName.of(key)));
 
         if (appearance instanceof PDFStream) {
@@ -312,7 +308,7 @@ class PageResourceAnalysis {
   /** Every name in an inline image colour space may be a resource name. */
   private selectColorSpaceNames(value: ContentOperand | undefined) {
     if (isName(value)) {
-      this.select('ColorSpace', value.name);
+      this.select("ColorSpace", value.name);
     } else if (Array.isArray(value)) {
       for (const item of value) this.selectColorSpaceNames(item);
     }
@@ -322,67 +318,65 @@ class PageResourceAnalysis {
     if (!KNOWN_OPERATORS.has(operator)) throw new GiveUp();
 
     if (inlineImage) {
-      this.selectColorSpaceNames(inlineImage.dict.get(PDFName.of('CS')));
-      this.selectColorSpaceNames(
-        inlineImage.dict.get(PDFName.of('ColorSpace')),
-      );
+      this.selectColorSpaceNames(inlineImage.dict.get(PDFName.of("CS")));
+      this.selectColorSpaceNames(inlineImage.dict.get(PDFName.of("ColorSpace")));
     }
 
     switch (operator) {
-      case 'Tf':
-        if (operands.length !== 2 || typeof operands[1] !== 'number') {
+      case "Tf":
+        if (operands.length !== 2 || typeof operands[1] !== "number") {
           throw new GiveUp();
         }
 
-        this.select('Font', nameOperand(operands[0]));
+        this.select("Font", nameOperand(operands[0]));
 
         return;
-      case 'Do':
-      case 'gs':
-      case 'cs':
-      case 'CS':
-      case 'sh': {
+      case "Do":
+      case "gs":
+      case "cs":
+      case "CS":
+      case "sh": {
         if (operands.length !== 1) throw new GiveUp();
 
         const category =
-          operator === 'Do'
-            ? 'XObject'
-            : operator === 'gs'
-              ? 'ExtGState'
-              : operator === 'sh'
-                ? 'Shading'
-                : 'ColorSpace';
+          operator === "Do"
+            ? "XObject"
+            : operator === "gs"
+              ? "ExtGState"
+              : operator === "sh"
+                ? "Shading"
+                : "ColorSpace";
 
         this.select(category, nameOperand(operands[0]));
 
         return;
       }
 
-      case 'scn':
-      case 'SCN': {
+      case "scn":
+      case "SCN": {
         const last = operands[operands.length - 1];
         const numbers = isName(last) ? operands.slice(0, -1) : operands;
 
-        if (numbers.some((n) => typeof n !== 'number')) throw new GiveUp();
+        if (numbers.some((n) => typeof n !== "number")) throw new GiveUp();
 
-        if (isName(last)) this.select('Pattern', last.name);
+        if (isName(last)) this.select("Pattern", last.name);
 
         return;
       }
 
-      case 'BDC':
-      case 'DP': {
+      case "BDC":
+      case "DP": {
         if (operands.length !== 2) throw new GiveUp();
         nameOperand(operands[0]);
         const props = operands[1];
 
         if (isName(props)) {
-          this.select('Properties', props.name);
+          this.select("Properties", props.name);
         } else if (
-          typeof props !== 'object' ||
+          typeof props !== "object" ||
           props === null ||
           Array.isArray(props) ||
-          props.type !== 'dict'
+          props.type !== "dict"
         ) {
           throw new GiveUp();
         }
@@ -427,10 +421,7 @@ class PageResourceAnalysis {
  * page can use removed, or undefined when that cannot be established (the
  * caller then copies the resources whole).
  */
-export function pruneResources(
-  page: PDFPageLeaf,
-  context: PDFContext,
-): PDFDict | undefined {
+export function pruneResources(page: PDFPageLeaf, context: PDFContext): PDFDict | undefined {
   const resources = page.Resources();
 
   if (!resources) return;

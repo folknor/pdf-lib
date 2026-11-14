@@ -8,10 +8,10 @@ import {
   toCharCode,
   utf8Decode,
   utf16Decode,
-} from '../../utils/index.js';
-import { InvalidPDFDateStringError } from '../errors.js';
-import CharCodes from '../syntax/CharCodes.js';
-import PDFObject from './PDFObject.js';
+} from "../../utils/index.js";
+import { InvalidPDFDateStringError } from "../errors.js";
+import CharCodes from "../syntax/CharCodes.js";
+import PDFObject from "./PDFObject.js";
 
 class PDFString extends PDFObject {
   // The PDF spec allows newlines and parens to appear directly within a literal
@@ -20,12 +20,12 @@ class PDFString extends PDFObject {
   static of = (value: string) => new PDFString(value);
 
   static fromDate = (date: Date) => {
-    const year = padStart(String(date.getUTCFullYear()), 4, '0');
-    const month = padStart(String(date.getUTCMonth() + 1), 2, '0');
-    const day = padStart(String(date.getUTCDate()), 2, '0');
-    const hours = padStart(String(date.getUTCHours()), 2, '0');
-    const mins = padStart(String(date.getUTCMinutes()), 2, '0');
-    const secs = padStart(String(date.getUTCSeconds()), 2, '0');
+    const year = padStart(String(date.getUTCFullYear()), 4, "0");
+    const month = padStart(String(date.getUTCMonth() + 1), 2, "0");
+    const day = padStart(String(date.getUTCDate()), 2, "0");
+    const hours = padStart(String(date.getUTCHours()), 2, "0");
+    const mins = padStart(String(date.getUTCMinutes()), 2, "0");
+    const secs = padStart(String(date.getUTCSeconds()), 2, "0");
 
     return new PDFString(`D:${year}${month}${day}${hours}${mins}${secs}Z`);
   };
@@ -40,7 +40,7 @@ class PDFString extends PDFObject {
   asBytes(): Uint8Array {
     const bytes: number[] = [];
 
-    let octal = '';
+    let octal = "";
     let escaped = false;
 
     const pushByte = (byte?: number) => {
@@ -57,14 +57,14 @@ class PDFString extends PDFObject {
         if (byte === CharCodes.BackSlash) escaped = true;
         else if (byte === CharCodes.CarriageReturn) {
           // ISO 32000 7.3.4.2: unescaped CR and CRLF each represent one LF.
-          if (nextChar === '\n') idx++;
+          if (nextChar === "\n") idx++;
           pushByte(CharCodes.Newline);
         } else pushByte(byte);
       } else {
         if (byte === CharCodes.Newline) pushByte();
         else if (byte === CharCodes.CarriageReturn) {
           // Backslash + CRLF is a single line continuation.
-          if (nextChar === '\n') idx++;
+          if (nextChar === "\n") idx++;
           pushByte();
         } else if (byte === CharCodes.n) pushByte(CharCodes.Newline);
         else if (byte === CharCodes.r) pushByte(CharCodes.CarriageReturn);
@@ -77,9 +77,9 @@ class PDFString extends PDFObject {
         else if (byte >= CharCodes.Zero && byte <= CharCodes.Seven) {
           octal += char;
 
-          if (octal.length === 3 || !(nextChar! >= '0' && nextChar! <= '7')) {
+          if (octal.length === 3 || !(nextChar! >= "0" && nextChar! <= "7")) {
             pushByte(parseInt(octal, 8));
-            octal = '';
+            octal = "";
           }
         } else {
           pushByte(byte);

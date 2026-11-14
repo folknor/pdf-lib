@@ -1,15 +1,15 @@
 // @ts-nocheck
-import { unzlibSync } from 'fflate';
-import StateMachine from '../../../vendors/dfa/index.js';
-import { getCategory } from '../../../vendors/unicode-properties/index.js';
-import { UnicodeTrie } from '../../../vendors/unicode-properties/UnicodeTrie.js';
-import { inserted, mapped } from '../../layout/Occurrence.js';
-import * as Script from '../../layout/Script.js';
-import { decodeBase64 } from '../../utils.js';
-import GlyphInfo from '../GlyphInfo.js';
-import type ShapingPlan from '../ShapingPlan.js';
-import DefaultShaper from './DefaultShaper.js';
-import base64DeflatedIndicMachine from './indic.js';
+import { unzlibSync } from "fflate";
+import StateMachine from "../../../vendors/dfa/index.js";
+import { getCategory } from "../../../vendors/unicode-properties/index.js";
+import { UnicodeTrie } from "../../../vendors/unicode-properties/UnicodeTrie.js";
+import { inserted, mapped } from "../../layout/Occurrence.js";
+import * as Script from "../../layout/Script.js";
+import { decodeBase64 } from "../../utils.js";
+import GlyphInfo from "../GlyphInfo.js";
+import type ShapingPlan from "../ShapingPlan.js";
+import DefaultShaper from "./DefaultShaper.js";
+import base64DeflatedIndicMachine from "./indic.js";
 import {
   CATEGORIES,
   CONSONANT_FLAGS,
@@ -17,9 +17,9 @@ import {
   INDIC_CONFIGS,
   JOINER_FLAGS,
   POSITIONS,
-} from './indic-data.js';
-import { syllableRuns } from './syllables.js';
-import base64DeflatedTrie from './trieIndic.js';
+} from "./indic-data.js";
+import { syllableRuns } from "./syllables.js";
+import base64DeflatedTrie from "./trieIndic.js";
 
 const indicMachine = JSON.parse(
   String.fromCharCode.apply(
@@ -36,7 +36,7 @@ const stateMachine = new StateMachine(indicMachine);
  * Based on code from Harfbuzz: https://github.com/behdad/harfbuzz/blob/master/src/hb-ot-shape-complex-indic.cc
  */
 export default class IndicShaper extends DefaultShaper {
-  static override zeroMarkWidths = 'NONE';
+  static override zeroMarkWidths = "NONE";
   static override planFeatures(
     plan: ShapingPlan & {
       unicodeScript?: string;
@@ -46,59 +46,42 @@ export default class IndicShaper extends DefaultShaper {
   ): void {
     plan.addStage(setupSyllables);
 
-    plan.addStage(['locl', 'ccmp']);
+    plan.addStage(["locl", "ccmp"]);
 
     plan.addStage(initialReordering);
 
-    plan.addStage('nukt');
-    plan.addStage('akhn');
-    plan.addStage('rphf', false);
-    plan.addStage('rkrf');
-    plan.addStage('pref', false);
-    plan.addStage('blwf', false);
-    plan.addStage('abvf', false);
-    plan.addStage('half', false);
-    plan.addStage('pstf', false);
-    plan.addStage('vatu');
-    plan.addStage('cjct');
-    plan.addStage('cfar', false);
+    plan.addStage("nukt");
+    plan.addStage("akhn");
+    plan.addStage("rphf", false);
+    plan.addStage("rkrf");
+    plan.addStage("pref", false);
+    plan.addStage("blwf", false);
+    plan.addStage("abvf", false);
+    plan.addStage("half", false);
+    plan.addStage("pstf", false);
+    plan.addStage("vatu");
+    plan.addStage("cjct");
+    plan.addStage("cfar", false);
 
     plan.addStage(finalReordering);
 
     plan.addStage({
-      local: ['init'],
-      global: [
-        'pres',
-        'abvs',
-        'blws',
-        'psts',
-        'haln',
-        'dist',
-        'abvm',
-        'blwm',
-        'calt',
-        'clig',
-      ],
+      local: ["init"],
+      global: ["pres", "abvs", "blws", "psts", "haln", "dist", "abvm", "blwm", "calt", "clig"],
     });
 
     // Setup the indic config for the selected script
-    const unicodeScript = Script.fromOpenType(plan.script) ?? '';
+    const unicodeScript = Script.fromOpenType(plan.script) ?? "";
     plan.unicodeScript = unicodeScript || undefined;
     plan.indicConfig =
-      (INDIC_CONFIGS as Record<string, any>)[unicodeScript] ||
-      INDIC_CONFIGS['Default'];
-    plan.isOldSpec =
-      plan.indicConfig.hasOldSpec &&
-      plan.script[plan.script.length - 1] !== '2';
+      (INDIC_CONFIGS as Record<string, any>)[unicodeScript] || INDIC_CONFIGS["Default"];
+    plan.isOldSpec = plan.indicConfig.hasOldSpec && plan.script[plan.script.length - 1] !== "2";
 
     // TODO: turn off kern (Khmer) and liga features.
   }
 
   // Split vowels are handled before cmap mapping by composeCanonical.
-  static override assignFeatures(
-    _plan: ShapingPlan,
-    _glyphs: GlyphInfo[],
-  ): void {}
+  static override assignFeatures(_plan: ShapingPlan, _glyphs: GlyphInfo[]): void {}
 }
 
 function indicCategory(glyph: GlyphInfo): number {
@@ -115,12 +98,7 @@ class IndicInfo {
   syllableType: string;
   syllable: number;
 
-  constructor(
-    category: number,
-    position: number,
-    syllableType: string,
-    syllable: number,
-  ) {
+  constructor(category: number, position: number, syllableType: string, syllable: number) {
     this.category = category;
     this.position = position;
     this.syllableType = syllableType;
@@ -131,10 +109,7 @@ class IndicInfo {
 function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
   let syllable = 0;
 
-  for (const { start, end, tags } of syllableRuns(
-    stateMachine,
-    glyphs.map(indicCategory),
-  )) {
+  for (const { start, end, tags } of syllableRuns(stateMachine, glyphs.map(indicCategory))) {
     ++syllable;
 
     for (let i = start; i < end; i++) {
@@ -145,12 +120,7 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
             tags[0]!,
             syllable,
           )
-        : new IndicInfo(
-            CATEGORIES['X']!,
-            POSITIONS['End']!,
-            'non_indic_cluster',
-            syllable,
-          );
+        : new IndicInfo(CATEGORIES["X"]!, POSITIONS["End"]!, "non_indic_cluster", syllable);
     }
   }
 }
@@ -178,26 +148,19 @@ function wouldSubstitute(glyphs: GlyphInfo[], feature: string): boolean {
   return glyphs.length === 1;
 }
 
-function consonantPosition(
-  _font: any,
-  consonant: GlyphInfo,
-  virama: GlyphInfo,
-): number {
+function consonantPosition(_font: any, consonant: GlyphInfo, virama: GlyphInfo): number {
   const glyphs = [virama, consonant, virama];
 
-  if (
-    wouldSubstitute(glyphs.slice(0, 2), 'blwf') ||
-    wouldSubstitute(glyphs.slice(1, 3), 'blwf')
-  ) {
+  if (wouldSubstitute(glyphs.slice(0, 2), "blwf") || wouldSubstitute(glyphs.slice(1, 3), "blwf")) {
     return POSITIONS.Below_C;
   } else if (
-    wouldSubstitute(glyphs.slice(0, 2), 'pstf') ||
-    wouldSubstitute(glyphs.slice(1, 3), 'pstf')
+    wouldSubstitute(glyphs.slice(0, 2), "pstf") ||
+    wouldSubstitute(glyphs.slice(1, 3), "pstf")
   ) {
     return POSITIONS.Post_C;
   } else if (
-    wouldSubstitute(glyphs.slice(0, 2), 'pref') ||
-    wouldSubstitute(glyphs.slice(1, 3), 'pref')
+    wouldSubstitute(glyphs.slice(0, 2), "pref") ||
+    wouldSubstitute(glyphs.slice(1, 3), "pref")
   ) {
     return POSITIONS.Post_C;
   }
@@ -218,11 +181,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
     for (let i = 0; i < glyphs.length; i++) {
       if (glyphs[i].shaperInfo.position === POSITIONS.Base_C) {
-        glyphs[i].shaperInfo.position = consonantPosition(
-          font,
-          glyphs[i].copy(),
-          info,
-        );
+        glyphs[i].shaperInfo.position = consonantPosition(font, glyphs[i].copy(), info);
       }
     }
   }
@@ -234,20 +193,13 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
   ) {
     const { category: _category, syllableType } = glyphs[start].shaperInfo;
 
-    if (
-      syllableType === 'symbol_cluster' ||
-      syllableType === 'non_indic_cluster'
-    ) {
+    if (syllableType === "symbol_cluster" || syllableType === "non_indic_cluster") {
       continue;
     }
 
-    if (syllableType === 'broken_cluster' && dottedCircle) {
+    if (syllableType === "broken_cluster" && dottedCircle) {
       // Inserted, so it stands for no character in extracted text.
-      const g = new GlyphInfo(
-        font,
-        dottedCircle,
-        inserted([0x25cc], glyphs[start].cluster),
-      );
+      const g = new GlyphInfo(font, dottedCircle, inserted([0x25cc], glyphs[start].cluster));
 
       g.shaperInfo = new IndicInfo(
         1 << indicCategory(g),
@@ -287,20 +239,16 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       indicConfig.rephPos !== POSITIONS.Ra_To_Become_Reph &&
       features.rphf &&
       start + 3 <= end &&
-      ((indicConfig.rephMode === 'Implicit' && !isJoiner(glyphs[start + 2])) ||
-        (indicConfig.rephMode === 'Explicit' &&
+      ((indicConfig.rephMode === "Implicit" && !isJoiner(glyphs[start + 2])) ||
+        (indicConfig.rephMode === "Explicit" &&
           glyphs[start + 2].shaperInfo.category === CATEGORIES.ZWJ))
     ) {
       // See if it matches the 'rphf' feature.
-      const g = [
-        glyphs[start].copy(),
-        glyphs[start + 1].copy(),
-        glyphs[start + 2].copy(),
-      ];
+      const g = [glyphs[start].copy(), glyphs[start + 1].copy(), glyphs[start + 2].copy()];
 
       if (
-        wouldSubstitute(g.slice(0, 2), 'rphf') ||
-        (indicConfig.rephMode === 'Explicit' && wouldSubstitute(g, 'rphf'))
+        wouldSubstitute(g.slice(0, 2), "rphf") ||
+        (indicConfig.rephMode === "Explicit" && wouldSubstitute(g, "rphf"))
       ) {
         limit += 2;
 
@@ -312,7 +260,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         hasReph = true;
       }
     } else if (
-      indicConfig.rephMode === 'Log_Repha' &&
+      indicConfig.rephMode === "Log_Repha" &&
       glyphs[start].shaperInfo.category === CATEGORIES.Repha
     ) {
       limit++;
@@ -326,7 +274,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     switch (indicConfig.basePos) {
-      case 'Last': {
+      case "Last": {
         // starting from the end of the syllable, move backwards
         let i = end;
         let seenBelow = false;
@@ -378,7 +326,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         break;
       }
 
-      case 'First': {
+      case "First": {
         // The first consonant is always the base.
         base = start;
 
@@ -476,7 +424,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     // U+0D38,U+0D4D,U+0D31,U+0D4D,U+0D31,U+0D4D
     // With lohit-ttf-20121122/Lohit-Malayalam.ttf
     if (plan.isOldSpec) {
-      const disallowDoubleHalants = plan.unicodeScript !== 'Malayalam';
+      const disallowDoubleHalants = plan.unicodeScript !== "Malayalam";
 
       for (let i = base + 1; i < end; i++) {
         if (glyphs[i].shaperInfo.category === CATEGORIES.H) {
@@ -485,8 +433,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
           for (j = end - 1; j > i; j--) {
             if (
               isConsonant(glyphs[j]) ||
-              (disallowDoubleHalants &&
-                glyphs[j].shaperInfo.category === CATEGORIES.H)
+              (disallowDoubleHalants && glyphs[j].shaperInfo.category === CATEGORIES.H)
             ) {
               break;
             }
@@ -520,10 +467,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       ) {
         info.position = lastPos;
 
-        if (
-          info.category === CATEGORIES.H &&
-          info.position === POSITIONS.Pre_M
-        ) {
+        if (info.category === CATEGORIES.H && info.position === POSITIONS.Pre_M) {
           // Uniscribe doesn't move the Halant with Left Matra.
           // TEST: U+092B,U+093F,U+094DE
           // We follow.  This is important for the Sinhala
@@ -562,10 +506,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     const arr = glyphs.slice(start, end);
-    arr.sort(
-      (a: GlyphInfo, b: GlyphInfo) =>
-        a.shaperInfo.position - b.shaperInfo.position,
-    );
+    arr.sort((a: GlyphInfo, b: GlyphInfo) => a.shaperInfo.position - b.shaperInfo.position);
     glyphs.splice(start, arr.length, ...arr);
 
     // Find base again
@@ -588,7 +529,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     // Pre-base
-    const blwf = !plan.isOldSpec && indicConfig.blwfMode === 'Pre_And_Post';
+    const blwf = !plan.isOldSpec && indicConfig.blwfMode === "Pre_And_Post";
 
     for (let i = start; i < base; i++) {
       glyphs[i].features.half = true;
@@ -605,7 +546,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       glyphs[i].features.blwf = true;
     }
 
-    if (plan.isOldSpec && plan.unicodeScript === 'Devanagari') {
+    if (plan.isOldSpec && plan.unicodeScript === "Devanagari") {
       // Old-spec eye-lash Ra needs special handling.  From the
       // spec:
       //
@@ -627,8 +568,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         if (
           glyphs[i].shaperInfo.category === CATEGORIES.Ra &&
           glyphs[i + 1].shaperInfo.category === CATEGORIES.H &&
-          (i + 1 === base ||
-            glyphs[i + 2].shaperInfo.category === CATEGORIES.ZWJ)
+          (i + 1 === base || glyphs[i + 2].shaperInfo.category === CATEGORIES.ZWJ)
         ) {
           glyphs[i].features.blwf = true;
           glyphs[i + 1].features.blwf = true;
@@ -643,7 +583,7 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       for (let i = base + 1; i + prefLen - 1 < end; i++) {
         const g = [glyphs[i].copy(), glyphs[i + 1].copy()];
 
-        if (wouldSubstitute(g, 'pref')) {
+        if (wouldSubstitute(g, "pref")) {
           for (let j = 0; j < prefLen; j++) {
             glyphs[i++].features.pref = true;
           }
@@ -713,13 +653,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         if (tryPref && base + 1 < end) {
           for (let i = base + 1; i < end; i++) {
             if (glyphs[i].features.pref) {
-              if (
-                !(
-                  glyphs[i].substituted &&
-                  glyphs[i].isLigated &&
-                  !glyphs[i].isMultiplied
-                )
-              ) {
+              if (!(glyphs[i].substituted && glyphs[i].isLigated && !glyphs[i].isMultiplied)) {
                 // Ok, this was a 'pref' candidate but didn't form any.
                 // Base is around here...
                 base = i;
@@ -728,7 +662,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
                   base++;
                 }
 
-                glyphs[base]!.shaperInfo.position = POSITIONS['Base_C']!;
+                glyphs[base]!.shaperInfo.position = POSITIONS["Base_C"]!;
                 tryPref = false;
               }
 
@@ -738,7 +672,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         }
 
         // For Malayalam, skip over unformed below- (but NOT post-) forms.
-        if (plan.unicodeScript === 'Malayalam') {
+        if (plan.unicodeScript === "Malayalam") {
           for (let i = base + 1; i < end; i++) {
             while (i < end && isJoiner(glyphs[i])) {
               i++;
@@ -765,10 +699,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
           }
         }
 
-        if (
-          start < base &&
-          glyphs[base].shaperInfo.position > POSITIONS.Base_C
-        ) {
+        if (start < base && glyphs[base].shaperInfo.position > POSITIONS.Base_C) {
           base--;
         }
 
@@ -776,19 +707,14 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       }
     }
 
-    if (
-      base === end &&
-      start < base &&
-      glyphs[base - 1].shaperInfo.category === CATEGORIES.ZWJ
-    ) {
+    if (base === end && start < base && glyphs[base - 1].shaperInfo.category === CATEGORIES.ZWJ) {
       base--;
     }
 
     if (base < end) {
       while (
         start < base &&
-        glyphs[base].shaperInfo.category &
-          (CATEGORIES.N | HALANT_OR_COENG_FLAGS)
+        glyphs[base].shaperInfo.category & (CATEGORIES.N | HALANT_OR_COENG_FLAGS)
       ) {
         base--;
       }
@@ -812,16 +738,10 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       // Malayalam / Tamil do not have "half" forms or explicit virama forms.
       // The glyphs formed by 'half' are Chillus or ligated explicit viramas.
       // We want to position matra after them.
-      if (
-        plan.unicodeScript !== 'Malayalam' &&
-        plan.unicodeScript !== 'Tamil'
-      ) {
+      if (plan.unicodeScript !== "Malayalam" && plan.unicodeScript !== "Tamil") {
         while (
           newPos > start &&
-          !(
-            glyphs[newPos].shaperInfo.category &
-            (CATEGORIES.M | HALANT_OR_COENG_FLAGS)
-          )
+          !(glyphs[newPos].shaperInfo.category & (CATEGORIES.M | HALANT_OR_COENG_FLAGS))
         ) {
           newPos--;
         }
@@ -842,10 +762,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
         }
       }
 
-      if (
-        start < newPos &&
-        glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M
-      ) {
+      if (start < newPos && glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M) {
         // Now go see if there's actually any matras...
         for (let i = newPos; i > start; i--) {
           if (glyphs[i - 1].shaperInfo.position === POSITIONS.Pre_M) {
@@ -857,11 +774,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             }
 
             const tmp = glyphs[oldPos];
-            glyphs.splice(
-              oldPos,
-              0,
-              ...glyphs.splice(oldPos + 1, newPos - oldPos),
-            );
+            glyphs.splice(oldPos, 0, ...glyphs.splice(oldPos + 1, newPos - oldPos));
             glyphs[newPos] = tmp;
 
             newPos--;
@@ -991,10 +904,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
       if (!found) {
         newRephPos = end - 1;
 
-        while (
-          newRephPos > start &&
-          glyphs[newRephPos].shaperInfo.position === POSITIONS.SMVD
-        ) {
+        while (newRephPos > start && glyphs[newRephPos].shaperInfo.position === POSITIONS.SMVD) {
           newRephPos--;
         }
 
@@ -1047,26 +957,17 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
             // Malayalam / Tamil do not have "half" forms or explicit virama forms.
             // The glyphs formed by 'half' are Chillus or ligated explicit viramas.
             // We want to position matra after them.
-            if (
-              plan.unicodeScript !== 'Malayalam' &&
-              plan.unicodeScript !== 'Tamil'
-            ) {
+            if (plan.unicodeScript !== "Malayalam" && plan.unicodeScript !== "Tamil") {
               while (
                 newPos > start &&
-                !(
-                  glyphs[newPos - 1].shaperInfo.category &
-                  (CATEGORIES.M | HALANT_OR_COENG_FLAGS)
-                )
+                !(glyphs[newPos - 1].shaperInfo.category & (CATEGORIES.M | HALANT_OR_COENG_FLAGS))
               ) {
                 newPos--;
               }
 
               // In Khmer coeng model, a H,Ra can go *after* matras.  If it goes after a
               // split matra, it should be reordered to *before* the left part of such matra.
-              if (
-                newPos > start &&
-                glyphs[newPos - 1].shaperInfo.category === CATEGORIES.M
-              ) {
+              if (newPos > start && glyphs[newPos - 1].shaperInfo.category === CATEGORIES.M) {
                 const oldPos = i;
 
                 for (let j = base + 1; j < oldPos; j++) {
@@ -1087,11 +988,7 @@ function finalReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
 
             const oldPos = i;
             const tmp = glyphs[oldPos];
-            glyphs.splice(
-              newPos + 1,
-              0,
-              ...glyphs.splice(newPos, oldPos - newPos),
-            );
+            glyphs.splice(newPos + 1, 0, ...glyphs.splice(newPos, oldPos - newPos));
             glyphs[newPos] = tmp;
 
             if (newPos <= base && base < oldPos) {
@@ -1118,10 +1015,7 @@ function nextSyllable(glyphs: GlyphInfo[], start: number): number {
   if (start >= glyphs.length) return start;
   const syllable = glyphs[start]!.shaperInfo.syllable;
 
-  while (
-    ++start < glyphs.length &&
-    glyphs[start]!.shaperInfo.syllable === syllable
-  );
+  while (++start < glyphs.length && glyphs[start]!.shaperInfo.syllable === syllable);
 
   return start;
 }

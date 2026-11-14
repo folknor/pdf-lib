@@ -1,25 +1,18 @@
-import { copyStringIntoBuffer } from '../../utils/index.js';
-import type PDFArray from '../objects/PDFArray.js';
-import type PDFHexString from '../objects/PDFHexString.js';
-import type PDFName from '../objects/PDFName.js';
-import type PDFNumber from '../objects/PDFNumber.js';
-import PDFObject from '../objects/PDFObject.js';
-import type PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import CharCodes from '../syntax/CharCodes.js';
-import type PDFOperatorNames from './PDFOperatorNames.js';
+import { copyStringIntoBuffer } from "../../utils/index.js";
+import type PDFArray from "../objects/PDFArray.js";
+import type PDFHexString from "../objects/PDFHexString.js";
+import type PDFName from "../objects/PDFName.js";
+import type PDFNumber from "../objects/PDFNumber.js";
+import PDFObject from "../objects/PDFObject.js";
+import type PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import CharCodes from "../syntax/CharCodes.js";
+import type PDFOperatorNames from "./PDFOperatorNames.js";
 
-export type PDFOperatorArg =
-  | string
-  | PDFName
-  | PDFArray
-  | PDFNumber
-  | PDFString
-  | PDFHexString;
+export type PDFOperatorArg = string | PDFName | PDFArray | PDFNumber | PDFString | PDFHexString;
 
 class PDFOperator {
-  static of = (name: PDFOperatorNames, args?: PDFOperatorArg[]) =>
-    new PDFOperator(name, args);
+  static of = (name: PDFOperatorNames, args?: PDFOperatorArg[]) => new PDFOperator(name, args);
 
   private readonly name: PDFOperatorNames;
   private readonly args: PDFOperatorArg[];
@@ -41,7 +34,7 @@ class PDFOperator {
   }
 
   toString(): string {
-    let value = '';
+    let value = "";
 
     for (let idx = 0, len = this.args.length; idx < len; idx++) {
       value += `${String(this.args[idx])} `;

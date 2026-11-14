@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const Axis = new r.Struct({
   axisTag: new r.String(4),
@@ -7,12 +7,12 @@ const Axis = new r.Struct({
   maxValue: r.fixed32,
   flags: r.uint16,
   nameID: r.uint16,
-  name: (t: any) => t['parent'].parent.name.records.fontFeatures[t['nameID']],
+  name: (t: any) => t["parent"].parent.name.records.fontFeatures[t["nameID"]],
 });
 
 const Instance = new r.Struct({
   nameID: r.uint16,
-  name: (t: any) => t['parent'].parent.name.records.fontFeatures[t['nameID']],
+  name: (t: any) => t["parent"].parent.name.records.fontFeatures[t["nameID"]],
   flags: r.uint16,
   coord: new r.Array(r.fixed32, (t: any) => t.parent.axisCount),
   postscriptNameID: new r.Optional(
@@ -29,6 +29,6 @@ export default new r.Struct({
   axisSize: r.uint16,
   instanceCount: r.uint16,
   instanceSize: r.uint16,
-  axis: new r.Array(Axis, 'axisCount'),
-  instance: new r.Array(Instance, 'instanceCount'),
+  axis: new r.Array(Axis, "axisCount"),
+  instance: new r.Array(Instance, "instanceCount"),
 });

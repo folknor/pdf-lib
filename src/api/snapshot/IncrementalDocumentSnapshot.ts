@@ -1,5 +1,5 @@
-import type { PDFContext, PDFObject, PDFRef } from '../../core/index.js';
-import type { DocumentSnapshot } from './DocumentSnapshot.js';
+import type { PDFContext, PDFObject, PDFRef } from "../../core/index.js";
+import type { DocumentSnapshot } from "./DocumentSnapshot.js";
 
 export class IncrementalDocumentSnapshot implements DocumentSnapshot {
   pdfSize: number;
@@ -49,9 +49,7 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
 
   markObjsForSave(objs: PDFObject[]): void {
     this.markRefsForSave(
-      objs
-        .map((obj) => this.context.getRef(obj))
-        .filter((ref) => ref !== undefined) as PDFRef[],
+      objs.map((obj) => this.context.getRef(obj)).filter((ref) => ref !== undefined) as PDFRef[],
     );
   }
 
@@ -74,8 +72,6 @@ export class IncrementalDocumentSnapshot implements DocumentSnapshot {
   }
 
   deletedRefs(): PDFRef[] {
-    return [...this.deleted.values()].sort(
-      (a, b) => a.objectNumber - b.objectNumber,
-    );
+    return [...this.deleted.values()].sort((a, b) => a.objectNumber - b.objectNumber);
   }
 }

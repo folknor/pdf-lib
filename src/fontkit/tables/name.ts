@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import { getEncoding, LANGUAGES } from '../encodings.js';
+import * as r from "../../vendors/restructure/index.js";
+import { getEncoding, LANGUAGES } from "../encodings.js";
 
 interface NameRecordData {
   platformID: number;
@@ -33,10 +33,10 @@ const NameRecord = new r.Struct({
     r.uint16,
     // An unknown platform/encoding yields null; r.String then reads ascii,
     // which cannot throw. Guessing utf16be instead is not more correct.
-    new r.String('length', ((t: any) =>
+    new r.String("length", ((t: any) =>
       getEncoding(t.platformID, t.encodingID, t.languageID)) as any),
     {
-      type: 'parent',
+      type: "parent",
       relativeTo: (ctx: any) => ctx.parent.stringOffset,
       allowNull: false,
     },
@@ -45,8 +45,8 @@ const NameRecord = new r.Struct({
 
 const LangTagRecord = new r.Struct({
   length: r.uint16,
-  tag: new r.Pointer(r.uint16, new r.String('length', 'utf16be'), {
-    type: 'parent',
+  tag: new r.Pointer(r.uint16, new r.String("length", "utf16be"), {
+    type: "parent",
     relativeTo: (ctx: any) => ctx.stringOffset,
   }),
 });
@@ -55,43 +55,43 @@ const NameTable = new r.VersionedStruct(r.uint16, {
   0: {
     count: r.uint16,
     stringOffset: r.uint16,
-    records: new r.Array(NameRecord, 'count'),
+    records: new r.Array(NameRecord, "count"),
   },
   1: {
     count: r.uint16,
     stringOffset: r.uint16,
-    records: new r.Array(NameRecord, 'count'),
+    records: new r.Array(NameRecord, "count"),
     langTagCount: r.uint16,
-    langTags: new r.Array(LangTagRecord, 'langTagCount'),
+    langTags: new r.Array(LangTagRecord, "langTagCount"),
   },
 });
 
 export default NameTable;
 
 const NAMES: (string | null)[] = [
-  'copyright',
-  'fontFamily',
-  'fontSubfamily',
-  'uniqueSubfamily',
-  'fullName',
-  'version',
-  'postscriptName', // Note: A font may have only one PostScript name and that name must be ASCII.
-  'trademark',
-  'manufacturer',
-  'designer',
-  'description',
-  'vendorURL',
-  'designerURL',
-  'license',
-  'licenseURL',
+  "copyright",
+  "fontFamily",
+  "fontSubfamily",
+  "uniqueSubfamily",
+  "fullName",
+  "version",
+  "postscriptName", // Note: A font may have only one PostScript name and that name must be ASCII.
+  "trademark",
+  "manufacturer",
+  "designer",
+  "description",
+  "vendorURL",
+  "designerURL",
+  "license",
+  "licenseURL",
   null, // reserved
-  'preferredFamily',
-  'preferredSubfamily',
-  'compatibleFull',
-  'sampleText',
-  'postscriptCIDFontName',
-  'wwsFamilyName',
-  'wwsSubfamilyName',
+  "preferredFamily",
+  "preferredSubfamily",
+  "compatibleFull",
+  "sampleText",
+  "postscriptCIDFontName",
+  "wwsFamilyName",
+  "wwsSubfamilyName",
 ];
 
 NameTable.process = function (this: Record<string, unknown>) {
@@ -102,11 +102,7 @@ NameTable.process = function (this: Record<string, unknown>) {
     // find out what language this is for
     let language = LANGUAGES[record.platformID]?.[record.languageID];
 
-    if (
-      language == null &&
-      self.langTags != null &&
-      record.languageID >= 0x8000
-    ) {
+    if (language == null && self.langTags != null && record.languageID >= 0x8000) {
       language = self.langTags[record.languageID - 0x8000]?.tag;
     }
 
@@ -115,10 +111,7 @@ NameTable.process = function (this: Record<string, unknown>) {
     }
 
     // if the nameID is >= 256, it is a font feature record (AAT)
-    const key =
-      record.nameID >= 256
-        ? 'fontFeatures'
-        : NAMES[record.nameID] || record.nameID;
+    const key = record.nameID >= 256 ? "fontFeatures" : NAMES[record.nameID] || record.nameID;
 
     if (records[key] == null) {
       records[key] = {};
@@ -130,10 +123,7 @@ NameTable.process = function (this: Record<string, unknown>) {
       obj = obj[record.nameID] || (obj[record.nameID] = {});
     }
 
-    if (
-      typeof record.string === 'string' ||
-      typeof obj[language] !== 'string'
-    ) {
+    if (typeof record.string === "string" || typeof obj[language] !== "string") {
       obj[language] = record.string;
     }
   }
@@ -152,7 +142,7 @@ NameTable.preEncode = function (this: Record<string, unknown>) {
   for (const key in self.records) {
     const val = self.records[key];
 
-    if (key === 'fontFeatures') continue;
+    if (key === "fontFeatures") continue;
 
     records.push({
       platformID: 3,
@@ -163,7 +153,7 @@ NameTable.preEncode = function (this: Record<string, unknown>) {
       string: val.en,
     });
 
-    if (key === 'postscriptName') {
+    if (key === "postscriptName") {
       records.push({
         platformID: 1,
         encodingID: 0,
@@ -177,9 +167,5 @@ NameTable.preEncode = function (this: Record<string, unknown>) {
 
   self.records = records;
   self.count = records.length;
-  self.stringOffset = NameTable.size(
-    self as unknown as Record<string, unknown>,
-    null,
-    false,
-  );
+  self.stringOffset = NameTable.size(self as unknown as Record<string, unknown>, null, false);
 };

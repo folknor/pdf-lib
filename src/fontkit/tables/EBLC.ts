@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import { BigMetrics } from './EBDT.js';
+import * as r from "../../vendors/restructure/index.js";
+import { BigMetrics } from "./EBDT.js";
 
 // Known-wrong against the OpenType spec, and left so because nothing decodes
 // EBLC/CBLC (only directory presence is tested) and no fixture exercises it:
@@ -61,7 +61,7 @@ const IndexSubtable = new r.VersionedStruct(r.uint16, {
     imageSize: r.uint32,
     bigMetrics: BigMetrics,
     numGlyphs: r.uint32,
-    glyphCodeArray: new r.Array(r.uint16, 'numGlyphs'),
+    glyphCodeArray: new r.Array(r.uint16, "numGlyphs"),
   },
 });
 
@@ -72,11 +72,9 @@ const IndexSubtableArray = new r.Struct({
 });
 
 const BitmapSizeTable = new r.Struct({
-  indexSubTableArray: new r.Pointer(
-    r.uint32,
-    new r.Array(IndexSubtableArray, 1),
-    { type: 'parent' },
-  ),
+  indexSubTableArray: new r.Pointer(r.uint32, new r.Array(IndexSubtableArray, 1), {
+    type: "parent",
+  }),
   indexTablesSize: r.uint32,
   numberOfIndexSubTables: r.uint32,
   colorRef: r.uint32,
@@ -87,11 +85,11 @@ const BitmapSizeTable = new r.Struct({
   ppemX: r.uint8,
   ppemY: r.uint8,
   bitDepth: r.uint8,
-  flags: new r.Bitfield(r.uint8, ['horizontal', 'vertical']),
+  flags: new r.Bitfield(r.uint8, ["horizontal", "vertical"]),
 });
 
 export default new r.Struct({
   version: r.uint32, // 0x00020000
   numSizes: r.uint32,
-  sizes: new r.Array(BitmapSizeTable, 'numSizes'),
+  sizes: new r.Array(BitmapSizeTable, "numSizes"),
 });

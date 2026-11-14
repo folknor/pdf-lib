@@ -1,6 +1,6 @@
-import { PNG } from '../../utils/png.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
+import { PNG } from "../../utils/png.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -8,10 +8,7 @@ import type PDFContext from '../PDFContext.js';
  *   https://github.com/devongovett/pdfkit/blob/e71edab0dd4657b5a767804ba86c94c58d01fbca/lib/image/png.coffee
  */
 class PngEmbedder {
-  static async for(
-    imageData: Uint8Array<ArrayBuffer>,
-    maxDecodedSize?: number,
-  ) {
+  static async for(imageData: Uint8Array<ArrayBuffer>, maxDecodedSize?: number) {
     const png = PNG.load(imageData, maxDecodedSize);
 
     return new PngEmbedder(png);
@@ -20,7 +17,7 @@ class PngEmbedder {
   readonly bitsPerComponent: number;
   readonly height: number;
   readonly width: number;
-  readonly colorSpace: 'DeviceRGB';
+  readonly colorSpace: "DeviceRGB";
 
   private readonly image: PNG;
 
@@ -29,15 +26,15 @@ class PngEmbedder {
     this.bitsPerComponent = png.bitsPerComponent;
     this.width = png.width;
     this.height = png.height;
-    this.colorSpace = 'DeviceRGB';
+    this.colorSpace = "DeviceRGB";
   }
 
   async embedIntoContext(context: PDFContext, ref?: PDFRef): Promise<PDFRef> {
     const SMask = this.embedAlphaChannel(context);
 
     const xObject = context.flateStream(this.image.rgbChannel, {
-      Type: 'XObject',
-      Subtype: 'Image',
+      Type: "XObject",
+      Subtype: "Image",
       BitsPerComponent: this.image.bitsPerComponent,
       Width: this.image.width,
       Height: this.image.height,
@@ -58,12 +55,12 @@ class PngEmbedder {
     if (!this.image.alphaChannel) return;
 
     const xObject = context.flateStream(this.image.alphaChannel, {
-      Type: 'XObject',
-      Subtype: 'Image',
+      Type: "XObject",
+      Subtype: "Image",
       Height: this.image.height,
       Width: this.image.width,
       BitsPerComponent: this.image.bitsPerComponent,
-      ColorSpace: 'DeviceGray',
+      ColorSpace: "DeviceGray",
       Decode: [0, 1],
     });
 

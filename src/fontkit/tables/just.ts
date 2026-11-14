@@ -1,5 +1,5 @@
-import * as r from '../../vendors/restructure/index.js';
-import { LookupTable, StateTable1 } from './aat.js';
+import * as r from "../../vendors/restructure/index.js";
+import { LookupTable, StateTable1 } from "./aat.js";
 
 const ClassTable = new r.Struct({
   length: r.uint16,
@@ -20,7 +20,7 @@ const WidthDeltaRecord = new r.Struct({
 
 const WidthDeltaCluster = new r.Array(WidthDeltaRecord, r.uint32);
 
-const ActionData = new r.VersionedStruct('actionType', {
+const ActionData = new r.VersionedStruct("actionType", {
   0: {
     // Decomposition action
     lowerLimit: r.fixed32,
@@ -63,10 +63,7 @@ const Action = new r.Struct({
   actionType: r.uint16,
   actionLength: r.uint32,
   actionData: ActionData,
-  padding: new r.Reserved(
-    r.uint8,
-    (t: any) => t.actionLength - t._currentOffset,
-  ),
+  padding: new r.Reserved(r.uint8, (t: any) => t.actionLength - t._currentOffset),
 });
 
 const PostcompensationAction = new r.Array(Action, r.uint32);
@@ -76,14 +73,14 @@ const PostCompensationTable = new r.Struct({
 });
 
 const JustificationTable = new r.Struct({
-  classTable: new r.Pointer(r.uint16, ClassTable, { type: 'parent' }),
+  classTable: new r.Pointer(r.uint16, ClassTable, { type: "parent" }),
   wdcOffset: r.uint16,
   postCompensationTable: new r.Pointer(r.uint16, PostCompensationTable, {
-    type: 'parent',
+    type: "parent",
   }),
   widthDeltaClusters: LookupTable(
     new r.Pointer(r.uint16, WidthDeltaCluster, {
-      type: 'parent',
+      type: "parent",
       relativeTo: (ctx: any) => ctx.wdcOffset,
     }),
   ),

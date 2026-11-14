@@ -24,89 +24,82 @@
 // blob is checked against the builder first):
 //   node scripts/gen-use-trie.mjs scripts/ucd-cache/9004b7fa6d --write
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { unzlibSync, zlibSync } from 'fflate';
+import { readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { unzlibSync, zlibSync } from "fflate";
 
 const require = createRequire(import.meta.url);
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // --- verbatim tables from gen-use.js ---------------------------------------
 const CATEGORIES = {
   B: [
-    { UISC: 'Number' },
-    { UISC: 'Avagraha', UGC: 'Lo' },
-    { UISC: 'Bindu', UGC: 'Lo' },
-    { UISC: 'Consonant' },
-    { UISC: 'Consonant_Final', UGC: 'Lo' },
-    { UISC: 'Consonant_Head_Letter' },
-    { UISC: 'Consonant_Medial', UGC: 'Lo' },
-    { UISC: 'Consonant_Subjoined', UGC: 'Lo' },
-    { UISC: 'Tone_Letter' },
-    { UISC: 'Vowel', UGC: 'Lo' },
-    { UISC: 'Vowel_Independent' },
-    { UISC: 'Vowel_Dependent', UGC: 'Lo' },
+    { UISC: "Number" },
+    { UISC: "Avagraha", UGC: "Lo" },
+    { UISC: "Bindu", UGC: "Lo" },
+    { UISC: "Consonant" },
+    { UISC: "Consonant_Final", UGC: "Lo" },
+    { UISC: "Consonant_Head_Letter" },
+    { UISC: "Consonant_Medial", UGC: "Lo" },
+    { UISC: "Consonant_Subjoined", UGC: "Lo" },
+    { UISC: "Tone_Letter" },
+    { UISC: "Vowel", UGC: "Lo" },
+    { UISC: "Vowel_Independent" },
+    { UISC: "Vowel_Dependent", UGC: "Lo" },
   ],
   CGJ: [0x034f],
-  CM: ['Nukta', 'Gemination_Mark', 'Consonant_Killer'],
-  CS: ['Consonant_With_Stacker'],
-  F: [
-    { UISC: 'Consonant_Final', UGC: { not: 'Lo' } },
-    { UISC: 'Consonant_Succeeding_Repha' },
-  ],
-  FM: ['Syllable_Modifier'],
-  GB: ['Consonant_Placeholder', 0x2015, 0x2022, 0x25fb, 0x25fc, 0x25fd, 0x25fe],
-  H: ['Virama', 'Invisible_Stacker'],
-  HN: ['Number_Joiner'],
-  IND: [
-    'Consonant_Dead',
-    'Modifying_Letter',
-    { UGC: 'Po', U: { not: [0x104e, 0x2022] } },
-  ],
-  M: [{ UISC: 'Consonant_Medial', UGC: { not: 'Lo' } }],
-  N: ['Brahmi_Joining_Number'],
-  R: ['Consonant_Preceding_Repha', 'Consonant_Prefixed'],
-  Rsv: [{ UGC: 'Cn' }],
-  S: [{ UGC: 'So', U: { not: 0x25cc } }, { UGC: 'Sc' }],
+  CM: ["Nukta", "Gemination_Mark", "Consonant_Killer"],
+  CS: ["Consonant_With_Stacker"],
+  F: [{ UISC: "Consonant_Final", UGC: { not: "Lo" } }, { UISC: "Consonant_Succeeding_Repha" }],
+  FM: ["Syllable_Modifier"],
+  GB: ["Consonant_Placeholder", 0x2015, 0x2022, 0x25fb, 0x25fc, 0x25fd, 0x25fe],
+  H: ["Virama", "Invisible_Stacker"],
+  HN: ["Number_Joiner"],
+  IND: ["Consonant_Dead", "Modifying_Letter", { UGC: "Po", U: { not: [0x104e, 0x2022] } }],
+  M: [{ UISC: "Consonant_Medial", UGC: { not: "Lo" } }],
+  N: ["Brahmi_Joining_Number"],
+  R: ["Consonant_Preceding_Repha", "Consonant_Prefixed"],
+  Rsv: [{ UGC: "Cn" }],
+  S: [{ UGC: "So", U: { not: 0x25cc } }, { UGC: "Sc" }],
   SM: [0x1b6b, 0x1b6c, 0x1b6d, 0x1b6e, 0x1b6f, 0x1b70, 0x1b71, 0x1b72, 0x1b73],
-  SUB: [{ UISC: 'Consonant_Subjoined', UGC: { not: 'Lo' } }],
+  SUB: [{ UISC: "Consonant_Subjoined", UGC: { not: "Lo" } }],
   V: [
-    { UISC: 'Vowel', UGC: { not: 'Lo' } },
-    { UISC: 'Vowel_Dependent', UGC: { not: 'Lo' } },
-    { UISC: 'Pure_Killer' },
+    { UISC: "Vowel", UGC: { not: "Lo" } },
+    { UISC: "Vowel_Dependent", UGC: { not: "Lo" } },
+    { UISC: "Pure_Killer" },
   ],
   VM: [
-    { UISC: 'Bindu', UGC: { not: 'Lo' } },
-    'Tone_Mark',
-    'Cantillation_Mark',
-    'Register_Shifter',
-    'Visarga',
+    { UISC: "Bindu", UGC: { not: "Lo" } },
+    "Tone_Mark",
+    "Cantillation_Mark",
+    "Register_Shifter",
+    "Visarga",
   ],
   VS: [
-    0xfe00, 0xfe01, 0xfe02, 0xfe03, 0xfe04, 0xfe05, 0xfe06, 0xfe07, 0xfe08,
-    0xfe09, 0xfe0a, 0xfe0b, 0xfe0c, 0xfe0d, 0xfe0e, 0xfe0f,
+    0xfe00, 0xfe01, 0xfe02, 0xfe03, 0xfe04, 0xfe05, 0xfe06, 0xfe07, 0xfe08, 0xfe09, 0xfe0a, 0xfe0b,
+    0xfe0c, 0xfe0d, 0xfe0e, 0xfe0f,
   ],
   WJ: [0x2060],
-  ZWJ: ['Joiner'],
-  ZWNJ: ['Non_Joiner'],
-  O: ['Other'],
+  ZWJ: ["Joiner"],
+  ZWNJ: ["Non_Joiner"],
+  O: ["Other"],
 };
 
 const USE_POSITIONS = {
-  F: { Abv: ['Top'], Blw: ['Bottom'], Pst: ['Right'] },
-  M: { Abv: ['Top'], Blw: ['Bottom'], Pst: ['Right'], Pre: ['Left'] },
-  CM: { Abv: ['Top'], Blw: ['Bottom'] },
+  F: { Abv: ["Top"], Blw: ["Bottom"], Pst: ["Right"] },
+  M: { Abv: ["Top"], Blw: ["Bottom"], Pst: ["Right"], Pre: ["Left"] },
+  CM: { Abv: ["Top"], Blw: ["Bottom"] },
   V: {
-    Abv: ['Top', 'Top_And_Bottom', 'Top_And_Bottom_And_Right', 'Top_And_Right'],
-    Blw: ['Bottom', 'Overstruck', 'Bottom_And_Right'],
-    Pst: ['Right'],
-    Pre: ['Left', 'Top_And_Left', 'Top_And_Left_And_Right', 'Left_And_Right'],
+    Abv: ["Top", "Top_And_Bottom", "Top_And_Bottom_And_Right", "Top_And_Right"],
+    Blw: ["Bottom", "Overstruck", "Bottom_And_Right"],
+    Pst: ["Right"],
+    Pre: ["Left", "Top_And_Left", "Top_And_Left_And_Right", "Left_And_Right"],
   },
-  VM: { Abv: ['Top'], Blw: ['Bottom', 'Overstruck'], Pst: ['Right'], Pre: ['Left'] },
-  SM: { Abv: ['Top'], Blw: ['Bottom'] },
+  VM: { Abv: ["Top"], Blw: ["Bottom", "Overstruck"], Pst: ["Right"], Pre: ["Left"] },
+  SM: { Abv: ["Top"], Blw: ["Bottom"] },
 };
 
 // --- Tibetan overrides from the USE specification ---------------------------
@@ -123,18 +116,18 @@ const USE_POSITIONS = {
 // which its symbol cluster S SM* does not accept). Only these Tibetan
 // entries are taken, each checked against use.ts's state machine:
 const TIBETAN_UISC_OVERRIDE = {
-  0x0f00: 'Consonant', // SYLLABLE OM
-  0x0f01: 'Consonant',
-  0x0f04: 'Consonant',
-  0x0f05: 'Consonant',
-  0x0f06: 'Consonant',
+  0x0f00: "Consonant", // SYLLABLE OM
+  0x0f01: "Consonant",
+  0x0f04: "Consonant",
+  0x0f05: "Consonant",
+  0x0f06: "Consonant",
   // AA as a nukta (CMBlw) so it precedes any vowel sign in the cluster, as
   // in Unicode canonical order (ccc 129 before 130/132) and in the
   // decompositions of U+0F73, U+0F75 and U+0F81 that UniversalShaper makes.
   // The mark reorder in CanonicalCompose.ts puts a typed I or U after AA.
-  0x0f71: 'Nukta',
-  0x0f86: 'Tone_Mark',
-  0x0f87: 'Tone_Mark',
+  0x0f71: "Nukta",
+  0x0f86: "Tone_Mark",
+  0x0f87: "Tone_Mark",
 };
 
 // Not taken from the Tibetan block, deliberately:
@@ -144,48 +137,48 @@ const TIBETAN_UISC_OVERRIDE = {
 // --- gen-use.js's own override tables (verbatim, plus the Tibetan entries) --
 const UISC_OVERRIDE = {
   ...TIBETAN_UISC_OVERRIDE,
-  0x17dd: 'Vowel_Dependent',
-  0x1ce2: 'Cantillation_Mark',
-  0x1ce3: 'Cantillation_Mark',
-  0x1ce4: 'Cantillation_Mark',
-  0x1ce5: 'Cantillation_Mark',
-  0x1ce6: 'Cantillation_Mark',
-  0x1ce7: 'Cantillation_Mark',
-  0x1ce8: 'Cantillation_Mark',
-  0x1ced: 'Tone_Mark',
+  0x17dd: "Vowel_Dependent",
+  0x1ce2: "Cantillation_Mark",
+  0x1ce3: "Cantillation_Mark",
+  0x1ce4: "Cantillation_Mark",
+  0x1ce5: "Cantillation_Mark",
+  0x1ce6: "Cantillation_Mark",
+  0x1ce7: "Cantillation_Mark",
+  0x1ce8: "Cantillation_Mark",
+  0x1ced: "Tone_Mark",
 };
 
 // These positions describe grammar order, not where the glyph is drawn.
 // VAbv precedes VBlw: pair this table with U's rank in MarkOrder.ts.
 const UIPC_OVERRIDE = {
-  0x0f72: 'Bottom',
-  0x0f7a: 'Bottom',
-  0x0f7b: 'Bottom',
-  0x0f7c: 'Bottom',
-  0x0f7d: 'Bottom',
-  0x0f80: 'Bottom',
-  0x0f74: 'Top',
-  0x1b6c: 'Bottom',
-  0x953: 'Not_Applicable',
-  0x954: 'Not_Applicable',
-  0x103c: 'Left',
-  0xa926: 'Top',
-  0xa927: 'Top',
-  0xa928: 'Top',
-  0xa929: 'Top',
-  0xa92a: 'Top',
-  0x111ca: 'Bottom',
-  0x11300: 'Top',
-  0x1133c: 'Bottom',
-  0x1171e: 'Left',
-  0x1cf2: 'Right',
-  0x1cf3: 'Right',
-  0x1cf8: 'Top',
-  0x1cf9: 'Top',
+  0x0f72: "Bottom",
+  0x0f7a: "Bottom",
+  0x0f7b: "Bottom",
+  0x0f7c: "Bottom",
+  0x0f7d: "Bottom",
+  0x0f80: "Bottom",
+  0x0f74: "Top",
+  0x1b6c: "Bottom",
+  0x953: "Not_Applicable",
+  0x954: "Not_Applicable",
+  0x103c: "Left",
+  0xa926: "Top",
+  0xa927: "Top",
+  0xa928: "Top",
+  0xa929: "Top",
+  0xa92a: "Top",
+  0x111ca: "Bottom",
+  0x11300: "Top",
+  0x1133c: "Bottom",
+  0x1171e: "Left",
+  0x1cf2: "Right",
+  0x1cf3: "Right",
+  0x1cf8: "Top",
+  0x1cf9: "Top",
 };
 
 function check(pattern, value) {
-  if (typeof pattern === 'object' && pattern.not) {
+  if (typeof pattern === "object" && pattern.not) {
     if (Array.isArray(pattern.not)) return pattern.not.indexOf(value) === -1;
 
     return value !== pattern.not;
@@ -195,8 +188,8 @@ function check(pattern, value) {
 }
 
 function matches(pattern, code) {
-  if (typeof pattern === 'number') pattern = { U: pattern };
-  else if (typeof pattern === 'string') pattern = { UISC: pattern };
+  if (typeof pattern === "number") pattern = { U: pattern };
+  else if (typeof pattern === "string") pattern = { UISC: pattern };
 
   for (const key in pattern) {
     if (!check(pattern[key], code[key])) return false;
@@ -205,7 +198,7 @@ function matches(pattern, code) {
   return true;
 }
 
-const getUISC = (c) => UISC_OVERRIDE[c.code] || c.indicSyllabicCategory || 'Other';
+const getUISC = (c) => UISC_OVERRIDE[c.code] || c.indicSyllabicCategory || "Other";
 const getUIPC = (c) => UIPC_OVERRIDE[c.code] || c.indicPositionalCategory;
 
 function getPositionalCategory(c, USE) {
@@ -236,16 +229,19 @@ function getCategory(c) {
 // --- minimal port of the `codepoints` parser (only the fields used) -------
 function parseUcd(ucdDir) {
   const cps = [];
-  const lines = readFileSync(join(ucdDir, 'UnicodeData.txt'), 'ascii').split('\n');
+  const lines = readFileSync(join(ucdDir, "UnicodeData.txt"), "ascii").split("\n");
   let rangeStart = -1;
 
   for (const line of lines) {
     if (!line) continue;
-    const parts = line.split(';');
+    const parts = line.split(";");
     const code = parseInt(parts[0], 16);
 
     let decomposition = parts[5]
-      ? parts[5].split(' ').filter(Boolean).map((x) => parseInt(x, 16))
+      ? parts[5]
+          .split(" ")
+          .filter(Boolean)
+          .map((x) => parseInt(x, 16))
       : [];
 
     if (decomposition.length && Number.isNaN(decomposition[0])) {
@@ -271,9 +267,9 @@ function parseUcd(ucdDir) {
   }
 
   const readProp = (file, field) => {
-    for (const line of readFileSync(join(ucdDir, file), 'ascii').split('\n')) {
-      if (!line || line[0] === '#') continue;
-      const parts = line.replace(/\s*#.*$/, '').split(/\s*;\s*/);
+    for (const line of readFileSync(join(ucdDir, file), "ascii").split("\n")) {
+      if (!line || line[0] === "#") continue;
+      const parts = line.replace(/\s*#.*$/, "").split(/\s*;\s*/);
       const m = /([a-z0-9]+)\.\.([a-z0-9]+)/i.exec(parts[0]);
 
       const [s, e] = m
@@ -286,19 +282,17 @@ function parseUcd(ucdDir) {
     }
   };
 
-  readProp('IndicPositionalCategory.txt', 'indicPositionalCategory');
-  readProp('IndicSyllabicCategory.txt', 'indicSyllabicCategory');
+  readProp("IndicPositionalCategory.txt", "indicPositionalCategory");
+  readProp("IndicSyllabicCategory.txt", "indicSyllabicCategory");
 
   return cps;
 }
 
 export function readUseJson() {
-  const src = readFileSync(join(root, 'src/fontkit/opentype/shapers/use.ts'), 'utf8');
+  const src = readFileSync(join(root, "src/fontkit/opentype/shapers/use.ts"), "utf8");
   const m = /'([A-Za-z0-9+/=]+)'/.exec(src);
 
-  return JSON.parse(
-    Buffer.from(unzlibSync(Buffer.from(m[1], 'base64'))).toString('latin1'),
-  );
+  return JSON.parse(Buffer.from(unzlibSync(Buffer.from(m[1], "base64"))).toString("latin1"));
 }
 
 // Returns { trie (frozen unicode-trie), categories (generation order),
@@ -309,7 +303,7 @@ export function buildUseTrie(ucdDir) {
   const symbols = {};
   const order = [];
   const decompositions = {};
-  const UnicodeTrieBuilder = require('unicode-trie/builder');
+  const UnicodeTrieBuilder = require("unicode-trie/builder");
   const builder = new UnicodeTrieBuilder();
 
   const decompose = (code) => {
@@ -339,7 +333,7 @@ export function buildUseTrie(ucdDir) {
     if (idx < 0) throw new Error(`category ${category} (U+${i.toString(16)}) not in use.ts`);
     builder.set(c.code, idx);
 
-    if (c.indicSyllabicCategory === 'Vowel_Dependent' && c.decomposition.length > 0) {
+    if (c.indicSyllabicCategory === "Vowel_Dependent" && c.decomposition.length > 0) {
       decompositions[c.code] = decompose(c.code);
     }
   }
@@ -351,24 +345,30 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dir = process.argv[2];
   const { trie, categories, decompositions } = buildUseTrie(dir);
   const use = readUseJson();
-  console.log('categories match use.ts order:', JSON.stringify(categories) === JSON.stringify(use.categories));
+  console.log(
+    "categories match use.ts order:",
+    JSON.stringify(categories) === JSON.stringify(use.categories),
+  );
 
   if (JSON.stringify(categories) !== JSON.stringify(use.categories)) {
-    console.log(' generated:', JSON.stringify(categories));
-    console.log(' use.ts:   ', JSON.stringify(use.categories));
+    console.log(" generated:", JSON.stringify(categories));
+    console.log(" use.ts:   ", JSON.stringify(use.categories));
   }
 
   console.log(
-    'decompositions match use.ts:',
+    "decompositions match use.ts:",
     JSON.stringify(decompositions) === JSON.stringify(use.decompositions),
     Object.keys(decompositions).length,
     Object.keys(use.decompositions).length,
   );
-  const show = [0x41, 0x0915, 0x0f40, 0x0f71, 0x0f90, 0x1780, 0x17b6, 0x17c6, 0x17d2, 0x1b05, 0x1b34, 0x1b6b, 0xa984, 0xa9c0, 0x11003, 0x11046];
-  console.log(show.map((cp) => `U+${cp.toString(16)}=${use.categories[trie.get(cp)]}`).join(' '));
+  const show = [
+    0x41, 0x0915, 0x0f40, 0x0f71, 0x0f90, 0x1780, 0x17b6, 0x17c6, 0x17d2, 0x1b05, 0x1b34, 0x1b6b,
+    0xa984, 0xa9c0, 0x11003, 0x11046,
+  ];
+  console.log(show.map((cp) => `U+${cp.toString(16)}=${use.categories[trie.get(cp)]}`).join(" "));
   console.log({ highStart: trie.highStart.toString(16), dataLength: trie.data.length });
 
-  if (process.argv.includes('--write')) writeUseTrie(trie);
+  if (process.argv.includes("--write")) writeUseTrie(trie);
 }
 
 // Serializes in the format read by src/vendors/unicode-properties/
@@ -382,14 +382,14 @@ function writeUseTrie(trie) {
   view.setUint32(4, trie.errorValue >>> 0, true);
 
   for (let i = 0; i < trie.data.length; i++) view.setUint32(8 + i * 4, trie.data[i], true);
-  const b64 = Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
+  const b64 = Buffer.from(zlibSync(bytes, { level: 9 })).toString("base64");
 
-  const raw = unzlibSync(Buffer.from(b64, 'base64'));
+  const raw = unzlibSync(Buffer.from(b64, "base64"));
   const rv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const data = new Uint32Array((raw.length - 8) / 4);
 
   for (let i = 0; i < data.length; i++) data[i] = rv.getUint32(8 + i * 4, true);
-  const UnicodeTrie = require('unicode-trie');
+  const UnicodeTrie = require("unicode-trie");
 
   const decoded = new UnicodeTrie({
     data,
@@ -403,10 +403,13 @@ function writeUseTrie(trie) {
     }
   }
 
-  writeFileSync(join(root, 'src/fontkit/opentype/shapers/trieUse.ts'), `export default '${b64}';\n`);
-  const fixturePath = join(root, 'tests/fontkit/shaperTries.fixture.json');
-  const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
-  fixture.values['trieUse.ts'] = fixture.codePoints.map((cp) => trie.get(cp));
+  writeFileSync(
+    join(root, "src/fontkit/opentype/shapers/trieUse.ts"),
+    `export default '${b64}';\n`,
+  );
+  const fixturePath = join(root, "tests/fontkit/shaperTries.fixture.json");
+  const fixture = JSON.parse(readFileSync(fixturePath, "utf8"));
+  fixture.values["trieUse.ts"] = fixture.codePoints.map((cp) => trie.get(cp));
   writeFileSync(fixturePath, `${JSON.stringify(fixture)}\n`);
-  console.log('wrote trieUse.ts and the fixture trieUse.ts values');
+  console.log("wrote trieUse.ts and the fixture trieUse.ts values");
 }

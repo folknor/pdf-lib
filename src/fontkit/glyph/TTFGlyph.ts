@@ -1,8 +1,8 @@
-import type { DecodeStream } from '../../vendors/restructure/index.js';
-import * as r from '../../vendors/restructure/index.js';
-import BBox from './BBox.js';
-import Glyph, { type GlyphMetrics } from './Glyph.js';
-import Path from './Path.js';
+import type { DecodeStream } from "../../vendors/restructure/index.js";
+import * as r from "../../vendors/restructure/index.js";
+import BBox from "./BBox.js";
+import Glyph, { type GlyphMetrics } from "./Glyph.js";
+import Path from "./Path.js";
 
 export interface DecodedGlyph {
   numberOfContours: number;
@@ -56,12 +56,7 @@ export class Point {
   x: number;
   y: number;
 
-  constructor(
-    onCurve: boolean,
-    endContour: boolean,
-    x: number = 0,
-    y: number = 0,
-  ) {
+  constructor(onCurve: boolean, endContour: boolean, x: number = 0, y: number = 0) {
     this.onCurve = onCurve;
     this.endContour = endContour;
     this.x = x;
@@ -101,7 +96,7 @@ class Component {
  * Represents a TrueType glyph.
  */
 export default class TTFGlyph extends Glyph {
-  type = 'TTF';
+  type = "TTF";
 
   // The control box. The internal one is the glyph's own box in glyf
   // coordinates (header or transformed glyf box), which its unvaried
@@ -124,9 +119,7 @@ export default class TTFGlyph extends Glyph {
 
     if (originX === 0 || contours.length === 0) return box;
 
-    return Object.freeze(
-      new BBox(box.minX - originX, box.minY, box.maxX - originX, box.maxY),
-    );
+    return Object.freeze(new BBox(box.minX - originX, box.minY, box.maxX - originX, box.maxY));
   }
 
   // Parses just the glyph header and returns its bounding box.
@@ -139,7 +132,7 @@ export default class TTFGlyph extends Glyph {
       return Object.freeze(new BBox(0, 0, 0, 0));
     }
 
-    const stream = this._font._getTableStream('glyf');
+    const stream = this._font._getTableStream("glyf");
     stream.pos += offsets[this.id];
 
     const glyph = GlyfHeader.decode(stream) as {
@@ -155,12 +148,7 @@ export default class TTFGlyph extends Glyph {
   }
 
   // Parses a single glyph coordinate
-  _parseGlyphCoord(
-    stream: DecodeStream,
-    prev: number,
-    short: number,
-    same: number,
-  ): number {
+  _parseGlyphCoord(stream: DecodeStream, prev: number, short: number, same: number): number {
     let val;
 
     if (short) {
@@ -205,7 +193,7 @@ export default class TTFGlyph extends Glyph {
       return empty;
     }
 
-    const stream = this._font._getTableStream('glyf');
+    const stream = this._font._getTableStream("glyf");
     stream.pos += glyfPos;
     const startPos = stream.pos;
 
@@ -240,14 +228,11 @@ export default class TTFGlyph extends Glyph {
     // this is a simple glyph
     glyph.points = [];
 
-    const endPtsOfContours = new r.Array(
-      r.uint16,
-      glyph.numberOfContours,
-    ).decode(stream) as number[];
-
-    glyph.instructions = new r.Array(r.uint8, r.uint16).decode(
+    const endPtsOfContours = new r.Array(r.uint16, glyph.numberOfContours).decode(
       stream,
     ) as number[];
+
+    glyph.instructions = new r.Array(r.uint8, r.uint16).decode(stream) as number[];
 
     const flags: number[] = [];
     const lastEndPt = endPtsOfContours[endPtsOfContours.length - 1];
@@ -270,12 +255,7 @@ export default class TTFGlyph extends Glyph {
     for (let i = 0; i < flags.length; i++) {
       const flag = flags[i] ?? 0;
 
-      const point = new Point(
-        !!(flag & ON_CURVE),
-        endPtsOfContours.indexOf(i) >= 0,
-        0,
-        0,
-      );
+      const point = new Point(!!(flag & ON_CURVE), endPtsOfContours.indexOf(i) >= 0, 0, 0);
 
       glyph.points.push(point);
     }
@@ -287,12 +267,7 @@ export default class TTFGlyph extends Glyph {
       const pt = glyph.points[i];
 
       if (pt) {
-        pt.x = px = this._parseGlyphCoord(
-          stream,
-          px,
-          flag & X_SHORT_VECTOR,
-          flag & SAME_X,
-        );
+        pt.x = px = this._parseGlyphCoord(stream, px, flag & X_SHORT_VECTOR, flag & SAME_X);
       }
     }
 
@@ -303,23 +278,14 @@ export default class TTFGlyph extends Glyph {
       const pt = glyph.points[i];
 
       if (pt) {
-        pt.y = py = this._parseGlyphCoord(
-          stream,
-          py,
-          flag & Y_SHORT_VECTOR,
-          flag & SAME_Y,
-        );
+        pt.y = py = this._parseGlyphCoord(stream, py, flag & Y_SHORT_VECTOR, flag & SAME_Y);
       }
     }
 
     return;
   }
 
-  _decodeComposite(
-    glyph: DecodedGlyph,
-    stream: DecodeStream,
-    offset: number = 0,
-  ): boolean {
+  _decodeComposite(glyph: DecodedGlyph, stream: DecodeStream, offset: number = 0): boolean {
     // this is a composite glyph
     glyph.components = [];
     let haveInstructions = false;
@@ -352,28 +318,15 @@ export default class TTFGlyph extends Glyph {
       if (flags & WE_HAVE_A_SCALE) {
         // fixed number with 14 bits of fraction
         component.scaleX = component.scaleY =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
+          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
       } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
-        component.scaleX =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
-        component.scaleY =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
+        component.scaleX = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
+        component.scaleY = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
       } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
-        component.scaleX =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
-        component.scale01 =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
-        component.scale10 =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
-        component.scaleY =
-          ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) /
-          1073741824;
+        component.scaleX = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
+        component.scale01 = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
+        component.scale10 = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
+        component.scaleY = ((stream.readUInt8() << 24) | (stream.readUInt8() << 16)) / 1073741824;
       }
 
       glyph.components.push(component);
@@ -401,9 +354,7 @@ export default class TTFGlyph extends Glyph {
     } else {
       const components = glyph.components ?? [];
 
-      const points: Point[] = components.map(
-        (comp) => new Point(true, true, comp.dx, comp.dy),
-      );
+      const points: Point[] = components.map((comp) => new Point(true, true, comp.dx, comp.dy));
 
       points.push(...this._getPhantomPoints(glyph));
 
@@ -426,8 +377,7 @@ export default class TTFGlyph extends Glyph {
   _getPhantomPoints(glyph: DecodedGlyph): Point[] {
     this._defaultMetrics ??= this._getDefaultMetrics(this._getCBox(true));
 
-    const { advanceWidth, advanceHeight, leftBearing, topBearing } =
-      this._defaultMetrics;
+    const { advanceWidth, advanceHeight, leftBearing, topBearing } = this._defaultMetrics;
 
     const top = glyph.yMax + topBearing;
 
@@ -459,13 +409,7 @@ export default class TTFGlyph extends Glyph {
 
     return contours.map((contour) =>
       contour.map(
-        (point) =>
-          new Point(
-            point.onCurve,
-            point.endContour,
-            point.x - originX,
-            point.y,
-          ),
+        (point) => new Point(point.onCurve, point.endContour, point.x - originX, point.y),
       ),
     );
   }
@@ -512,15 +456,9 @@ export default class TTFGlyph extends Glyph {
 
             if (!point) continue;
 
-            const x =
-              point.x * component.scaleX +
-              point.y * component.scale01 +
-              component.dx;
+            const x = point.x * component.scaleX + point.y * component.scale01 + component.dx;
 
-            const y =
-              point.y * component.scaleY +
-              point.x * component.scale10 +
-              component.dy;
+            const y = point.y * component.scaleY + point.x * component.scale10 + component.dy;
 
             points.push(new Point(point.onCurve, point.endContour, x, y));
           }
@@ -628,12 +566,7 @@ export default class TTFGlyph extends Glyph {
           firstPt = lastPt;
         } else {
           // Start at the middle if both the first and last points are off curve
-          firstPt = new Point(
-            false,
-            false,
-            (firstPt.x + lastPt.x) / 2,
-            (firstPt.y + lastPt.y) / 2,
-          );
+          firstPt = new Point(false, false, (firstPt.x + lastPt.x) / 2, (firstPt.y + lastPt.y) / 2);
         }
 
         curvePt = firstPt;
@@ -663,7 +596,7 @@ export default class TTFGlyph extends Glyph {
 
           curvePt = null;
         } else {
-          throw new Error('Unknown TTF path state');
+          throw new Error("Unknown TTF path state");
         }
       }
 

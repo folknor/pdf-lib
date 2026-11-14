@@ -1,28 +1,28 @@
 const FLOAT_EOF = 0xf;
 
 const FLOAT_LOOKUP: (string | null)[] = [
-  '0',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '.',
-  'E',
-  'E-',
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  ".",
+  "E",
+  "E-",
   null,
-  '-',
+  "-",
 ];
 
 const FLOAT_ENCODE_LOOKUP: Record<string, number> = {
-  '.': 10,
+  ".": 10,
   E: 11,
-  'E-': 12,
-  '-': 14,
+  "E-": 12,
+  "-": 14,
 };
 
 export interface ForceLargeValue {
@@ -53,7 +53,7 @@ export default class CFFOperand {
     }
 
     if (value === 30) {
-      let str = '';
+      let str = "";
 
       while (true) {
         const b = stream.readUInt8();
@@ -84,11 +84,11 @@ export default class CFFOperand {
   static size(value: number | ForceLargeValue): number {
     // if the value needs to be forced to the largest size (32 bit)
     // e.g. for unknown pointers, set to 32768
-    if (typeof value !== 'number' && value.forceLarge) {
+    if (typeof value !== "number" && value.forceLarge) {
       value = 32768;
     }
 
-    const numValue = typeof value === 'number' ? value : Number(value);
+    const numValue = typeof value === "number" ? value : Number(value);
 
     if ((numValue | 0) !== numValue) {
       // floating point
@@ -97,10 +97,7 @@ export default class CFFOperand {
       return 1 + Math.ceil((str.length + 1) / 2);
     } else if (-107 <= numValue && numValue <= 107) {
       return 1;
-    } else if (
-      (108 <= numValue && numValue <= 1131) ||
-      (-1131 <= numValue && numValue <= -108)
-    ) {
+    } else if ((108 <= numValue && numValue <= 1131) || (-1131 <= numValue && numValue <= -108)) {
       return 2;
     } else if (-32768 <= numValue && numValue <= 32767) {
       return 3;
@@ -114,7 +111,7 @@ export default class CFFOperand {
     // e.g. for unknown pointers, save the old value and set to 32768
     let val = Number(value);
 
-    if (typeof value !== 'number' && value.forceLarge) {
+    if (typeof value !== "number" && value.forceLarge) {
       stream.writeUInt8(29);
       stream.writeInt32BE(val);
     } else if ((val | 0) !== val) {

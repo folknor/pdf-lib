@@ -1,8 +1,5 @@
-import {
-  DecodedStreamTooLargeError,
-  MethodNotImplementedError,
-} from '../errors.js';
-import Stream, { type StreamType } from './Stream.js';
+import { DecodedStreamTooLargeError, MethodNotImplementedError } from "../errors.js";
+import Stream, { type StreamType } from "./Stream.js";
 
 /*
  * Copyright 2012 Mozilla Foundation
@@ -200,7 +197,7 @@ class DecodeStream implements StreamType {
   }
 
   protected readBlock(): void {
-    throw new MethodNotImplementedError(this.constructor.name, 'readBlock');
+    throw new MethodNotImplementedError(this.constructor.name, "readBlock");
   }
 
   /**
@@ -211,10 +208,7 @@ class DecodeStream implements StreamType {
     this.readBlock();
 
     if (this.bufferLength > this.maxDecodedSize) {
-      throw new DecodedStreamTooLargeError(
-        this.bufferLength,
-        this.maxDecodedSize,
-      );
+      throw new DecodedStreamTooLargeError(this.bufferLength, this.maxDecodedSize);
     }
   }
 

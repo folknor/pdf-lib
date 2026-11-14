@@ -1,4 +1,4 @@
-import type StateMachine from '../../../vendors/dfa/index.js';
+import type StateMachine from "../../../vendors/dfa/index.js";
 
 /**
  * A run of a syllable split: a match of the cluster state machine, or a gap
@@ -17,10 +17,7 @@ export interface SyllableRun {
  * matches. The runs are contiguous and cover every index, so a shaper that
  * gives each run its own syllable leaves no glyph without one.
  */
-export function* syllableRuns(
-  machine: StateMachine,
-  categories: number[],
-): Generator<SyllableRun> {
+export function* syllableRuns(machine: StateMachine, categories: number[]): Generator<SyllableRun> {
   let last = 0;
 
   for (const [start, end, tags] of machine.match(categories)) {

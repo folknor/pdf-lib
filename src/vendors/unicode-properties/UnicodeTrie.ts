@@ -50,8 +50,7 @@ const INDEX_1_OFFSET = 0x840;
 const DATA_GRANULARITY = 1 << INDEX_SHIFT;
 
 // Check if system is big-endian
-const isBigEndian =
-  new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x12;
+const isBigEndian = new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x12;
 
 function swap32LE(array: Uint8Array): void {
   if (isBigEndian) {
@@ -85,11 +84,7 @@ export class UnicodeTrie {
     // Swap bytes from little-endian on big-endian systems
     swap32LE(data);
 
-    this.data = new Uint32Array(
-      data.buffer,
-      data.byteOffset,
-      data.byteLength / 4,
-    );
+    this.data = new Uint32Array(data.buffer, data.byteOffset, data.byteLength / 4);
   }
 
   get(codePoint: number): number {
@@ -103,9 +98,7 @@ export class UnicodeTrie {
       // Ordinary BMP code point, excluding leading surrogates.
       // BMP uses a single level lookup. BMP index starts at offset 0 in the index.
       // data is stored in the index array itself.
-      index =
-        (this.data[codePoint >> SHIFT_2]! << INDEX_SHIFT) +
-        (codePoint & DATA_MASK);
+      index = (this.data[codePoint >> SHIFT_2]! << INDEX_SHIFT) + (codePoint & DATA_MASK);
 
       return this.data[index]!;
     }
@@ -114,8 +107,7 @@ export class UnicodeTrie {
       // Lead Surrogate Code Point. A Separate index section is stored for
       // lead surrogate code units and code points.
       index =
-        (this.data[LSCP_INDEX_2_OFFSET + ((codePoint - 0xd800) >> SHIFT_2)]! <<
-          INDEX_SHIFT) +
+        (this.data[LSCP_INDEX_2_OFFSET + ((codePoint - 0xd800) >> SHIFT_2)]! << INDEX_SHIFT) +
         (codePoint & DATA_MASK);
 
       return this.data[index]!;
@@ -123,10 +115,7 @@ export class UnicodeTrie {
 
     if (codePoint < this.highStart) {
       // Supplemental code point, use two-level lookup.
-      index =
-        this.data[
-          INDEX_1_OFFSET - OMITTED_BMP_INDEX_1_LENGTH + (codePoint >> SHIFT_1)
-        ]!;
+      index = this.data[INDEX_1_OFFSET - OMITTED_BMP_INDEX_1_LENGTH + (codePoint >> SHIFT_1)]!;
       index = this.data[index + ((codePoint >> SHIFT_2) & INDEX_2_MASK)]!;
       index = (index << INDEX_SHIFT) + (codePoint & DATA_MASK);
 

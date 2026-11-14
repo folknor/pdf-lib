@@ -17,7 +17,7 @@
 // - After substitution, mergeClusters joins whatever reordering moved past
 //   each other into one cluster.
 
-import { isMark } from '../../vendors/unicode-properties/index.js';
+import { isMark } from "../../vendors/unicode-properties/index.js";
 
 /** Default-ignorable code points (DerivedCoreProperties), minus U+115F,
  * U+1160, U+3164 and U+FFA0, as Harfbuzz and Uniscribe do. */
@@ -53,9 +53,7 @@ export function isDefaultIgnorable(ch: number): boolean {
 
   switch (plane) {
     case 0x01:
-      return (
-        (0x1bca0 <= ch && ch <= 0x1bca3) || (0x1d173 <= ch && ch <= 0x1d17a)
-      );
+      return (0x1bca0 <= ch && ch <= 0x1bca3) || (0x1d173 <= ch && ch <= 0x1d17a);
     case 0x0e:
       return 0xe0000 <= ch && ch <= 0xe0fff;
     default:
@@ -63,20 +61,16 @@ export function isDefaultIgnorable(ch: number): boolean {
   }
 }
 
-type Jamo = 'L' | 'V' | 'T' | 'LV' | 'LVT' | null;
+type Jamo = "L" | "V" | "T" | "LV" | "LVT" | null;
 
 const jamo = (cp: number): Jamo => {
-  if ((cp >= 0x1100 && cp <= 0x115f) || (cp >= 0xa960 && cp <= 0xa97c))
-    return 'L';
+  if ((cp >= 0x1100 && cp <= 0x115f) || (cp >= 0xa960 && cp <= 0xa97c)) return "L";
 
-  if ((cp >= 0x1160 && cp <= 0x11a7) || (cp >= 0xd7b0 && cp <= 0xd7c6))
-    return 'V';
+  if ((cp >= 0x1160 && cp <= 0x11a7) || (cp >= 0xd7b0 && cp <= 0xd7c6)) return "V";
 
-  if ((cp >= 0x11a8 && cp <= 0x11ff) || (cp >= 0xd7cb && cp <= 0xd7fb))
-    return 'T';
+  if ((cp >= 0x11a8 && cp <= 0x11ff) || (cp >= 0xd7cb && cp <= 0xd7fb)) return "T";
 
-  if (cp >= 0xac00 && cp <= 0xd7a3)
-    return (cp - 0xac00) % 28 === 0 ? 'LV' : 'LVT';
+  if (cp >= 0xac00 && cp <= 0xd7a3) return (cp - 0xac00) % 28 === 0 ? "LV" : "LVT";
 
   return null;
 };
@@ -111,16 +105,14 @@ export function continuesCharacter(codePoints: number[], i: number): boolean {
 
   const type = jamo(cp);
 
-  if (type === null || type === 'LV' || type === 'LVT') return false;
+  if (type === null || type === "LV" || type === "LVT") return false;
   const before = jamo(codePoints[i - 1]!);
 
-  if (type === 'L') return before === 'L';
+  if (type === "L") return before === "L";
 
-  if (type === 'V') return before === 'L' || before === 'V' || before === 'LV';
+  if (type === "V") return before === "L" || before === "V" || before === "LV";
 
-  return (
-    before === 'V' || before === 'T' || before === 'LV' || before === 'LVT'
-  );
+  return before === "V" || before === "T" || before === "LV" || before === "LVT";
 }
 
 /**
@@ -138,7 +130,7 @@ export function initialClusters(string: string): {
   const codePoints: number[] = [];
   const offsets: number[] = [];
 
-  for (let at = 0; at < string.length; ) {
+  for (let at = 0; at < string.length;) {
     const cp = string.codePointAt(at)!;
     codePoints.push(cp);
     offsets.push(at);

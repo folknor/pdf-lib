@@ -1,7 +1,7 @@
-import { NextByteAssertionError } from '../errors.js';
-import type PDFRawStream from '../objects/PDFRawStream.js';
-import { decodePDFRawStream } from '../streams/decode.js';
-import CharCodes from '../syntax/CharCodes.js';
+import { NextByteAssertionError } from "../errors.js";
+import type PDFRawStream from "../objects/PDFRawStream.js";
+import { decodePDFRawStream } from "../streams/decode.js";
+import CharCodes from "../syntax/CharCodes.js";
 
 // TODO: See how line/col tracking affects performance
 class ByteStream {
@@ -9,8 +9,7 @@ class ByteStream {
    * With `copySlices` false, `slice` returns views into `bytes` instead of
    * copies (see `LoadOptions.copyStreams`).
    */
-  static of = (bytes: Uint8Array, copySlices = true) =>
-    new ByteStream(bytes, copySlices);
+  static of = (bytes: Uint8Array, copySlices = true) => new ByteStream(bytes, copySlices);
 
   static fromPDFRawStream = (rawStream: PDFRawStream) =>
     ByteStream.of(decodePDFRawStream(rawStream).decode());

@@ -1,4 +1,4 @@
-import type { Font } from '../../types/fontkit.js';
+import type { Font } from "../../types/fontkit.js";
 
 export interface FontFlagOptions {
   fixedPitch?: boolean;
@@ -45,8 +45,8 @@ const makeFontFlags = (options: FontFlagOptions) => {
 export const deriveFontFlags = (font: Font): number => {
   // fontkit returns undefined for tables that are absent or fail to decode,
   // whatever the declared types say.
-  const { post, head } = font as Partial<Pick<Font, 'post' | 'head'>>;
-  const familyClass = font['OS/2']?.sFamilyClass ?? 0;
+  const { post, head } = font as Partial<Pick<Font, "post" | "head">>;
+  const familyClass = font["OS/2"]?.sFamilyClass ?? 0;
 
   const flags = makeFontFlags({
     fixedPitch: !!post?.isFixedPitch,

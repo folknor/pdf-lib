@@ -1,17 +1,16 @@
-import { InvalidAcroFieldValueError } from '../errors.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import PDFAcroButton from './PDFAcroButton.js';
+import { InvalidAcroFieldValueError } from "../errors.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import PDFAcroButton from "./PDFAcroButton.js";
 
 class PDFAcroCheckBox extends PDFAcroButton {
-  static override fromDict = (dict: PDFDict, ref: PDFRef) =>
-    new PDFAcroCheckBox(dict, ref);
+  static override fromDict = (dict: PDFDict, ref: PDFRef) => new PDFAcroCheckBox(dict, ref);
 
   static create = (context: PDFContext) => {
     const dict = context.obj({
-      FT: 'Btn',
+      FT: "Btn",
       Kids: [],
     });
 
@@ -21,19 +20,19 @@ class PDFAcroCheckBox extends PDFAcroButton {
   };
 
   setValue(value: PDFName) {
-    const onValue = this.getOnValue() ?? PDFName.of('Yes');
+    const onValue = this.getOnValue() ?? PDFName.of("Yes");
 
-    if (value !== onValue && value !== PDFName.of('Off')) {
+    if (value !== onValue && value !== PDFName.of("Off")) {
       throw new InvalidAcroFieldValueError();
     }
 
-    this.dict.set(PDFName.of('V'), value);
+    this.dict.set(PDFName.of("V"), value);
 
     const widgets = this.getWidgets();
 
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
-      const state = widget.getOnValue() === value ? value : PDFName.of('Off');
+      const state = widget.getOnValue() === value ? value : PDFName.of("Off");
       widget.setAppearanceState(state);
     }
   }
@@ -43,7 +42,7 @@ class PDFAcroCheckBox extends PDFAcroButton {
 
     if (v instanceof PDFName) return v;
 
-    return PDFName.of('Off');
+    return PDFName.of("Off");
   }
 
   getOnValue(): PDFName | undefined {

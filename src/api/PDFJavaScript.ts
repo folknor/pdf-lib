@@ -1,12 +1,9 @@
-import type JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
-import { PDFHexString, PDFName, type PDFRef } from '../core/index.js';
-import { collectUnreferenced } from './detach.js';
-import type Embeddable from './Embeddable.js';
-import {
-  checkCatalogNameUnused,
-  insertIntoCatalogNameTree,
-} from './nameTree.js';
-import type PDFDocument from './PDFDocument.js';
+import type JavaScriptEmbedder from "../core/embedders/JavaScriptEmbedder.js";
+import { PDFHexString, PDFName, type PDFRef } from "../core/index.js";
+import { collectUnreferenced } from "./detach.js";
+import type Embeddable from "./Embeddable.js";
+import { checkCatalogNameUnused, insertIntoCatalogNameTree } from "./nameTree.js";
+import type PDFDocument from "./PDFDocument.js";
 
 /**
  * Represents JavaScript that has been embedded in a [[PDFDocument]].
@@ -35,11 +32,7 @@ export default class PDFJavaScript implements Embeddable {
   private alreadyEmbedded = false;
   private readonly embedder: JavaScriptEmbedder;
 
-  private constructor(
-    ref: PDFRef,
-    doc: PDFDocument,
-    embedder: JavaScriptEmbedder,
-  ) {
+  private constructor(ref: PDFRef, doc: PDFDocument, embedder: JavaScriptEmbedder) {
     this.ref = ref;
     this.doc = doc;
     this.embedder = embedder;
@@ -57,7 +50,7 @@ export default class PDFJavaScript implements Embeddable {
   async embed(): Promise<void> {
     if (!this.alreadyEmbedded) {
       const { catalog, context } = this.doc;
-      const JavaScript = PDFName.of('JavaScript');
+      const JavaScript = PDFName.of("JavaScript");
 
       // Flat or /Kids; a tree this library cannot edit safely, or one
       // already holding a script of this name, throws before anything is

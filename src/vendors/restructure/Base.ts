@@ -4,8 +4,8 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { DecodeStream } from './DecodeStream.js';
-import { EncodeStream } from './EncodeStream.js';
+import { DecodeStream } from "./DecodeStream.js";
+import { EncodeStream } from "./EncodeStream.js";
 
 export abstract class Base<T = unknown> {
   abstract decode(stream: DecodeStream, parent?: unknown): T;

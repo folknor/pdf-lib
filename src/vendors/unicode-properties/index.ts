@@ -4,10 +4,10 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { unzlibSync } from 'fflate';
-import base64DeflatedData from './data.json' with { type: 'json' };
-import base64DeflatedTrie from './trie.json' with { type: 'json' };
-import { UnicodeTrie } from './UnicodeTrie.js';
+import { unzlibSync } from "fflate";
+import base64DeflatedData from "./data.json" with { type: "json" };
+import base64DeflatedTrie from "./trie.json" with { type: "json" };
+import { UnicodeTrie } from "./UnicodeTrie.js";
 
 // Base64 decode helper
 function base64Decode(str: string): Uint8Array {
@@ -30,9 +30,7 @@ interface UnicodeData {
 }
 
 const data: UnicodeData = JSON.parse(
-  String.fromCharCode(
-    ...unzlibSync(base64Decode(base64DeflatedData as string)),
-  ),
+  String.fromCharCode(...unzlibSync(base64Decode(base64DeflatedData as string))),
 );
 
 // Inflate the base64-encoded zlib data to get the binary trie format
@@ -125,72 +123,72 @@ export function isAlphabetic(codePoint: number): boolean {
   const category = getCategory(codePoint);
 
   return (
-    category === 'Lu' ||
-    category === 'Ll' ||
-    category === 'Lt' ||
-    category === 'Lm' ||
-    category === 'Lo' ||
-    category === 'Nl'
+    category === "Lu" ||
+    category === "Ll" ||
+    category === "Lt" ||
+    category === "Lm" ||
+    category === "Lo" ||
+    category === "Nl"
   );
 }
 
 export function isDigit(codePoint: number): boolean {
-  return getCategory(codePoint) === 'Nd';
+  return getCategory(codePoint) === "Nd";
 }
 
 export function isPunctuation(codePoint: number): boolean {
   const category = getCategory(codePoint);
 
   return (
-    category === 'Pc' ||
-    category === 'Pd' ||
-    category === 'Pe' ||
-    category === 'Pf' ||
-    category === 'Pi' ||
-    category === 'Po' ||
-    category === 'Ps'
+    category === "Pc" ||
+    category === "Pd" ||
+    category === "Pe" ||
+    category === "Pf" ||
+    category === "Pi" ||
+    category === "Po" ||
+    category === "Ps"
   );
 }
 
 export function isLowerCase(codePoint: number): boolean {
-  return getCategory(codePoint) === 'Ll';
+  return getCategory(codePoint) === "Ll";
 }
 
 export function isUpperCase(codePoint: number): boolean {
-  return getCategory(codePoint) === 'Lu';
+  return getCategory(codePoint) === "Lu";
 }
 
 export function isTitleCase(codePoint: number): boolean {
-  return getCategory(codePoint) === 'Lt';
+  return getCategory(codePoint) === "Lt";
 }
 
 export function isWhiteSpace(codePoint: number): boolean {
   const category = getCategory(codePoint);
 
-  return category === 'Zs' || category === 'Zl' || category === 'Zp';
+  return category === "Zs" || category === "Zl" || category === "Zp";
 }
 
 export function isBaseForm(codePoint: number): boolean {
   const category = getCategory(codePoint);
 
   return (
-    category === 'Nd' ||
-    category === 'No' ||
-    category === 'Nl' ||
-    category === 'Lu' ||
-    category === 'Ll' ||
-    category === 'Lt' ||
-    category === 'Lm' ||
-    category === 'Lo' ||
-    category === 'Me' ||
-    category === 'Mc'
+    category === "Nd" ||
+    category === "No" ||
+    category === "Nl" ||
+    category === "Lu" ||
+    category === "Ll" ||
+    category === "Lt" ||
+    category === "Lm" ||
+    category === "Lo" ||
+    category === "Me" ||
+    category === "Mc"
   );
 }
 
 export function isMark(codePoint: number): boolean {
   const category = getCategory(codePoint);
 
-  return category === 'Mn' || category === 'Me' || category === 'Mc';
+  return category === "Mn" || category === "Me" || category === "Mc";
 }
 
 export default {

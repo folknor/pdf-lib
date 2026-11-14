@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 export interface CFFIndexEntry {
   offset: number;
@@ -101,7 +101,7 @@ export default class CFFIndex {
     } else if (offset <= 0xffffffff) {
       offsetType = r.uint32;
     } else {
-      throw new Error('Bad offset in CFFIndex');
+      throw new Error("Bad offset in CFFIndex");
     }
 
     size += 1 + offsetType.size() * (arr.length + 1);
@@ -140,7 +140,7 @@ export default class CFFIndex {
     } else if (offset <= 0xffffffff) {
       offsetType = r.uint32;
     } else {
-      throw new Error('Bad offset in CFFIndex');
+      throw new Error("Bad offset in CFFIndex");
     }
 
     // write offset size

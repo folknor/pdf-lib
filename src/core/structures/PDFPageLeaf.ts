@@ -1,20 +1,15 @@
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict, { type DictMap } from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNumber from '../objects/PDFNumber.js';
-import type PDFObject from '../objects/PDFObject.js';
-import type PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import type PDFContext from '../PDFContext.js';
-import type PDFPageTree from './PDFPageTree.js';
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict, { type DictMap } from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNumber from "../objects/PDFNumber.js";
+import type PDFObject from "../objects/PDFObject.js";
+import type PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import type PDFContext from "../PDFContext.js";
+import type PDFPageTree from "./PDFPageTree.js";
 
 class PDFPageLeaf extends PDFDict {
-  static readonly InheritableEntries = [
-    'Resources',
-    'MediaBox',
-    'CropBox',
-    'Rotate',
-  ];
+  static readonly InheritableEntries = ["Resources", "MediaBox", "CropBox", "Rotate"];
 
   static withContextAndParent = (context: PDFContext, parent: PDFRef) => {
     const dict = new Map();
@@ -35,11 +30,7 @@ class PDFPageLeaf extends PDFDict {
   private normalized = false;
   private readonly autoNormalizeCTM: boolean;
 
-  private constructor(
-    map: DictMap,
-    context: PDFContext,
-    autoNormalizeCTM = true,
-  ) {
+  private constructor(map: DictMap, context: PDFContext, autoNormalizeCTM = true) {
     super(map, context);
     this.autoNormalizeCTM = autoNormalizeCTM;
   }
@@ -66,10 +57,7 @@ class PDFPageLeaf extends PDFDict {
   }
 
   Contents(): PDFStream | PDFArray | undefined {
-    return this.lookup(PDFName.of('Contents')) as
-      | PDFStream
-      | PDFArray
-      | undefined;
+    return this.lookup(PDFName.of("Contents")) as PDFStream | PDFArray | undefined;
   }
 
   Annots(): PDFArray | undefined {
@@ -189,9 +177,7 @@ class PDFPageLeaf extends PDFDict {
 
   /** Get existing key for font ref, or create new entry */
   getOrCreateFontDictionary(tag: string, fontDictRef: PDFRef): PDFName {
-    return (
-      this.findFontKey(fontDictRef) ?? this.newFontDictionary(tag, fontDictRef)
-    );
+    return this.findFontKey(fontDictRef) ?? this.newFontDictionary(tag, fontDictRef);
   }
 
   setXObject(name: PDFName, xObjectRef: PDFRef): void {
@@ -259,10 +245,7 @@ class PDFPageLeaf extends PDFDict {
 
   /** Get existing key for ExtGState ref, or create new entry */
   getOrCreateExtGState(tag: string, extGStateRef: PDFRef | PDFDict): PDFName {
-    return (
-      this.findExtGStateKey(extGStateRef) ??
-      this.newExtGState(tag, extGStateRef)
-    );
+    return this.findExtGStateKey(extGStateRef) ?? this.newExtGState(tag, extGStateRef);
   }
 
   /** Get the key naming `colorSpaceRef` in this page's ColorSpace resources,
@@ -326,8 +309,7 @@ class PDFPageLeaf extends PDFDict {
     // Most pages have no ColorSpace, so do not create an empty dictionary.
     const ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
 
-    if (ColorSpace)
-      Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
+    if (ColorSpace) Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
 
     const Annots = this.Annots() || context.obj([]);
     this.set(PDFName.Annots, Annots);

@@ -1,10 +1,10 @@
-import type GlyphPosition from '../layout/GlyphPosition.js';
-import type GlyphRun from '../layout/GlyphRun.js';
-import GlyphInfo from './GlyphInfo.js';
-import GPOSProcessor from './GPOSProcessor.js';
-import GSUBProcessor from './GSUBProcessor.js';
-import ShapingPlan from './ShapingPlan.js';
-import * as Shapers from './shapers/index.js';
+import type GlyphPosition from "../layout/GlyphPosition.js";
+import type GlyphRun from "../layout/GlyphRun.js";
+import GlyphInfo from "./GlyphInfo.js";
+import GPOSProcessor from "./GPOSProcessor.js";
+import GSUBProcessor from "./GSUBProcessor.js";
+import ShapingPlan from "./ShapingPlan.js";
+import * as Shapers from "./shapers/index.js";
 
 export default class OTLayoutEngine {
   font: any;
@@ -67,18 +67,14 @@ export default class OTLayoutEngine {
 
     // Choose a shaper based on the script, and setup a shaping plan.
     // This determines which features to apply to which glyphs.
-    this.shaper = Shapers.choose(script ?? 'DFLT');
-    this.plan = new ShapingPlan(
-      this.font,
-      script ?? 'DFLT',
-      glyphRun.direction,
-    );
+    this.shaper = Shapers.choose(script ?? "DFLT");
+    this.plan = new ShapingPlan(this.font, script ?? "DFLT", glyphRun.direction);
     this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
 
     // Report chosen features on the run, keeping a requested alternate
     // number (a planned key never holds a user `false`: overrides unplan it).
     for (const key in this.plan.allFeatures) {
-      if (typeof glyphRun.features[key] !== 'number') {
+      if (typeof glyphRun.features[key] !== "number") {
         glyphRun.features[key] = true;
       }
     }
@@ -94,9 +90,7 @@ export default class OTLayoutEngine {
       // GSUB: the shaper's assignFeatures may already have composed,
       // decomposed or inserted glyphs, and GPOS and the positions built from
       // glyphRun.glyphs must see the same sequence.
-      glyphRun.glyphs = this.glyphInfos.map((glyphInfo) =>
-        this.font.getGlyph(glyphInfo.id),
-      );
+      glyphRun.glyphs = this.glyphInfos.map((glyphInfo) => this.font.getGlyph(glyphInfo.id));
       glyphRun.codePoints = this.glyphInfos.map((info) => [...info.codePoints]);
       glyphRun.text = this.glyphInfos.map((info) => [...info.text]);
       glyphRun.clusters = this.glyphInfos.map((info) => info.cluster);
@@ -105,30 +99,21 @@ export default class OTLayoutEngine {
   }
 
   position(glyphRun: GlyphRun): Record<string, any> | undefined {
-    if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS' && glyphRun.positions) {
+    if (this.shaper.zeroMarkWidths === "BEFORE_GPOS" && glyphRun.positions) {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
-    if (
-      this.GPOSProcessor &&
-      this.plan &&
-      this.glyphInfos &&
-      glyphRun.positions
-    ) {
-      this.plan.process(
-        this.GPOSProcessor,
-        this.glyphInfos,
-        glyphRun.positions,
-      );
+    if (this.GPOSProcessor && this.plan && this.glyphInfos && glyphRun.positions) {
+      this.plan.process(this.GPOSProcessor, this.glyphInfos, glyphRun.positions);
     }
 
-    if (this.shaper.zeroMarkWidths === 'AFTER_GPOS' && glyphRun.positions) {
+    if (this.shaper.zeroMarkWidths === "AFTER_GPOS" && glyphRun.positions) {
       this.zeroMarkAdvances(glyphRun.positions);
     }
 
     // Record which glyphs are marks and what GPOS attached them to, so text
     // drawn with extra spacing can keep them at their anchors.
-    const rtl = glyphRun.direction === 'rtl';
+    const rtl = glyphRun.direction === "rtl";
 
     if (this.glyphInfos && glyphRun.positions) {
       const last = this.glyphInfos.length - 1;

@@ -6,27 +6,19 @@ import {
   PDFStream,
   type PDFString,
   type PDFWidgetAnnotation,
-} from '../../core/index.js';
-import {
-  assertIs,
-  assertIsSubset,
-  assertOrUndefined,
-  assertPositive,
-} from '../../utils/index.js';
-import { rgb } from '../colors.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFFont from '../PDFFont.js';
-import PDFPage from '../PDFPage.js';
-import { degrees } from '../rotations.js';
+} from "../../core/index.js";
+import { assertIs, assertIsSubset, assertOrUndefined, assertPositive } from "../../utils/index.js";
+import { rgb } from "../colors.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFFont from "../PDFFont.js";
+import PDFPage from "../PDFPage.js";
+import { degrees } from "../rotations.js";
 import {
   type AppearanceProviderFor,
   defaultOptionListAppearanceProvider,
   normalizeAppearance,
-} from './appearances.js';
-import PDFField, {
-  assertFieldAppearanceOptions,
-  type FieldAppearanceOptions,
-} from './PDFField.js';
+} from "./appearances.js";
+import PDFField, { assertFieldAppearanceOptions, type FieldAppearanceOptions } from "./PDFField.js";
 
 /**
  * Represents an option list field of a [[PDFForm]].
@@ -58,14 +50,10 @@ export default class PDFOptionList extends PDFField {
   /** The low-level PDFAcroListBox wrapped by this option list. */
   declare readonly acroField: PDFAcroListBox;
 
-  private constructor(
-    acroListBox: PDFAcroListBox,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) {
+  private constructor(acroListBox: PDFAcroListBox, ref: PDFRef, doc: PDFDocument) {
     super(acroListBox, ref, doc);
 
-    assertIs(acroListBox, 'acroListBox', [[PDFAcroListBox, 'PDFAcroListBox']]);
+    assertIs(acroListBox, "acroListBox", [[PDFAcroListBox, "PDFAcroListBox"]]);
 
     this.acroField = acroListBox;
   }
@@ -151,7 +139,7 @@ export default class PDFOptionList extends PDFField {
    */
   setOptions(options: string[]) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', [Array]);
+    assertIs(options, "options", [Array]);
 
     this.markAsDirty();
     const optionObjects = new Array<{ value: PDFHexString }>(options.length);
@@ -179,7 +167,7 @@ export default class PDFOptionList extends PDFField {
    */
   addOptions(options: string | string[]) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', ['string', Array]);
+    assertIs(options, "options", ["string", Array]);
 
     this.markAsDirty();
 
@@ -218,13 +206,13 @@ export default class PDFOptionList extends PDFField {
    */
   select(options: string | string[], merge = false) {
     this.doc.getForm().prepareForMutation();
-    assertIs(options, 'options', ['string', Array]);
-    assertIs(merge, 'merge', ['boolean']);
+    assertIs(options, "options", ["string", Array]);
+    assertIs(merge, "merge", ["boolean"]);
 
     const optionsArr = Array.isArray(options) ? options : [options];
 
     const validOptions = this.getOptions();
-    assertIsSubset(optionsArr, 'option', validOptions);
+    assertIsSubset(optionsArr, "option", validOptions);
 
     this.markAsDirty();
 
@@ -298,7 +286,7 @@ export default class PDFOptionList extends PDFField {
    */
   setFontSize(fontSize: number) {
     this.doc.getForm().prepareForMutation();
-    assertPositive(fontSize, 'fontSize');
+    assertPositive(fontSize, "fontSize");
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
   }
@@ -463,18 +451,18 @@ export default class PDFOptionList extends PDFField {
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
     this.doc.getForm().prepareForMutation();
-    assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertIs(page, "page", [[PDFPage, "PDFPage"]]);
     assertFieldAppearanceOptions(options);
 
     if (!options) options = {};
 
-    if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+    if (!("textColor" in options)) options.textColor = rgb(0, 0, 0);
 
-    if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+    if (!("backgroundColor" in options)) options.backgroundColor = rgb(1, 1, 1);
 
-    if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+    if (!("borderColor" in options)) options.borderColor = rgb(0, 0, 0);
 
-    if (!('borderWidth' in options)) options.borderWidth = 1;
+    if (!("borderWidth" in options)) options.borderWidth = 1;
 
     // Create a widget for this option list
     const widget = this.createWidget({
@@ -521,8 +509,7 @@ export default class PDFOptionList extends PDFField {
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
 
-      const hasAppearances =
-        widget.getAppearances()?.normal instanceof PDFStream;
+      const hasAppearances = widget.getAppearances()?.normal instanceof PDFStream;
 
       if (!hasAppearances) return true;
     }
@@ -541,7 +528,7 @@ export default class PDFOptionList extends PDFField {
    * @param font The font to be used for creating the appearance streams.
    */
   override defaultUpdateAppearances(font: PDFFont) {
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
     this.updateAppearances(font);
   }
 
@@ -561,13 +548,10 @@ export default class PDFOptionList extends PDFField {
    * @param provider Optionally, the appearance provider to be used for
    *                 generating the contents of the appearance streams.
    */
-  updateAppearances(
-    font: PDFFont,
-    provider?: AppearanceProviderFor<PDFOptionList>,
-  ) {
+  updateAppearances(font: PDFFont, provider?: AppearanceProviderFor<PDFOptionList>) {
     this.doc.getForm().prepareForMutation();
-    assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
-    assertOrUndefined(provider, 'provider', ['function']);
+    assertIs(font, "font", [[PDFFont, "PDFFont"]]);
+    assertOrUndefined(provider, "provider", ["function"]);
 
     const widgets = this.acroField.getWidgets();
 

@@ -1,6 +1,6 @@
-import { InvalidDecodeParmsError } from '../errors.js';
-import DecodeStream from './DecodeStream.js';
-import type { StreamType } from './Stream.js';
+import { InvalidDecodeParmsError } from "../errors.js";
+import DecodeStream from "./DecodeStream.js";
+import type { StreamType } from "./Stream.js";
 
 export interface PredictorParams {
   /** 2 (TIFF) or 10-15 (PNG; each row's own tag byte governs). */
@@ -43,7 +43,7 @@ class PredictorStream extends DecodeStream {
     const rowBits = params.colors * params.bitsPerComponent * params.columns;
 
     if (!Number.isSafeInteger(rowBits)) {
-      throw new InvalidDecodeParmsError('predictor row size is too large');
+      throw new InvalidDecodeParmsError("predictor row size is too large");
     }
 
     this.rowBytes = Math.ceil(rowBits / 8);
@@ -54,10 +54,7 @@ class PredictorStream extends DecodeStream {
       );
     }
 
-    this.pixelBytes = Math.max(
-      1,
-      Math.ceil((params.colors * params.bitsPerComponent) / 8),
-    );
+    this.pixelBytes = Math.max(1, Math.ceil((params.colors * params.bitsPerComponent) / 8));
   }
 
   protected override readBlock(): void {
@@ -66,7 +63,7 @@ class PredictorStream extends DecodeStream {
   }
 
   private short(): never {
-    throw new InvalidDecodeParmsError('the predicted data ends mid-row');
+    throw new InvalidDecodeParmsError("the predicted data ends mid-row");
   }
 
   private readPngRow(): void {
@@ -159,9 +156,7 @@ class PredictorStream extends DecodeStream {
         const prev = start + 2 * (i - colors);
 
         const sum =
-          (((out[at]! << 8) | out[at + 1]!) +
-            ((out[prev]! << 8) | out[prev + 1]!)) &
-          0xffff;
+          (((out[at]! << 8) | out[at + 1]!) + ((out[prev]! << 8) | out[prev + 1]!)) & 0xffff;
 
         out[at] = sum >> 8;
         out[at + 1] = sum & 0xff;
@@ -174,9 +169,7 @@ class PredictorStream extends DecodeStream {
       const read = (i: number) => {
         const bit = i * bpc;
 
-        return (
-          (out[start + Math.floor(bit / 8)]! >> (8 - bpc - (bit % 8))) & mask
-        );
+        return (out[start + Math.floor(bit / 8)]! >> (8 - bpc - (bit % 8))) & mask;
       };
 
       for (let i = colors; i < samples; i++) {

@@ -1,9 +1,9 @@
-import type { Coordinates } from '../../types/index.js';
-import { intersectionLine } from '../intersections.js';
-import { isColinear, isEqual, orthogonal, vector } from '../maths.js';
+import type { Coordinates } from "../../types/index.js";
+import { intersectionLine } from "../intersections.js";
+import { isColinear, isEqual, orthogonal, vector } from "../maths.js";
 
-import GraphElement from './GraphElement.js';
-import Point from './Point.js';
+import GraphElement from "./GraphElement.js";
+import Point from "./Point.js";
 
 export default class Line extends GraphElement {
   origin(): Point {
@@ -70,9 +70,7 @@ export default class Line extends GraphElement {
     const { x, y } = P.toCoords();
     const vect = this.dirVect();
 
-    return isEqual(vect.x, 0)
-      ? isEqual(this.origin().toCoords().x, x)
-      : isEqual(this.y(x), y);
+    return isEqual(vect.x, 0) ? isEqual(this.origin().toCoords().x, x) : isEqual(this.y(x), y);
   }
 
   /** This is used to standarsize type Segment | HalfLine | Line */

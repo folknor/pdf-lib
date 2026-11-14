@@ -1,4 +1,4 @@
-import PDFHexString from '../objects/PDFHexString.js';
+import PDFHexString from "../objects/PDFHexString.js";
 
 /**
  * A line of text encoded in a font, with where the font's layout places each
@@ -41,9 +41,7 @@ export default class EncodedText {
     xOffsets: number[],
     yOffsets: number[],
     spacing: GlyphSpacing[] = codes.map(() => BASE_SPACING),
-    attachedTo: (number | null)[] = new Array<number | null>(codes.length).fill(
-      null,
-    ),
+    attachedTo: (number | null)[] = new Array<number | null>(codes.length).fill(null),
     actualText: ActualTextSpan[] = [],
   ) {
     const count = codes.length;
@@ -56,7 +54,7 @@ export default class EncodedText {
       spacing.length !== count ||
       attachedTo.length !== count
     ) {
-      throw new Error('EncodedText: per-glyph arrays differ in length');
+      throw new Error("EncodedText: per-glyph arrays differ in length");
     }
 
     attachmentRoots(attachedTo);
@@ -70,9 +68,7 @@ export default class EncodedText {
         span.end <= span.start ||
         span.end > count
       ) {
-        throw new Error(
-          'EncodedText: actual text spans overlap or are out of range',
-        );
+        throw new Error("EncodedText: actual text spans overlap or are out of range");
       }
 
       previousEnd = span.end;
@@ -85,21 +81,14 @@ export default class EncodedText {
         kind.characters < 0 ||
         kind.spaces < 0
       ) {
-        throw new Error(
-          'EncodedText: spacing counts must be whole and not negative',
-        );
+        throw new Error("EncodedText: spacing counts must be whole and not negative");
       }
     }
 
     let advance = 0;
 
     for (let idx = 0; idx < count; idx++) {
-      for (const value of [
-        advances[idx]!,
-        widths[idx]!,
-        xOffsets[idx]!,
-        yOffsets[idx]!,
-      ]) {
+      for (const value of [advances[idx]!, widths[idx]!, xOffsets[idx]!, yOffsets[idx]!]) {
         if (!Number.isFinite(value)) {
           throw new Error(`EncodedText: glyph ${idx} has a non-finite metric`);
         }
@@ -135,19 +124,10 @@ export default class EncodedText {
    * a ligature - moves apart, and the total does not depend on how the font
    * shaped the text.
    */
-  withSpacing(
-    characterSpacing: number,
-    wordSpacing: number,
-    fontSize: number,
-  ): EncodedText {
+  withSpacing(characterSpacing: number, wordSpacing: number, fontSize: number): EncodedText {
     if (characterSpacing === 0 && wordSpacing === 0) return this;
 
-    const extras = spacingExtras(
-      this.spacing,
-      characterSpacing,
-      wordSpacing,
-      fontSize,
-    );
+    const extras = spacingExtras(this.spacing, characterSpacing, wordSpacing, fontSize);
 
     const count = this.codes.length;
     // Pen shift before each glyph, from the spacing alone.
@@ -162,9 +142,7 @@ export default class EncodedText {
     const roots = attachmentRoots(this.attachedTo);
     const advances = this.advances.map((value, idx) => value + extras[idx]!);
 
-    const xOffsets = this.xOffsets.map(
-      (value, idx) => value + shifts[roots[idx]!]! - shifts[idx]!,
-    );
+    const xOffsets = this.xOffsets.map((value, idx) => value + shifts[roots[idx]!]! - shifts[idx]!);
 
     return new EncodedText(
       [...this.codes],
@@ -180,7 +158,7 @@ export default class EncodedText {
 
   /** The glyph codes alone, as shown by a plain `Tj`. */
   toHexString(): PDFHexString {
-    return PDFHexString.of(this.codes.join(''));
+    return PDFHexString.of(this.codes.join(""));
   }
 
   /** True when some glyph is drawn at a different height than the pen. */
@@ -259,18 +237,17 @@ export const spacingExtras = (
     !Number.isFinite(wordSpacing) ||
     !Number.isFinite(fontSize)
   ) {
-    throw new Error('Text spacing and font size must be finite');
+    throw new Error("Text spacing and font size must be finite");
   }
 
   if (fontSize === 0 && (characterSpacing !== 0 || wordSpacing !== 0)) {
-    throw new Error('Text spacing cannot be applied at font size 0');
+    throw new Error("Text spacing cannot be applied at font size 0");
   }
 
   const perEm = 1000 / (fontSize || 1);
 
   return spacing.map(
-    (kind) =>
-      (kind.characters * characterSpacing + kind.spaces * wordSpacing) * perEm,
+    (kind) => (kind.characters * characterSpacing + kind.spaces * wordSpacing) * perEm,
   );
 };
 

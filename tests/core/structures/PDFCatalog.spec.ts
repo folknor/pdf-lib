@@ -6,27 +6,27 @@ import {
   PDFPageLeaf,
   PDFPageTree,
   PDFRef,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFCatalog', () => {
-  it('can be constructed directly from a Map and PDFContext', () => {
+describe("PDFCatalog", () => {
+  it("can be constructed directly from a Map and PDFContext", () => {
     const context = PDFContext.create();
     const dict = new Map();
     const catalog = PDFCatalog.fromMapWithContext(dict, context);
 
     expect(catalog).toBeInstanceOf(PDFCatalog);
-    expect(catalog.get(PDFName.of('Type'))).toBeUndefined();
-    expect(catalog.get(PDFName.of('Pages'))).toBeUndefined();
+    expect(catalog.get(PDFName.of("Type"))).toBeUndefined();
+    expect(catalog.get(PDFName.of("Pages"))).toBeUndefined();
   });
 
-  it('is constructed with the correct Type and entries', () => {
+  it("is constructed with the correct Type and entries", () => {
     const context = PDFContext.create();
     const pagesRef = PDFRef.of(21);
     const catalog = PDFCatalog.withContextAndPages(context, pagesRef);
 
     expect(catalog).toBeInstanceOf(PDFCatalog);
-    expect(catalog.get(PDFName.of('Type'))).toBe(PDFName.of('Catalog'));
-    expect(catalog.get(PDFName.of('Pages'))).toBe(pagesRef);
+    expect(catalog.get(PDFName.of("Type"))).toBe(PDFName.of("Catalog"));
+    expect(catalog.get(PDFName.of("Pages"))).toBe(pagesRef);
   });
 
   it("returns its Pages entry value when it's a reference", () => {
@@ -46,7 +46,7 @@ describe('PDFCatalog', () => {
     expect(catalog.Pages()).toBe(pages);
   });
 
-  it('can insert leaf nodes', () => {
+  it("can insert leaf nodes", () => {
     const context = PDFContext.create();
 
     const pageTree1 = PDFPageTree.withContext(context);
@@ -78,7 +78,7 @@ describe('PDFCatalog', () => {
     expect(pageTree1.Kids().get(2)).toBe(newLeafRef);
   });
 
-  it('can remove leaf nodes', () => {
+  it("can remove leaf nodes", () => {
     const context = PDFContext.create();
 
     const pageTree1 = PDFPageTree.withContext(context);

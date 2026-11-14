@@ -1,12 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { PDFArray, PDFDocument, PDFHexString, PDFString } from '../../src/index';
+import { describe, expect, it } from "vitest";
+import { PDFArray, PDFDocument, PDFHexString, PDFString } from "../../src/index";
 
 const ids = (doc: PDFDocument) => {
   const id = doc.context.lookup(doc.context.trailerInfo.ID, PDFArray);
 
-  return [0, 1].map((idx) =>
-    Array.from(id.lookup(idx, PDFString, PDFHexString).asBytes()),
-  );
+  return [0, 1].map((idx) => Array.from(id.lookup(idx, PDFString, PDFHexString).asBytes()));
 };
 
 const readIDs = async (bytes: Uint8Array, password?: string) =>
@@ -14,7 +12,7 @@ const readIDs = async (bytes: Uint8Array, password?: string) =>
 
 for (const useObjectStreams of [false, true]) {
   describe(`revision IDs (object streams ${useObjectStreams})`, () => {
-    it('keeps a first ID across full saves without changing the document', async () => {
+    it("keeps a first ID across full saves without changing the document", async () => {
       const doc = await PDFDocument.create({ updateMetadata: false });
       doc.addPage();
       const first = await readIDs(await doc.save({ useObjectStreams }));
@@ -24,16 +22,18 @@ for (const useObjectStreams of [false, true]) {
       expect(doc.context.trailerInfo.ID).toBeUndefined();
     });
 
-    it('keeps the loaded first string and changes the second on saves and increments', async () => {
+    it("keeps the loaded first string and changes the second on saves and increments", async () => {
       const source = await PDFDocument.create({ updateMetadata: false });
       source.addPage();
       source.context.trailerInfo.ID = source.context.obj([
-        PDFString.of('original first'), PDFString.of('original second'),
+        PDFString.of("original first"),
+        PDFString.of("original second"),
       ]);
       const original = await source.save({ useObjectStreams });
 
       const doc = await PDFDocument.load(original, {
-        forIncrementalUpdate: true, updateMetadata: false,
+        forIncrementalUpdate: true,
+        updateMetadata: false,
       });
 
       const before = ids(doc);
@@ -51,12 +51,13 @@ for (const useObjectStreams of [false, true]) {
       expect(doc.context.trailerInfo.ID).toBe(trailerID);
     });
 
-    it('carries each committed ID into the next revision', async () => {
+    it("carries each committed ID into the next revision", async () => {
       const source = await PDFDocument.create({ updateMetadata: false });
       source.addPage();
 
       const doc = await PDFDocument.load(await source.save(), {
-        forIncrementalUpdate: true, updateMetadata: false,
+        forIncrementalUpdate: true,
+        updateMetadata: false,
       });
 
       const original = ids(doc);
@@ -70,25 +71,28 @@ for (const useObjectStreams of [false, true]) {
       expect(second[1]).not.toEqual(first[1]);
     });
 
-    it('keeps the encrypted file ID even when the document trailer ID changes', async () => {
+    it("keeps the encrypted file ID even when the document trailer ID changes", async () => {
       const source = await PDFDocument.create({ updateMetadata: false });
       source.addPage();
-      source.encrypt({ userPassword: 'user', algorithm: 'RC4-128' });
+      source.encrypt({ userPassword: "user", algorithm: "RC4-128" });
       const original = await source.save({ useObjectStreams });
 
       const doc = await PDFDocument.load(original, {
-        password: 'user', forIncrementalUpdate: true, updateMetadata: false,
+        password: "user",
+        forIncrementalUpdate: true,
+        updateMetadata: false,
       });
 
-      const before = await readIDs(original, 'user');
+      const before = await readIDs(original, "user");
       doc.context.trailerInfo.ID = doc.context.obj([
-        PDFString.of('changed'), PDFString.of('changed'),
+        PDFString.of("changed"),
+        PDFString.of("changed"),
       ]);
       const trailerID = doc.context.trailerInfo.ID;
       await doc.saveIncremental(doc.takeSnapshot(), { useObjectStreams });
       expect(doc.context.trailerInfo.ID).toBe(trailerID);
       const committed = await doc.commit({ useObjectStreams });
-      expect(await readIDs(committed, 'user')).toEqual(before);
+      expect(await readIDs(committed, "user")).toEqual(before);
       expect(ids(doc)).toEqual(before);
     });
   });

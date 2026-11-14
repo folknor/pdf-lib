@@ -1,7 +1,7 @@
 // Anything with a glyph id: morx passes its own occurrence records.
 type Glyph = { id: number };
 
-import AATLookupTable from './AATLookupTable.js';
+import AATLookupTable from "./AATLookupTable.js";
 
 const START_OF_TEXT_STATE = 0;
 // const START_OF_LINE_STATE = 1;
@@ -41,10 +41,7 @@ export default class AATStateMachine {
     let index = reverse ? glyphs.length - 1 : 0;
     const dir = reverse ? -1 : 1;
 
-    while (
-      (dir === 1 && index <= glyphs.length) ||
-      (dir === -1 && index >= -1)
-    ) {
+    while ((dir === 1 && index <= glyphs.length) || (dir === -1 && index >= -1)) {
       let glyph = null;
       let classCode = OUT_OF_BOUNDS_CLASS;
       let shouldAdvance = true;
@@ -70,10 +67,7 @@ export default class AATStateMachine {
       const entryIndex = row[classCode];
       const entry = this.stateTable.entryTable.getItem(entryIndex);
 
-      if (
-        classCode !== END_OF_TEXT_CLASS &&
-        classCode !== DELETED_GLYPH_CLASS
-      ) {
+      if (classCode !== END_OF_TEXT_CLASS && classCode !== DELETED_GLYPH_CLASS) {
         processEntry(glyph!, entry, index);
         shouldAdvance = !(entry.flags & DONT_ADVANCE);
       }
@@ -92,11 +86,7 @@ export default class AATStateMachine {
    * Performs a depth-first traversal of the glyph strings
    * represented by the state machine.
    */
-  traverse(
-    opts: TraverseOptions,
-    state: number = 0,
-    visited: Set<number> = new Set(),
-  ): void {
+  traverse(opts: TraverseOptions, state: number = 0, visited: Set<number> = new Set()): void {
     if (visited.has(state)) {
       return;
     }

@@ -1,13 +1,13 @@
-import type { CipherTransformFactory, CryptMethod } from '../crypto.js';
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFNull from '../objects/PDFNull.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRawStream from '../objects/PDFRawStream.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFStream from '../objects/PDFStream.js';
-import type PDFContext from '../PDFContext.js';
+import type { CipherTransformFactory, CryptMethod } from "../crypto.js";
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFNull from "../objects/PDFNull.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRawStream from "../objects/PDFRawStream.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFStream from "../objects/PDFStream.js";
+import type PDFContext from "../PDFContext.js";
 
 /**
  * A stream's crypt filter selection cannot be decided. Fatal: the parser's
@@ -16,14 +16,14 @@ import type PDFContext from '../PDFContext.js';
 export class CryptFilterError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'CryptFilterError';
+    this.name = "CryptFilterError";
   }
 }
 
-const Identity = PDFName.of('Identity');
-const Crypt = PDFName.of('Crypt');
-const FilterKey = PDFName.of('Filter');
-const DecodeParmsKey = PDFName.of('DecodeParms');
+const Identity = PDFName.of("Identity");
+const Crypt = PDFName.of("Crypt");
+const FilterKey = PDFName.of("Filter");
+const DecodeParmsKey = PDFName.of("DecodeParms");
 
 /**
  * The structural roles that pick a stream's default crypt filter (ISO
@@ -46,10 +46,7 @@ export interface StreamRoles {
 export const computeStreamRoles = (context: PDFContext): StreamRoles => {
   const catalog = context.lookup(context.trailerInfo.Root);
 
-  const metadata =
-    catalog instanceof PDFDict
-      ? catalog.get(PDFName.of('Metadata'))
-      : undefined;
+  const metadata = catalog instanceof PDFDict ? catalog.get(PDFName.of("Metadata")) : undefined;
 
   const embeddedFiles = new Set<PDFRef>();
 
@@ -58,10 +55,10 @@ export const computeStreamRoles = (context: PDFContext): StreamRoles => {
   };
 
   const readFilespec = (dict: PDFDict) => {
-    const ef = dict.lookup(PDFName.of('EF'));
+    const ef = dict.lookup(PDFName.of("EF"));
 
     if (ef instanceof PDFDict) ef.values().forEach(addRef);
-    const rf = dict.lookup(PDFName.of('RF'));
+    const rf = dict.lookup(PDFName.of("RF"));
 
     if (!(rf instanceof PDFDict)) return;
 
@@ -81,7 +78,7 @@ export const computeStreamRoles = (context: PDFContext): StreamRoles => {
     if (object instanceof PDFStream) {
       visit(object.dict);
     } else if (object instanceof PDFDict) {
-      if (object.lookup(PDFName.Type) === PDFName.of('Filespec')) {
+      if (object.lookup(PDFName.Type) === PDFName.of("Filespec")) {
         readFilespec(object);
       }
 
@@ -142,15 +139,13 @@ export const readCryptDeclaration = (
   const isArray = filter instanceof PDFArray;
   const filters = isArray ? filter.asArray().map(resolve) : [filter];
 
-  const cryptAt = filters.flatMap((entry, idx) =>
-    entry === Crypt ? [idx] : [],
-  );
+  const cryptAt = filters.flatMap((entry, idx) => (entry === Crypt ? [idx] : []));
 
   if (cryptAt.length === 0) return undefined;
 
   if (cryptAt.length > 1 || cryptAt[0] !== 0) {
     throw new CryptFilterError(
-      'A /Crypt filter must be the first filter of a stream and appear once.',
+      "A /Crypt filter must be the first filter of a stream and appear once.",
     );
   }
 
@@ -165,7 +160,7 @@ export const readCryptDeclaration = (
     parmsList = [];
   } else {
     throw new CryptFilterError(
-      'A /Crypt filter in a filter array needs its /DecodeParms in an array.',
+      "A /Crypt filter in a filter array needs its /DecodeParms in an array.",
     );
   }
 
@@ -173,17 +168,15 @@ export const readCryptDeclaration = (
   let name: PDFObject | undefined;
 
   if (cryptParms instanceof PDFDict) {
-    name = resolve(cryptParms.get(PDFName.of('Name')));
+    name = resolve(cryptParms.get(PDFName.of("Name")));
   } else if (cryptParms !== undefined && cryptParms !== PDFNull) {
-    throw new CryptFilterError(
-      'The /Crypt filter parameters are not a dictionary.',
-    );
+    throw new CryptFilterError("The /Crypt filter parameters are not a dictionary.");
   }
 
   if (name === PDFNull) name = undefined; // a null entry is an absent one
 
   if (name !== undefined && !(name instanceof PDFName)) {
-    throw new CryptFilterError('The /Crypt filter /Name is not a name.');
+    throw new CryptFilterError("The /Crypt filter /Name is not a name.");
   }
 
   const restFilters = filters.slice(1) as PDFObject[];
@@ -214,10 +207,7 @@ export const readCryptDeclaration = (
  * Replaces `dict`'s filter chain with the one left once its /Crypt filter
  * has been applied. New values only: the old ones may be shared.
  */
-export const removeCryptFilter = (
-  dict: PDFDict,
-  declaration: CryptDeclaration,
-): void => {
+export const removeCryptFilter = (dict: PDFDict, declaration: CryptDeclaration): void => {
   const { remainingFilter, remainingParms } = declaration;
 
   if (remainingFilter) dict.set(FilterKey, remainingFilter);
@@ -256,10 +246,7 @@ export const selectStreamCrypt = (
     return Identity;
   }
 
-  if (
-    roles.embeddedFiles.has(ref) ||
-    dict.lookup(PDFName.Type) === PDFName.of('EmbeddedFile')
-  ) {
+  if (roles.embeddedFiles.has(ref) || dict.lookup(PDFName.Type) === PDFName.of("EmbeddedFile")) {
     return factory.eff;
   }
 
@@ -281,11 +268,7 @@ export interface StreamCryptPlan {
 export const withoutCryptFilter = (object: PDFObject): PDFObject => {
   if (!(object instanceof PDFStream)) return object;
 
-  const declaration = readCryptDeclaration(
-    object.dict,
-    object.dict.context,
-    false,
-  );
+  const declaration = readCryptDeclaration(object.dict, object.dict.context, false);
 
   if (!declaration) return object;
   const dict = object.dict.clone();

@@ -10,6 +10,7 @@ code site in the second case).
 `CustomFontEmbedder.encodeText` wraps each source cluster whose glyphs'
 ToUnicode mappings do not spell its text in a `/Span` with `/ActualText`.
 What that does not cover:
+
 - Order between clusters is the drawing order. A right-to-left run is drawn
   whole-run reversed (no bidi), so a reader that concatenates in content
   order gets its clusters reversed, digits inside RTL text included; only

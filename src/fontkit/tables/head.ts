@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // font header
 export default new r.Struct({
@@ -15,13 +15,13 @@ export default new r.Struct({
   xMax: r.int16, // for all glyph bounding boxes
   yMax: r.int16, // for all glyph bounding boxes
   macStyle: new r.Bitfield(r.uint16, [
-    'bold',
-    'italic',
-    'underline',
-    'outline',
-    'shadow',
-    'condensed',
-    'extended',
+    "bold",
+    "italic",
+    "underline",
+    "outline",
+    "shadow",
+    "condensed",
+    "extended",
   ]),
   lowestRecPPEM: r.uint16, // smallest readable size in pixels
   fontDirectionHint: r.int16,

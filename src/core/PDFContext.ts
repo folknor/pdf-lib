@@ -1,31 +1,27 @@
-import { zlibSync } from 'fflate';
-import type { DocumentSnapshot } from '../api/snapshot/DocumentSnapshot.js';
-import { typedArrayFor } from '../utils/index.js';
-import { SimpleRNG } from '../utils/rng.js';
-import PDFHeader from './document/PDFHeader.js';
-import { UnexpectedObjectTypeError } from './errors.js';
-import PDFArray from './objects/PDFArray.js';
-import PDFBool from './objects/PDFBool.js';
-import PDFDict from './objects/PDFDict.js';
-import PDFHexString from './objects/PDFHexString.js';
-import PDFName from './objects/PDFName.js';
-import PDFNull from './objects/PDFNull.js';
-import PDFNumber from './objects/PDFNumber.js';
-import PDFObject from './objects/PDFObject.js';
-import PDFRawStream from './objects/PDFRawStream.js';
-import PDFRef from './objects/PDFRef.js';
-import PDFStream from './objects/PDFStream.js';
-import PDFString from './objects/PDFString.js';
-import PDFOperator from './operators/PDFOperator.js';
-import Ops from './operators/PDFOperatorNames.js';
-import type PDFSecurity from './security/PDFSecurity.js';
-import type { BaselineEncryption } from './security/PDFSecurity.js';
-import PDFContentStream from './structures/PDFContentStream.js';
-import {
-  consoleWarningHandler,
-  type PDFWarning,
-  type PDFWarningHandler,
-} from './warnings.js';
+import { zlibSync } from "fflate";
+import type { DocumentSnapshot } from "../api/snapshot/DocumentSnapshot.js";
+import { typedArrayFor } from "../utils/index.js";
+import { SimpleRNG } from "../utils/rng.js";
+import PDFHeader from "./document/PDFHeader.js";
+import { UnexpectedObjectTypeError } from "./errors.js";
+import PDFArray from "./objects/PDFArray.js";
+import PDFBool from "./objects/PDFBool.js";
+import PDFDict from "./objects/PDFDict.js";
+import PDFHexString from "./objects/PDFHexString.js";
+import PDFName from "./objects/PDFName.js";
+import PDFNull from "./objects/PDFNull.js";
+import PDFNumber from "./objects/PDFNumber.js";
+import PDFObject from "./objects/PDFObject.js";
+import PDFRawStream from "./objects/PDFRawStream.js";
+import PDFRef from "./objects/PDFRef.js";
+import PDFStream from "./objects/PDFStream.js";
+import PDFString from "./objects/PDFString.js";
+import PDFOperator from "./operators/PDFOperator.js";
+import Ops from "./operators/PDFOperatorNames.js";
+import type PDFSecurity from "./security/PDFSecurity.js";
+import type { BaselineEncryption } from "./security/PDFSecurity.js";
+import PDFContentStream from "./structures/PDFContentStream.js";
+import { consoleWarningHandler, type PDFWarning, type PDFWarningHandler } from "./warnings.js";
 
 type LookupKey = PDFRef | PDFObject | undefined;
 
@@ -37,14 +33,7 @@ interface LiteralArray {
   [index: number]: Literal | PDFObject;
 }
 
-type Literal =
-  | LiteralObject
-  | LiteralArray
-  | string
-  | number
-  | boolean
-  | null
-  | undefined;
+type Literal = LiteralObject | LiteralArray | string | number | boolean | null | undefined;
 
 interface LiteralConfig {
   deep?: boolean;
@@ -53,10 +42,8 @@ interface LiteralConfig {
   literalString?: boolean;
 }
 
-const byAscendingObjectNumber = (
-  [a]: [PDFRef, PDFObject],
-  [b]: [PDFRef, PDFObject],
-) => a.objectNumber - b.objectNumber;
+const byAscendingObjectNumber = ([a]: [PDFRef, PDFObject], [b]: [PDFRef, PDFObject]) =>
+  a.objectNumber - b.objectNumber;
 
 class PDFContext {
   isDecrypted = true;
@@ -160,7 +147,7 @@ class PDFContext {
    * ciphertext fixtures clear 'keyless' to bypass that check; nothing else
    * reads it.
    */
-  baselineEncryption?: BaselineEncryption | 'keyless';
+  baselineEncryption?: BaselineEncryption | "keyless";
 
   private readonly indirectObjects: Map<PDFRef, PDFObject>;
 
@@ -235,10 +222,7 @@ class PDFContext {
   lookupMaybe(ref: LookupKey, type: typeof PDFArray): PDFArray | undefined;
   lookupMaybe(ref: LookupKey, type: typeof PDFBool): PDFBool | undefined;
   lookupMaybe(ref: LookupKey, type: typeof PDFDict): PDFDict | undefined;
-  lookupMaybe(
-    ref: LookupKey,
-    type: typeof PDFHexString,
-  ): PDFHexString | undefined;
+  lookupMaybe(ref: LookupKey, type: typeof PDFHexString): PDFHexString | undefined;
   lookupMaybe(ref: LookupKey, type: typeof PDFName): PDFName | undefined;
   lookupMaybe(ref: LookupKey, type: typeof PDFNull): typeof PDFNull | undefined;
   lookupMaybe(ref: LookupKey, type: typeof PDFNumber): PDFNumber | undefined;
@@ -352,11 +336,11 @@ class PDFContext {
       return literal;
     } else if (literal === null || literal === undefined) {
       return PDFNull;
-    } else if (typeof literal === 'string') {
+    } else if (typeof literal === "string") {
       return PDFName.of(literal);
-    } else if (typeof literal === 'number') {
+    } else if (typeof literal === "number") {
       return PDFNumber.of(literal);
-    } else if (typeof literal === 'boolean') {
+    } else if (typeof literal === "boolean") {
       return literal ? PDFBool.True : PDFBool.False;
     } else if (literal instanceof Uint8Array) {
       return PDFHexString.fromBytes(literal);
@@ -440,50 +424,35 @@ class PDFContext {
       return obj.objectNumber;
     } else if (obj instanceof PDFStream && literalStreamDict) {
       return this.getLiteral(obj.dict, cfg);
-    } else if (
-      (obj instanceof PDFString || obj instanceof PDFHexString) &&
-      literalString
-    ) {
+    } else if ((obj instanceof PDFString || obj instanceof PDFHexString) && literalString) {
       return obj.asString();
     }
 
     return obj;
   }
 
-  stream(
-    contents: string | Uint8Array,
-    dict: LiteralObject = {},
-  ): PDFRawStream {
+  stream(contents: string | Uint8Array, dict: LiteralObject = {}): PDFRawStream {
     return PDFRawStream.of(this.obj(dict), typedArrayFor(contents));
   }
 
-  flateStream(
-    contents: string | Uint8Array,
-    dict: LiteralObject = {},
-  ): PDFRawStream {
+  flateStream(contents: string | Uint8Array, dict: LiteralObject = {}): PDFRawStream {
     return this.stream(zlibSync(typedArrayFor(contents)), {
       ...dict,
-      Filter: 'FlateDecode',
+      Filter: "FlateDecode",
     });
   }
 
-  contentStream(
-    operators: PDFOperator[],
-    dict: LiteralObject = {},
-  ): PDFContentStream {
+  contentStream(operators: PDFOperator[], dict: LiteralObject = {}): PDFContentStream {
     return PDFContentStream.of(this.obj(dict), operators);
   }
 
-  formXObject(
-    operators: PDFOperator[],
-    dict: LiteralObject = {},
-  ): PDFContentStream {
+  formXObject(operators: PDFOperator[], dict: LiteralObject = {}): PDFContentStream {
     return this.contentStream(operators, {
       BBox: this.obj([0, 0, 0, 0]),
       Matrix: this.obj([1, 0, 0, 1, 0, 0]),
       ...dict,
-      Type: 'XObject',
-      Subtype: 'Form',
+      Type: "XObject",
+      Subtype: "Form",
     });
   }
 

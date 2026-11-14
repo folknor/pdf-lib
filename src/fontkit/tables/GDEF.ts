@@ -1,13 +1,13 @@
-import * as r from '../../vendors/restructure/index.js';
-import { ClassDef, Coverage, Device } from './opentype.js';
-import { ItemVariationStore } from './variations.js';
+import * as r from "../../vendors/restructure/index.js";
+import { ClassDef, Coverage, Device } from "./opentype.js";
+import { ItemVariationStore } from "./variations.js";
 
 const AttachPoint = new r.Array(r.uint16, r.uint16);
 
 const AttachList = new r.Struct({
   coverage: new r.Pointer(r.uint16, Coverage),
   glyphCount: r.uint16,
-  attachPoints: new r.Array(new r.Pointer(r.uint16, AttachPoint), 'glyphCount'),
+  attachPoints: new r.Array(new r.Pointer(r.uint16, AttachPoint), "glyphCount"),
 });
 
 const CaretValue = new r.VersionedStruct(r.uint16, {
@@ -33,13 +33,13 @@ const LigGlyph = new r.Array(new r.Pointer(r.uint16, CaretValue), r.uint16);
 const LigCaretList = new r.Struct({
   coverage: new r.Pointer(r.uint16, Coverage),
   ligGlyphCount: r.uint16,
-  ligGlyphs: new r.Array(new r.Pointer(r.uint16, LigGlyph), 'ligGlyphCount'),
+  ligGlyphs: new r.Array(new r.Pointer(r.uint16, LigGlyph), "ligGlyphCount"),
 });
 
 const MarkGlyphSetsDef = new r.Struct({
   markSetTableFormat: r.uint16,
   markSetCount: r.uint16,
-  coverage: new r.Array(new r.Pointer(r.uint32, Coverage), 'markSetCount'),
+  coverage: new r.Array(new r.Pointer(r.uint32, Coverage), "markSetCount"),
 });
 
 export default new r.VersionedStruct(r.uint32, {

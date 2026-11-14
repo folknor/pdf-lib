@@ -6,19 +6,16 @@ import {
   type PDFObject,
   PDFRef,
   PDFStream,
-} from '../core/index.js';
+} from "../core/index.js";
 import {
   checkCatalogAF,
   type NameTreeKey,
   readCatalogNameTree,
   removeFromCatalogNameTree,
-} from './nameTree.js';
+} from "./nameTree.js";
 
 /** Calls `visit` for every reference inside `object`'s direct containment. */
-export const forEachRef = (
-  object: PDFObject,
-  visit: (ref: PDFRef) => void,
-): void => {
+export const forEachRef = (object: PDFObject, visit: (ref: PDFRef) => void): void => {
   if (object instanceof PDFRef) {
     visit(object);
   } else if (object instanceof PDFDict) {
@@ -41,10 +38,7 @@ export const forEachRef = (
  * This is conservative: an orphan already in the document that points at a
  * candidate keeps it alive.
  */
-export const collectUnreferenced = (
-  context: PDFContext,
-  roots: PDFRef[],
-): void => {
+export const collectUnreferenced = (context: PDFContext, roots: PDFRef[]): void => {
   const candidates = new Set<PDFRef>();
   const pending = [...roots];
 
@@ -88,7 +82,7 @@ export const collectUnreferenced = (
   }
 };
 
-const EmbeddedFiles = PDFName.of('EmbeddedFiles');
+const EmbeddedFiles = PDFName.of("EmbeddedFiles");
 
 /**
  * Remove every saved attachment named `name` from the catalog: every pair
@@ -118,17 +112,12 @@ export const detachSavedAttachments = (
     checkCatalogAF(catalog);
   }
 
-  const edit = removeFromCatalogNameTree(
-    context,
-    catalog,
-    EmbeddedFiles,
-    matches,
-  );
+  const edit = removeFromCatalogNameTree(context, catalog, EmbeddedFiles, matches);
 
   if (!edit) return;
   const { removed, displaced } = edit;
 
-  const AF = PDFName.of('AF');
+  const AF = PDFName.of("AF");
   const removedRefs = removed.filter((v): v is PDFRef => v instanceof PDFRef);
   const oldAF = catalog.lookupMaybe(AF, PDFArray);
 
@@ -137,9 +126,7 @@ export const detachSavedAttachments = (
 
     if (rawAF instanceof PDFRef) displaced.push(rawAF);
 
-    const kept = oldAF
-      .asArray()
-      .filter((e) => !(e instanceof PDFRef && removedRefs.includes(e)));
+    const kept = oldAF.asArray().filter((e) => !(e instanceof PDFRef && removedRefs.includes(e)));
 
     catalog.set(AF, context.obj(kept));
   }

@@ -1,11 +1,11 @@
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import type PDFAcroField from './PDFAcroField.js';
-import PDFAcroNonTerminal from './PDFAcroNonTerminal.js';
-import { createPDFAcroField, createPDFAcroFields } from './utils.js';
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import type PDFAcroField from "./PDFAcroField.js";
+import PDFAcroNonTerminal from "./PDFAcroNonTerminal.js";
+import { createPDFAcroField, createPDFAcroFields } from "./utils.js";
 
 class PDFAcroForm {
   readonly dict: PDFDict;
@@ -23,7 +23,7 @@ class PDFAcroForm {
   }
 
   Fields(): PDFArray | undefined {
-    const fields = this.dict.lookup(PDFName.of('Fields'));
+    const fields = this.dict.lookup(PDFName.of("Fields"));
 
     if (fields instanceof PDFArray) return fields;
 
@@ -77,15 +77,12 @@ class PDFAcroForm {
   removeField(field: PDFAcroField): void {
     const parent = field.getParent();
 
-    const fields =
-      parent === undefined ? this.normalizedEntries().Fields : parent.Kids();
+    const fields = parent === undefined ? this.normalizedEntries().Fields : parent.Kids();
 
     const index = fields?.indexOf(field.ref);
 
     if (fields === undefined || index === undefined) {
-      throw new Error(
-        `Tried to remove inexistent field ${field.getFullyQualifiedName()}`,
-      );
+      throw new Error(`Tried to remove inexistent field ${field.getFullyQualifiedName()}`);
     }
 
     fields.remove(index);
@@ -100,7 +97,7 @@ class PDFAcroForm {
 
     if (!Fields) {
       Fields = this.dict.context.obj([]);
-      this.dict.set(PDFName.of('Fields'), Fields);
+      this.dict.set(PDFName.of("Fields"), Fields);
     }
 
     return { Fields };

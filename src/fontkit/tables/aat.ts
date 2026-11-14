@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 class UnboundedArrayAccessor {
   type: any;
@@ -91,7 +91,7 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
     values: new r.Pointer(
       r.uint16,
       new r.Array(ValueType, (t: any) => t.lastGlyph - t.firstGlyph + 1),
-      { type: 'parent' },
+      { type: "parent" },
     ),
   });
 
@@ -106,37 +106,25 @@ export const LookupTable = (ValueType: any = r.uint16): any => {
     },
     2: {
       binarySearchHeader: BinarySearchHeader,
-      segments: new r.Array(
-        LookupSegmentSingle,
-        (t: any) => t.binarySearchHeader.nUnits,
-      ),
+      segments: new r.Array(LookupSegmentSingle, (t: any) => t.binarySearchHeader.nUnits),
     },
     4: {
       binarySearchHeader: BinarySearchHeader,
-      segments: new r.Array(
-        LookupSegmentArray,
-        (t: any) => t.binarySearchHeader.nUnits,
-      ),
+      segments: new r.Array(LookupSegmentArray, (t: any) => t.binarySearchHeader.nUnits),
     },
     6: {
       binarySearchHeader: BinarySearchHeader,
-      segments: new r.Array(
-        LookupSingle,
-        (t: any) => t.binarySearchHeader.nUnits,
-      ),
+      segments: new r.Array(LookupSingle, (t: any) => t.binarySearchHeader.nUnits),
     },
     8: {
       firstGlyph: r.uint16,
       count: r.uint16,
-      values: new r.Array(ValueType, 'count'),
+      values: new r.Array(ValueType, "count"),
     },
   });
 };
 
-export function StateTable(
-  entryData: Record<string, any> = {},
-  lookupType: any = r.uint16,
-): any {
+export function StateTable(entryData: Record<string, any> = {}, lookupType: any = r.uint16): any {
   const entry = Object.assign(
     {
       newState: r.uint16,
@@ -147,9 +135,7 @@ export function StateTable(
 
   const Entry = new r.Struct(entry);
 
-  const StateArray = new UnboundedArray(
-    new r.Array(r.uint16, (t: any) => t.nClasses),
-  );
+  const StateArray = new UnboundedArray(new r.Array(r.uint16, (t: any) => t.nClasses));
 
   const StateHeader = new r.Struct({
     nClasses: r.uint32,
@@ -162,10 +148,7 @@ export function StateTable(
 }
 
 // This is the old version of the StateTable structure
-export function StateTable1(
-  entryData: Record<string, any> = {},
-  _lookupType: any = r.uint16,
-): any {
+export function StateTable1(entryData: Record<string, any> = {}, _lookupType: any = r.uint16): any {
   const ClassLookupTable = new r.Struct({
     version() {
       return 8;
@@ -179,9 +162,7 @@ export function StateTable1(
       newStateOffset: r.uint16,
       // convert offset to stateArray index
       newState: (t: any) =>
-        (t.newStateOffset -
-          (t.parent.stateArray.base - t.parent._startOffset)) /
-        t.parent.nClasses,
+        (t.newStateOffset - (t.parent.stateArray.base - t.parent._startOffset)) / t.parent.nClasses,
       flags: r.uint16,
     },
     entryData,
@@ -189,9 +170,7 @@ export function StateTable1(
 
   const Entry = new r.Struct(entry);
 
-  const StateArray = new UnboundedArray(
-    new r.Array(r.uint8, (t: any) => t.nClasses),
-  );
+  const StateArray = new UnboundedArray(new r.Array(r.uint8, (t: any) => t.nClasses));
 
   const StateHeader1 = new r.Struct({
     nClasses: r.uint16,

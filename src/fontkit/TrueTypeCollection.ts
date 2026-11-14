@@ -1,15 +1,15 @@
-import * as r from '../vendors/restructure/index.js';
-import TTFFont from './TTFFont.js';
-import { asciiDecoder } from './utils.js';
+import * as r from "../vendors/restructure/index.js";
+import TTFFont from "./TTFFont.js";
+import { asciiDecoder } from "./utils.js";
 
 const TTCHeader = new r.VersionedStruct(r.uint32, {
   65536: {
     numFonts: r.uint32,
-    offsets: new r.Array(r.uint32, 'numFonts'),
+    offsets: new r.Array(r.uint32, "numFonts"),
   },
   131072: {
     numFonts: r.uint32,
-    offsets: new r.Array(r.uint32, 'numFonts'),
+    offsets: new r.Array(r.uint32, "numFonts"),
     dsigTag: r.uint32,
     dsigLength: r.uint32,
     dsigOffset: r.uint32,
@@ -17,19 +17,19 @@ const TTCHeader = new r.VersionedStruct(r.uint32, {
 });
 
 export default class TrueTypeCollection {
-  type: string = 'TTC';
+  type: string = "TTC";
   stream: r.DecodeStream;
   header: any;
 
   static probe(buffer: Uint8Array): boolean {
-    return asciiDecoder.decode(buffer.slice(0, 4)) === 'ttcf';
+    return asciiDecoder.decode(buffer.slice(0, 4)) === "ttcf";
   }
 
   constructor(stream: r.DecodeStream) {
     this.stream = stream;
 
-    if (stream.readString(4) !== 'ttcf') {
-      throw new Error('Not a TrueType collection');
+    if (stream.readString(4) !== "ttcf") {
+      throw new Error("Not a TrueType collection");
     }
 
     this.header = TTCHeader.decode(stream);

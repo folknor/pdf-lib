@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const SubHeader = new r.Struct({
   firstCode: r.uint16,
@@ -28,8 +28,8 @@ const NonDefaultUVS = new r.Array(UVSMapping, r.uint32);
 
 const VarSelectorRecord = new r.Struct({
   varSelector: r.uint24,
-  defaultUVS: new r.Pointer(r.uint32, DefaultUVS, { type: 'parent' }),
-  nonDefaultUVS: new r.Pointer(r.uint32, NonDefaultUVS, { type: 'parent' }),
+  defaultUVS: new r.Pointer(r.uint32, DefaultUVS, { type: "parent" }),
+  nonDefaultUVS: new r.Pointer(r.uint32, NonDefaultUVS, { type: "parent" }),
 });
 
 const CmapSubtable = new r.VersionedStruct(r.uint16, {
@@ -46,13 +46,9 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     language: r.uint16,
     subHeaderKeys: new r.Array(r.uint16, 256),
     // subHeaderKeys are byte offsets (index * 8) into subHeaders.
-    subHeaderCount: (t: any) =>
-      Math.max(...(t.subHeaderKeys as number[])) / 8 + 1,
-    subHeaders: new r.LazyArray(SubHeader, 'subHeaderCount'),
-    glyphIndexArray: new r.LazyArray(
-      r.uint16,
-      (t: any) => (t.length - t._currentOffset) / 2,
-    ),
+    subHeaderCount: (t: any) => Math.max(...(t.subHeaderKeys as number[])) / 8 + 1,
+    subHeaders: new r.LazyArray(SubHeader, "subHeaderCount"),
+    glyphIndexArray: new r.LazyArray(r.uint16, (t: any) => (t.length - t._currentOffset) / 2),
   },
 
   4: {
@@ -64,15 +60,12 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     searchRange: r.uint16,
     entrySelector: r.uint16,
     rangeShift: r.uint16,
-    endCode: new r.LazyArray(r.uint16, 'segCount'),
+    endCode: new r.LazyArray(r.uint16, "segCount"),
     reservedPad: new r.Reserved(r.uint16), // This value should be zero
-    startCode: new r.LazyArray(r.uint16, 'segCount'),
-    idDelta: new r.LazyArray(r.int16, 'segCount'),
-    idRangeOffset: new r.LazyArray(r.uint16, 'segCount'),
-    glyphIndexArray: new r.LazyArray(
-      r.uint16,
-      (t: any) => (t.length - t._currentOffset) / 2,
-    ),
+    startCode: new r.LazyArray(r.uint16, "segCount"),
+    idDelta: new r.LazyArray(r.int16, "segCount"),
+    idRangeOffset: new r.LazyArray(r.uint16, "segCount"),
+    glyphIndexArray: new r.LazyArray(r.uint16, (t: any) => (t.length - t._currentOffset) / 2),
   },
 
   6: {
@@ -81,7 +74,7 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     language: r.uint16,
     firstCode: r.uint16,
     entryCount: r.uint16,
-    glyphIndices: new r.LazyArray(r.uint16, 'entryCount'),
+    glyphIndices: new r.LazyArray(r.uint16, "entryCount"),
   },
 
   8: {
@@ -91,7 +84,7 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     language: r.uint16,
     is32: new r.LazyArray(r.uint8, 8192),
     nGroups: r.uint32,
-    groups: new r.LazyArray(CmapGroup, 'nGroups'),
+    groups: new r.LazyArray(CmapGroup, "nGroups"),
   },
 
   10: {
@@ -101,7 +94,7 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     language: r.uint32,
     firstCode: r.uint32,
     entryCount: r.uint32,
-    glyphIndices: new r.LazyArray(r.uint16, 'entryCount'),
+    glyphIndices: new r.LazyArray(r.uint16, "entryCount"),
   },
 
   12: {
@@ -110,7 +103,7 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     length: r.uint32,
     language: r.uint32,
     nGroups: r.uint32,
-    groups: new r.LazyArray(CmapGroup, 'nGroups'),
+    groups: new r.LazyArray(CmapGroup, "nGroups"),
   },
 
   13: {
@@ -119,26 +112,26 @@ const CmapSubtable = new r.VersionedStruct(r.uint16, {
     length: r.uint32,
     language: r.uint32,
     nGroups: r.uint32,
-    groups: new r.LazyArray(CmapGroup, 'nGroups'),
+    groups: new r.LazyArray(CmapGroup, "nGroups"),
   },
 
   14: {
     // Unicode Variation Sequences
     length: r.uint32,
     numRecords: r.uint32,
-    varSelectors: new r.LazyArray(VarSelectorRecord, 'numRecords'),
+    varSelectors: new r.LazyArray(VarSelectorRecord, "numRecords"),
   },
 });
 
 const CmapEntry = new r.Struct({
   platformID: r.uint16, // Platform identifier
   encodingID: r.uint16, // Platform-specific encoding identifier
-  table: new r.Pointer(r.uint32, CmapSubtable, { type: 'parent', lazy: true }),
+  table: new r.Pointer(r.uint32, CmapSubtable, { type: "parent", lazy: true }),
 });
 
 // character to glyph mapping
 export default new r.Struct({
   version: r.uint16,
   numSubtables: r.uint16,
-  tables: new r.Array(CmapEntry, 'numSubtables'),
+  tables: new r.Array(CmapEntry, "numSubtables"),
 });

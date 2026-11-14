@@ -1,6 +1,6 @@
-import type Glyph from '../glyph/Glyph.js';
-import { binarySearch } from '../utils.js';
-import type GlyphPosition from './GlyphPosition.js';
+import type Glyph from "../glyph/Glyph.js";
+import { binarySearch } from "../utils.js";
+import type GlyphPosition from "./GlyphPosition.js";
 
 export default class KernProcessor {
   kern: any;
@@ -49,8 +49,7 @@ export default class KernProcessor {
         case 0: {
           const pairIdx = binarySearch(
             s.pairs,
-            (pair: { left: number; right: number }) =>
-              left - pair.left || right - pair.right,
+            (pair: { left: number; right: number }) => left - pair.left || right - pair.right,
           );
 
           if (pairIdx >= 0) {
@@ -91,17 +90,11 @@ export default class KernProcessor {
           }
 
           val =
-            s.kernValue[
-              s.kernIndex[
-                s.leftClass[left] * s.rightClassCount + s.rightClass[right]
-              ]
-            ];
+            s.kernValue[s.kernIndex[s.leftClass[left] * s.rightClassCount + s.rightClass[right]]];
           break;
 
         default:
-          throw new Error(
-            `Unsupported kerning sub-table format ${table.format}`,
-          );
+          throw new Error(`Unsupported kerning sub-table format ${table.format}`);
       }
 
       // Microsoft supports the override flag, which resets the result

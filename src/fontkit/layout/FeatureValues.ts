@@ -18,9 +18,7 @@ export type FeatureRequest = Record<string, FeatureValue>;
  *   the request so an explicit `kern: 0` still disables kerning;
  * - an integer >= 2 is kept as the alternate number.
  */
-export function normalizeFeatures(
-  features: string[] | Record<string, unknown>,
-): FeatureRequest {
+export function normalizeFeatures(features: string[] | Record<string, unknown>): FeatureRequest {
   const res: FeatureRequest = {};
 
   if (Array.isArray(features)) {
@@ -41,11 +39,7 @@ export function normalizeFeatures(
 
     if (!value) {
       res[tag] = false;
-    } else if (
-      typeof value === 'number' &&
-      Number.isInteger(value) &&
-      value >= 2
-    ) {
+    } else if (typeof value === "number" && Number.isInteger(value) && value >= 2) {
       res[tag] = value;
     } else {
       res[tag] = true;

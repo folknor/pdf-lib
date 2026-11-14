@@ -1,7 +1,7 @@
-import { PDFAcroSignature, type PDFRef } from '../../core/index.js';
-import { assertIs } from '../../utils/index.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFField from './PDFField.js';
+import { PDFAcroSignature, type PDFRef } from "../../core/index.js";
+import { assertIs } from "../../utils/index.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFField from "./PDFField.js";
 
 /**
  * Represents a signature field of a [[PDFForm]].
@@ -23,25 +23,16 @@ export default class PDFSignature extends PDFField {
    * @param ref The unique reference for this signature.
    * @param doc The document to which this signature will belong.
    */
-  static of = (
-    acroSignature: PDFAcroSignature,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) => new PDFSignature(acroSignature, ref, doc);
+  static of = (acroSignature: PDFAcroSignature, ref: PDFRef, doc: PDFDocument) =>
+    new PDFSignature(acroSignature, ref, doc);
 
   /** The low-level PDFAcroSignature wrapped by this signature. */
   declare readonly acroField: PDFAcroSignature;
 
-  private constructor(
-    acroSignature: PDFAcroSignature,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) {
+  private constructor(acroSignature: PDFAcroSignature, ref: PDFRef, doc: PDFDocument) {
     super(acroSignature, ref, doc);
 
-    assertIs(acroSignature, 'acroSignature', [
-      [PDFAcroSignature, 'PDFAcroSignature'],
-    ]);
+    assertIs(acroSignature, "acroSignature", [[PDFAcroSignature, "PDFAcroSignature"]]);
 
     this.acroField = acroSignature;
   }

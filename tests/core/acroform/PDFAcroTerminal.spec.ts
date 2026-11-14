@@ -8,13 +8,13 @@ import {
   PDFNull,
   PDFRef,
   PDFWidgetAnnotation,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFAcroTerminal', () => {
-  it('returns Kids when it has them', () => {
+describe("PDFAcroTerminal", () => {
+  it("returns Kids when it has them", () => {
     const context = PDFContext.create();
 
-    const kids = context.obj(['Foo', PDFRef.of(21), 9001]);
+    const kids = context.obj(["Foo", PDFRef.of(21), 9001]);
     const kidsRef = context.register(kids);
 
     const dict = context.obj({
@@ -29,7 +29,7 @@ describe('PDFAcroTerminal', () => {
     expect(Kids).toBe(kids);
   });
 
-  it('returns itself as a Kid when it has none', () => {
+  it("returns itself as a Kid when it has none", () => {
     const context = PDFContext.create();
 
     const dict = context.obj({});
@@ -43,70 +43,70 @@ describe('PDFAcroTerminal', () => {
     expect(Kids.get(0)).toBe(dictRef);
   });
 
-  describe('FT()', () => {
-    it('returns PDFName /Tx for a text field', async () => {
+  describe("FT()", () => {
+    it("returns PDFName /Tx for a text field", async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
-      const textField = form.createTextField('test.text');
+      const textField = form.createTextField("test.text");
       const acroField = textField.acroField;
 
       const ft = acroField.FT();
       expect(ft).toBeInstanceOf(PDFName);
-      expect(ft).toBe(PDFName.of('Tx'));
+      expect(ft).toBe(PDFName.of("Tx"));
     });
 
-    it('returns PDFName /Btn for a button field (checkbox)', async () => {
+    it("returns PDFName /Btn for a button field (checkbox)", async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
-      const checkBox = form.createCheckBox('test.checkbox');
+      const checkBox = form.createCheckBox("test.checkbox");
       const acroField = checkBox.acroField;
 
       const ft = acroField.FT();
       expect(ft).toBeInstanceOf(PDFName);
-      expect(ft).toBe(PDFName.of('Btn'));
+      expect(ft).toBe(PDFName.of("Btn"));
     });
 
-    it('returns PDFName /Btn for a radio button field', async () => {
+    it("returns PDFName /Btn for a radio button field", async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
-      const radioGroup = form.createRadioGroup('test.radio');
+      const radioGroup = form.createRadioGroup("test.radio");
       const acroField = radioGroup.acroField;
 
       const ft = acroField.FT();
       expect(ft).toBeInstanceOf(PDFName);
-      expect(ft).toBe(PDFName.of('Btn'));
+      expect(ft).toBe(PDFName.of("Btn"));
     });
 
-    it('returns PDFName /Ch for a choice field (dropdown)', async () => {
+    it("returns PDFName /Ch for a choice field (dropdown)", async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
-      const dropdown = form.createDropdown('test.dropdown');
+      const dropdown = form.createDropdown("test.dropdown");
       const acroField = dropdown.acroField;
 
       const ft = acroField.FT();
       expect(ft).toBeInstanceOf(PDFName);
-      expect(ft).toBe(PDFName.of('Ch'));
+      expect(ft).toBe(PDFName.of("Ch"));
     });
 
-    it('returns PDFName /Ch for a choice field (option list)', async () => {
+    it("returns PDFName /Ch for a choice field (option list)", async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
-      const optionList = form.createOptionList('test.optionlist');
+      const optionList = form.createOptionList("test.optionlist");
       const acroField = optionList.acroField;
 
       const ft = acroField.FT();
       expect(ft).toBeInstanceOf(PDFName);
-      expect(ft).toBe(PDFName.of('Ch'));
+      expect(ft).toBe(PDFName.of("Ch"));
     });
   });
 
-  describe('removeWidget()', () => {
-    it('removes widget at index 0 from a field with multiple kids', async () => {
+  describe("removeWidget()", () => {
+    it("removes widget at index 0 from a field with multiple kids", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
       checkBox.addToPage(page);
@@ -118,12 +118,12 @@ describe('PDFAcroTerminal', () => {
       expect(acroField.getWidgets().length).toBe(2);
     });
 
-    it('removes widget at the last valid index', async () => {
+    it("removes widget at the last valid index", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
       checkBox.addToPage(page);
@@ -136,12 +136,12 @@ describe('PDFAcroTerminal', () => {
       expect(acroField.getWidgets().length).toBe(2);
     });
 
-    it('throws IndexOutOfBoundsError when index equals widget count (off-by-one boundary)', async () => {
+    it("throws IndexOutOfBoundsError when index equals widget count (off-by-one boundary)", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
 
@@ -167,24 +167,24 @@ describe('PDFAcroTerminal', () => {
       }
     });
 
-    it('throws IndexOutOfBoundsError for negative index', async () => {
+    it("throws IndexOutOfBoundsError for negative index", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
 
       const acroField = checkBox.acroField;
       expect(() => acroField.removeWidget(-1)).toThrow(IndexOutOfBoundsError);
     });
 
-    it('throws IndexOutOfBoundsError for large out-of-bounds index', async () => {
+    it("throws IndexOutOfBoundsError for large out-of-bounds index", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
 
@@ -192,14 +192,14 @@ describe('PDFAcroTerminal', () => {
       expect(() => acroField.removeWidget(100)).toThrow(IndexOutOfBoundsError);
     });
 
-    it('handles removing from a field that is itself a widget (single widget, no Kids)', () => {
+    it("handles removing from a field that is itself a widget (single widget, no Kids)", () => {
       const context = PDFContext.create();
 
       // Create a dict that has no Kids (the field IS the widget)
       const dict = context.obj({
-        FT: 'Tx',
-        Type: 'Annot',
-        Subtype: 'Widget',
+        FT: "Tx",
+        Type: "Annot",
+        Subtype: "Widget",
       });
 
       const dictRef = context.register(dict);
@@ -217,13 +217,13 @@ describe('PDFAcroTerminal', () => {
       expect(kids!.size()).toBe(0);
     });
 
-    it('throws IndexOutOfBoundsError when removing at index 1 from a self-widget field', () => {
+    it("throws IndexOutOfBoundsError when removing at index 1 from a self-widget field", () => {
       const context = PDFContext.create();
 
       const dict = context.obj({
-        FT: 'Tx',
-        Type: 'Annot',
-        Subtype: 'Widget',
+        FT: "Tx",
+        Type: "Annot",
+        Subtype: "Widget",
       });
 
       const dictRef = context.register(dict);
@@ -232,12 +232,12 @@ describe('PDFAcroTerminal', () => {
       expect(() => terminal.removeWidget(1)).toThrow(IndexOutOfBoundsError);
     });
 
-    it('removes successive widgets correctly', async () => {
+    it("removes successive widgets correctly", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
       checkBox.addToPage(page);
@@ -257,13 +257,13 @@ describe('PDFAcroTerminal', () => {
     });
   });
 
-  describe('getWidgets()', () => {
-    it('returns all widgets after adding multiple', async () => {
+  describe("getWidgets()", () => {
+    it("returns all widgets after adding multiple", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
 
       expect(checkBox.acroField.getWidgets().length).toBe(0);
 
@@ -277,12 +277,12 @@ describe('PDFAcroTerminal', () => {
       expect(checkBox.acroField.getWidgets().length).toBe(3);
     });
 
-    it('returns correct widget count after add and remove', async () => {
+    it("returns correct widget count after add and remove", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
       checkBox.addToPage(page);
       checkBox.addToPage(page);
@@ -296,12 +296,12 @@ describe('PDFAcroTerminal', () => {
       expect(checkBox.acroField.getWidgets().length).toBe(3);
     });
 
-    it('returns PDFWidgetAnnotation instances', async () => {
+    it("returns PDFWidgetAnnotation instances", async () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
 
-      const checkBox = form.createCheckBox('test.cb');
+      const checkBox = form.createCheckBox("test.cb");
       checkBox.addToPage(page);
 
       const widgets = checkBox.acroField.getWidgets();
@@ -309,13 +309,13 @@ describe('PDFAcroTerminal', () => {
       expect(widgets[0]).toBeInstanceOf(PDFWidgetAnnotation);
     });
 
-    it('returns [self] as widget when field has no Kids', () => {
+    it("returns [self] as widget when field has no Kids", () => {
       const context = PDFContext.create();
 
       const dict = context.obj({
-        FT: 'Tx',
-        Type: 'Annot',
-        Subtype: 'Widget',
+        FT: "Tx",
+        Type: "Annot",
+        Subtype: "Widget",
       });
 
       const dictRef = context.register(dict);
@@ -327,14 +327,14 @@ describe('PDFAcroTerminal', () => {
       expect(widgets[0]).toBeInstanceOf(PDFWidgetAnnotation);
     });
 
-    it('skips null entries in Kids array gracefully', () => {
+    it("skips null entries in Kids array gracefully", () => {
       const context = PDFContext.create();
 
       // Create valid widget dicts
-      const widget1 = context.obj({ Type: 'Annot', Subtype: 'Widget' });
+      const widget1 = context.obj({ Type: "Annot", Subtype: "Widget" });
       const widget1Ref = context.register(widget1);
 
-      const widget2 = context.obj({ Type: 'Annot', Subtype: 'Widget' });
+      const widget2 = context.obj({ Type: "Annot", Subtype: "Widget" });
       const widget2Ref = context.register(widget2);
 
       // Create Kids array with a null entry in the middle
@@ -345,7 +345,7 @@ describe('PDFAcroTerminal', () => {
       const kidsRef = context.register(kids);
 
       const dict = context.obj({
-        FT: 'Tx',
+        FT: "Tx",
         Kids: kidsRef,
       });
 

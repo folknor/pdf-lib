@@ -1,4 +1,4 @@
-import type { PDFObject, PDFRef } from '../../core/index.js';
+import type { PDFObject, PDFRef } from "../../core/index.js";
 
 export interface DocumentSnapshot {
   pdfSize: number;

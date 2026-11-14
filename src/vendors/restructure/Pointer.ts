@@ -4,13 +4,13 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import type { NumberT } from './Number.js';
-import { PropertyDescriptor } from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import type { NumberT } from "./Number.js";
+import { PropertyDescriptor } from "./utils.js";
 
-type PointerType = 'local' | 'immediate' | 'parent' | 'global';
+type PointerType = "local" | "immediate" | "parent" | "global";
 
 interface PointerOptions {
   type?: PointerType;
@@ -38,24 +38,20 @@ interface EncodeContext {
 export class Pointer<T = unknown> extends Base<T | null> {
   offsetType: NumberT;
   type: Base<T> | null;
-  options: Omit<Required<PointerOptions>, 'relativeTo'> & {
+  options: Omit<Required<PointerOptions>, "relativeTo"> & {
     relativeTo?: (ctx: unknown) => number;
   };
   relativeToGetter?: (ctx: unknown) => number;
 
-  constructor(
-    offsetType: NumberT,
-    type: Base<T> | 'void' | null,
-    options: PointerOptions = {},
-  ) {
+  constructor(offsetType: NumberT, type: Base<T> | "void" | null, options: PointerOptions = {}) {
     super();
     this.offsetType = offsetType;
-    this.type = type === 'void' ? null : type;
+    this.type = type === "void" ? null : type;
 
-    const opts: Omit<Required<PointerOptions>, 'relativeTo'> & {
+    const opts: Omit<Required<PointerOptions>, "relativeTo"> & {
       relativeTo?: (ctx: unknown) => number;
     } = {
-      type: options.type ?? 'local',
+      type: options.type ?? "local",
       allowNull: options.allowNull ?? true,
       nullValue: options.nullValue ?? 0,
       lazy: options.lazy ?? false,
@@ -85,13 +81,13 @@ export class Pointer<T = unknown> extends Base<T | null> {
     let relative: number;
 
     switch (this.options.type) {
-      case 'local':
+      case "local":
         relative = context._startOffset;
         break;
-      case 'immediate':
+      case "immediate":
         relative = stream.pos - this.offsetType.size();
         break;
-      case 'parent':
+      case "parent":
         relative = context.parent!._startOffset;
         break;
       default: {
@@ -146,10 +142,10 @@ export class Pointer<T = unknown> extends Base<T | null> {
     let sizeCtx: EncodeContext | undefined = encodeCtx;
 
     switch (this.options.type) {
-      case 'local':
-      case 'immediate':
+      case "local":
+      case "immediate":
         break;
-      case 'parent':
+      case "parent":
         sizeCtx = encodeCtx?.parent;
         break;
       default:
@@ -163,7 +159,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
 
     if (type == null) {
       if (!(val instanceof VoidPointer)) {
-        throw new Error('Must be a VoidPointer');
+        throw new Error("Must be a VoidPointer");
       }
 
       type = val.type;
@@ -178,11 +174,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
     return this.offsetType.size();
   }
 
-  encode(
-    stream: EncodeStream,
-    val: T | VoidPointer<T> | null,
-    ctx: EncodeContext,
-  ): void {
+  encode(stream: EncodeStream, val: T | VoidPointer<T> | null, ctx: EncodeContext): void {
     const parent = ctx;
 
     if (val == null) {
@@ -195,13 +187,13 @@ export class Pointer<T = unknown> extends Base<T | null> {
     let encodeCtx: EncodeContext | undefined = ctx;
 
     switch (this.options.type) {
-      case 'local':
+      case "local":
         relative = ctx.startOffset;
         break;
-      case 'immediate':
+      case "immediate":
         relative = stream.pos + this.offsetType.size();
         break;
-      case 'parent':
+      case "parent":
         encodeCtx = ctx.parent;
         relative = encodeCtx!.startOffset;
         break;
@@ -224,7 +216,7 @@ export class Pointer<T = unknown> extends Base<T | null> {
 
     if (type == null) {
       if (!(val instanceof VoidPointer)) {
-        throw new Error('Must be a VoidPointer');
+        throw new Error("Must be a VoidPointer");
       }
 
       type = val.type;

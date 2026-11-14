@@ -12,4 +12,3 @@ and be clipped by `drawTextField`. Supporting ink fitting requires exposing
 positioned ink bounds alongside advances; fitting continues to use advances
 as required by the layout contract. Combs now shape each grapheme cluster
 as a unit; joining across separate cells is intentionally absent.
-

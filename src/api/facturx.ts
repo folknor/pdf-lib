@@ -1,4 +1,4 @@
-import { AFRelationship } from '../core/embedders/FileEmbedder.js';
+import { AFRelationship } from "../core/embedders/FileEmbedder.js";
 import {
   PDFArray,
   type PDFContext,
@@ -7,18 +7,10 @@ import {
   PDFName,
   PDFRef,
   PDFString,
-} from '../core/index.js';
-import {
-  FACTUR_X_FILE_NAME,
-  type FacturXProfile,
-} from '../core/metadata/facturx.js';
-import { collectUnreferenced } from './detach.js';
-import {
-  checkNameTree,
-  insertIntoNameTree,
-  readNameTree,
-  removeFromNameTree,
-} from './nameTree.js';
+} from "../core/index.js";
+import { FACTUR_X_FILE_NAME, type FacturXProfile } from "../core/metadata/facturx.js";
+import { collectUnreferenced } from "./detach.js";
+import { checkNameTree, insertIntoNameTree, readNameTree, removeFromNameTree } from "./nameTree.js";
 
 export interface EmbedFacturXOptions {
   /**
@@ -26,7 +18,7 @@ export interface EmbedFacturXOptions {
    * XML's guideline identifier; this only asserts it, and a mismatch throws.
    * `'BASIC_WL'` is accepted for `'BASIC WL'`.
    */
-  conformanceLevel?: FacturXProfile | 'BASIC_WL';
+  conformanceLevel?: FacturXProfile | "BASIC_WL";
   /**
    * How the invoice relates to the PDF. MINIMUM and BASIC WL invoices are
    * not complete invoices and are always `Data`. For BASIC, EN 16931 and
@@ -41,18 +33,18 @@ export interface EmbedFacturXOptions {
   modificationDate?: Date;
 }
 
-const Names = PDFName.of('Names');
-const EmbeddedFiles = PDFName.of('EmbeddedFiles');
-const Limits = PDFName.of('Limits');
-const AF = PDFName.of('AF');
-const XRECHNUNG_FILE_NAME = 'xrechnung.xml';
+const Names = PDFName.of("Names");
+const EmbeddedFiles = PDFName.of("EmbeddedFiles");
+const Limits = PDFName.of("Limits");
+const AF = PDFName.of("AF");
+const XRECHNUNG_FILE_NAME = "xrechnung.xml";
 
 /** Resolve the relationship the invoice is attached with. */
 export const facturXRelationship = (
   profile: FacturXProfile,
   requested: AFRelationship | undefined,
 ): AFRelationship => {
-  if (profile === 'MINIMUM' || profile === 'BASIC WL') {
+  if (profile === "MINIMUM" || profile === "BASIC WL") {
     if (requested !== undefined && requested !== AFRelationship.Data) {
       throw new Error(
         `A Factur-X ${profile} invoice is attached with AFRelationship Data, not ${requested}.`,
@@ -82,19 +74,15 @@ export const facturXRelationship = (
 };
 
 const stringText = (o: unknown): string | undefined =>
-  o instanceof PDFString || o instanceof PDFHexString
-    ? o.decodeText()
-    : undefined;
+  o instanceof PDFString || o instanceof PDFHexString ? o.decodeText() : undefined;
 
 /** The names a file specification gives its file (/F and /UF). */
 const specNames = (spec: PDFDict): string[] =>
-  [
-    stringText(spec.lookup(PDFName.of('F'))),
-    stringText(spec.lookup(PDFName.of('UF'))),
-  ].filter((n): n is string => n !== undefined);
+  [stringText(spec.lookup(PDFName.of("F"))), stringText(spec.lookup(PDFName.of("UF")))].filter(
+    (n): n is string => n !== undefined,
+  );
 
-const refusal = (reason: string) =>
-  new Error(`Cannot embed a Factur-X invoice: ${reason}.`);
+const refusal = (reason: string) => new Error(`Cannot embed a Factur-X invoice: ${reason}.`);
 
 /**
  * Plan putting the invoice in the document's catalog-level attachments:
@@ -120,13 +108,13 @@ export const planFacturXAttachment = (
   const namesValue = catalog.lookup(Names);
 
   if (namesValue !== undefined && !(namesValue instanceof PDFDict)) {
-    throw refusal('the catalog /Names is not a dictionary');
+    throw refusal("the catalog /Names is not a dictionary");
   }
 
   const efValue = namesValue?.lookup(EmbeddedFiles);
 
   if (efValue !== undefined && !(efValue instanceof PDFDict)) {
-    throw refusal('/EmbeddedFiles is not a dictionary');
+    throw refusal("/EmbeddedFiles is not a dictionary");
   }
 
   if (efValue) checkNameTree(efValue);
@@ -140,7 +128,7 @@ export const planFacturXAttachment = (
       stringText(limits.lookup(0)) === undefined ||
       stringText(limits.lookup(1)) === undefined
     ) {
-      throw refusal('the /EmbeddedFiles /Limits is malformed');
+      throw refusal("the /EmbeddedFiles /Limits is malformed");
     }
   }
 
@@ -178,7 +166,7 @@ export const planFacturXAttachment = (
     }
 
     seen.add(text);
-    checkSpec(value, 'the /EmbeddedFiles name tree');
+    checkSpec(value, "the /EmbeddedFiles name tree");
     pairs.push({ key, value: value as PDFRef });
   }
 
@@ -190,14 +178,14 @@ export const planFacturXAttachment = (
   const afValue = catalog.lookup(AF);
 
   if (afValue !== undefined && !(afValue instanceof PDFArray)) {
-    throw refusal('the catalog /AF is not an array');
+    throw refusal("the catalog /AF is not an array");
   }
 
   const afRefs: PDFRef[] = [];
 
   for (let i = 0; i < (afValue?.size() ?? 0); i++) {
     const ref = afValue!.get(i);
-    const spec = checkSpec(ref, 'the catalog /AF');
+    const spec = checkSpec(ref, "the catalog /AF");
     afRefs.push(ref as PDFRef);
     classify(ref as PDFRef, spec);
   }
@@ -206,8 +194,8 @@ export const planFacturXAttachment = (
   const { bytes, relationship, description, modificationDate } = file;
 
   const stream = context.flateStream(bytes, {
-    Type: 'EmbeddedFile',
-    Subtype: 'text/xml',
+    Type: "EmbeddedFile",
+    Subtype: "text/xml",
     Params: {
       Size: bytes.length,
       ModDate: PDFString.fromDate(modificationDate),
@@ -215,13 +203,10 @@ export const planFacturXAttachment = (
   });
 
   const spec = context.obj({
-    Type: 'Filespec',
+    Type: "Filespec",
     F: PDFString.of(FACTUR_X_FILE_NAME),
     UF: PDFHexString.fromText(FACTUR_X_FILE_NAME),
-    Desc:
-      description === undefined
-        ? undefined
-        : PDFHexString.fromText(description),
+    Desc: description === undefined ? undefined : PDFHexString.fromText(description),
     AFRelationship: relationship,
   });
 
@@ -229,7 +214,7 @@ export const planFacturXAttachment = (
   const catalogAF = catalog.get(AF);
 
   return () => {
-    spec.set(PDFName.of('EF'), context.obj({ F: context.register(stream) }));
+    spec.set(PDFName.of("EF"), context.obj({ F: context.register(stream) }));
     const specRef = context.register(spec);
 
     const invoiceKeys = new Set(
@@ -257,11 +242,7 @@ export const planFacturXAttachment = (
 
     // Replaced indirect containers can otherwise keep an unlinked invoice
     // alive. Collect them too, while preserving any shared container graph.
-    const roots = [
-      ...invoices,
-      ...(removed?.displaced ?? []),
-      ...inserted.displaced,
-    ];
+    const roots = [...invoices, ...(removed?.displaced ?? []), ...inserted.displaced];
 
     for (const value of [
       catalogNames,

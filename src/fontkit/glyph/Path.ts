@@ -1,11 +1,11 @@
-import BBox from './BBox.js';
+import BBox from "./BBox.js";
 
 export type PathCommandName =
-  | 'moveTo'
-  | 'lineTo'
-  | 'quadraticCurveTo'
-  | 'bezierCurveTo'
-  | 'closePath';
+  | "moveTo"
+  | "lineTo"
+  | "quadraticCurveTo"
+  | "bezierCurveTo"
+  | "closePath";
 
 export interface PathCommand {
   command: PathCommandName;
@@ -13,11 +13,11 @@ export interface PathCommand {
 }
 
 const SVG_COMMANDS: Record<PathCommandName, string> = {
-  moveTo: 'M',
-  lineTo: 'L',
-  quadraticCurveTo: 'Q',
-  bezierCurveTo: 'C',
-  closePath: 'Z',
+  moveTo: "M",
+  lineTo: "L",
+  quadraticCurveTo: "Q",
+  bezierCurveTo: "C",
+  closePath: "Z",
 };
 
 /**
@@ -65,10 +65,10 @@ export default class Path {
     const cmds = this.commands.map((c) => {
       const args = c.args.map((arg) => Math.round(arg * 100) / 100);
 
-      return `${SVG_COMMANDS[c.command]}${args.join(' ')}`;
+      return `${SVG_COMMANDS[c.command]}${args.join(" ")}`;
     });
 
-    return cmds.join('');
+    return cmds.join("");
   }
 
   /**
@@ -93,9 +93,7 @@ export default class Path {
       // finite numbers. bbox deliberately keeps the infinite empty sentinel:
       // GlyphRun.bbox relies on addPoint skipping it to leave empty glyphs
       // out of a run's ink bounds.
-      this._cbox = Object.freeze(
-        cbox.minX === Infinity ? new BBox(0, 0, 0, 0) : cbox,
-      );
+      this._cbox = Object.freeze(cbox.minX === Infinity ? new BBox(0, 0, 0, 0) : cbox);
     }
 
     return this._cbox;
@@ -117,8 +115,8 @@ export default class Path {
 
     for (const cmd of this.commands) {
       switch (cmd.command) {
-        case 'moveTo':
-        case 'lineTo': {
+        case "moveTo":
+        case "lineTo": {
           const x = cmd.args[0] ?? 0;
           const y = cmd.args[1] ?? 0;
           bbox.addPoint(x, y);
@@ -127,16 +125,11 @@ export default class Path {
           break;
         }
 
-        case 'quadraticCurveTo':
-        case 'bezierCurveTo': {
-          let cp1x: number,
-            cp1y: number,
-            cp2x: number,
-            cp2y: number,
-            p3x: number,
-            p3y: number;
+        case "quadraticCurveTo":
+        case "bezierCurveTo": {
+          let cp1x: number, cp1y: number, cp2x: number, cp2y: number, p3x: number, p3y: number;
 
-          if (cmd.command === 'quadraticCurveTo') {
+          if (cmd.command === "quadraticCurveTo") {
             // http://fontforge.org/bezier.html
             const qp1x = cmd.args[0] ?? 0;
             const qp1y = cmd.args[1] ?? 0;
@@ -255,14 +248,7 @@ export default class Path {
   /**
    * Transforms the path by the given matrix.
    */
-  transform(
-    m0: number,
-    m1: number,
-    m2: number,
-    m3: number,
-    m4: number,
-    m5: number,
-  ): Path {
+  transform(m0: number, m1: number, m2: number, m3: number, m4: number, m5: number): Path {
     return this.mapPoints((x, y) => {
       const tx = m0 * x + m2 * y + m4;
       const ty = m1 * x + m3 * y + m5;
@@ -297,15 +283,16 @@ export default class Path {
 }
 
 for (const command of [
-  'moveTo',
-  'lineTo',
-  'quadraticCurveTo',
-  'bezierCurveTo',
-  'closePath',
+  "moveTo",
+  "lineTo",
+  "quadraticCurveTo",
+  "bezierCurveTo",
+  "closePath",
 ] as const) {
-  (Path.prototype as unknown as Record<string, (...args: number[]) => Path>)[
-    command
-  ] = function (this: Path, ...args: number[]) {
+  (Path.prototype as unknown as Record<string, (...args: number[]) => Path>)[command] = function (
+    this: Path,
+    ...args: number[]
+  ) {
     this._bbox = this._cbox = null;
     this.commands.push({
       command,

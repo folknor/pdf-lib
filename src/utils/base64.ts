@@ -10,8 +10,7 @@
  *
  */
 
-const chars =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // Use a lookup table to find the index.
 const lookup = new Uint8Array(256);
@@ -21,14 +20,13 @@ for (let i = 0; i < chars.length; i++) {
 }
 
 export const encodeToBase64 = (bytes: Uint8Array): string => {
-  let base64 = '';
+  let base64 = "";
   const len = bytes.length;
 
   for (let i = 0; i < len; i += 3) {
     base64 += chars[bytes[i]! >> 2];
     base64 += chars[((bytes[i]! & 3) << 4) | ((bytes[i + 1] ?? 0) >> 4)];
-    base64 +=
-      chars[(((bytes[i + 1] ?? 0) & 15) << 2) | ((bytes[i + 2] ?? 0) >> 6)];
+    base64 += chars[(((bytes[i + 1] ?? 0) & 15) << 2) | ((bytes[i + 2] ?? 0) >> 6)];
     base64 += chars[(bytes[i + 2] ?? 0) & 63];
   }
 
@@ -51,10 +49,10 @@ export const decodeFromBase64 = (base64: string): Uint8Array<ArrayBuffer> => {
   let encoded3;
   let encoded4;
 
-  if (base64[base64.length - 1] === '=') {
+  if (base64[base64.length - 1] === "=") {
     bufferLength--;
 
-    if (base64[base64.length - 2] === '=') {
+    if (base64[base64.length - 2] === "=") {
       bufferLength--;
     }
   }
@@ -77,8 +75,7 @@ export const decodeFromBase64 = (base64: string): Uint8Array<ArrayBuffer> => {
 
 // This regex is designed to be as flexible as possible. It will parse certain
 // invalid data URIs.
-const DATA_URI_PREFIX_REGEX =
-  /^(data)?:?([\w/+]+)?;?(charset=[\w-]+|base64)?.*,/i;
+const DATA_URI_PREFIX_REGEX = /^(data)?:?([\w/+]+)?;?(charset=[\w-]+|base64)?.*,/i;
 
 /**
  * If the `dataUri` input is a data URI, then the data URI prefix must not be
@@ -87,9 +84,7 @@ const DATA_URI_PREFIX_REGEX =
  * @param dataUri a base64 data URI or plain base64 string
  * @returns a Uint8Array containing the decoded input
  */
-export const decodeFromBase64DataUri = (
-  dataUri: string,
-): Uint8Array<ArrayBuffer> => {
+export const decodeFromBase64DataUri = (dataUri: string): Uint8Array<ArrayBuffer> => {
   const trimmedUri = dataUri.trim();
 
   const prefix = trimmedUri.substring(0, 100);

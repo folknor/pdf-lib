@@ -6,8 +6,7 @@
 
 const textEncoder = new TextEncoder();
 
-const isBigEndian =
-  new Uint8Array(new Uint16Array([0x1234]).buffer)[0] === 0x12;
+const isBigEndian = new Uint8Array(new Uint16Array([0x1234]).buffer)[0] === 0x12;
 
 function stringToUtf16(string: string, swap: boolean): Uint8Array {
   const buf = new Uint16Array(string.length);
@@ -43,11 +42,7 @@ export class EncodeStream {
 
   constructor(buffer: Uint8Array) {
     this.buffer = buffer;
-    this.view = new DataView(
-      this.buffer.buffer,
-      this.buffer.byteOffset,
-      this.buffer.byteLength,
-    );
+    this.view = new DataView(this.buffer.buffer, this.buffer.byteOffset, this.buffer.byteLength);
     this.pos = 0;
   }
 
@@ -56,26 +51,26 @@ export class EncodeStream {
     this.pos += buffer.length;
   }
 
-  writeString(string: string, encoding = 'ascii'): void {
+  writeString(string: string, encoding = "ascii"): void {
     let buf: Uint8Array;
 
     switch (encoding) {
-      case 'utf16le':
-      case 'utf16-le':
-      case 'ucs2':
+      case "utf16le":
+      case "utf16-le":
+      case "ucs2":
         buf = stringToUtf16(string, isBigEndian);
         break;
 
-      case 'utf16be':
-      case 'utf16-be':
+      case "utf16be":
+      case "utf16-be":
         buf = stringToUtf16(string, !isBigEndian);
         break;
 
-      case 'utf8':
+      case "utf8":
         buf = textEncoder.encode(string);
         break;
 
-      case 'ascii':
+      case "ascii":
         buf = stringToAscii(string);
         break;
 

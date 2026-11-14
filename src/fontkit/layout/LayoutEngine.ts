@@ -1,18 +1,14 @@
-import AATLayoutEngine from '../aat/AATLayoutEngine.js';
-import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
-import { composeCanonical } from './CanonicalCompose.js';
-import {
-  initialClusters,
-  isDefaultIgnorable,
-  mergeClusters,
-} from './Clusters.js';
-import type { FeatureValue } from './FeatureValues.js';
-import GlyphPosition from './GlyphPosition.js';
-import GlyphRun from './GlyphRun.js';
-import KernProcessor from './KernProcessor.js';
-import * as Script from './Script.js';
-import { decomposeSaraAm } from './ThaiSaraAm.js';
-import UnicodeLayoutEngine from './UnicodeLayoutEngine.js';
+import AATLayoutEngine from "../aat/AATLayoutEngine.js";
+import OTLayoutEngine from "../opentype/OTLayoutEngine.js";
+import { composeCanonical } from "./CanonicalCompose.js";
+import { initialClusters, isDefaultIgnorable, mergeClusters } from "./Clusters.js";
+import type { FeatureValue } from "./FeatureValues.js";
+import GlyphPosition from "./GlyphPosition.js";
+import GlyphRun from "./GlyphRun.js";
+import KernProcessor from "./KernProcessor.js";
+import * as Script from "./Script.js";
+import { decomposeSaraAm } from "./ThaiSaraAm.js";
+import UnicodeLayoutEngine from "./UnicodeLayoutEngine.js";
 
 export default class LayoutEngine {
   font: any;
@@ -44,7 +40,7 @@ export default class LayoutEngine {
     direction?: string | null,
   ): GlyphRun {
     // Make the features parameter optional
-    if (typeof features === 'string') {
+    if (typeof features === "string") {
       direction = language;
       language = script as string | null;
       script = features;
@@ -59,8 +55,7 @@ export default class LayoutEngine {
     // Pick the canonically equivalent spelling the font can draw
     // (CanonicalCompose.ts). Runs for every engine, AAT included; the
     // script above was detected from the typed text.
-    const hasGlyph = (cp: number): boolean =>
-      this.font.hasGlyphForCodePoint(cp);
+    const hasGlyph = (cp: number): boolean => this.font.hasGlyphForCodePoint(cp);
 
     // Every rewrite below carries each code point's source cluster.
     const initial = initialClusters(string);
@@ -75,22 +70,14 @@ export default class LayoutEngine {
     // morx fonts carry their own Thai processing, so AAT is left alone.
     const first = Array.isArray(script) ? script[0] : script;
 
-    if (
-      (first === 'thai' || first === 'lao ') &&
-      !(this.engine instanceof AATLayoutEngine)
-    ) {
-      ({ codePoints: input, clusters } = decomposeSaraAm(
-        input,
-        hasGlyph,
-        clusters,
-      ));
+    if ((first === "thai" || first === "lao ") && !(this.engine instanceof AATLayoutEngine)) {
+      ({ codePoints: input, clusters } = decomposeSaraAm(input, hasGlyph, clusters));
     }
 
-    const { glyphs, codePoints, sources } =
-      this.font._glyphsForCodePoints(input);
+    const { glyphs, codePoints, sources } = this.font._glyphsForCodePoints(input);
 
     // Normalize script to a string
-    const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
+    const scriptStr = Array.isArray(script) ? (script[0] ?? "zzzz") : script;
 
     const glyphRun = new GlyphRun(
       glyphs,
@@ -112,7 +99,7 @@ export default class LayoutEngine {
     }
 
     // Setup the advanced layout engine
-    if (this.engine && 'setup' in this.engine && this.engine.setup) {
+    if (this.engine && "setup" in this.engine && this.engine.setup) {
       this.engine.setup(glyphRun);
     }
 
@@ -122,15 +109,14 @@ export default class LayoutEngine {
     this.substitute(glyphRun);
     mergeClusters(
       glyphRun.clusters,
-      this.engine instanceof AATLayoutEngine &&
-        this.engine.reversesBeforeSubstitution(glyphRun),
+      this.engine instanceof AATLayoutEngine && this.engine.reversesBeforeSubstitution(glyphRun),
     );
     this.position(glyphRun);
 
     this.hideDefaultIgnorables(glyphRun);
 
     // Let the layout engine clean up any state it might have
-    if (this.engine && 'cleanup' in this.engine && this.engine.cleanup) {
+    if (this.engine && "cleanup" in this.engine && this.engine.cleanup) {
       this.engine.cleanup();
     }
 
@@ -149,7 +135,7 @@ export default class LayoutEngine {
     if (this.font.morx) return false;
     const features: { tag: string }[] = this.font.GPOS?.featureList ?? [];
 
-    return !features.some((feature) => feature.tag === 'mark');
+    return !features.some((feature) => feature.tag === "mark");
   }
 
   substitute(glyphRun: GlyphRun): void {
@@ -161,16 +147,12 @@ export default class LayoutEngine {
 
   position(glyphRun: GlyphRun): void {
     // Get initial glyph positions
-    glyphRun.positions = glyphRun.glyphs.map(
-      (glyph) => new GlyphPosition(glyph.advanceWidth),
-    );
+    glyphRun.positions = glyphRun.glyphs.map((glyph) => new GlyphPosition(glyph.advanceWidth));
     let positioned: Record<string, boolean> | null | undefined = null;
 
     // Call the advanced layout engine. Returns the features applied.
-    if (this.engine && 'position' in this.engine && this.engine.position) {
-      positioned = this.engine.position(glyphRun) as
-        | Record<string, boolean>
-        | undefined;
+    if (this.engine && "position" in this.engine && this.engine.position) {
+      positioned = this.engine.position(glyphRun) as Record<string, boolean> | undefined;
     }
 
     // if there is no GPOS table, use unicode properties to position marks.
@@ -188,17 +170,13 @@ export default class LayoutEngine {
     }
 
     // if kerning is not supported by GPOS, do kerning with the TrueType/AAT kern table
-    if (
-      !positioned?.['kern'] &&
-      glyphRun.features['kern'] !== false &&
-      this.font.kern
-    ) {
+    if (!positioned?.["kern"] && glyphRun.features["kern"] !== false && this.font.kern) {
       if (!this.kernProcessor) {
         this.kernProcessor = new KernProcessor(this.font);
       }
 
       this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions!);
-      glyphRun.features['kern'] = true;
+      glyphRun.features["kern"] = true;
     }
   }
 
@@ -232,8 +210,8 @@ export default class LayoutEngine {
       features.push(...this.engine.getAvailableFeatures(script, language));
     }
 
-    if (this.font.kern && features.indexOf('kern') === -1) {
-      features.push('kern');
+    if (this.font.kern && features.indexOf("kern") === -1) {
+      features.push("kern");
     }
 
     return features;
@@ -248,7 +226,7 @@ export default class LayoutEngine {
       result.add(String.fromCodePoint(codePoint));
     }
 
-    if (this.engine && 'stringsForGlyph' in this.engine) {
+    if (this.engine && "stringsForGlyph" in this.engine) {
       for (const string of this.engine.stringsForGlyph(gid)) {
         result.add(string);
       }

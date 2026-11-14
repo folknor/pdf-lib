@@ -4,10 +4,10 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import type { NumberT } from './Number.js';
-import { type Fields, Struct } from './Struct.js';
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import type { NumberT } from "./Number.js";
+import { type Fields, Struct } from "./Struct.js";
 
 type VersionType = NumberT | string;
 
@@ -15,14 +15,8 @@ type VersionFields = Record<string | number, Fields | VersionedStruct> & {
   header?: Fields;
 };
 
-const getPath = (
-  object: Record<string, unknown>,
-  pathArray: string[],
-): unknown =>
-  pathArray.reduce<unknown>(
-    (prevObj, key) => (prevObj as Record<string, unknown>)?.[key],
-    object,
-  );
+const getPath = (object: Record<string, unknown>, pathArray: string[]): unknown =>
+  pathArray.reduce<unknown>((prevObj, key) => (prevObj as Record<string, unknown>)?.[key], object);
 
 interface VersionedStructContext {
   parent?: unknown;
@@ -43,23 +37,16 @@ export class VersionedStruct extends Struct {
     this.type = type;
     this.versions = versions;
 
-    if (typeof type === 'string') {
-      this.versionPath = type.split('.');
+    if (typeof type === "string") {
+      this.versionPath = type.split(".");
     }
   }
 
-  override decode(
-    stream: DecodeStream,
-    parent?: unknown,
-    length = 0,
-  ): Record<string, unknown> {
+  override decode(stream: DecodeStream, parent?: unknown, length = 0): Record<string, unknown> {
     const res = this._setup(stream, parent, length) as VersionedStructContext;
 
-    if (typeof this.type === 'string') {
-      res.version = getPath(
-        parent as Record<string, unknown>,
-        this.versionPath!,
-      );
+    if (typeof this.type === "string") {
+      res.version = getPath(parent as Record<string, unknown>, this.versionPath!);
     } else {
       res.version = this.type.decode(stream);
     }
@@ -93,7 +80,7 @@ export class VersionedStruct extends Struct {
     includePointers = true,
   ): number {
     if (!val) {
-      throw new Error('Not a fixed size');
+      throw new Error("Not a fixed size");
     }
 
     if (this.preEncode != null) {
@@ -108,7 +95,7 @@ export class VersionedStruct extends Struct {
 
     let size = 0;
 
-    if (typeof this.type !== 'string') {
+    if (typeof this.type !== "string") {
       size += this.type.size();
     }
 
@@ -116,23 +103,23 @@ export class VersionedStruct extends Struct {
       for (const key in this.versions.header) {
         const type = this.versions.header[key]!;
 
-        if (typeof type !== 'function' && type.size != null) {
+        if (typeof type !== "function" && type.size != null) {
           size += type.size(val[key], ctx);
         }
       }
     }
 
-    const fields = this.versions[val['version'] as string | number];
+    const fields = this.versions[val["version"] as string | number];
 
     if (fields == null) {
-      throw new Error(`Unknown version ${val['version']}`);
+      throw new Error(`Unknown version ${val["version"]}`);
     }
 
     if (!(fields instanceof VersionedStruct)) {
       for (const key in fields) {
         const type = fields[key]!;
 
-        if (typeof type !== 'function' && type.size != null) {
+        if (typeof type !== "function" && type.size != null) {
           size += type.size(val[key], ctx);
         }
       }
@@ -145,11 +132,7 @@ export class VersionedStruct extends Struct {
     return size;
   }
 
-  override encode(
-    stream: EncodeStream,
-    val: Record<string, unknown>,
-    parent?: unknown,
-  ): void {
+  override encode(stream: EncodeStream, val: Record<string, unknown>, parent?: unknown): void {
     if (this.preEncode != null) {
       this.preEncode.call(val, stream);
     }
@@ -169,27 +152,27 @@ export class VersionedStruct extends Struct {
 
     ctx.pointerOffset = stream.pos + this.size(val, ctx, false);
 
-    if (typeof this.type !== 'string') {
-      this.type.encode(stream, val['version'] as number);
+    if (typeof this.type !== "string") {
+      this.type.encode(stream, val["version"] as number);
     }
 
     if (this.versions.header) {
       for (const key in this.versions.header) {
         const type = this.versions.header[key]!;
 
-        if (typeof type !== 'function' && type.encode != null) {
+        if (typeof type !== "function" && type.encode != null) {
           type.encode(stream, val[key], ctx);
         }
       }
     }
 
-    const fields = this.versions[val['version'] as string | number];
+    const fields = this.versions[val["version"] as string | number];
 
     if (!(fields instanceof VersionedStruct)) {
       for (const key in fields as Fields) {
         const type = (fields as Fields)[key]!;
 
-        if (typeof type !== 'function' && type.encode != null) {
+        if (typeof type !== "function" && type.encode != null) {
           type.encode(stream, val[key], ctx);
         }
       }

@@ -1,4 +1,4 @@
-import { zlibSync } from 'fflate';
+import { zlibSync } from "fflate";
 import {
   decodePDFRawStream,
   mergeIntoTypedArray,
@@ -8,7 +8,7 @@ import {
   PDFRef,
   PDFWriter,
   typedArrayFor,
-} from '../../../src/index';
+} from "../../../src/index";
 
 const contentStreamText = `
   BT
@@ -96,8 +96,8 @@ startxref
 %%EOF`,
 );
 
-describe('PDFWriter', () => {
-  it('serializes PDFContext objects using Indirect Objects and a Cross Reference table', async () => {
+describe("PDFWriter", () => {
+  it("serializes PDFContext objects using Indirect Objects and a Cross Reference table", async () => {
     const context = PDFContext.create();
 
     const contentStream = context.flateStream(contentStreamText);
@@ -105,17 +105,17 @@ describe('PDFWriter', () => {
     context.assign(contentStreamRef, contentStream);
 
     const fontDict = context.obj({
-      Type: 'Font',
-      Subtype: 'Type1',
-      Name: 'F1',
-      BaseFont: 'Helvetica',
-      Encoding: 'MacRomanEncoding',
+      Type: "Font",
+      Subtype: "Type1",
+      Name: "F1",
+      BaseFont: "Helvetica",
+      Encoding: "MacRomanEncoding",
     });
 
     const fontDictRef = context.register(fontDict);
 
     const page = context.obj({
-      Type: 'Page',
+      Type: "Page",
       MediaBox: [0, 0, 612, 792],
       Contents: contentStreamRef,
       Resources: { Font: { F1: fontDictRef } },
@@ -124,46 +124,43 @@ describe('PDFWriter', () => {
     const pageRef = context.register(page);
 
     const pages = context.obj({
-      Type: 'Pages',
+      Type: "Pages",
       Kids: [pageRef],
       Count: 1,
     });
 
     const pagesRef = context.register(pages);
-    page.set(PDFName.of('Parent'), pagesRef);
+    page.set(PDFName.of("Parent"), pagesRef);
 
     const catalog = context.obj({
-      Type: 'Catalog',
+      Type: "Catalog",
       Pages: pagesRef,
     });
 
     context.trailerInfo.Root = context.register(catalog);
 
-    const buffer = await PDFWriter.forContext(
-      context,
-      Infinity,
-    ).serializeToBuffer();
+    const buffer = await PDFWriter.forContext(context, Infinity).serializeToBuffer();
 
     // The revision ID is new on every write; the remaining bytes stay exact.
-    const text = Buffer.from(buffer).toString('latin1');
+    const text = Buffer.from(buffer).toString("latin1");
     expect(text).toMatch(/\/ID \[ <[0-9a-f]{32}> <[0-9a-f]{32}> \]/);
-    const withoutID = Buffer.from(text.replace(/\/ID \[[^\]]*\]\n/, ''), 'latin1');
+    const withoutID = Buffer.from(text.replace(/\/ID \[[^\]]*\]\n/, ""), "latin1");
     expect(new Uint8Array(withoutID)).toEqual(pdfBytes);
   });
 
-  describe('compress option', () => {
-    it('compresses uncompressed streams when compress=true', async () => {
+  describe("compress option", () => {
+    it("compresses uncompressed streams when compress=true", async () => {
       const context = PDFContext.create();
 
       // Create an uncompressed stream (no Filter)
-      const uncompressedContent = 'Hello World! '.repeat(100); // Repeating content compresses well
+      const uncompressedContent = "Hello World! ".repeat(100); // Repeating content compresses well
       const stream = context.stream(uncompressedContent);
       const streamRef = context.register(stream);
 
       // Verify stream has no Filter initially
-      expect(stream.dict.get(PDFName.of('Filter'))).toBeUndefined();
+      expect(stream.dict.get(PDFName.of("Filter"))).toBeUndefined();
 
-      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      const catalog = context.obj({ Type: "Catalog", Test: streamRef });
       context.trailerInfo.Root = context.register(catalog);
 
       // Save with compression
@@ -174,15 +171,13 @@ describe('PDFWriter', () => {
       ).serializeToBuffer();
 
       // The stream should now have FlateDecode filter
-      expect(stream.dict.get(PDFName.of('Filter'))).toEqual(
-        PDFName.of('FlateDecode'),
-      );
+      expect(stream.dict.get(PDFName.of("Filter"))).toEqual(PDFName.of("FlateDecode"));
 
       // Save without compression (new context to compare sizes)
       const context2 = PDFContext.create();
       const stream2 = context2.stream(uncompressedContent);
       const streamRef2 = context2.register(stream2);
-      const catalog2 = context2.obj({ Type: 'Catalog', Test: streamRef2 });
+      const catalog2 = context2.obj({ Type: "Catalog", Test: streamRef2 });
       context2.trailerInfo.Root = context2.register(catalog2);
 
       const uncompressedBuffer = await PDFWriter.forContext(
@@ -195,38 +190,36 @@ describe('PDFWriter', () => {
       expect(compressedBuffer.length).toBeLessThan(uncompressedBuffer.length);
     });
 
-    it('drops /DecodeParms that would apply to the new filter', async () => {
+    it("drops /DecodeParms that would apply to the new filter", async () => {
       const context = PDFContext.create();
-      const content = 'Hello World! '.repeat(100);
+      const content = "Hello World! ".repeat(100);
 
       const stream = context.stream(content, {
         DecodeParms: { Predictor: 12, Columns: 4 },
       });
 
       context.trailerInfo.Root = context.register(
-        context.obj({ Type: 'Catalog', Test: context.register(stream) }),
+        context.obj({ Type: "Catalog", Test: context.register(stream) }),
       );
 
       await PDFWriter.forContext(context, Infinity, true).serializeToBuffer();
 
-      expect(stream.dict.get(PDFName.of('DecodeParms'))).toBeUndefined();
-      expect(decodePDFRawStream(stream).decode()).toEqual(
-        typedArrayFor(content),
-      );
+      expect(stream.dict.get(PDFName.of("DecodeParms"))).toBeUndefined();
+      expect(decodePDFRawStream(stream).decode()).toEqual(typedArrayFor(content));
     });
 
-    it('skips streams that already have a Filter', async () => {
+    it("skips streams that already have a Filter", async () => {
       const context = PDFContext.create();
 
       // Create an already-compressed stream using flateStream
-      const content = 'Already compressed content';
+      const content = "Already compressed content";
       const stream = context.flateStream(content);
       const streamRef = context.register(stream);
 
       // Get original compressed contents
       const originalContents = stream.getContents();
 
-      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      const catalog = context.obj({ Type: "Catalog", Test: streamRef });
       context.trailerInfo.Root = context.register(catalog);
 
       // Save with compression
@@ -236,22 +229,22 @@ describe('PDFWriter', () => {
       expect(stream.getContents()).toEqual(originalContents);
     });
 
-    it('skips small streams where compression overhead exceeds benefit', async () => {
+    it("skips small streams where compression overhead exceeds benefit", async () => {
       const context = PDFContext.create();
 
       // Create a tiny uncompressed stream (less than 50 bytes)
-      const tinyContent = 'tiny';
+      const tinyContent = "tiny";
       const stream = context.stream(tinyContent);
       const streamRef = context.register(stream);
 
-      const catalog = context.obj({ Type: 'Catalog', Test: streamRef });
+      const catalog = context.obj({ Type: "Catalog", Test: streamRef });
       context.trailerInfo.Root = context.register(catalog);
 
       // Save with compression
       await PDFWriter.forContext(context, Infinity, true).serializeToBuffer();
 
       // Small stream should not have Filter added
-      expect(stream.dict.get(PDFName.of('Filter'))).toBeUndefined();
+      expect(stream.dict.get(PDFName.of("Filter"))).toBeUndefined();
     });
   });
 });

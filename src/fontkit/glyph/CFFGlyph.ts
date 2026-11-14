@@ -1,11 +1,11 @@
-import Glyph from './Glyph.js';
-import Path from './Path.js';
+import Glyph from "./Glyph.js";
+import Path from "./Path.js";
 
 /**
  * Represents an OpenType PostScript glyph, in the Compact Font Format.
  */
 export default class CFFGlyph extends Glyph {
-  type = 'CFF';
+  type = "CFF";
   _usedGsubrs?: Record<number, boolean>;
   _usedSubrs?: Record<number, boolean>;
 
@@ -14,7 +14,7 @@ export default class CFFGlyph extends Glyph {
       return super._getName();
     }
 
-    return this._font['CFF '].getGlyphName(this.id);
+    return this._font["CFF "].getGlyphName(this.id);
   }
 
   bias(s: unknown[]): number {
@@ -28,7 +28,7 @@ export default class CFFGlyph extends Glyph {
   }
 
   override _getPath(): Path {
-    const cff = this._font.CFF2 || this._font['CFF '];
+    const cff = this._font.CFF2 || this._font["CFF "];
     const { stream } = cff;
     const str = cff.topDict.CharStrings[this.id];
     let end = str.offset + str.length;
@@ -196,7 +196,7 @@ export default class CFFGlyph extends Glyph {
             case 15: {
               // vsindex
               if (cff.version < 2) {
-                throw new Error('vsindex operator not supported in CFF v1');
+                throw new Error("vsindex operator not supported in CFF v1");
               }
 
               vsindex = stack.pop() ?? 0;
@@ -206,17 +206,14 @@ export default class CFFGlyph extends Glyph {
             case 16: {
               // blend
               if (cff.version < 2) {
-                throw new Error('blend operator not supported in CFF v1');
+                throw new Error("blend operator not supported in CFF v1");
               }
 
               if (!variationProcessor) {
-                throw new Error('blend operator in non-variation font');
+                throw new Error("blend operator in non-variation font");
               }
 
-              const blendVector = variationProcessor.getBlendVector(
-                vstore,
-                vsindex,
-              );
+              const blendVector = variationProcessor.getBlendVector(vstore, vsindex);
 
               const numBlends = stack.pop() ?? 0;
               let numOperands = numBlends * blendVector.length;

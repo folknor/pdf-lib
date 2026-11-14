@@ -1,15 +1,6 @@
-import type {
-  Font,
-  Fontkit,
-  Glyph,
-  Subset,
-  TypeFeatures,
-} from '../../types/fontkit.js';
-import type { ToUnicodeEntry } from './CMap.js';
-import CustomFontEmbedder, {
-  asFont,
-  encodeSubset,
-} from './CustomFontEmbedder.js';
+import type { Font, Fontkit, Glyph, Subset, TypeFeatures } from "../../types/fontkit.js";
+import type { ToUnicodeEntry } from "./CMap.js";
+import CustomFontEmbedder, { asFont, encodeSubset } from "./CustomFontEmbedder.js";
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -25,16 +16,9 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
     postscriptName?: string,
     maxDecodedSize?: number,
   ) {
-    const font = asFont(
-      await fontkit.create(fontData, postscriptName, { maxDecodedSize }),
-    );
+    const font = asFont(await fontkit.create(fontData, postscriptName, { maxDecodedSize }));
 
-    return new CustomFontSubsetEmbedder(
-      font,
-      fontData,
-      customFontName,
-      fontFeatures,
-    );
+    return new CustomFontSubsetEmbedder(font, fontData, customFontName, fontFeatures);
   }
 
   private readonly subset: Subset;

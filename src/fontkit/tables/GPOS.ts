@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 import {
   ChainingContext,
   ClassDef,
@@ -8,18 +8,18 @@ import {
   FeatureList,
   LookupList,
   ScriptList,
-} from './opentype.js';
-import { FeatureVariations } from './variations.js';
+} from "./opentype.js";
+import { FeatureVariations } from "./variations.js";
 
 const ValueFormat = new r.Bitfield(r.uint16, [
-  'xPlacement',
-  'yPlacement',
-  'xAdvance',
-  'yAdvance',
-  'xPlaDevice',
-  'yPlaDevice',
-  'xAdvDevice',
-  'yAdvDevice',
+  "xPlacement",
+  "yPlacement",
+  "xAdvance",
+  "yAdvance",
+  "xPlaDevice",
+  "yPlaDevice",
+  "xAdvDevice",
+  "yAdvDevice",
 ]);
 
 const types: Record<string, any> = {
@@ -28,19 +28,19 @@ const types: Record<string, any> = {
   xAdvance: r.int16,
   yAdvance: r.int16,
   xPlaDevice: new r.Pointer(r.uint16, Device, {
-    type: 'global',
+    type: "global",
     relativeTo: (ctx: any) => ctx.rel,
   }),
   yPlaDevice: new r.Pointer(r.uint16, Device, {
-    type: 'global',
+    type: "global",
     relativeTo: (ctx: any) => ctx.rel,
   }),
   xAdvDevice: new r.Pointer(r.uint16, Device, {
-    type: 'global',
+    type: "global",
     relativeTo: (ctx: any) => ctx.rel,
   }),
   yAdvDevice: new r.Pointer(r.uint16, Device, {
-    type: 'global',
+    type: "global",
     relativeTo: (ctx: any) => ctx.rel,
   }),
 };
@@ -48,7 +48,7 @@ const types: Record<string, any> = {
 class ValueRecord {
   key: string;
 
-  constructor(key = 'valueFormat') {
+  constructor(key = "valueFormat") {
     this.key = key;
   }
 
@@ -62,7 +62,7 @@ class ValueRecord {
     if (!struct[this.key]) return;
 
     const fields: Record<string, any> = {};
-    fields['rel'] = () => struct._startOffset;
+    fields["rel"] = () => struct._startOffset;
 
     const format = struct[this.key];
 
@@ -81,7 +81,7 @@ class ValueRecord {
 
   decode(stream: any, parent: any): any {
     const res = this.buildStruct(parent)!.decode(stream, parent);
-    delete res['rel'];
+    delete res["rel"];
 
     return res;
   }
@@ -89,15 +89,15 @@ class ValueRecord {
 
 const PairValueRecord = new r.Struct({
   secondGlyph: r.uint16,
-  value1: new ValueRecord('valueFormat1') as any,
-  value2: new ValueRecord('valueFormat2') as any,
+  value1: new ValueRecord("valueFormat1") as any,
+  value2: new ValueRecord("valueFormat2") as any,
 });
 
 const PairSet = new r.Array(PairValueRecord, r.uint16);
 
 const Class2Record = new r.Struct({
-  value1: new ValueRecord('valueFormat1') as any,
-  value2: new ValueRecord('valueFormat2') as any,
+  value1: new ValueRecord("valueFormat1") as any,
+  value2: new ValueRecord("valueFormat2") as any,
 });
 
 const Anchor = new r.VersionedStruct(r.uint16, {
@@ -124,21 +124,18 @@ const Anchor = new r.VersionedStruct(r.uint16, {
 });
 
 const EntryExitRecord = new r.Struct({
-  entryAnchor: new r.Pointer(r.uint16, Anchor, { type: 'parent' }),
-  exitAnchor: new r.Pointer(r.uint16, Anchor, { type: 'parent' }),
+  entryAnchor: new r.Pointer(r.uint16, Anchor, { type: "parent" }),
+  exitAnchor: new r.Pointer(r.uint16, Anchor, { type: "parent" }),
 });
 
 const MarkRecord = new r.Struct({
   class: r.uint16,
-  markAnchor: new r.Pointer(r.uint16, Anchor, { type: 'parent' }),
+  markAnchor: new r.Pointer(r.uint16, Anchor, { type: "parent" }),
 });
 
 const MarkArray = new r.Array(MarkRecord, r.uint16);
 
-const BaseRecord = new r.Array(
-  new r.Pointer(r.uint16, Anchor),
-  (t: any) => t.parent.classCount,
-);
+const BaseRecord = new r.Array(new r.Pointer(r.uint16, Anchor), (t: any) => t.parent.classCount);
 
 const BaseArray = new r.Array(BaseRecord, r.uint16);
 
@@ -149,12 +146,9 @@ const ComponentRecord = new r.Array(
 
 const LigatureAttach = new r.Array(ComponentRecord, r.uint16);
 
-const LigatureArray = new r.Array(
-  new r.Pointer(r.uint16, LigatureAttach),
-  r.uint16,
-);
+const LigatureArray = new r.Array(new r.Pointer(r.uint16, LigatureAttach), r.uint16);
 
-const GPOSLookup = new r.VersionedStruct('lookupType', {
+const GPOSLookup = new r.VersionedStruct("lookupType", {
   1: new r.VersionedStruct(r.uint16, {
     // Single Adjustment
     1: {
@@ -167,7 +161,7 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
       coverage: new r.Pointer(r.uint16, Coverage),
       valueFormat: ValueFormat,
       valueCount: r.uint16,
-      values: new r.LazyArray(new ValueRecord() as any, 'valueCount'),
+      values: new r.LazyArray(new ValueRecord() as any, "valueCount"),
     },
   }),
 
@@ -179,10 +173,7 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
       valueFormat1: ValueFormat,
       valueFormat2: ValueFormat,
       pairSetCount: r.uint16,
-      pairSets: new r.LazyArray(
-        new r.Pointer(r.uint16, PairSet),
-        'pairSetCount',
-      ),
+      pairSets: new r.LazyArray(new r.Pointer(r.uint16, PairSet), "pairSetCount"),
     },
 
     2: {
@@ -194,10 +185,7 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
       classDef2: new r.Pointer(r.uint16, ClassDef),
       class1Count: r.uint16,
       class2Count: r.uint16,
-      classRecords: new r.LazyArray(
-        new r.LazyArray(Class2Record, 'class2Count'),
-        'class1Count',
-      ),
+      classRecords: new r.LazyArray(new r.LazyArray(Class2Record, "class2Count"), "class1Count"),
     },
   }),
 
@@ -206,7 +194,7 @@ const GPOSLookup = new r.VersionedStruct('lookupType', {
     format: r.uint16,
     coverage: new r.Pointer(r.uint16, Coverage),
     entryExitCount: r.uint16,
-    entryExitRecords: new r.Array(EntryExitRecord, 'entryExitCount'),
+    entryExitRecords: new r.Array(EntryExitRecord, "entryExitCount"),
   },
 
   4: {

@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 const OS2 = new r.VersionedStruct(r.uint16, {
   header: {
@@ -8,15 +8,15 @@ const OS2 = new r.VersionedStruct(r.uint16, {
     fsType: new r.Bitfield(r.uint16, [
       // Indicates font embedding licensing rights
       null,
-      'noEmbedding',
-      'viewOnly',
-      'editable',
+      "noEmbedding",
+      "viewOnly",
+      "editable",
       null,
       null,
       null,
       null,
-      'noSubsetting',
-      'bitmapOnly',
+      "noSubsetting",
+      "bitmapOnly",
     ]),
     ySubscriptXSize: r.int16, // recommended horizontal size in pixels for subscripts
     ySubscriptYSize: r.int16, // recommended vertical size in pixels for subscripts
@@ -34,16 +34,16 @@ const OS2 = new r.VersionedStruct(r.uint16, {
     vendorID: new r.String(4), // four character identifier for the font vendor
     fsSelection: new r.Bitfield(r.uint16, [
       // bit field containing information about the font
-      'italic',
-      'underscore',
-      'negative',
-      'outlined',
-      'strikeout',
-      'bold',
-      'regular',
-      'useTypoMetrics',
-      'wws',
-      'oblique',
+      "italic",
+      "underscore",
+      "negative",
+      "outlined",
+      "strikeout",
+      "bold",
+      "regular",
+      "useTypoMetrics",
+      "wws",
+      "oblique",
     ]),
     usFirstCharIndex: r.uint16, // The minimum Unicode index in this font
     usLastCharIndex: r.uint16, // The maximum Unicode index in this font

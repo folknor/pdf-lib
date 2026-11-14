@@ -1,12 +1,12 @@
-import PDFArray from '../objects/PDFArray.js';
-import PDFDict from '../objects/PDFDict.js';
-import PDFHexString from '../objects/PDFHexString.js';
-import PDFName from '../objects/PDFName.js';
-import type PDFObject from '../objects/PDFObject.js';
-import PDFRef from '../objects/PDFRef.js';
-import PDFString from '../objects/PDFString.js';
-import type PDFContext from '../PDFContext.js';
-import type PDFCatalog from '../structures/PDFCatalog.js';
+import PDFArray from "../objects/PDFArray.js";
+import PDFDict from "../objects/PDFDict.js";
+import PDFHexString from "../objects/PDFHexString.js";
+import PDFName from "../objects/PDFName.js";
+import type PDFObject from "../objects/PDFObject.js";
+import PDFRef from "../objects/PDFRef.js";
+import PDFString from "../objects/PDFString.js";
+import type PDFContext from "../PDFContext.js";
+import type PDFCatalog from "../structures/PDFCatalog.js";
 
 /*
  * Optional content groups (layers) and their state in the default
@@ -25,16 +25,16 @@ import type PDFCatalog from '../structures/PDFCatalog.js';
  * ignored. This module keys on refs and edits one group at a time.
  */
 
-const OCProperties = PDFName.of('OCProperties');
-const OCGs = PDFName.of('OCGs');
-const D = PDFName.of('D');
-const ON = PDFName.of('ON');
-const OFF = PDFName.of('OFF');
-const BaseState = PDFName.of('BaseState');
-const RBGroups = PDFName.of('RBGroups');
-const Type = PDFName.of('Type');
-const OCG = PDFName.of('OCG');
-const Name = PDFName.of('Name');
+const OCProperties = PDFName.of("OCProperties");
+const OCGs = PDFName.of("OCGs");
+const D = PDFName.of("D");
+const ON = PDFName.of("ON");
+const OFF = PDFName.of("OFF");
+const BaseState = PDFName.of("BaseState");
+const RBGroups = PDFName.of("RBGroups");
+const Type = PDFName.of("Type");
+const OCG = PDFName.of("OCG");
+const Name = PDFName.of("Name");
 
 const sameRef = (a: PDFObject | undefined, b: PDFRef): boolean =>
   a instanceof PDFRef &&
@@ -77,10 +77,7 @@ export const listOptionalContentGroups = (catalog: PDFCatalog): PDFRef[] => {
 };
 
 /** The group's /Name as text, or `undefined` when missing or not a string. */
-export const optionalContentGroupName = (
-  context: PDFContext,
-  ref: PDFRef,
-): string | undefined => {
+export const optionalContentGroupName = (context: PDFContext, ref: PDFRef): string | undefined => {
   const dict = context.lookup(ref);
 
   if (!(dict instanceof PDFDict)) return undefined;
@@ -103,10 +100,7 @@ const defaultConfig = (catalog: PDFCatalog): PDFDict | undefined =>
  * and /OFF after /ON, so a group listed in both is OFF (our policy for a
  * conflict the standard leaves open).
  */
-export const isOptionalContentGroupOn = (
-  catalog: PDFCatalog,
-  ref: PDFRef,
-): boolean => {
+export const isOptionalContentGroupOn = (catalog: PDFCatalog, ref: PDFRef): boolean => {
   const d = defaultConfig(catalog);
 
   if (!d) return true;
@@ -169,7 +163,7 @@ export const setOptionalContentGroupOn = (
 
     if (!(group instanceof PDFArray)) {
       throw new Error(
-        'The default optional content configuration has an /RBGroups entry that is not an array',
+        "The default optional content configuration has an /RBGroups entry that is not an array",
       );
     }
 
@@ -185,9 +179,7 @@ export const setOptionalContentGroupOn = (
   const affected = [ref, ...turnOff];
 
   const kept = (array: PDFArray | undefined) =>
-    (array?.asArray() ?? []).filter(
-      (e) => !affected.some((r) => sameRef(e, r)),
-    );
+    (array?.asArray() ?? []).filter((e) => !affected.some((r) => sameRef(e, r)));
 
   const newOn = PDFArray.withContext(context);
   const newOff = PDFArray.withContext(context);
@@ -262,7 +254,7 @@ export const registerCopiedOptionalContentGroups = (
 
       if (!(group instanceof PDFArray)) {
         throw new Error(
-          'The default optional content configuration has an /RBGroups entry that is not an array',
+          "The default optional content configuration has an /RBGroups entry that is not an array",
         );
       }
 
@@ -283,8 +275,7 @@ export const registerCopiedOptionalContentGroups = (
   // A copied ref can already occur in state lists even when absent from /OCGs.
   for (const array of [newOn, newOff]) {
     for (let i = array.size() - 1; i >= 0; i--) {
-      if (fresh.some((a) => sameRef(array.get(i), a.destination)))
-        array.remove(i);
+      if (fresh.some((a) => sameRef(array.get(i), a.destination))) array.remove(i);
     }
   }
 
@@ -300,10 +291,7 @@ export const registerCopiedOptionalContentGroups = (
     for (const entry of group.asArray()) {
       const match = additions.find((a) => sameRef(entry, a.source));
 
-      if (
-        match &&
-        !members.asArray().some((r) => sameRef(r, match.destination))
-      ) {
+      if (match && !members.asArray().some((r) => sameRef(r, match.destination))) {
         members.push(match.destination);
       }
     }

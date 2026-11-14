@@ -1,9 +1,9 @@
-import { zlibSync } from 'fflate';
-import { Cache } from '../../utils/index.js';
-import { MethodNotImplementedError } from '../errors.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import PDFStream from '../objects/PDFStream.js';
+import { zlibSync } from "fflate";
+import { Cache } from "../../utils/index.js";
+import { MethodNotImplementedError } from "../errors.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import PDFStream from "../objects/PDFStream.js";
 
 class PDFFlateStream extends PDFStream {
   protected contentsCache: Cache<Uint8Array>;
@@ -14,7 +14,7 @@ class PDFFlateStream extends PDFStream {
 
     this.encode = encode;
 
-    if (encode) dict.set(PDFName.of('Filter'), PDFName.of('FlateDecode'));
+    if (encode) dict.set(PDFName.of("Filter"), PDFName.of("FlateDecode"));
     this.contentsCache = Cache.populatedBy(this.computeContents);
   }
 
@@ -33,10 +33,7 @@ class PDFFlateStream extends PDFStream {
   }
 
   getUnencodedContents(): Uint8Array {
-    throw new MethodNotImplementedError(
-      this.constructor.name,
-      'getUnencodedContents',
-    );
+    throw new MethodNotImplementedError(this.constructor.name, "getUnencodedContents");
   }
 
   override updateContents(contents: Uint8Array): void {

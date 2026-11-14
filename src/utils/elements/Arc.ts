@@ -1,14 +1,8 @@
-import {
-  angleABC,
-  distance,
-  distanceCoords,
-  rotate,
-  vector,
-} from '../maths.js';
+import { angleABC, distance, distanceCoords, rotate, vector } from "../maths.js";
 
-import Circle from './Circle.js';
-import GraphElement from './GraphElement.js';
-import Point from './Point.js';
+import Circle from "./Circle.js";
+import GraphElement from "./GraphElement.js";
+import Point from "./Point.js";
 
 export default class Arc extends GraphElement {
   O: Point;
@@ -43,12 +37,7 @@ export default class Arc extends GraphElement {
   }
 
   sweep() {
-    this.lastSweep = angleABC(
-      this.origin(),
-      this.center(),
-      this.destination(),
-      this.lastSweep,
-    );
+    this.lastSweep = angleABC(this.origin(), this.center(), this.destination(), this.lastSweep);
 
     return this.lastSweep;
   }
@@ -66,8 +55,7 @@ export default class Arc extends GraphElement {
 
     return (
       this.getCircle().isEqual(element.getCircle()) &&
-      ((dest.isEqual(eDest) && o.isEqual(eO)) ||
-        (dest.isEqual(eO) && o.isEqual(eDest)))
+      ((dest.isEqual(eDest) && o.isEqual(eO)) || (dest.isEqual(eO) && o.isEqual(eDest)))
     );
   }
 
@@ -84,9 +72,7 @@ export default class Arc extends GraphElement {
   middle() {
     const halfSweep = this.sweep() / 2;
 
-    const mid = this.center().plus(
-      rotate(vector(this.center(), this.origin()), halfSweep),
-    );
+    const mid = this.center().plus(rotate(vector(this.center(), this.origin()), halfSweep));
 
     return mid;
   }
@@ -95,8 +81,7 @@ export default class Arc extends GraphElement {
     // As angles are returned between -π and π, we need the middle of the arc
     return (
       this.getCircle().includes(P) &&
-      Math.abs(angleABC(this.middle(), this.center(), P)) <=
-        Math.abs(this.sweep() / 2)
+      Math.abs(angleABC(this.middle(), this.center(), P)) <= Math.abs(this.sweep() / 2)
     );
   }
 
@@ -110,8 +95,7 @@ export default class Arc extends GraphElement {
 
       // Returns the closest between origin and destination
       const coords =
-        distanceCoords(H.toCoords(), origin) <
-        distanceCoords(H.toCoords(), destination)
+        distanceCoords(H.toCoords(), origin) < distanceCoords(H.toCoords(), destination)
           ? origin
           : destination;
 

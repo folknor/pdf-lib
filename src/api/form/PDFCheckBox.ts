@@ -4,21 +4,18 @@ import {
   PDFName,
   type PDFRef,
   type PDFWidgetAnnotation,
-} from '../../core/index.js';
-import { assertIs, assertOrUndefined } from '../../utils/index.js';
-import { rgb } from '../colors.js';
-import type PDFDocument from '../PDFDocument.js';
-import PDFPage from '../PDFPage.js';
-import { degrees } from '../rotations.js';
+} from "../../core/index.js";
+import { assertIs, assertOrUndefined } from "../../utils/index.js";
+import { rgb } from "../colors.js";
+import type PDFDocument from "../PDFDocument.js";
+import PDFPage from "../PDFPage.js";
+import { degrees } from "../rotations.js";
 import {
   type AppearanceProviderFor,
   defaultCheckBoxAppearanceProvider,
   normalizeAppearance,
-} from './appearances.js';
-import PDFField, {
-  assertFieldAppearanceOptions,
-  type FieldAppearanceOptions,
-} from './PDFField.js';
+} from "./appearances.js";
+import PDFField, { assertFieldAppearanceOptions, type FieldAppearanceOptions } from "./PDFField.js";
 
 /**
  * Represents a check box field of a [[PDFForm]].
@@ -47,16 +44,10 @@ export default class PDFCheckBox extends PDFField {
   /** The low-level PDFAcroCheckBox wrapped by this check box. */
   declare readonly acroField: PDFAcroCheckBox;
 
-  private constructor(
-    acroCheckBox: PDFAcroCheckBox,
-    ref: PDFRef,
-    doc: PDFDocument,
-  ) {
+  private constructor(acroCheckBox: PDFAcroCheckBox, ref: PDFRef, doc: PDFDocument) {
     super(acroCheckBox, ref, doc);
 
-    assertIs(acroCheckBox, 'acroCheckBox', [
-      [PDFAcroCheckBox, 'PDFAcroCheckBox'],
-    ]);
+    assertIs(acroCheckBox, "acroCheckBox", [[PDFAcroCheckBox, "PDFAcroCheckBox"]]);
 
     this.acroField = acroCheckBox;
   }
@@ -82,7 +73,7 @@ export default class PDFCheckBox extends PDFField {
    */
   check() {
     this.doc.getForm().prepareForMutation();
-    const onValue = this.acroField.getOnValue() ?? PDFName.of('Yes');
+    const onValue = this.acroField.getOnValue() ?? PDFName.of("Yes");
     this.markAsDirty();
     this.acroField.setValue(onValue);
   }
@@ -106,7 +97,7 @@ export default class PDFCheckBox extends PDFField {
   uncheck() {
     this.doc.getForm().prepareForMutation();
     this.markAsDirty();
-    this.acroField.setValue(PDFName.of('Off'));
+    this.acroField.setValue(PDFName.of("Off"));
   }
 
   /**
@@ -151,18 +142,18 @@ export default class PDFCheckBox extends PDFField {
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
     this.doc.getForm().prepareForMutation();
-    assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
+    assertIs(page, "page", [[PDFPage, "PDFPage"]]);
     assertFieldAppearanceOptions(options);
 
     if (!options) options = {};
 
-    if (!('textColor' in options)) options.textColor = rgb(0, 0, 0);
+    if (!("textColor" in options)) options.textColor = rgb(0, 0, 0);
 
-    if (!('backgroundColor' in options)) options.backgroundColor = rgb(1, 1, 1);
+    if (!("backgroundColor" in options)) options.backgroundColor = rgb(1, 1, 1);
 
-    if (!('borderColor' in options)) options.borderColor = rgb(0, 0, 0);
+    if (!("borderColor" in options)) options.borderColor = rgb(0, 0, 0);
 
-    if (!('borderWidth' in options)) options.borderWidth = 1;
+    if (!("borderWidth" in options)) options.borderWidth = 1;
 
     // Create a widget for this check box
     const widget = this.createWidget({
@@ -185,8 +176,8 @@ export default class PDFCheckBox extends PDFField {
     this.acroField.addWidget(widgetRef);
 
     // Set appearance streams for widget
-    widget.setAppearanceState(PDFName.of('Off'));
-    this.updateWidgetAppearance(widget, PDFName.of('Yes'));
+    widget.setAppearanceState(PDFName.of("Off"));
+    this.updateWidgetAppearance(widget, PDFName.of("Yes"));
 
     // Add widget to the given page
     page.node.addAnnot(widgetRef);
@@ -248,13 +239,13 @@ export default class PDFCheckBox extends PDFField {
    */
   updateAppearances(provider?: AppearanceProviderFor<PDFCheckBox>) {
     this.doc.getForm().prepareForMutation();
-    assertOrUndefined(provider, 'provider', ['function']);
+    assertOrUndefined(provider, "provider", ["function"]);
 
     const widgets = this.acroField.getWidgets();
 
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
-      const onValue = widget.getOnValue() ?? PDFName.of('Yes');
+      const onValue = widget.getOnValue() ?? PDFName.of("Yes");
 
       if (!onValue) continue;
       this.updateWidgetAppearance(widget, onValue, provider);

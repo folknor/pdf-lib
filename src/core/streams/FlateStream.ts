@@ -15,8 +15,8 @@
  */
 
 /* tslint:disable  no-conditional-assignment */
-import DecodeStream from '../../core/streams/DecodeStream.js';
-import type { StreamType } from '../../core/streams/Stream.js';
+import DecodeStream from "../../core/streams/DecodeStream.js";
+import type { StreamType } from "../../core/streams/Stream.js";
 
 // prettier-ignore
 const codeLenCodeMap = new Int32Array([
@@ -139,9 +139,7 @@ class FlateStream extends DecodeStream {
     }
 
     if ((cmf & 0x0f) !== 0x08) {
-      throw new Error(
-        `Unknown compression method in flate stream: ${cmf}, ${flg}`,
-      );
+      throw new Error(`Unknown compression method in flate stream: ${cmf}, ${flg}`);
     }
 
     if (((cmf << 8) + flg) % 31 !== 0) {
@@ -174,32 +172,32 @@ class FlateStream extends DecodeStream {
       let b;
 
       if ((b = str.getByte()) === -1) {
-        throw new Error('Bad block header in flate stream');
+        throw new Error("Bad block header in flate stream");
       }
 
       let blockLen = b;
 
       if ((b = str.getByte()) === -1) {
-        throw new Error('Bad block header in flate stream');
+        throw new Error("Bad block header in flate stream");
       }
 
       blockLen |= b << 8;
 
       if ((b = str.getByte()) === -1) {
-        throw new Error('Bad block header in flate stream');
+        throw new Error("Bad block header in flate stream");
       }
 
       let check = b;
 
       if ((b = str.getByte()) === -1) {
-        throw new Error('Bad block header in flate stream');
+        throw new Error("Bad block header in flate stream");
       }
 
       check |= b << 8;
 
       if (check !== (~blockLen & 0xffff) && (blockLen !== 0 || check !== 0)) {
         // Ignoring error for bad "empty" block (see issue 1277)
-        throw new Error('Bad uncompressed block length in flate stream');
+        throw new Error("Bad uncompressed block length in flate stream");
       }
 
       this.codeBuf = 0;
@@ -288,14 +286,10 @@ class FlateStream extends DecodeStream {
         }
       }
 
-      litCodeTable = this.generateHuffmanTable(
-        codeLengths.subarray(0, numLitCodes),
-      );
-      distCodeTable = this.generateHuffmanTable(
-        codeLengths.subarray(numLitCodes, codes),
-      );
+      litCodeTable = this.generateHuffmanTable(codeLengths.subarray(0, numLitCodes));
+      distCodeTable = this.generateHuffmanTable(codeLengths.subarray(numLitCodes, codes));
     } else {
-      throw new Error('Unknown block type in flate stream');
+      throw new Error("Unknown block type in flate stream");
     }
 
     buffer = this.buffer;
@@ -360,7 +354,7 @@ class FlateStream extends DecodeStream {
 
     while (codeSize < bits) {
       if ((b = str.getByte()) === -1) {
-        throw new Error('Bad encoding in flate stream');
+        throw new Error("Bad encoding in flate stream");
       }
 
       codeBuf |= b << codeSize;
@@ -399,7 +393,7 @@ class FlateStream extends DecodeStream {
     const codeVal = code & 0xffff;
 
     if (codeLen < 1 || codeSize < codeLen) {
-      throw new Error('Bad encoding in flate stream');
+      throw new Error("Bad encoding in flate stream");
     }
 
     this.codeBuf = codeBuf >> codeLen;
@@ -425,11 +419,7 @@ class FlateStream extends DecodeStream {
     const size = 1 << maxLen;
     const codes = new Int32Array(size);
 
-    for (
-      let len = 1, code = 0, skip = 2;
-      len <= maxLen;
-      ++len, code <<= 1, skip <<= 1
-    ) {
+    for (let len = 1, code = 0, skip = 2; len <= maxLen; ++len, code <<= 1, skip <<= 1) {
       for (let val = 0; val < n; ++val) {
         if (lengths[val] === len) {
           // bit-reverse the code

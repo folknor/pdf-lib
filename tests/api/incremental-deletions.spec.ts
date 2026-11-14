@@ -1,10 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import {
-  PDFDocument,
-  PDFRef,
-  PDFStreamWriter,
-  PDFWriter,
-} from '../../src/index';
+import { describe, expect, it } from "vitest";
+import { PDFDocument, PDFRef, PDFStreamWriter, PDFWriter } from "../../src/index";
 
 const loadThreePages = async () => {
   const doc = await PDFDocument.create();
@@ -16,16 +11,13 @@ const loadThreePages = async () => {
   return PDFDocument.load(bytes, { forIncrementalUpdate: true });
 };
 
-const decode = (bytes: Uint8Array) => Buffer.from(bytes).toString('latin1');
+const decode = (bytes: Uint8Array) => Buffer.from(bytes).toString("latin1");
 
 /** Every entry of the last xref table, as [objectNumber, line]. */
 const tableEntries = (text: string): [number, string][] => {
-  const section = text.slice(
-    text.lastIndexOf('\nxref\n') + 6,
-    text.lastIndexOf('\ntrailer'),
-  );
+  const section = text.slice(text.lastIndexOf("\nxref\n") + 6, text.lastIndexOf("\ntrailer"));
 
-  const lines = section.split('\n').filter((l) => l.length > 0);
+  const lines = section.split("\n").filter((l) => l.length > 0);
   const entries: [number, string][] = [];
   let num = 0;
 
@@ -44,13 +36,13 @@ const tableEntries = (text: string): [number, string][] => {
 
 /** Every entry of an unencoded xref stream, as [objectNumber, tuple]. */
 const streamEntries = (text: string): [number, number[]][] => {
-  const at = text.lastIndexOf('/Type /XRef');
-  const dictStart = text.lastIndexOf('<<', at);
-  const dict = text.slice(dictStart, text.indexOf('stream', at));
+  const at = text.lastIndexOf("/Type /XRef");
+  const dictStart = text.lastIndexOf("<<", at);
+  const dict = text.slice(dictStart, text.indexOf("stream", at));
   const w = /\/W \[ (\d+) (\d+) (\d+) \]/.exec(dict)!.slice(1).map(Number);
-  const index = /\/Index \[ ([\d ]+) \]/.exec(dict)![1]!.split(' ').map(Number);
-  const start = text.indexOf('stream\n', at) + 7;
-  const data = Buffer.from(text.slice(start), 'latin1');
+  const index = /\/Index \[ ([\d ]+) \]/.exec(dict)![1]!.split(" ").map(Number);
+  const start = text.indexOf("stream\n", at) + 7;
+  const data = Buffer.from(text.slice(start), "latin1");
 
   const read = (off: number, n: number) => {
     let v = 0;
@@ -77,8 +69,8 @@ const streamEntries = (text: string): [number, number[]][] => {
   return out;
 };
 
-describe('deletions in an increment', () => {
-  it('frees a removed page in the xref table, once, as the head of the chain', async () => {
+describe("deletions in an increment", () => {
+  it("frees a removed page in the xref table, once, as the head of the chain", async () => {
     const doc = await loadThreePages();
     const pageRef = doc.getPage(1).ref;
     doc.removePage(1);
@@ -87,14 +79,12 @@ describe('deletions in an increment', () => {
     const numbers = entries.map(([n]) => n);
     expect(new Set(numbers).size).toBe(numbers.length);
     expect(entries.find(([n]) => n === 0)![1]).toBe(
-      `${String(pageRef.objectNumber).padStart(10, '0')} 65535 f`,
+      `${String(pageRef.objectNumber).padStart(10, "0")} 65535 f`,
     );
-    expect(entries.find(([n]) => n === pageRef.objectNumber)![1]).toBe(
-      '0000000000 00001 f',
-    );
+    expect(entries.find(([n]) => n === pageRef.objectNumber)![1]).toBe("0000000000 00001 f");
   });
 
-  it('writes a number deleted and assigned again in use only', async () => {
+  it("writes a number deleted and assigned again in use only", async () => {
     const doc = await loadThreePages();
     const ref = doc.getPage(1).ref;
     const page = doc.context.lookup(ref)!;
@@ -105,10 +95,10 @@ describe('deletions in an increment', () => {
     const numbers = entries.map(([n]) => n);
     expect(new Set(numbers).size).toBe(numbers.length);
     expect(entries.find(([n]) => n === ref.objectNumber)![1]).toMatch(/ 00000 n$/);
-    expect(entries.find(([n]) => n === 0)![1]).toBe('0000000000 65535 f');
+    expect(entries.find(([n]) => n === 0)![1]).toBe("0000000000 65535 f");
   });
 
-  it('frees nothing for a ref the document does not hold', async () => {
+  it("frees nothing for a ref the document does not hold", async () => {
     const doc = await loadThreePages();
     const ref = doc.getPage(1).ref;
     doc.context.delete(PDFRef.of(ref.objectNumber, 1));
@@ -118,7 +108,7 @@ describe('deletions in an increment', () => {
     expect(doc.takeSnapshot().deletedRefs()).toEqual([]);
   });
 
-  it('uses the effective generation when a removed context ref has another generation', async () => {
+  it("uses the effective generation when a removed context ref has another generation", async () => {
     const doc = await loadThreePages();
     const ref = doc.getPage(1).ref;
     const page = doc.context.lookup(ref)!;
@@ -127,12 +117,10 @@ describe('deletions in an increment', () => {
     doc.context.assign(old, page);
     doc.context.delete(old);
     const text = decode(await doc.saveIncremental(doc.takeSnapshot(), { useObjectStreams: false }));
-    expect(tableEntries(text).find(([n]) => n === ref.objectNumber)![1]).toBe(
-      '0000000000 00001 f',
-    );
+    expect(tableEntries(text).find(([n]) => n === ref.objectNumber)![1]).toBe("0000000000 00001 f");
   });
 
-  it('frees removed objects in an xref stream, chained in ascending order', async () => {
+  it("frees removed objects in an xref stream, chained in ascending order", async () => {
     const doc = await loadThreePages();
     const first = doc.getPage(0).ref;
     const last = doc.getPage(2).ref;
@@ -145,16 +133,12 @@ describe('deletions in an increment', () => {
     expect(new Set(numbers).size).toBe(numbers.length);
     const [low, high] = [first, last].sort((a, b) => a.objectNumber - b.objectNumber);
     expect(entries.find(([n]) => n === 0)![1]).toEqual([0, low!.objectNumber, 65535]);
-    expect(entries.find(([n]) => n === low!.objectNumber)![1]).toEqual([
-      0,
-      high!.objectNumber,
-      1,
-    ]);
+    expect(entries.find(([n]) => n === low!.objectNumber)![1]).toEqual([0, high!.objectNumber, 1]);
     expect(entries.find(([n]) => n === high!.objectNumber)![1]).toEqual([0, 0, 1]);
   });
 
   for (const useObjectStreams of [false, true]) {
-    it(`links earlier committed free entries in ${useObjectStreams ? 'streams' : 'tables'}`, async () => {
+    it(`links earlier committed free entries in ${useObjectStreams ? "streams" : "tables"}`, async () => {
       const doc = await loadThreePages();
       const first = doc.getPage(0).ref;
       const second = doc.getPage(1).ref;
@@ -180,14 +164,16 @@ describe('deletions in an increment', () => {
         expect(entries.get(second.objectNumber)).toEqual([0, 0, 1]);
       } else {
         const entries = new Map(tableEntries(text));
-        expect(entries.get(0)).toBe(`${String(first.objectNumber).padStart(10, '0')} 65535 f`);
-        expect(entries.get(first.objectNumber)).toBe(`${String(second.objectNumber).padStart(10, '0')} 00001 f`);
-        expect(entries.get(second.objectNumber)).toBe('0000000000 00001 f');
+        expect(entries.get(0)).toBe(`${String(first.objectNumber).padStart(10, "0")} 65535 f`);
+        expect(entries.get(first.objectNumber)).toBe(
+          `${String(second.objectNumber).padStart(10, "0")} 00001 f`,
+        );
+        expect(entries.get(second.objectNumber)).toBe("0000000000 00001 f");
       }
     });
   }
 
-  it('refuses to write two generations of one number', async () => {
+  it("refuses to write two generations of one number", async () => {
     const doc = await loadThreePages();
     const ref = doc.getPage(1).ref;
     doc.context.assign(PDFRef.of(ref.objectNumber, 1), doc.context.obj({}));

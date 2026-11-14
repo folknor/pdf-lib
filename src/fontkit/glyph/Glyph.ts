@@ -1,7 +1,7 @@
-import { cacheValue } from '../decorators.js';
-import type BBox from './BBox.js';
-import Path from './Path.js';
-import StandardNames from './StandardNames.js';
+import { cacheValue } from "../decorators.js";
+import type BBox from "./BBox.js";
+import Path from "./Path.js";
+import StandardNames from "./StandardNames.js";
 
 export interface GlyphMetrics {
   advanceWidth: number;
@@ -86,17 +86,14 @@ export default class Glyph {
     const processor = this._font._variationProcessor;
     const hvar = this._font.HVAR;
 
-    return processor && hvar
-      ? processor.getAdvanceAdjustment(this.id, hvar)
-      : 0;
+    return processor && hvar ? processor.getAdvanceAdjustment(this.id, hvar) : 0;
   }
 
   // The unvaried metrics from hmtx and vmtx (or OS/2 or hhea), in a fresh
   // object each call. Neither reads nor writes the _metrics cache, so variation
   // code can start from them without compounding earlier deltas.
   _getDefaultMetrics(cbox?: BBox | null): GlyphMetrics {
-    const { advance: advanceWidth, bearing: leftBearing } =
-      this._getTableMetrics(this._font.hmtx);
+    const { advance: advanceWidth, bearing: leftBearing } = this._getTableMetrics(this._font.hmtx);
 
     // For vertical metrics, use vmtx if available, or fall back to global data from OS/2 or hhea.
     // The fallback is synthetic and its policy unresolved: it takes typo
@@ -111,9 +108,7 @@ export default class Glyph {
     let topBearing;
 
     if (this._font.vmtx) {
-      ({ advance: advanceHeight, bearing: topBearing } = this._getTableMetrics(
-        this._font.vmtx,
-      ));
+      ({ advance: advanceHeight, bearing: topBearing } = this._getTableMetrics(this._font.vmtx));
     } else {
       let os2;
 
@@ -121,7 +116,7 @@ export default class Glyph {
         ({ cbox } = this);
       }
 
-      if ((os2 = this._font['OS/2']) && os2.version > 0) {
+      if ((os2 = this._font["OS/2"]) && os2.version > 0) {
         advanceHeight = Math.abs(os2.typoAscender - os2.typoDescender);
         topBearing = os2.typoAscender - cbox.maxY;
       } else {
@@ -144,7 +139,7 @@ export default class Glyph {
    * for a more detailed description.
    */
   get cbox(): BBox {
-    return cacheValue(this, 'cbox', this._getCBox());
+    return cacheValue(this, "cbox", this._getCBox());
   }
 
   /**
@@ -152,7 +147,7 @@ export default class Glyph {
    * glyph outline as tightly as possible.
    */
   get bbox(): BBox {
-    return cacheValue(this, 'bbox', this._getBBox());
+    return cacheValue(this, "bbox", this._getBBox());
   }
 
   /**
@@ -161,7 +156,7 @@ export default class Glyph {
   get path(): Path {
     // Cache the path so we only decode it once
     // Decoding is actually performed by subclasses
-    return cacheValue(this, 'path', this._getPath());
+    return cacheValue(this, "path", this._getPath());
   }
 
   /**
@@ -181,14 +176,14 @@ export default class Glyph {
    * The glyph's advance width.
    */
   get advanceWidth(): number {
-    return cacheValue(this, 'advanceWidth', this._getMetrics().advanceWidth);
+    return cacheValue(this, "advanceWidth", this._getMetrics().advanceWidth);
   }
 
   /**
    * The glyph's advance height.
    */
   get advanceHeight(): number {
-    return cacheValue(this, 'advanceHeight', this._getMetrics().advanceHeight);
+    return cacheValue(this, "advanceHeight", this._getMetrics().advanceHeight);
   }
 
   get ligatureCaretPositions(): number[] | undefined {
@@ -231,7 +226,7 @@ export default class Glyph {
    * The glyph's name
    */
   get name(): string | null | undefined {
-    return cacheValue(this, 'name', this._getName());
+    return cacheValue(this, "name", this._getName());
   }
 
   /**

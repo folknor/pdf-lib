@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // PostScript information
 export default new r.VersionedStruct(r.fixed32, {
@@ -18,13 +18,13 @@ export default new r.VersionedStruct(r.fixed32, {
 
   2: {
     numberOfGlyphs: r.uint16,
-    glyphNameIndex: new r.Array(r.uint16, 'numberOfGlyphs'),
+    glyphNameIndex: new r.Array(r.uint16, "numberOfGlyphs"),
     names: new r.Array(new r.String(r.uint8)),
   },
 
   2.5: {
     numberOfGlyphs: r.uint16,
-    offsets: new r.Array(r.uint8, 'numberOfGlyphs'),
+    offsets: new r.Array(r.uint8, "numberOfGlyphs"),
   },
 
   3: {}, // version 3 has no additional fields

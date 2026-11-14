@@ -4,14 +4,12 @@
  * Absorbed and converted to TypeScript for pdf-lib
  */
 
-import { Base } from './Base.js';
-import type { DecodeStream } from './DecodeStream.js';
-import type { EncodeStream } from './EncodeStream.js';
-import { PropertyDescriptor } from './utils.js';
+import { Base } from "./Base.js";
+import type { DecodeStream } from "./DecodeStream.js";
+import type { EncodeStream } from "./EncodeStream.js";
+import { PropertyDescriptor } from "./utils.js";
 
-export type FieldDefinition =
-  | Base
-  | ((res: Record<string, unknown>) => unknown);
+export type FieldDefinition = Base | ((res: Record<string, unknown>) => unknown);
 
 export type Fields = Record<string, FieldDefinition>;
 
@@ -42,11 +40,7 @@ export class Struct extends Base<Record<string, unknown>> {
     this.fields = fields;
   }
 
-  decode(
-    stream: DecodeStream,
-    parent?: unknown,
-    length = 0,
-  ): Record<string, unknown> {
+  decode(stream: DecodeStream, parent?: unknown, length = 0): Record<string, unknown> {
     const res = this._setup(stream, parent, length);
     this._parseFields(stream, res, this.fields);
 
@@ -75,7 +69,7 @@ export class Struct extends Base<Record<string, unknown>> {
       let val: unknown;
       const type = fields[key]!;
 
-      if (typeof type === 'function') {
+      if (typeof type === "function") {
         val = type.call(res, res);
       } else {
         val = type.decode(stream, res);
@@ -93,11 +87,7 @@ export class Struct extends Base<Record<string, unknown>> {
     }
   }
 
-  size(
-    val?: Record<string, unknown> | null,
-    parent?: unknown,
-    includePointers = true,
-  ): number {
+  size(val?: Record<string, unknown> | null, parent?: unknown, includePointers = true): number {
     if (val == null) {
       val = {};
     }
@@ -117,7 +107,7 @@ export class Struct extends Base<Record<string, unknown>> {
     for (const key in this.fields) {
       const type = this.fields[key]!;
 
-      if (typeof type !== 'function' && type.size != null) {
+      if (typeof type !== "function" && type.size != null) {
         size += type.size(val[key], ctx);
       }
     }
@@ -129,11 +119,7 @@ export class Struct extends Base<Record<string, unknown>> {
     return size;
   }
 
-  encode(
-    stream: EncodeStream,
-    val: Record<string, unknown>,
-    parent?: unknown,
-  ): void {
+  encode(stream: EncodeStream, val: Record<string, unknown>, parent?: unknown): void {
     if (this.preEncode != null) {
       this.preEncode.call(val, stream);
     }
@@ -152,7 +138,7 @@ export class Struct extends Base<Record<string, unknown>> {
     for (const key in this.fields) {
       const type = this.fields[key]!;
 
-      if (typeof type !== 'function' && type.encode != null) {
+      if (typeof type !== "function" && type.encode != null) {
         type.encode(stream, val[key], ctx);
       }
     }

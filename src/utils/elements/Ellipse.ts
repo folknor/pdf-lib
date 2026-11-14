@@ -1,4 +1,4 @@
-import type { Size } from '../../types/index.js';
+import type { Size } from "../../types/index.js";
 import {
   angle,
   distance,
@@ -8,22 +8,18 @@ import {
   times,
   unitVector,
   vector,
-} from '../maths.js';
+} from "../maths.js";
 
-import GraphElement from './GraphElement.js';
-import Point from './Point.js';
-import Segment from './Segment.js';
+import GraphElement from "./GraphElement.js";
+import Point from "./Point.js";
+import Segment from "./Segment.js";
 
 export default class Ellipse extends GraphElement {
   A: Point;
   B: Point;
   C: Point;
 
-  constructor(
-    A: Point = new Point(),
-    B: Point = new Point(),
-    C: Point = new Point(),
-  ) {
+  constructor(A: Point = new Point(), B: Point = new Point(), C: Point = new Point()) {
     super();
     this.A = A;
     this.B = B;
@@ -81,10 +77,7 @@ export default class Ellipse extends GraphElement {
       return (
         isEqual(eltA, a) &&
         isEqual(eltB, b) &&
-        isEqual(
-          rotation + (Math.PI % Math.PI),
-          eltRotation + (Math.PI % Math.PI),
-        )
+        isEqual(rotation + (Math.PI % Math.PI), eltRotation + (Math.PI % Math.PI))
       );
     }
     // If the small axis is different
@@ -93,10 +86,7 @@ export default class Ellipse extends GraphElement {
       return (
         isEqual(eltA, b) &&
         isEqual(eltB, a) &&
-        isEqual(
-          rotation + (Math.PI % Math.PI),
-          eltRotation + (((3 * Math.PI) / 2) % Math.PI),
-        )
+        isEqual(rotation + (Math.PI % Math.PI), eltRotation + (((3 * Math.PI) / 2) % Math.PI))
       );
     }
   }
@@ -107,10 +97,8 @@ export default class Ellipse extends GraphElement {
     const teta = this.rotation();
 
     return isEqual(
-      (((x - cx) * Math.cos(teta) + (y - cy) * Math.sin(teta)) / this.a()) **
-        2 +
-        (((x - cx) * Math.sin(teta) - (y - cy) * Math.cos(teta)) / this.b()) **
-          2,
+      (((x - cx) * Math.cos(teta) + (y - cy) * Math.sin(teta)) / this.a()) ** 2 +
+        (((x - cx) * Math.sin(teta) - (y - cy) * Math.cos(teta)) / this.b()) ** 2,
       1,
     );
   }

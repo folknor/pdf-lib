@@ -1,18 +1,17 @@
-import { InvalidAcroFieldValueError } from '../errors.js';
-import type PDFDict from '../objects/PDFDict.js';
-import PDFName from '../objects/PDFName.js';
-import type PDFRef from '../objects/PDFRef.js';
-import type PDFContext from '../PDFContext.js';
-import { AcroButtonFlags } from './flags.js';
-import PDFAcroButton from './PDFAcroButton.js';
+import { InvalidAcroFieldValueError } from "../errors.js";
+import type PDFDict from "../objects/PDFDict.js";
+import PDFName from "../objects/PDFName.js";
+import type PDFRef from "../objects/PDFRef.js";
+import type PDFContext from "../PDFContext.js";
+import { AcroButtonFlags } from "./flags.js";
+import PDFAcroButton from "./PDFAcroButton.js";
 
 class PDFAcroRadioButton extends PDFAcroButton {
-  static override fromDict = (dict: PDFDict, ref: PDFRef) =>
-    new PDFAcroRadioButton(dict, ref);
+  static override fromDict = (dict: PDFDict, ref: PDFRef) => new PDFAcroRadioButton(dict, ref);
 
   static create = (context: PDFContext) => {
     const dict = context.obj({
-      FT: 'Btn',
+      FT: "Btn",
       Ff: AcroButtonFlags.Radio,
       Kids: [],
     });
@@ -25,17 +24,17 @@ class PDFAcroRadioButton extends PDFAcroButton {
   setValue(value: PDFName) {
     const onValues = this.getOnValues();
 
-    if (!onValues.includes(value) && value !== PDFName.of('Off')) {
+    if (!onValues.includes(value) && value !== PDFName.of("Off")) {
       throw new InvalidAcroFieldValueError();
     }
 
-    this.dict.set(PDFName.of('V'), value);
+    this.dict.set(PDFName.of("V"), value);
 
     const widgets = this.getWidgets();
 
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
-      const state = widget.getOnValue() === value ? value : PDFName.of('Off');
+      const state = widget.getOnValue() === value ? value : PDFName.of("Off");
       widget.setAppearanceState(state);
     }
   }
@@ -45,7 +44,7 @@ class PDFAcroRadioButton extends PDFAcroButton {
 
     if (v instanceof PDFName) return v;
 
-    return PDFName.of('Off');
+    return PDFName.of("Off");
   }
 
   getOnValues(): PDFName[] {

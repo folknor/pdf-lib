@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 import {
   ChainingContext,
   Context,
@@ -6,8 +6,8 @@ import {
   FeatureList,
   LookupList,
   ScriptList,
-} from './opentype.js';
-import { FeatureVariations } from './variations.js';
+} from "./opentype.js";
+import { FeatureVariations } from "./variations.js";
 
 const Sequence = new r.Array(r.uint16, r.uint16);
 const AlternateSet = Sequence;
@@ -20,7 +20,7 @@ const Ligature = new r.Struct({
 
 const LigatureSet = new r.Array(new r.Pointer(r.uint16, Ligature), r.uint16);
 
-const GSUBLookup = new r.VersionedStruct('lookupType', {
+const GSUBLookup = new r.VersionedStruct("lookupType", {
   1: new r.VersionedStruct(r.uint16, {
     // Single Substitution
     1: {
@@ -30,7 +30,7 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
     2: {
       coverage: new r.Pointer(r.uint16, Coverage),
       glyphCount: r.uint16,
-      substitute: new r.LazyArray(r.uint16, 'glyphCount'),
+      substitute: new r.LazyArray(r.uint16, "glyphCount"),
     },
   }),
 
@@ -39,7 +39,7 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
     substFormat: r.uint16,
     coverage: new r.Pointer(r.uint16, Coverage),
     count: r.uint16,
-    sequences: new r.LazyArray(new r.Pointer(r.uint16, Sequence), 'count'),
+    sequences: new r.LazyArray(new r.Pointer(r.uint16, Sequence), "count"),
   },
 
   3: {
@@ -47,10 +47,7 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
     substFormat: r.uint16,
     coverage: new r.Pointer(r.uint16, Coverage),
     count: r.uint16,
-    alternateSet: new r.LazyArray(
-      new r.Pointer(r.uint16, AlternateSet),
-      'count',
-    ),
+    alternateSet: new r.LazyArray(new r.Pointer(r.uint16, AlternateSet), "count"),
   },
 
   4: {
@@ -58,10 +55,7 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
     substFormat: r.uint16,
     coverage: new r.Pointer(r.uint16, Coverage),
     count: r.uint16,
-    ligatureSets: new r.LazyArray(
-      new r.Pointer(r.uint16, LigatureSet),
-      'count',
-    ),
+    ligatureSets: new r.LazyArray(new r.Pointer(r.uint16, LigatureSet), "count"),
   },
 
   5: Context, // Contextual Substitution
@@ -79,17 +73,11 @@ const GSUBLookup = new r.VersionedStruct('lookupType', {
     substFormat: r.uint16,
     coverage: new r.Pointer(r.uint16, Coverage),
     backtrackGlyphCount: r.uint16,
-    backtrackCoverage: new r.Array(
-      new r.Pointer(r.uint16, Coverage),
-      'backtrackGlyphCount',
-    ),
+    backtrackCoverage: new r.Array(new r.Pointer(r.uint16, Coverage), "backtrackGlyphCount"),
     lookaheadGlyphCount: r.uint16,
-    lookaheadCoverage: new r.Array(
-      new r.Pointer(r.uint16, Coverage),
-      'lookaheadGlyphCount',
-    ),
+    lookaheadCoverage: new r.Array(new r.Pointer(r.uint16, Coverage), "lookaheadGlyphCount"),
     glyphCount: r.uint16,
-    substitute: new r.LazyArray(r.uint16, 'glyphCount'),
+    substitute: new r.LazyArray(r.uint16, "glyphCount"),
   },
 });
 

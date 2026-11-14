@@ -83,8 +83,8 @@ export const pointsToCm = (points: number): number => points / POINTS_PER_CM;
  * For example, US Letter size (8.5" × 11") is [612, 792] points.
  */
 export const PageSizes = {
-  '4A0': [4767.87, 6740.79] as [number, number],
-  '2A0': [3370.39, 4767.87] as [number, number],
+  "4A0": [4767.87, 6740.79] as [number, number],
+  "2A0": [3370.39, 4767.87] as [number, number],
   A0: [2383.94, 3370.39] as [number, number],
   A1: [1683.78, 2383.94] as [number, number],
   A2: [1190.55, 1683.78] as [number, number],

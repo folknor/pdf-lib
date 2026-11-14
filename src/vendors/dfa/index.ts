@@ -76,11 +76,7 @@ export default class StateMachine {
 
           if (state === FAIL_STATE) {
             // yield the last match if any
-            if (
-              startRun != null &&
-              lastAccepting != null &&
-              lastAccepting >= startRun
-            ) {
+            if (startRun != null && lastAccepting != null && lastAccepting >= startRun) {
               yield [startRun, lastAccepting, self.tags[lastState]!];
             }
 
@@ -106,11 +102,7 @@ export default class StateMachine {
         }
 
         // yield the last match if any
-        if (
-          startRun != null &&
-          lastAccepting != null &&
-          lastAccepting >= startRun
-        ) {
+        if (startRun != null && lastAccepting != null && lastAccepting >= startRun) {
           yield [startRun, lastAccepting, self.tags[state]!];
         }
       },
@@ -124,16 +116,13 @@ export default class StateMachine {
    */
   apply(
     str: number[],
-    actions: Record<
-      string,
-      ((start: number, end: number, match: number[]) => void) | undefined
-    >,
+    actions: Record<string, ((start: number, end: number, match: number[]) => void) | undefined>,
   ): void {
     for (const [start, end, tags] of this.match(str)) {
       for (const tag of tags) {
         const action = actions[tag];
 
-        if (typeof action === 'function') {
+        if (typeof action === "function") {
           action(start, end, str.slice(start, end + 1));
         }
       }

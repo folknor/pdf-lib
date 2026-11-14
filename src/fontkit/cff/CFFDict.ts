@@ -1,5 +1,5 @@
-import { PropertyDescriptor } from '../../vendors/restructure/index.js';
-import CFFOperand from './CFFOperand.js';
+import { PropertyDescriptor } from "../../vendors/restructure/index.js";
+import CFFOperand from "./CFFOperand.js";
 
 /** Compares a dict value with its default: primitives, or nested arrays. */
 const isEqual = (a: unknown, b: unknown): boolean => {
@@ -23,9 +23,7 @@ export default class CFFDict {
     this.fields = {};
 
     for (const field of ops) {
-      const key = Array.isArray(field[0])
-        ? (field[0][0] << 8) | field[0][1]
-        : field[0];
+      const key = Array.isArray(field[0]) ? (field[0][0] << 8) | field[0][1] : field[0];
 
       this.fields[key] = field;
     }
@@ -33,18 +31,16 @@ export default class CFFDict {
 
   decodeOperands(type: any, stream: any, ret: any, operands: any[]): any {
     if (Array.isArray(type)) {
-      return operands.map((op, i) =>
-        this.decodeOperands(type[i], stream, ret, [op]),
-      );
+      return operands.map((op, i) => this.decodeOperands(type[i], stream, ret, [op]));
     } else if (type.decode != null) {
       return type.decode(stream, ret, operands);
     } else {
       switch (type) {
-        case 'number':
-        case 'offset':
-        case 'sid':
+        case "number":
+        case "offset":
+        case "sid":
           return operands[0];
-        case 'boolean':
+        case "boolean":
           return !!operands[0];
         default:
           return operands;
@@ -54,15 +50,12 @@ export default class CFFDict {
 
   encodeOperands(type: any, stream: any, ctx: any, operands: any): any[] {
     if (Array.isArray(type)) {
-      return operands.map(
-        (op: any, i: number) =>
-          this.encodeOperands(type[i], stream, ctx, op)[0],
-      );
+      return operands.map((op: any, i: number) => this.encodeOperands(type[i], stream, ctx, op)[0]);
     } else if (type.encode != null) {
       return type.encode(stream, operands, ctx);
-    } else if (typeof operands === 'number') {
+    } else if (typeof operands === "number") {
       return [operands];
-    } else if (typeof operands === 'boolean') {
+    } else if (typeof operands === "boolean") {
       return [+operands];
     } else if (Array.isArray(operands)) {
       return operands;
@@ -121,11 +114,7 @@ export default class CFFDict {
     return ret;
   }
 
-  size(
-    dict: Record<string, any>,
-    parent: any,
-    includePointers: boolean = true,
-  ): number {
+  size(dict: Record<string, any>, parent: any, includePointers: boolean = true): number {
     const ctx: Record<string, any> = {
       parent,
       val: dict,
@@ -154,7 +143,7 @@ export default class CFFDict {
     }
 
     if (includePointers) {
-      len += ctx['pointerSize'];
+      len += ctx["pointerSize"];
     }
 
     return len;
@@ -169,7 +158,7 @@ export default class CFFDict {
       pointerSize: 0,
     };
 
-    ctx['pointerOffset'] = stream.pos + this.size(dict, ctx, false);
+    ctx["pointerOffset"] = stream.pos + this.size(dict, ctx, false);
 
     for (const field of this.ops) {
       const val = dict[field[1]];
@@ -193,8 +182,8 @@ export default class CFFDict {
 
     let i = 0;
 
-    while (i < ctx['pointers'].length) {
-      const ptr = ctx['pointers'][i++];
+    while (i < ctx["pointers"].length) {
+      const ptr = ctx["pointers"][i++];
       ptr.type.encode(stream, ptr.val, ptr.parent);
     }
 

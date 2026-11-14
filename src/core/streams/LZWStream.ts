@@ -6,8 +6,8 @@
  * under the Apache 2.0 open source license.
  */
 
-import DecodeStream from './DecodeStream.js';
-import type { StreamType } from './Stream.js';
+import DecodeStream from "./DecodeStream.js";
+import type { StreamType } from "./Stream.js";
 
 class LZWStream extends DecodeStream {
   private stream: StreamType;
@@ -25,11 +25,7 @@ class LZWStream extends DecodeStream {
     prevCode: number | null | undefined;
   };
 
-  constructor(
-    stream: StreamType,
-    maybeLength: number | undefined,
-    earlyChange: 0 | 1,
-  ) {
+  constructor(stream: StreamType, maybeLength: number | undefined, earlyChange: 0 | 1) {
     super(maybeLength);
 
     this.stream = stream;
@@ -126,8 +122,7 @@ class LZWStream extends DecodeStream {
 
       if (hasPrev) {
         dictionaryPrevCodes[nextCode] = prevCode as number;
-        dictionaryLengths[nextCode] =
-          dictionaryLengths[prevCode as number]! + 1;
+        dictionaryLengths[nextCode] = dictionaryLengths[prevCode as number]! + 1;
         dictionaryValues[nextCode] = currentSequence[0]!;
         nextCode++;
         codeLength =

@@ -1,11 +1,10 @@
-import type GlyphPosition from '../layout/GlyphPosition.js';
-import type GlyphInfo from './GlyphInfo.js';
-import OTProcessor from './OTProcessor.js';
+import type GlyphPosition from "../layout/GlyphPosition.js";
+import type GlyphInfo from "./GlyphInfo.js";
+import OTProcessor from "./OTProcessor.js";
 
 export default class GPOSProcessor extends OTProcessor {
   applyPositionValue(sequenceIndex: number, value: any): void {
-    const position =
-      this.positions[this.glyphIterator.peekIndex(sequenceIndex)]!;
+    const position = this.positions[this.glyphIterator.peekIndex(sequenceIndex)]!;
 
     if (value.xAdvance != null) {
       position.xAdvance += value.xAdvance;
@@ -120,10 +119,7 @@ export default class GPOSProcessor extends OTProcessor {
 
           case 2: {
             // Class pair adjustment
-            const class1 = this.getClassID(
-              this.glyphIterator.cur!.id,
-              table.classDef1,
-            );
+            const class1 = this.getClassID(this.glyphIterator.cur!.id, table.classDef1);
 
             const class2 = this.getClassID(nextGlyph.id, table.classDef2);
 
@@ -151,17 +147,13 @@ export default class GPOSProcessor extends OTProcessor {
           return false;
         }
 
-        const curRecord =
-          table.entryExitRecords[this.coverageIndex(table.coverage)];
+        const curRecord = table.entryExitRecords[this.coverageIndex(table.coverage)];
 
         if (!curRecord?.exitAnchor) {
           return false;
         }
 
-        const nextRecord =
-          table.entryExitRecords[
-            this.coverageIndex(table.coverage, nextGlyph.id)
-          ];
+        const nextRecord = table.entryExitRecords[this.coverageIndex(table.coverage, nextGlyph.id)];
 
         if (!nextRecord?.entryAnchor) {
           return false;
@@ -175,7 +167,7 @@ export default class GPOSProcessor extends OTProcessor {
         let d: number;
 
         switch (this.direction) {
-          case 'ltr':
+          case "ltr":
             cur.xAdvance = exit.x + cur.xOffset;
 
             d = entry.x + next.xOffset;
@@ -183,7 +175,7 @@ export default class GPOSProcessor extends OTProcessor {
             next.xOffset -= d;
             break;
 
-          case 'rtl':
+          case "rtl":
             d = exit.x + cur.xOffset;
             cur.xAdvance -= d;
             cur.xOffset -= d;
@@ -223,10 +215,7 @@ export default class GPOSProcessor extends OTProcessor {
           return false;
         }
 
-        const baseIndex = this.coverageIndex(
-          table.baseCoverage,
-          this.glyphs[baseGlyphIndex]!.id,
-        );
+        const baseIndex = this.coverageIndex(table.baseCoverage, this.glyphs[baseGlyphIndex]!.id);
 
         if (baseIndex === -1) {
           return false;
@@ -355,11 +344,7 @@ export default class GPOSProcessor extends OTProcessor {
     }
   }
 
-  applyAnchor(
-    markRecord: any,
-    baseAnchor: any,
-    baseGlyphIndex: number,
-  ): boolean {
+  applyAnchor(markRecord: any, baseAnchor: any, baseGlyphIndex: number): boolean {
     // A NULL anchor offset means no anchor for this mark class. Report the
     // lookup as not applied so later subtables can try (as HarfBuzz does).
     if (!baseAnchor || !markRecord?.markAnchor) return false;
@@ -445,7 +430,7 @@ export default class GPOSProcessor extends OTProcessor {
         this.positions[i]!.xOffset += this.positions[j]!.xOffset;
         this.positions[i]!.yOffset += this.positions[j]!.yOffset;
 
-        if (this.direction === 'ltr') {
+        if (this.direction === "ltr") {
           for (let k = j; k < i; k++) {
             this.positions[i]!.xOffset -= this.positions[k]!.xAdvance;
             this.positions[i]!.yOffset -= this.positions[k]!.yAdvance;

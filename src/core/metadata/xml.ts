@@ -11,8 +11,8 @@
  * input size.
  */
 
-export const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
-export const XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/';
+export const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+export const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
 
 export class XmlError extends Error {}
 
@@ -26,7 +26,7 @@ export interface XmlAttribute {
 }
 
 export interface XmlElement {
-  kind: 'element';
+  kind: "element";
   name: string;
   ns: string | undefined;
   local: string;
@@ -36,26 +36,22 @@ export interface XmlElement {
 }
 
 export interface XmlText {
-  kind: 'text';
+  kind: "text";
   value: string;
 }
 
 export interface XmlComment {
-  kind: 'comment';
+  kind: "comment";
   value: string;
 }
 
 export interface XmlProcessingInstruction {
-  kind: 'pi';
+  kind: "pi";
   target: string;
   data: string;
 }
 
-export type XmlNode =
-  | XmlElement
-  | XmlText
-  | XmlComment
-  | XmlProcessingInstruction;
+export type XmlNode = XmlElement | XmlText | XmlComment | XmlProcessingInstruction;
 
 export interface XmlDocument {
   /** Comments, processing instructions and whitespace before the root. */
@@ -74,30 +70,27 @@ const defaultLimits: XmlLimits = { maxDepth: 256, maxNodes: 200_000 };
 
 // XML 1.0 (fifth edition) Char production. With the `u` flag a lone
 // surrogate is its own code point, outside every range, so it matches.
-const invalidCharacter =
-  /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u;
+const invalidCharacter = /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u;
 
 /** Whether `text` can be represented in an XML 1.0 document. */
-export const isXmlText = (text: string): boolean =>
-  !invalidCharacter.test(text);
+export const isXmlText = (text: string): boolean => !invalidCharacter.test(text);
 
 const nameStartRanges =
-  ':A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}';
+  ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\u{10000}-\\u{EFFFF}";
 
-const nameStart = new RegExp(`[${nameStartRanges}]`, 'u');
+const nameStart = new RegExp(`[${nameStartRanges}]`, "u");
 
 const nameChar = new RegExp(
   `[${nameStartRanges}\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040]`,
-  'u',
+  "u",
 );
 
-const isWhitespace = (c: string | undefined) =>
-  c === ' ' || c === '\t' || c === '\n' || c === '\r';
+const isWhitespace = (c: string | undefined) => c === " " || c === "\t" || c === "\n" || c === "\r";
 
 const predefinedEntities: Record<string, string> = {
-  lt: '<',
-  gt: '>',
-  amp: '&',
+  lt: "<",
+  gt: ">",
+  amp: "&",
   apos: "'",
   quot: '"',
 };
@@ -119,23 +112,23 @@ class Parser {
 
   constructor(text: string, limits: XmlLimits) {
     // XML 1.0 section 2.11: every CRLF and lone CR is read as LF.
-    this.text = text.replace(/\r\n?/g, '\n');
+    this.text = text.replace(/\r\n?/g, "\n");
     this.limits = limits;
   }
 
   parse(): XmlDocument {
     if (!isXmlText(this.text)) {
-      throw new XmlError('XML contains characters outside the XML 1.0 range');
+      throw new XmlError("XML contains characters outside the XML 1.0 range");
     }
 
     const prolog = this.misc(true);
 
-    if (this.peek() !== '<') throw this.error('expected the root element');
+    if (this.peek() !== "<") throw this.error("expected the root element");
     const root = this.element(undefined, 1);
     const epilog = this.misc(false);
 
     if (this.pos !== this.text.length) {
-      throw this.error('content after the root element');
+      throw this.error("content after the root element");
     }
 
     return { prolog, root, epilog };
@@ -157,7 +150,7 @@ class Parser {
     this.nodes += 1;
 
     if (this.nodes > this.limits.maxNodes) {
-      throw new XmlError('XML: too many nodes');
+      throw new XmlError("XML: too many nodes");
     }
   }
 
@@ -170,25 +163,25 @@ class Parser {
         const start = this.pos;
 
         while (isWhitespace(this.peek())) this.pos++;
-        nodes.push({ kind: 'text', value: this.text.slice(start, this.pos) });
-      } else if (this.startsWith('<?')) {
+        nodes.push({ kind: "text", value: this.text.slice(start, this.pos) });
+      } else if (this.startsWith("<?")) {
         const pi = this.processingInstruction();
 
-        if (pi.target.toLowerCase() === 'xml') {
-          if (!(isProlog && first) || pi.target !== 'xml') {
-            throw this.error('misplaced XML declaration');
+        if (pi.target.toLowerCase() === "xml") {
+          if (!(isProlog && first) || pi.target !== "xml") {
+            throw this.error("misplaced XML declaration");
           }
 
           if (!xmlDeclaration.test(pi.data)) {
-            throw this.error('malformed XML declaration');
+            throw this.error("malformed XML declaration");
           }
         }
 
         nodes.push(pi);
-      } else if (this.startsWith('<!--')) {
+      } else if (this.startsWith("<!--")) {
         nodes.push(this.comment());
-      } else if (this.startsWith('<!')) {
-        throw this.error('document type declarations are not accepted');
+      } else if (this.startsWith("<!")) {
+        throw this.error("document type declarations are not accepted");
       } else {
         break;
       }
@@ -204,7 +197,7 @@ class Parser {
     const first = this.text.codePointAt(this.pos);
 
     if (first === undefined || !nameStart.test(String.fromCodePoint(first))) {
-      throw this.error('expected a name');
+      throw this.error("expected a name");
     }
 
     this.pos += first > 0xffff ? 2 : 1;
@@ -231,46 +224,45 @@ class Parser {
     this.count();
     this.pos += 2;
     const target = this.name();
-    let data = '';
+    let data = "";
 
-    if (!this.startsWith('?>')) {
-      if (!this.skipWhitespace())
-        throw this.error('malformed processing instruction');
-      const end = this.text.indexOf('?>', this.pos);
+    if (!this.startsWith("?>")) {
+      if (!this.skipWhitespace()) throw this.error("malformed processing instruction");
+      const end = this.text.indexOf("?>", this.pos);
 
-      if (end < 0) throw this.error('unterminated processing instruction');
+      if (end < 0) throw this.error("unterminated processing instruction");
       data = this.text.slice(this.pos, end);
       this.pos = end;
     }
 
     this.pos += 2;
 
-    return { kind: 'pi', target, data };
+    return { kind: "pi", target, data };
   }
 
   private comment(): XmlComment {
     this.count();
     this.pos += 4;
-    const end = this.text.indexOf('--', this.pos);
+    const end = this.text.indexOf("--", this.pos);
 
-    if (end < 0) throw this.error('unterminated comment');
+    if (end < 0) throw this.error("unterminated comment");
 
-    if (this.text[end + 2] !== '>') throw this.error("'--' inside a comment");
+    if (this.text[end + 2] !== ">") throw this.error("'--' inside a comment");
     const value = this.text.slice(this.pos, end);
     this.pos = end + 3;
 
-    return { kind: 'comment', value };
+    return { kind: "comment", value };
   }
 
   private reference(): string {
     // At '&'.
-    const end = this.text.indexOf(';', this.pos);
+    const end = this.text.indexOf(";", this.pos);
 
-    if (end < 0) throw this.error('unterminated reference');
+    if (end < 0) throw this.error("unterminated reference");
     const body = this.text.slice(this.pos + 1, end);
     this.pos = end + 1;
 
-    if (body.startsWith('#')) {
+    if (body.startsWith("#")) {
       const code = /^#x[0-9a-fA-F]+$/.test(body)
         ? parseInt(body.slice(2), 16)
         : /^#[0-9]+$/.test(body)
@@ -278,20 +270,17 @@ class Parser {
           : Number.NaN;
 
       if (!Number.isFinite(code) || code > 0x10ffff) {
-        throw this.error('malformed character reference');
+        throw this.error("malformed character reference");
       }
 
       const char = String.fromCodePoint(code);
 
-      if (!isXmlText(char))
-        throw this.error('character reference to a non-character');
+      if (!isXmlText(char)) throw this.error("character reference to a non-character");
 
       return char;
     }
 
-    const entity = Object.hasOwn(predefinedEntities, body)
-      ? predefinedEntities[body]
-      : undefined;
+    const entity = Object.hasOwn(predefinedEntities, body) ? predefinedEntities[body] : undefined;
 
     if (entity === undefined) throw this.error(`undeclared entity '${body}'`);
 
@@ -301,15 +290,14 @@ class Parser {
   private attributeValue(): string {
     const quote = this.peek();
 
-    if (quote !== '"' && quote !== "'")
-      throw this.error('expected a quoted value');
+    if (quote !== '"' && quote !== "'") throw this.error("expected a quoted value");
     this.pos++;
-    let value = '';
+    let value = "";
 
     for (;;) {
       const c = this.peek();
 
-      if (c === undefined) throw this.error('unterminated attribute value');
+      if (c === undefined) throw this.error("unterminated attribute value");
 
       if (c === quote) {
         this.pos++;
@@ -317,21 +305,20 @@ class Parser {
         return value;
       }
 
-      if (c === '<') throw this.error("'<' in an attribute value");
+      if (c === "<") throw this.error("'<' in an attribute value");
 
-      if (c === '&') {
+      if (c === "&") {
         value += this.reference();
       } else {
         // Attribute-value normalization (XML 1.0 3.3.3) for CDATA attributes.
-        value += c === '\t' || c === '\n' ? ' ' : c;
+        value += c === "\t" || c === "\n" ? " " : c;
         this.pos++;
       }
     }
   }
 
   private element(parent: XmlElement | undefined, depth: number): XmlElement {
-    if (depth > this.limits.maxDepth)
-      throw new XmlError('XML: nesting too deep');
+    if (depth > this.limits.maxDepth) throw new XmlError("XML: nesting too deep");
     this.count();
     this.pos++; // '<'
     const name = this.name();
@@ -341,13 +328,13 @@ class Parser {
       const hadSpace = this.skipWhitespace();
       const c = this.peek();
 
-      if (c === '>' || c === '/') break;
+      if (c === ">" || c === "/") break;
 
-      if (!hadSpace) throw this.error('expected whitespace between attributes');
+      if (!hadSpace) throw this.error("expected whitespace between attributes");
       const attrName = this.name();
       this.skipWhitespace();
 
-      if (this.peek() !== '=') throw this.error("expected '='");
+      if (this.peek() !== "=") throw this.error("expected '='");
       this.pos++;
       this.skipWhitespace();
       const value = this.attributeValue();
@@ -361,7 +348,7 @@ class Parser {
     }
 
     const element: XmlElement = {
-      kind: 'element',
+      kind: "element",
       name,
       ns: undefined,
       local: name,
@@ -379,24 +366,24 @@ class Parser {
     }));
 
     for (const attr of element.attributes) {
-      if (attr.name === 'xmlns' || attr.name.startsWith('xmlns:')) {
+      if (attr.name === "xmlns" || attr.name.startsWith("xmlns:")) {
         attr.ns = XMLNS_NAMESPACE;
-        attr.local = attr.name === 'xmlns' ? '' : attr.name.slice(6);
+        attr.local = attr.name === "xmlns" ? "" : attr.name.slice(6);
 
-        if (attr.local === 'xmlns' || attr.local.includes(':')) {
-          throw this.error('malformed namespace declaration');
+        if (attr.local === "xmlns" || attr.local.includes(":")) {
+          throw this.error("malformed namespace declaration");
         }
 
-        if (attr.local !== '' && attr.value === '') {
-          throw this.error('a prefix cannot be undeclared in XML 1.0');
+        if (attr.local !== "" && attr.value === "") {
+          throw this.error("a prefix cannot be undeclared in XML 1.0");
         }
 
         // Namespaces in XML 1.0, section 3: reserved bindings.
         if (
-          (attr.local === 'xml') !== (attr.value === XML_NAMESPACE) ||
+          (attr.local === "xml") !== (attr.value === XML_NAMESPACE) ||
           attr.value === XMLNS_NAMESPACE
         ) {
-          throw this.error('reserved namespace bound wrongly');
+          throw this.error("reserved namespace bound wrongly");
         }
       }
     }
@@ -411,16 +398,16 @@ class Parser {
       const [attrNs, attrLocal] = resolveName(element, attr.name, false);
       attr.ns = attrNs;
       attr.local = attrLocal;
-      const key = `${attrNs ?? ''}\u0000${attrLocal}`;
+      const key = `${attrNs ?? ""}\u0000${attrLocal}`;
 
       if (seen.has(key)) throw this.error(`duplicate attribute '${attr.name}'`);
       seen.add(key);
     }
 
-    if (this.peek() === '/') {
+    if (this.peek() === "/") {
       this.pos++;
 
-      if (this.peek() !== '>') throw this.error("expected '>'");
+      if (this.peek() !== ">") throw this.error("expected '>'");
       this.pos++;
 
       return element;
@@ -428,13 +415,13 @@ class Parser {
 
     this.pos++; // '>'
 
-    let text = '';
+    let text = "";
 
     const flushText = () => {
       if (text) {
         this.count();
-        element.children.push({ kind: 'text', value: text });
-        text = '';
+        element.children.push({ kind: "text", value: text });
+        text = "";
       }
     };
 
@@ -443,14 +430,14 @@ class Parser {
 
       if (c === undefined) throw this.error(`unclosed element '${name}'`);
 
-      if (c === '<') {
-        if (this.startsWith('</')) {
+      if (c === "<") {
+        if (this.startsWith("</")) {
           flushText();
           this.pos += 2;
           const closing = this.name();
           this.skipWhitespace();
 
-          if (closing !== name || this.peek() !== '>') {
+          if (closing !== name || this.peek() !== ">") {
             throw this.error(`mismatched closing tag for '${name}'`);
           }
 
@@ -459,34 +446,34 @@ class Parser {
           return element;
         }
 
-        if (this.startsWith('<![CDATA[')) {
-          const end = this.text.indexOf(']]>', this.pos);
+        if (this.startsWith("<![CDATA[")) {
+          const end = this.text.indexOf("]]>", this.pos);
 
-          if (end < 0) throw this.error('unterminated CDATA section');
+          if (end < 0) throw this.error("unterminated CDATA section");
           text += this.text.slice(this.pos + 9, end);
           this.pos = end + 3;
-        } else if (this.startsWith('<!--')) {
+        } else if (this.startsWith("<!--")) {
           flushText();
           element.children.push(this.comment());
-        } else if (this.startsWith('<?')) {
+        } else if (this.startsWith("<?")) {
           flushText();
           const pi = this.processingInstruction();
 
-          if (pi.target.toLowerCase() === 'xml') {
-            throw this.error('misplaced XML declaration');
+          if (pi.target.toLowerCase() === "xml") {
+            throw this.error("misplaced XML declaration");
           }
 
           element.children.push(pi);
-        } else if (this.startsWith('<!')) {
-          throw this.error('markup declarations are not accepted');
+        } else if (this.startsWith("<!")) {
+          throw this.error("markup declarations are not accepted");
         } else {
           flushText();
           element.children.push(this.element(element, depth + 1));
         }
-      } else if (c === '&') {
+      } else if (c === "&") {
         text += this.reference();
       } else {
-        if (c === ']' && this.startsWith(']]>')) {
+        if (c === "]" && this.startsWith("]]>")) {
           throw this.error("']]>' in content");
         }
 
@@ -502,14 +489,14 @@ export const lookupNamespace = (
   element: XmlElement | undefined,
   prefix: string,
 ): string | undefined => {
-  if (prefix === 'xml') return XML_NAMESPACE;
+  if (prefix === "xml") return XML_NAMESPACE;
 
-  if (prefix === 'xmlns') return XMLNS_NAMESPACE;
+  if (prefix === "xmlns") return XMLNS_NAMESPACE;
 
   for (let e = element; e; e = e.parent) {
     for (const attr of e.attributes) {
       if (attr.ns === XMLNS_NAMESPACE && attr.local === prefix) {
-        return attr.value === '' ? undefined : attr.value;
+        return attr.value === "" ? undefined : attr.value;
       }
     }
   }
@@ -522,16 +509,16 @@ const resolveName = (
   name: string,
   isElement: boolean,
 ): [string | undefined, string] => {
-  const colon = name.indexOf(':');
+  const colon = name.indexOf(":");
 
   if (colon < 0) {
-    return [isElement ? lookupNamespace(element, '') : undefined, name];
+    return [isElement ? lookupNamespace(element, "") : undefined, name];
   }
 
   const prefix = name.slice(0, colon);
   const local = name.slice(colon + 1);
 
-  if (!prefix || !local || local.includes(':')) {
+  if (!prefix || !local || local.includes(":")) {
     throw new XmlError(`XML: malformed qualified name '${name}'`);
   }
 
@@ -544,10 +531,8 @@ const resolveName = (
   return [ns, local];
 };
 
-export const parseXml = (
-  text: string,
-  limits: XmlLimits = defaultLimits,
-): XmlDocument => new Parser(text, limits).parse();
+export const parseXml = (text: string, limits: XmlLimits = defaultLimits): XmlDocument =>
+  new Parser(text, limits).parse();
 
 /**
  * Decode XML bytes: UTF-8 (with or without a byte order mark) or UTF-16 with
@@ -555,54 +540,44 @@ export const parseXml = (
  */
 export const decodeXmlBytes = (bytes: Uint8Array): string => {
   if (bytes[0] === 0xfe && bytes[1] === 0xff) {
-    return new TextDecoder('utf-16be', { fatal: true }).decode(
-      bytes.subarray(2),
-    );
+    return new TextDecoder("utf-16be", { fatal: true }).decode(bytes.subarray(2));
   }
 
   if (bytes[0] === 0xff && bytes[1] === 0xfe) {
-    return new TextDecoder('utf-16le', { fatal: true }).decode(
-      bytes.subarray(2),
-    );
+    return new TextDecoder("utf-16le", { fatal: true }).decode(bytes.subarray(2));
   }
 
   // TextDecoder drops a leading UTF-8 byte order mark itself.
-  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 };
 
 const escapeText = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\r/g, '&#xD;');
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\r/g, "&#xD;");
 
 const escapeAttribute = (value: string) =>
   value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\t/g, '&#x9;')
-    .replace(/\n/g, '&#xA;')
-    .replace(/\r/g, '&#xD;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/"/g, "&quot;")
+    .replace(/\t/g, "&#x9;")
+    .replace(/\n/g, "&#xA;")
+    .replace(/\r/g, "&#xD;");
 
 const serializeNode = (node: XmlNode, out: string[]): void => {
   switch (node.kind) {
-    case 'text':
+    case "text":
       out.push(escapeText(node.value));
 
       return;
-    case 'comment':
+    case "comment":
       out.push(`<!--${node.value}-->`);
 
       return;
-    case 'pi':
-      out.push(
-        node.data ? `<?${node.target} ${node.data}?>` : `<?${node.target}?>`,
-      );
+    case "pi":
+      out.push(node.data ? `<?${node.target} ${node.data}?>` : `<?${node.target}?>`);
 
       return;
-    case 'element': {
+    case "element": {
       out.push(`<${node.name}`);
 
       for (const attr of node.attributes) {
@@ -610,12 +585,12 @@ const serializeNode = (node: XmlNode, out: string[]): void => {
       }
 
       if (node.children.length === 0) {
-        out.push('/>');
+        out.push("/>");
 
         return;
       }
 
-      out.push('>');
+      out.push(">");
 
       for (const child of node.children) serializeNode(child, out);
       out.push(`</${node.name}>`);
@@ -634,7 +609,7 @@ export const serializeXml = (doc: XmlDocument): string => {
   const out: string[] = [];
 
   for (const node of doc.prolog) {
-    if (node.kind === 'pi' && node.target.toLowerCase() === 'xml') continue;
+    if (node.kind === "pi" && node.target.toLowerCase() === "xml") continue;
     serializeNode(node, out);
   }
 
@@ -642,7 +617,7 @@ export const serializeXml = (doc: XmlDocument): string => {
 
   for (const node of doc.epilog) serializeNode(node, out);
 
-  return out.join('');
+  return out.join("");
 };
 
 /** Create an element with the given qualified name, namespace and parent. */
@@ -651,10 +626,10 @@ export const createElement = (
   ns: string | undefined,
   parent: XmlElement | undefined,
 ): XmlElement => {
-  const colon = name.indexOf(':');
+  const colon = name.indexOf(":");
 
   return {
-    kind: 'element',
+    kind: "element",
     name,
     ns,
     local: colon < 0 ? name : name.slice(colon + 1),
@@ -667,9 +642,9 @@ export const createElement = (
 /** The concatenated text of an element's text children. */
 export const textContent = (element: XmlElement): string =>
   element.children
-    .filter((c): c is XmlText => c.kind === 'text')
+    .filter((c): c is XmlText => c.kind === "text")
     .map((c) => c.value)
-    .join('');
+    .join("");
 
 export const childElements = (element: XmlElement): XmlElement[] =>
-  element.children.filter((c): c is XmlElement => c.kind === 'element');
+  element.children.filter((c): c is XmlElement => c.kind === "element");

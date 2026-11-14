@@ -1,9 +1,9 @@
-import GraphElement from './GraphElement.js';
-import Point from './Point.js';
-import Segment from './Segment.js';
+import GraphElement from "./GraphElement.js";
+import Point from "./Point.js";
+import Segment from "./Segment.js";
 
 export default class Rectangle extends GraphElement {
-  static type = 'Rectangle';
+  static type = "Rectangle";
   start: Point;
   end: Point;
   constructor(start: Point = new Point(), end: Point = new Point()) {

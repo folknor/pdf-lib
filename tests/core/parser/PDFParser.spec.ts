@@ -1,7 +1,7 @@
-import fs from 'fs';
-import { vi } from 'vitest';
+import fs from "fs";
+import { vi } from "vitest";
 
-import { zlibSync } from 'fflate';
+import { zlibSync } from "fflate";
 
 import {
   CharCodes,
@@ -17,16 +17,13 @@ import {
   PDFString,
   ReparseError,
   typedArrayFor,
-} from '../../../src/index';
+} from "../../../src/index";
 
-describe('PDFParser', () => {
+describe("PDFParser", () => {
   const origConsoleWarn = console.warn;
 
   beforeAll(() => {
-    const ignoredWarnings = [
-      'Invalid object ',
-      'Removing parsed object: 0 0 R',
-    ];
+    const ignoredWarnings = ["Invalid object ", "Removing parsed object: 0 0 R"];
 
     console.warn = vi.fn((...args) => {
       const isIgnored = ignoredWarnings.find((iw) => args[0].includes(iw));
@@ -43,7 +40,7 @@ describe('PDFParser', () => {
     console.warn = origConsoleWarn;
   });
 
-  it('throws an error when the PDF is missing a header', async () => {
+  it("throws an error when the PDF is missing a header", async () => {
     const input = `
       I_AM_NOT_A_HEADER
       1 0 obj
@@ -69,13 +66,13 @@ describe('PDFParser', () => {
   });
 
   // https://github.com/cantoo-scribe/pdf-lib/issues/180
-  it('keeps a trailing \\r in a stream whose indirect /Length follows it', async () => {
+  it("keeps a trailing \\r in a stream whose indirect /Length follows it", async () => {
     // Avoid the word "stream" in the data: the fallback scanner would count it
     // as a nested stream keyword.
-    const data = 'These payload bytes end in a CR byte.\r';
+    const data = "These payload bytes end in a CR byte.\r";
 
     const input =
-      '%PDF-1.7\n' +
+      "%PDF-1.7\n" +
       `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data}\nendstream\nendobj\n` +
       `2 0 obj\n${data.length}\nendobj\n`;
 
@@ -86,26 +83,26 @@ describe('PDFParser', () => {
     expect((stream as PDFRawStream).getContentsString()).toBe(data);
   });
 
-  it('ignores a forward indirect /Length that is not followed by endstream', async () => {
+  it("ignores a forward indirect /Length that is not followed by endstream", async () => {
     const input =
-      '%PDF-1.7\n' +
-      '1 0 obj\n<< /Length 2 0 R >>\nstream\nabc\r\nendstream\nendobj\n' +
-      '2 0 obj\n2\nendobj\n';
+      "%PDF-1.7\n" +
+      "1 0 obj\n<< /Length 2 0 R >>\nstream\nabc\r\nendstream\nendobj\n" +
+      "2 0 obj\n2\nendobj\n";
 
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
     const context = await parser.parseDocument();
     const stream = context.lookup(PDFRef.of(1)) as PDFRawStream;
-    expect(stream.getContentsString()).toBe('abc');
+    expect(stream.getContentsString()).toBe("abc");
   });
 
-  it('uses the final revision of an indirect /Length after an incremental update', async () => {
-    const data1 = 'Original payload bytes of the object.';
+  it("uses the final revision of an indirect /Length after an incremental update", async () => {
+    const data1 = "Original payload bytes of the object.";
     // Updated data's last byte is a space, so the stale length (one less)
     // would still be followed by whitespace + endstream and pass validation.
-    const data2 = 'Updated payload bytes, one byte more. ';
+    const data2 = "Updated payload bytes, one byte more. ";
 
     const input =
-      '%PDF-1.7\n' +
+      "%PDF-1.7\n" +
       `1 0 obj\n<< /Length 2 0 R >>\nstream\n${data1}\nendstream\nendobj\n` +
       `2 0 obj\n${data1.length}\nendobj\n` +
       // Incremental update: the stream comes before its new length object.
@@ -119,15 +116,15 @@ describe('PDFParser', () => {
     expect(stream.getContentsString()).toBe(data2);
   });
 
-  it('propagates DecodedStreamTooLargeError from an oversized object stream', async () => {
+  it("propagates DecodedStreamTooLargeError from an oversized object stream", async () => {
     const compressed = zlibSync(new Uint8Array(4 << 20));
 
     const input = mergeIntoTypedArray(
-      '%PDF-1.7\n',
-      '1 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode ' +
+      "%PDF-1.7\n",
+      "1 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode " +
         `/Length ${compressed.length} >>\nstream\n`,
       compressed,
-      '\nendstream\nendobj\n',
+      "\nendstream\nendobj\n",
     );
 
     const parser = PDFParser.forBytesWithOptions(
@@ -140,13 +137,11 @@ describe('PDFParser', () => {
       1024,
     );
 
-    await expect(parser.parseDocument()).rejects.toThrow(
-      DecodedStreamTooLargeError,
-    );
+    await expect(parser.parseDocument()).rejects.toThrow(DecodedStreamTooLargeError);
   });
 
   // https://github.com/cantoo-scribe/pdf-lib/issues/64
-  it('recovers when an xref subsection header is missing its second int', async () => {
+  it("recovers when an xref subsection header is missing its second int", async () => {
     const input = `
       %PDF-1.7
       1 0 obj
@@ -171,13 +166,13 @@ describe('PDFParser', () => {
     expect(context.trailerInfo.Root).toBeDefined();
   });
 
-  it('handles invalid binary comments after header', async () => {
+  it("handles invalid binary comments after header", async () => {
     const input = mergeIntoTypedArray(
-      '%PDF-1.7\n',
+      "%PDF-1.7\n",
       new Uint8Array([128, 1, 2, 3, 4, 5, 129, 130, 131, CharCodes.Newline]),
-      '1 0 obj\n',
-      ' . (foobar)\n',
-      'endobj',
+      "1 0 obj\n",
+      " . (foobar)\n",
+      "endobj",
     );
 
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
@@ -185,13 +180,13 @@ describe('PDFParser', () => {
     expect(context.enumerateIndirectObjects().length).toBe(1);
   });
 
-  it('handles invalid binary comments with missing newline after header', async () => {
+  it("handles invalid binary comments with missing newline after header", async () => {
     const input = mergeIntoTypedArray(
-      '%PDF-1.7\n',
+      "%PDF-1.7\n",
       new Uint8Array([142, 1, 2, 3, 4, 5, 129, 130, 131]),
-      '1 0 obj\n',
-      ' . (foobar)\n',
-      'endobj',
+      "1 0 obj\n",
+      " . (foobar)\n",
+      "endobj",
     );
 
     const parser = PDFParser.forBytesWithOptions(typedArrayFor(input));
@@ -199,7 +194,7 @@ describe('PDFParser', () => {
     expect(context.enumerateIndirectObjects().length).toBe(1);
   });
 
-  it('does not stall when stuff follows the last %%EOL', async () => {
+  it("does not stall when stuff follows the last %%EOL", async () => {
     const input = `
       %PDF-1.7
       1 0 obj
@@ -216,7 +211,7 @@ describe('PDFParser', () => {
     expect(context.enumerateIndirectObjects().length).toBe(1);
   });
 
-  it('handles invalid indirect objects', async () => {
+  it("handles invalid indirect objects", async () => {
     const input = `
     %PDF-1.7
     22 0 obj <</Type/Outlines/First ## 0 R/Last ** 0 R/Count 2>> endobj
@@ -230,22 +225,18 @@ describe('PDFParser', () => {
     expect(object).toBeInstanceOf(PDFInvalidObject);
   });
 
-  it('throws an error with invalid indirect objects when throwOnInvalidObject=true', async () => {
+  it("throws an error with invalid indirect objects when throwOnInvalidObject=true", async () => {
     const input = `
     %PDF-1.7
     22 0 obj <</Type/Outlines/First ## 0 R/Last ** 0 R/Count 2>> endobj
   `;
 
-    const parser = PDFParser.forBytesWithOptions(
-      typedArrayFor(input),
-      100,
-      true,
-    );
+    const parser = PDFParser.forBytesWithOptions(typedArrayFor(input), 100, true);
 
     await expect(parser.parseDocument()).rejects.toBeInstanceOf(Error);
   });
 
-  it('handles xref sections with empty subsections', async () => {
+  it("handles xref sections with empty subsections", async () => {
     const input = `
     %PDF-1.7
     22 0 obj
@@ -268,122 +259,116 @@ describe('PDFParser', () => {
     expect(object).toBeInstanceOf(PDFString);
   });
 
-  it('can parse PDF files with comments and stuff preceding the header', async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/pdf20examples/PDF 2.0 with offset start.pdf',
-    );
+  it("can parse PDF files with comments and stuff preceding the header", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/pdf20examples/PDF 2.0 with offset start.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-2.0\n%');
+    expect(context.header.toString()).toEqual("%PDF-2.0\n%");
     expect(context.enumerateIndirectObjects().length).toBe(8);
   });
 
-  it('can parse PDF files with comments stuff following the header', async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/stuff_following_header.pdf',
-    );
+  it("can parse PDF files with comments stuff following the header", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/stuff_following_header.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.4\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.4\n%");
     expect(context.enumerateIndirectObjects().length).toBe(12);
   });
 
-  it('can parse PDF files with missing xref table, trailer dict, and trailer', async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/missing_xref_trailer_dict.pdf',
-    );
+  it("can parse PDF files with missing xref table, trailer dict, and trailer", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/missing_xref_trailer_dict.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-2.0\n%');
+    expect(context.header.toString()).toEqual("%PDF-2.0\n%");
     expect(context.enumerateIndirectObjects().length).toBe(8);
   });
 
-  it('can parse PDF files with invalid xref table', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("can parse PDF files with invalid xref table", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.3\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.3\n%");
     expect(context.enumerateIndirectObjects().length).toBe(108);
   });
 
-  it('can parse PDF files without object streams or update sections', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("can parse PDF files without object streams or update sections", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.3\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.3\n%");
     expect(context.enumerateIndirectObjects().length).toBe(108);
   });
 
-  it('can parse PDF files with update sections', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/with_update_sections.pdf');
+  it("can parse PDF files with update sections", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/with_update_sections.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.7\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.7\n%");
     // Note: XRef stream objects are now registered for incremental update support
     expect(context.enumerateIndirectObjects().length).toBe(138);
   });
 
-  it('can parse PDF files with comments', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/with_comments.pdf');
+  it("can parse PDF files with comments", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/with_comments.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.7\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.7\n%");
     // Note: XRef stream objects are now registered in the context for proper incremental update support
     expect(context.enumerateIndirectObjects().length).toBe(145);
   });
 
-  it('prevents double parsing', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/normal.pdf');
+  it("prevents double parsing", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/normal.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
 
     await expect(parser.parseDocument()).resolves.not.toThrow();
     await expect(parser.parseDocument()).rejects.toThrow(
-      new ReparseError('PDFParser', 'parseDocument'),
+      new ReparseError("PDFParser", "parseDocument"),
     );
   });
 
-  it('can parse PDF files with binary jibberish between indirect objects', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/giraffe.pdf');
+  it("can parse PDF files with binary jibberish between indirect objects", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/giraffe.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.6\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.6\n%");
     // Note: XRef stream objects are now registered for incremental update support
     expect(context.enumerateIndirectObjects().length).toBe(22);
   });
 
-  it('can fix incorrect values for /Root', async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/invalid_root_ref.pdf');
+  it("can fix incorrect values for /Root", async () => {
+    const pdfBytes = fs.readFileSync("./assets/pdfs/invalid_root_ref.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.5\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.5\n%");
     expect(context.trailerInfo.Root).toBe(PDFRef.of(2, 0));
     // The effective xref's offsets are all wrong, so each in-use entry is
     // found by a scan; the bodies of 19-23, which it frees, stay out.
@@ -395,54 +380,46 @@ describe('PDFParser', () => {
   });
 
   it("can parse files containing indirect objects missing their 'endobj' keyword", async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/missing_endobj_keyword.pdf',
-    );
+    const pdfBytes = fs.readFileSync("./assets/pdfs/missing_endobj_keyword.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.3\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.3\n%");
     expect(context.enumerateIndirectObjects().length).toBe(7);
   });
 
   it("can parse files with containing large arrays with most 'null' values", async () => {
-    const pdfBytes = fs.readFileSync('./assets/pdfs/bixby_guide.pdf');
+    const pdfBytes = fs.readFileSync("./assets/pdfs/bixby_guide.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.4\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.4\n%");
 
     const objects = context.enumerateIndirectObjects();
     // Note: XRef stream objects are now registered for incremental update support
     expect(objects.length).toBe(26237);
-    expect(
-      objects.filter(([_ref, obj]) => obj instanceof PDFPageLeaf).length,
-    ).toBe(176);
+    expect(objects.filter(([_ref, obj]) => obj instanceof PDFPageLeaf).length).toBe(176);
   });
 
   it('can parse files with invalid stream EOLs: "stream \r\n', async () => {
-    const pdfBytes = fs.readFileSync(
-      './assets/pdfs/with_invalid_stream_EOL.pdf',
-    );
+    const pdfBytes = fs.readFileSync("./assets/pdfs/with_invalid_stream_EOL.pdf");
 
     const parser = PDFParser.forBytesWithOptions(pdfBytes);
     const context = await parser.parseDocument();
 
     expect(context.header).toBeInstanceOf(PDFHeader);
-    expect(context.header.toString()).toEqual('%PDF-1.3\n%');
+    expect(context.header.toString()).toEqual("%PDF-1.3\n%");
 
     const objects = context.enumerateIndirectObjects();
     expect(objects.length).toBe(11);
-    expect(
-      objects.filter(([_ref, obj]) => obj instanceof PDFPageLeaf).length,
-    ).toBe(2);
+    expect(objects.filter(([_ref, obj]) => obj instanceof PDFPageLeaf).length).toBe(2);
   });
 
-  it('handles updated PDFs missing newline after %%EOF marker', async () => {
+  it("handles updated PDFs missing newline after %%EOF marker", async () => {
     const input = `
     %PDF-1.7
     22 0 obj
@@ -476,7 +453,7 @@ describe('PDFParser', () => {
     expect(object28).toBeInstanceOf(PDFDict);
   });
 
-  it('handles updated PDFs with comments preceding %%EOF marker', async () => {
+  it("handles updated PDFs with comments preceding %%EOF marker", async () => {
     const input = `
     %PDF-1.7
     22 0 obj
@@ -511,7 +488,7 @@ describe('PDFParser', () => {
     expect(object28).toBeInstanceOf(PDFDict);
   });
 
-  it('removes indirect objects with objectNumber=0', async () => {
+  it("removes indirect objects with objectNumber=0", async () => {
     const input = `
     %PDF-1.7
     1 0 obj

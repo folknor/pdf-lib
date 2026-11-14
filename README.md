@@ -4,7 +4,6 @@ Fork of [cantoo-scribe/pdf-lib](https://github.com/cantoo-scribe/pdf-lib), which
 
 Built with LLMs. See [LLM.md](LLM.md).
 
-
 ## Changes from upstream
 
 - ESM-only (no CJS/UMD)
@@ -46,7 +45,7 @@ The catalog XMP metadata stream is never compressed.
 Declare a document PDF/A-1B, -2B, -2U, -3B or -3U:
 
 ```ts
-pdfDoc.declarePDFA({ part: 3, conformance: 'B' });
+pdfDoc.declarePDFA({ part: 3, conformance: "B" });
 ```
 
 This writes the `pdfaid` identification into the catalog XMP (editing an existing packet, never rebuilding it), an output intent (a generated sRGB profile unless `outputIntent` is given; existing output intents are kept, never replaced) and a trailer `/ID`. It is a declaration, not a conversion: fonts, colour, transparency and actions are neither checked nor changed. `getPDFADeclaration()` reads the identification from the XMP.
@@ -72,7 +71,7 @@ Upstream's `embedFacturX()` is not ported: it rests on `convertToPDFA()`, defaul
 Get the page a form field widget is on:
 
 ```ts
-const field = form.getField('myField');
+const field = form.getField("myField");
 const pageIndex = field.getWidgetPageIndex(); // 0-based
 const page = field.getWidgetPage();
 const widgets = field.getWidgets();
@@ -110,7 +109,8 @@ const orientation = image.orientation; // 1-8 or undefined
 // 5-8 also swap width/height
 if (orientation === 6) {
   page.drawImage(image, {
-    x, y,
+    x,
+    y,
     width: image.height, // swapped
     height: image.width,
     rotate: degrees(90),

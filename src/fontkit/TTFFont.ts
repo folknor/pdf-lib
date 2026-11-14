@@ -1,25 +1,25 @@
-import DecodeStream from '../core/streams/DecodeStream.js';
-import type * as r from '../vendors/restructure/index.js';
-import * as fontkit from './base.js';
-import CmapProcessor from './CmapProcessor.js';
-import { cacheValue } from './decorators.js';
-import BBox from './glyph/BBox.js';
-import CBDTGlyph from './glyph/CBDTGlyph.js';
-import CFFGlyph from './glyph/CFFGlyph.js';
-import COLRGlyph from './glyph/COLRGlyph.js';
-import type Glyph from './glyph/Glyph.js';
-import GlyphVariationProcessor from './glyph/GlyphVariationProcessor.js';
-import SBIXGlyph from './glyph/SBIXGlyph.js';
-import TTFGlyph from './glyph/TTFGlyph.js';
-import type { FeatureValue } from './layout/FeatureValues.js';
-import type GlyphRun from './layout/GlyphRun.js';
-import LayoutEngine from './layout/LayoutEngine.js';
-import CFFSubset from './subset/CFFSubset.js';
-import type Subset from './subset/Subset.js';
-import TTFSubset from './subset/TTFSubset.js';
-import Directory from './tables/directory.js';
-import tables from './tables/index.js';
-import { asciiDecoder } from './utils.js';
+import DecodeStream from "../core/streams/DecodeStream.js";
+import type * as r from "../vendors/restructure/index.js";
+import * as fontkit from "./base.js";
+import CmapProcessor from "./CmapProcessor.js";
+import { cacheValue } from "./decorators.js";
+import BBox from "./glyph/BBox.js";
+import CBDTGlyph from "./glyph/CBDTGlyph.js";
+import CFFGlyph from "./glyph/CFFGlyph.js";
+import COLRGlyph from "./glyph/COLRGlyph.js";
+import type Glyph from "./glyph/Glyph.js";
+import GlyphVariationProcessor from "./glyph/GlyphVariationProcessor.js";
+import SBIXGlyph from "./glyph/SBIXGlyph.js";
+import TTFGlyph from "./glyph/TTFGlyph.js";
+import type { FeatureValue } from "./layout/FeatureValues.js";
+import type GlyphRun from "./layout/GlyphRun.js";
+import LayoutEngine from "./layout/LayoutEngine.js";
+import CFFSubset from "./subset/CFFSubset.js";
+import type Subset from "./subset/Subset.js";
+import TTFSubset from "./subset/TTFSubset.js";
+import Directory from "./tables/directory.js";
+import tables from "./tables/index.js";
+import { asciiDecoder } from "./utils.js";
 
 /** Options accepted by `create()` and every font format's constructor. */
 export interface FontOptions {
@@ -34,9 +34,7 @@ export interface FontOptions {
  * Whether a cached glyph carries outlines (glyf/CFF, including SBIX and WOFF2
  * glyphs, which extend TTFGlyph), as opposed to a COLR or CBDT wrapper.
  */
-export const isOutlineGlyph = (
-  glyph: Glyph | undefined,
-): glyph is TTFGlyph | CFFGlyph =>
+export const isOutlineGlyph = (glyph: Glyph | undefined): glyph is TTFGlyph | CFFGlyph =>
   glyph instanceof TTFGlyph || glyph instanceof CFFGlyph;
 
 /**
@@ -44,7 +42,7 @@ export const isOutlineGlyph = (
  * It supports TrueType, and PostScript glyphs, and several color glyph formats.
  */
 export default class TTFFont {
-  type: string = 'TTF';
+  type: string = "TTF";
   defaultLanguage: string | null;
   stream: r.DecodeStream;
   variationCoords: number[] | null;
@@ -59,11 +57,7 @@ export default class TTFFont {
   static probe(buffer: Uint8Array): boolean {
     const format = asciiDecoder.decode(buffer.slice(0, 4));
 
-    return (
-      format === 'true' ||
-      format === 'OTTO' ||
-      format === String.fromCharCode(0, 1, 0, 0)
-    );
+    return format === "true" || format === "OTTO" || format === String.fromCharCode(0, 1, 0, 0);
   }
 
   constructor(stream: r.DecodeStream, options: FontOptions = {}) {
@@ -166,7 +160,7 @@ export default class TTFFont {
     key: string,
     lang: string = this.defaultLanguage || fontkit.defaultLanguage,
   ): string | null {
-    const record = this['name']?.records[key];
+    const record = this["name"]?.records[key];
 
     if (record) {
       // Attempt to retrieve the entry, depending on which translation is available:
@@ -176,7 +170,7 @@ export default class TTFFont {
         record[lang] ||
         (this.defaultLanguage ? record[this.defaultLanguage] : null) ||
         record[fontkit.defaultLanguage] ||
-        record['en'] ||
+        record["en"] ||
         (firstKey ? record[firstKey] : null) || // Seriously, ANY language would be fine
         null
       );
@@ -190,7 +184,7 @@ export default class TTFFont {
    * @type {string}
    */
   get postscriptName() {
-    return this.getName('postscriptName');
+    return this.getName("postscriptName");
   }
 
   /**
@@ -198,7 +192,7 @@ export default class TTFFont {
    * @type {string}
    */
   get fullName() {
-    return this.getName('fullName');
+    return this.getName("fullName");
   }
 
   /**
@@ -206,7 +200,7 @@ export default class TTFFont {
    * @type {string}
    */
   get familyName() {
-    return this.getName('fontFamily');
+    return this.getName("fontFamily");
   }
 
   /**
@@ -214,7 +208,7 @@ export default class TTFFont {
    * @type {string}
    */
   get subfamilyName() {
-    return this.getName('fontSubfamily');
+    return this.getName("fontSubfamily");
   }
 
   /**
@@ -222,7 +216,7 @@ export default class TTFFont {
    * @type {string}
    */
   get copyright() {
-    return this.getName('copyright');
+    return this.getName("copyright");
   }
 
   /**
@@ -230,7 +224,7 @@ export default class TTFFont {
    * @type {string}
    */
   get version() {
-    return this.getName('version');
+    return this.getName("version");
   }
 
   /**
@@ -247,7 +241,7 @@ export default class TTFFont {
   // existing choice, not a validated descriptor policy. Note also that the
   // OS/2 decoder reads no typo/win fields for version 0 tables.
   get ascent() {
-    return this['hhea'].ascent;
+    return this["hhea"].ascent;
   }
 
   /**
@@ -255,7 +249,7 @@ export default class TTFFont {
    * @type {number}
    */
   get descent() {
-    return this['hhea'].descent;
+    return this["hhea"].descent;
   }
 
   /**
@@ -263,7 +257,7 @@ export default class TTFFont {
    * @type {number}
    */
   get lineGap() {
-    return this['hhea'].lineGap;
+    return this["hhea"].lineGap;
   }
 
   /**
@@ -271,7 +265,7 @@ export default class TTFFont {
    * @type {number}
    */
   get underlinePosition() {
-    return this['post'].underlinePosition;
+    return this["post"].underlinePosition;
   }
 
   /**
@@ -279,7 +273,7 @@ export default class TTFFont {
    * @type {number}
    */
   get underlineThickness() {
-    return this['post'].underlineThickness;
+    return this["post"].underlineThickness;
   }
 
   /**
@@ -287,7 +281,7 @@ export default class TTFFont {
    * @type {number}
    */
   get italicAngle() {
-    return this['post'].italicAngle;
+    return this["post"].italicAngle;
   }
 
   /**
@@ -296,7 +290,7 @@ export default class TTFFont {
    * @type {number}
    */
   get capHeight() {
-    const os2 = this['OS/2'];
+    const os2 = this["OS/2"];
 
     // OS/2 v0 and v1 have no capHeight field.
     return os2?.capHeight ?? this.ascent;
@@ -308,7 +302,7 @@ export default class TTFFont {
    * @type {number}
    */
   get xHeight() {
-    const os2 = this['OS/2'];
+    const os2 = this["OS/2"];
 
     // OS/2 v0 and v1 have no xHeight field.
     return os2?.xHeight ?? 0;
@@ -319,7 +313,7 @@ export default class TTFFont {
    * @type {number}
    */
   get numGlyphs() {
-    return this['maxp'].numGlyphs;
+    return this["maxp"].numGlyphs;
   }
 
   /**
@@ -327,7 +321,7 @@ export default class TTFFont {
    * @type {number}
    */
   get unitsPerEm() {
-    return this['head'].unitsPerEm;
+    return this["head"].unitsPerEm;
   }
 
   /**
@@ -337,20 +331,15 @@ export default class TTFFont {
   get bbox() {
     return cacheValue(
       this,
-      'bbox',
+      "bbox",
       Object.freeze(
-        new BBox(
-          this['head'].xMin,
-          this['head'].yMin,
-          this['head'].xMax,
-          this['head'].yMax,
-        ),
+        new BBox(this["head"].xMin, this["head"].yMin, this["head"].xMax, this["head"].yMax),
       ),
     );
   }
 
   get _cmapProcessor() {
-    return cacheValue(this, '_cmapProcessor', new CmapProcessor(this['cmap']));
+    return cacheValue(this, "_cmapProcessor", new CmapProcessor(this["cmap"]));
   }
 
   /**
@@ -358,11 +347,7 @@ export default class TTFFont {
    * @type {number[]}
    */
   get characterSet() {
-    return cacheValue(
-      this,
-      'characterSet',
-      this._cmapProcessor.getCharacterSet(),
-    );
+    return cacheValue(this, "characterSet", this._cmapProcessor.getCharacterSet());
   }
 
   /**
@@ -407,9 +392,7 @@ export default class TTFFont {
     glyphs: (Glyph | null)[];
     codePoints: number[][];
   } {
-    return this._glyphsForCodePoints(
-      Array.from(string, (c) => c.codePointAt(0)!),
-    );
+    return this._glyphsForCodePoints(Array.from(string, (c) => c.codePointAt(0)!));
   }
 
   /**
@@ -427,8 +410,7 @@ export default class TTFFont {
     const sources: number[] = [];
 
     const isSelector = (code: number) =>
-      (0xfe00 <= code && code <= 0xfe0f) ||
-      (0xe0100 <= code && code <= 0xe01ef);
+      (0xfe00 <= code && code <= 0xfe0f) || (0xe0100 <= code && code <= 0xe01ef);
 
     for (let i = 0; i < input.length; i++) {
       const code = input[i]!;
@@ -452,7 +434,7 @@ export default class TTFFont {
   }
 
   get _layoutEngine() {
-    return cacheValue(this, '_layoutEngine', new LayoutEngine(this));
+    return cacheValue(this, "_layoutEngine", new LayoutEngine(this));
   }
 
   /**
@@ -473,13 +455,7 @@ export default class TTFFont {
     language?: string,
     direction?: string,
   ): GlyphRun {
-    return this._layoutEngine.layout(
-      string,
-      userFeatures,
-      script,
-      language,
-      direction,
-    );
+    return this._layoutEngine.layout(string, userFeatures, script, language, direction);
   }
 
   /**
@@ -499,13 +475,10 @@ export default class TTFFont {
    * @type {string[]}
    */
   get availableFeatures() {
-    return this._layoutEngine.getAvailableFeatures('DFLT', 'dflt');
+    return this._layoutEngine.getAvailableFeatures("DFLT", "dflt");
   }
 
-  getAvailableFeatures(
-    script: string = 'DFLT',
-    language: string = 'dflt',
-  ): string[] {
+  getAvailableFeatures(script: string = "DFLT", language: string = "dflt"): string[] {
     return this._layoutEngine.getAvailableFeatures(script, language);
   }
 
@@ -525,7 +498,7 @@ export default class TTFFont {
 
     if (this.directory.tables.glyf) {
       outline = new TTFGlyph(glyph, this);
-    } else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
+    } else if (this.directory.tables["CFF "] || this.directory.tables.CFF2) {
       outline = new CFFGlyph(glyph, this);
     }
 
@@ -555,7 +528,7 @@ export default class TTFFont {
       } else if (
         (this.directory.tables.CBLC || this.directory.tables.EBLC) &&
         !this.directory.tables.glyf &&
-        !this.directory.tables['CFF '] &&
+        !this.directory.tables["CFF "] &&
         !this.directory.tables.CFF2
       ) {
         // Bitmap-only fonts have no outlines, so _getBaseGlyph would yield
@@ -575,7 +548,7 @@ export default class TTFFont {
    * @return {Subset}
    */
   createSubset(): Subset {
-    if (this.directory.tables['CFF ']) {
+    if (this.directory.tables["CFF "]) {
       return new CFFSubset(this);
     }
 
@@ -592,11 +565,11 @@ export default class TTFFont {
   get variationAxes(): Record<string, any> {
     const res: Record<string, any> = {};
 
-    if (!this['fvar']) {
-      return cacheValue(this, 'variationAxes', res);
+    if (!this["fvar"]) {
+      return cacheValue(this, "variationAxes", res);
     }
 
-    for (const axis of this['fvar'].axis) {
+    for (const axis of this["fvar"].axis) {
       res[axis.axisTag.trim()] = {
         // fvar name IDs can point at strings the name table lacks.
         name: axis.name?.en,
@@ -606,7 +579,7 @@ export default class TTFFont {
       };
     }
 
-    return cacheValue(this, 'variationAxes', res);
+    return cacheValue(this, "variationAxes", res);
   }
 
   /**
@@ -619,11 +592,11 @@ export default class TTFFont {
   get namedVariations(): Record<string, any> {
     const res: Record<string, any> = {};
 
-    if (!this['fvar']) {
-      return cacheValue(this, 'namedVariations', res);
+    if (!this["fvar"]) {
+      return cacheValue(this, "namedVariations", res);
     }
 
-    for (const instance of this['fvar'].instance) {
+    for (const instance of this["fvar"].instance) {
       // An instance with no English name string cannot be keyed or selected.
       const name = instance.name?.en;
 
@@ -633,15 +606,15 @@ export default class TTFFont {
 
       const settings: Record<string, any> = {};
 
-      for (let i = 0; i < this['fvar'].axis.length; i++) {
-        const axis = this['fvar'].axis[i];
+      for (let i = 0; i < this["fvar"].axis.length; i++) {
+        const axis = this["fvar"].axis[i];
         settings[axis.axisTag.trim()] = instance.coord[i];
       }
 
       res[name] = settings;
     }
 
-    return cacheValue(this, 'namedVariations', res);
+    return cacheValue(this, "namedVariations", res);
   }
 
   /**
@@ -656,36 +629,28 @@ export default class TTFFont {
     if (
       !(
         this.directory.tables.fvar &&
-        ((this.directory.tables.gvar && this.directory.tables.glyf) ||
-          this.directory.tables.CFF2)
+        ((this.directory.tables.gvar && this.directory.tables.glyf) || this.directory.tables.CFF2)
       )
     ) {
-      throw new Error(
-        'Variations require a font with the fvar, gvar and glyf, or CFF2 tables.',
-      );
+      throw new Error("Variations require a font with the fvar, gvar and glyf, or CFF2 tables.");
     }
 
-    if (typeof settings === 'string') {
+    if (typeof settings === "string") {
       settings = this.namedVariations[settings];
     }
 
-    if (typeof settings !== 'object') {
-      throw new Error(
-        'Variation settings must be either a variation name or settings object.',
-      );
+    if (typeof settings !== "object") {
+      throw new Error("Variation settings must be either a variation name or settings object.");
     }
 
     // normalize the coordinates
-    const coords = this['fvar'].axis.map((axis: any, _i: number) => {
+    const coords = this["fvar"].axis.map((axis: any, _i: number) => {
       const axisTag = axis.axisTag.trim();
 
       if (axisTag in (settings as Record<string, number>)) {
         return Math.max(
           axis.minValue,
-          Math.min(
-            axis.maxValue,
-            (settings as Record<string, number>)[axisTag]!,
-          ),
+          Math.min(axis.maxValue, (settings as Record<string, number>)[axisTag]!),
         );
       } else {
         return axis.defaultValue;
@@ -710,24 +675,24 @@ export default class TTFFont {
   }
 
   get _variationProcessor() {
-    if (!this['fvar']) {
-      return cacheValue(this, '_variationProcessor', null);
+    if (!this["fvar"]) {
+      return cacheValue(this, "_variationProcessor", null);
     }
 
     let variationCoords = this.variationCoords;
 
     // Ignore if no variation coords and not CFF2
-    if (!variationCoords && !this['CFF2']) {
-      return cacheValue(this, '_variationProcessor', null);
+    if (!variationCoords && !this["CFF2"]) {
+      return cacheValue(this, "_variationProcessor", null);
     }
 
     if (!variationCoords) {
-      variationCoords = this['fvar'].axis.map((axis: any) => axis.defaultValue);
+      variationCoords = this["fvar"].axis.map((axis: any) => axis.defaultValue);
     }
 
     return cacheValue(
       this,
-      '_variationProcessor',
+      "_variationProcessor",
       new GlyphVariationProcessor(this, variationCoords!),
     );
   }

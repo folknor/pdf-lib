@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 //########################
 // Scripts and Languages #
@@ -8,23 +8,23 @@ const LangSysTable = new r.Struct({
   reserved: new r.Reserved(r.uint16),
   reqFeatureIndex: r.uint16,
   featureCount: r.uint16,
-  featureIndexes: new r.Array(r.uint16, 'featureCount'),
+  featureIndexes: new r.Array(r.uint16, "featureCount"),
 });
 
 const LangSysRecord = new r.Struct({
   tag: new r.String(4),
-  langSys: new r.Pointer(r.uint16, LangSysTable, { type: 'parent' }),
+  langSys: new r.Pointer(r.uint16, LangSysTable, { type: "parent" }),
 });
 
 const Script = new r.Struct({
   defaultLangSys: new r.Pointer(r.uint16, LangSysTable),
   count: r.uint16,
-  langSysRecords: new r.Array(LangSysRecord, 'count'),
+  langSysRecords: new r.Array(LangSysRecord, "count"),
 });
 
 const ScriptRecord = new r.Struct({
   tag: new r.String(4),
-  script: new r.Pointer(r.uint16, Script, { type: 'parent' }),
+  script: new r.Pointer(r.uint16, Script, { type: "parent" }),
 });
 
 export const ScriptList = new r.Array(ScriptRecord, r.uint16);
@@ -41,12 +41,12 @@ const FeatureParams = new r.Struct({
 export const Feature = new r.Struct({
   featureParams: new r.Pointer(r.uint16, FeatureParams),
   lookupCount: r.uint16,
-  lookupListIndexes: new r.Array(r.uint16, 'lookupCount'),
+  lookupListIndexes: new r.Array(r.uint16, "lookupCount"),
 });
 
 const FeatureRecord = new r.Struct({
   tag: new r.String(4),
-  feature: new r.Pointer(r.uint16, Feature, { type: 'parent' }),
+  feature: new r.Pointer(r.uint16, Feature, { type: "parent" }),
 });
 
 export const FeatureList = new r.Array(FeatureRecord, r.uint16);
@@ -54,11 +54,11 @@ export const FeatureList = new r.Array(FeatureRecord, r.uint16);
 const LookupFlags = new r.Struct({
   markAttachmentType: r.uint8,
   flags: new r.Bitfield(r.uint8, [
-    'rightToLeft',
-    'ignoreBaseGlyphs',
-    'ignoreLigatures',
-    'ignoreMarks',
-    'useMarkFilteringSet',
+    "rightToLeft",
+    "ignoreBaseGlyphs",
+    "ignoreLigatures",
+    "ignoreMarks",
+    "useMarkFilteringSet",
   ]),
 });
 
@@ -67,11 +67,8 @@ export function LookupList(SubTable: any): any {
     lookupType: r.uint16,
     flags: LookupFlags,
     subTableCount: r.uint16,
-    subTables: new r.Array(new r.Pointer(r.uint16, SubTable), 'subTableCount'),
-    markFilteringSet: new r.Optional(
-      r.uint16,
-      (t: any) => t.flags.flags.useMarkFilteringSet,
-    ),
+    subTables: new r.Array(new r.Pointer(r.uint16, SubTable), "subTableCount"),
+    markFilteringSet: new r.Optional(r.uint16, (t: any) => t.flags.flags.useMarkFilteringSet),
   });
 
   return new r.LazyArray(new r.Pointer(r.uint16, Lookup), r.uint16);
@@ -90,11 +87,11 @@ const RangeRecord = new r.Struct({
 export const Coverage = new r.VersionedStruct(r.uint16, {
   1: {
     glyphCount: r.uint16,
-    glyphs: new r.Array(r.uint16, 'glyphCount'),
+    glyphs: new r.Array(r.uint16, "glyphCount"),
   },
   2: {
     rangeCount: r.uint16,
-    rangeRecords: new r.Array(RangeRecord, 'rangeCount'),
+    rangeRecords: new r.Array(RangeRecord, "rangeCount"),
   },
 });
 
@@ -113,12 +110,12 @@ export const ClassDef = new r.VersionedStruct(r.uint16, {
     // Class array
     startGlyph: r.uint16,
     glyphCount: r.uint16,
-    classValueArray: new r.Array(r.uint16, 'glyphCount'),
+    classValueArray: new r.Array(r.uint16, "glyphCount"),
   },
   2: {
     // Class ranges
     classRangeCount: r.uint16,
-    classRangeRecord: new r.Array(ClassRangeRecord, 'classRangeCount'),
+    classRangeRecord: new r.Array(ClassRangeRecord, "classRangeCount"),
   },
 });
 
@@ -145,7 +142,7 @@ const Rule = new r.Struct({
   glyphCount: r.uint16,
   lookupCount: r.uint16,
   input: new r.Array(r.uint16, (t: any) => t.glyphCount - 1),
-  lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
+  lookupRecords: new r.Array(LookupRecord, "lookupCount"),
 });
 
 const RuleSet = new r.Array(new r.Pointer(r.uint16, Rule), r.uint16);
@@ -154,7 +151,7 @@ const ClassRule = new r.Struct({
   glyphCount: r.uint16,
   lookupCount: r.uint16,
   classes: new r.Array(r.uint16, (t: any) => t.glyphCount - 1),
-  lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
+  lookupRecords: new r.Array(LookupRecord, "lookupCount"),
 });
 
 const ClassSet = new r.Array(new r.Pointer(r.uint16, ClassRule), r.uint16);
@@ -164,20 +161,20 @@ export const Context = new r.VersionedStruct(r.uint16, {
     // Simple context
     coverage: new r.Pointer(r.uint16, Coverage),
     ruleSetCount: r.uint16,
-    ruleSets: new r.Array(new r.Pointer(r.uint16, RuleSet), 'ruleSetCount'),
+    ruleSets: new r.Array(new r.Pointer(r.uint16, RuleSet), "ruleSetCount"),
   },
   2: {
     // Class-based context
     coverage: new r.Pointer(r.uint16, Coverage),
     classDef: new r.Pointer(r.uint16, ClassDef),
     classSetCnt: r.uint16,
-    classSet: new r.Array(new r.Pointer(r.uint16, ClassSet), 'classSetCnt'),
+    classSet: new r.Array(new r.Pointer(r.uint16, ClassSet), "classSetCnt"),
   },
   3: {
     glyphCount: r.uint16,
     lookupCount: r.uint16,
-    coverages: new r.Array(new r.Pointer(r.uint16, Coverage), 'glyphCount'),
-    lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
+    coverages: new r.Array(new r.Pointer(r.uint16, Coverage), "glyphCount"),
+    lookupRecords: new r.Array(LookupRecord, "lookupCount"),
   },
 });
 
@@ -187,13 +184,13 @@ export const Context = new r.VersionedStruct(r.uint16, {
 
 const ChainRule = new r.Struct({
   backtrackGlyphCount: r.uint16,
-  backtrack: new r.Array(r.uint16, 'backtrackGlyphCount'),
+  backtrack: new r.Array(r.uint16, "backtrackGlyphCount"),
   inputGlyphCount: r.uint16,
   input: new r.Array(r.uint16, (t: any) => t.inputGlyphCount - 1),
   lookaheadGlyphCount: r.uint16,
-  lookahead: new r.Array(r.uint16, 'lookaheadGlyphCount'),
+  lookahead: new r.Array(r.uint16, "lookaheadGlyphCount"),
   lookupCount: r.uint16,
-  lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
+  lookupRecords: new r.Array(LookupRecord, "lookupCount"),
 });
 
 const ChainRuleSet = new r.Array(new r.Pointer(r.uint16, ChainRule), r.uint16);
@@ -203,10 +200,7 @@ export const ChainingContext = new r.VersionedStruct(r.uint16, {
     // Simple context glyph substitution
     coverage: new r.Pointer(r.uint16, Coverage),
     chainCount: r.uint16,
-    chainRuleSets: new r.Array(
-      new r.Pointer(r.uint16, ChainRuleSet),
-      'chainCount',
-    ),
+    chainRuleSets: new r.Array(new r.Pointer(r.uint16, ChainRuleSet), "chainCount"),
   },
 
   2: {
@@ -216,30 +210,18 @@ export const ChainingContext = new r.VersionedStruct(r.uint16, {
     inputClassDef: new r.Pointer(r.uint16, ClassDef),
     lookaheadClassDef: new r.Pointer(r.uint16, ClassDef),
     chainCount: r.uint16,
-    chainClassSet: new r.Array(
-      new r.Pointer(r.uint16, ChainRuleSet),
-      'chainCount',
-    ),
+    chainClassSet: new r.Array(new r.Pointer(r.uint16, ChainRuleSet), "chainCount"),
   },
 
   3: {
     // Coverage-based chaining context
     backtrackGlyphCount: r.uint16,
-    backtrackCoverage: new r.Array(
-      new r.Pointer(r.uint16, Coverage),
-      'backtrackGlyphCount',
-    ),
+    backtrackCoverage: new r.Array(new r.Pointer(r.uint16, Coverage), "backtrackGlyphCount"),
     inputGlyphCount: r.uint16,
-    inputCoverage: new r.Array(
-      new r.Pointer(r.uint16, Coverage),
-      'inputGlyphCount',
-    ),
+    inputCoverage: new r.Array(new r.Pointer(r.uint16, Coverage), "inputGlyphCount"),
     lookaheadGlyphCount: r.uint16,
-    lookaheadCoverage: new r.Array(
-      new r.Pointer(r.uint16, Coverage),
-      'lookaheadGlyphCount',
-    ),
+    lookaheadCoverage: new r.Array(new r.Pointer(r.uint16, Coverage), "lookaheadGlyphCount"),
     lookupCount: r.uint16,
-    lookupRecords: new r.Array(LookupRecord, 'lookupCount'),
+    lookupRecords: new r.Array(LookupRecord, "lookupCount"),
   },
 });

@@ -1,23 +1,13 @@
-import type FileEmbedder from '../core/embedders/FileEmbedder.js';
-import {
-  PDFArray,
-  type PDFDict,
-  PDFHexString,
-  PDFName,
-  PDFRef,
-} from '../core/index.js';
-import { assertPDFAAttachment } from '../core/metadata/pdfa.js';
-import { collectUnreferenced } from './detach.js';
-import type Embeddable from './Embeddable.js';
-import {
-  checkCatalogAF,
-  checkCatalogNameUnused,
-  insertIntoCatalogNameTree,
-} from './nameTree.js';
-import type PDFDocument from './PDFDocument.js';
+import type FileEmbedder from "../core/embedders/FileEmbedder.js";
+import { PDFArray, type PDFDict, PDFHexString, PDFName, PDFRef } from "../core/index.js";
+import { assertPDFAAttachment } from "../core/metadata/pdfa.js";
+import { collectUnreferenced } from "./detach.js";
+import type Embeddable from "./Embeddable.js";
+import { checkCatalogAF, checkCatalogNameUnused, insertIntoCatalogNameTree } from "./nameTree.js";
+import type PDFDocument from "./PDFDocument.js";
 
-const EmbeddedFiles = PDFName.of('EmbeddedFiles');
-const AF = PDFName.of('AF');
+const EmbeddedFiles = PDFName.of("EmbeddedFiles");
+const AF = PDFName.of("AF");
 
 /**
  * Throw unless an attachment named `name` can be added to `catalog`: its

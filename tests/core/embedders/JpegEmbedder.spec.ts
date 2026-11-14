@@ -1,22 +1,17 @@
-import fs from 'fs';
-import {
-  JpegEmbedder,
-  PDFContext,
-  PDFRawStream,
-  PDFRef,
-} from '../../../src/core';
+import fs from "fs";
+import { JpegEmbedder, PDFContext, PDFRawStream, PDFRef } from "../../../src/core";
 
-const catUnicornJpg = fs.readFileSync('./assets/images/cat_riding_unicorn.jpg');
-const minionsLaughing = fs.readFileSync('./assets/images/minions_laughing.jpg');
-const cmykJpg = fs.readFileSync('./assets/images/cmyk_colorspace.jpg');
+const catUnicornJpg = fs.readFileSync("./assets/images/cat_riding_unicorn.jpg");
+const minionsLaughing = fs.readFileSync("./assets/images/minions_laughing.jpg");
+const cmykJpg = fs.readFileSync("./assets/images/cmyk_colorspace.jpg");
 
-describe('JpegEmbedder', () => {
-  it('can be constructed with JpegEmbedder.for(...)', async () => {
+describe("JpegEmbedder", () => {
+  it("can be constructed with JpegEmbedder.for(...)", async () => {
     const embedder = await JpegEmbedder.for(catUnicornJpg);
     expect(embedder).toBeInstanceOf(JpegEmbedder);
   });
 
-  it('can embed JPEG images into PDFContexts without a predefined ref', async () => {
+  it("can embed JPEG images into PDFContexts without a predefined ref", async () => {
     const context = PDFContext.create();
     const embedder = await JpegEmbedder.for(catUnicornJpg);
 
@@ -26,7 +21,7 @@ describe('JpegEmbedder', () => {
     expect(context.lookup(ref)).toBeInstanceOf(PDFRawStream);
   });
 
-  it('can embed JPEG images into PDFContexts with a predefined ref', async () => {
+  it("can embed JPEG images into PDFContexts with a predefined ref", async () => {
     const context = PDFContext.create();
     const predefinedRef = PDFRef.of(9999);
     const embedder = await JpegEmbedder.for(catUnicornJpg);
@@ -38,40 +33,40 @@ describe('JpegEmbedder', () => {
     expect(ref).toBe(predefinedRef);
   });
 
-  it('can extract properties of JPEG images (1)', async () => {
+  it("can extract properties of JPEG images (1)", async () => {
     const embedder = await JpegEmbedder.for(catUnicornJpg);
 
     expect(embedder.bitsPerComponent).toBe(8);
     expect(embedder.height).toBe(1080);
     expect(embedder.width).toBe(1920);
-    expect(embedder.colorSpace).toBe('DeviceRGB');
+    expect(embedder.colorSpace).toBe("DeviceRGB");
   });
 
-  it('can extract properties of JPEG images (2)', async () => {
+  it("can extract properties of JPEG images (2)", async () => {
     const embedder = await JpegEmbedder.for(minionsLaughing);
 
     expect(embedder.bitsPerComponent).toBe(8);
     expect(embedder.height).toBe(354);
     expect(embedder.width).toBe(630);
-    expect(embedder.colorSpace).toBe('DeviceRGB');
+    expect(embedder.colorSpace).toBe("DeviceRGB");
   });
 
-  it('can extract properties of JPEG images (3)', async () => {
+  it("can extract properties of JPEG images (3)", async () => {
     const embedder = await JpegEmbedder.for(cmykJpg);
 
     expect(embedder.bitsPerComponent).toBe(8);
     expect(embedder.height).toBe(333);
     expect(embedder.width).toBe(500);
-    expect(embedder.colorSpace).toBe('DeviceCMYK');
+    expect(embedder.colorSpace).toBe("DeviceCMYK");
   });
 
-  it('returns undefined orientation for JPEGs without EXIF data', async () => {
+  it("returns undefined orientation for JPEGs without EXIF data", async () => {
     const embedder = await JpegEmbedder.for(catUnicornJpg);
     // Standard test JPEG without EXIF orientation
     expect(embedder.orientation).toBeUndefined();
   });
 
-  it('parses EXIF orientation when present', async () => {
+  it("parses EXIF orientation when present", async () => {
     // Create a minimal JPEG with EXIF orientation 6 (rotate 90 CW)
     // SOI + APP1(EXIF with orientation=6) + SOF0 + SOS + EOI
     const exifJpeg = createJpegWithExifOrientation(6);

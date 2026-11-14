@@ -1,4 +1,4 @@
-import * as r from '../../vendors/restructure/index.js';
+import * as r from "../../vendors/restructure/index.js";
 
 // A list of instructions that are executed once when a font is first used.
 // These instructions are known as the font program. The main use of this table

@@ -4,7 +4,7 @@
 export class EncryptedPDFError extends Error {
   constructor() {
     const msg =
-      'Input document to `PDFDocument.load` is encrypted and cannot be opened with the empty user password. Pass its `password` to decrypt it, or use `PDFDocument.load(..., { ignoreEncryption: true })` to load it for inspection only.';
+      "Input document to `PDFDocument.load` is encrypted and cannot be opened with the empty user password. Pass its `password` to decrypt it, or use `PDFDocument.load(..., { ignoreEncryption: true })` to load it for inspection only.";
 
     super(msg);
   }
@@ -14,7 +14,7 @@ export class EncryptedPDFError extends Error {
 export class FontkitNotRegisteredError extends Error {
   constructor() {
     const msg =
-      'Input to `PDFDocument.embedFont` was a custom font, but no `fontkit` instance was found. You must register a `fontkit` instance with `PDFDocument.registerFontkit(...)` before embedding custom fonts.';
+      "Input to `PDFDocument.embedFont` was a custom font, but no `fontkit` instance was found. You must register a `fontkit` instance with `PDFDocument.registerFontkit(...)` before embedding custom fonts.";
 
     super(msg);
   }
@@ -33,7 +33,7 @@ export class InvalidFontkitError extends Error {
 export class ForeignPageError extends Error {
   constructor() {
     const msg =
-      'A `page` passed to `PDFDocument.addPage` or `PDFDocument.insertPage` was from a different (foreign) PDF document. If you want to copy pages from one PDFDocument to another, you must use `PDFDocument.copyPages(...)` to copy the pages before adding or inserting them.';
+      "A `page` passed to `PDFDocument.addPage` or `PDFDocument.insertPage` was from a different (foreign) PDF document. If you want to copy pages from one PDFDocument to another, you must use `PDFDocument.copyPages(...)` to copy the pages before adding or inserting them.";
 
     super(msg);
   }
@@ -42,8 +42,7 @@ export class ForeignPageError extends Error {
 // TODO: Include link to documentation with example
 export class RemovePageFromEmptyDocumentError extends Error {
   constructor() {
-    const msg =
-      'PDFDocument has no pages so `PDFDocument.removePage` cannot be called';
+    const msg = "PDFDocument has no pages so `PDFDocument.removePage` cannot be called";
 
     super(msg);
   }
@@ -128,8 +127,8 @@ export class InvalidMaxLengthError extends Error {
 export class EncryptedPDFCopyError extends Error {
   constructor() {
     const msg =
-      'Cannot copy or embed pages from an encrypted PDF that was loaded with `ignoreEncryption: true` and could not be decrypted. ' +
-      'The content streams remain encrypted and will appear blank. ' +
+      "Cannot copy or embed pages from an encrypted PDF that was loaded with `ignoreEncryption: true` and could not be decrypted. " +
+      "The content streams remain encrypted and will appear blank. " +
       'Please provide the password when loading: `PDFDocument.load(bytes, { password: "..." })`';
 
     super(msg);
