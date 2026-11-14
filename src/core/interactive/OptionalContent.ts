@@ -186,3 +186,99 @@ export const setOptionalContentGroupOn = (
   props.set(D, newD);
   return unlinked;
 };
+
+/** Register only OCG refs reached by the copier, preserving initial states.
+ * Validate both configurations before attaching fresh arrays and a shallow /D
+ * copy. Radio groups retain only their copied members; unrelated layers are
+ * never pulled into the destination merely by configuration membership.
+ */
+export const registerCopiedOptionalContentGroups = (
+  source: PDFCatalog,
+  destination: PDFCatalog,
+  copied: Map<PDFRef, PDFRef>,
+): PDFRef[] => {
+  const additions: { source: PDFRef; destination: PDFRef }[] = [];
+  for (const [src, dest] of copied) {
+    const dict = source.context.lookup(src);
+    if (dict instanceof PDFDict && dict.lookup(Type) === OCG) {
+      additions.push({ source: src, destination: dest });
+    }
+  }
+  if (!additions.length) return [];
+  const props = properties(destination);
+  const oldGroups = props?.lookupMaybe(OCGs, PDFArray);
+  const fresh = additions.filter(
+    (a) => !oldGroups?.asArray().some((r) => sameRef(r, a.destination)),
+  );
+  if (!fresh.length) return [];
+
+  const validate = (catalog: PDFCatalog) => {
+    const d = defaultConfig(catalog);
+    const on = d?.lookupMaybe(ON, PDFArray);
+    const off = d?.lookupMaybe(OFF, PDFArray);
+    const radio = d?.lookupMaybe(RBGroups, PDFArray);
+    const groups: PDFArray[] = [];
+    for (const entry of radio?.asArray() ?? []) {
+      const group = catalog.context.lookup(entry);
+      if (!(group instanceof PDFArray)) {
+        throw new Error(
+          'The default optional content configuration has an /RBGroups entry that is not an array',
+        );
+      }
+      groups.push(group);
+    }
+    return { d, on, off, radio, groups };
+  };
+  const src = validate(source);
+  const dst = validate(destination);
+  const states = fresh.map((a) => isOptionalContentGroupOn(source, a.source));
+  const { context } = destination;
+  const newGroups = oldGroups?.clone() ?? PDFArray.withContext(context);
+  const newOn = dst.on?.clone() ?? PDFArray.withContext(context);
+  const newOff = dst.off?.clone() ?? PDFArray.withContext(context);
+  // A copied ref can already occur in state lists even when absent from /OCGs.
+  for (const array of [newOn, newOff]) {
+    for (let i = array.size() - 1; i >= 0; i--) {
+      if (fresh.some((a) => sameRef(array.get(i), a.destination)))
+        array.remove(i);
+    }
+  }
+  fresh.forEach((a, i) => {
+    newGroups.push(a.destination);
+    (states[i] ? newOn : newOff).push(a.destination);
+  });
+  const newRadio = dst.radio?.clone() ?? PDFArray.withContext(context);
+  for (const group of src.groups) {
+    const members = PDFArray.withContext(context);
+    for (const entry of group.asArray()) {
+      const match = additions.find((a) => sameRef(entry, a.source));
+      if (
+        match &&
+        !members.asArray().some((r) => sameRef(r, match.destination))
+      ) {
+        members.push(match.destination);
+      }
+    }
+    if (members.size() > 1) newRadio.push(members);
+  }
+  const newD = dst.d?.clone() ?? PDFDict.withContext(context);
+  newD.set(ON, newOn);
+  newD.set(OFF, newOff);
+  if (newRadio.size()) newD.set(RBGroups, newRadio);
+  const newProps = props?.clone() ?? PDFDict.withContext(context);
+  newProps.set(OCGs, newGroups);
+  newProps.set(D, newD);
+  const unlinked: PDFRef[] = [];
+  for (const raw of [
+    destination.get(OCProperties),
+    props?.get(OCGs),
+    props?.get(D),
+    dst.d?.get(ON),
+    dst.d?.get(OFF),
+    dst.d?.get(RBGroups),
+  ]) {
+    if (raw instanceof PDFRef) unlinked.push(raw);
+  }
+  destination.set(OCProperties, newProps);
+  return unlinked;
+};

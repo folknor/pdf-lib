@@ -136,6 +136,7 @@ export default class PDFDropdown extends PDFField {
    * @param options The options that should be available in this dropdown.
    */
   setOptions(options: string[]) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', [Array]);
 
     const optionObjects = new Array<{ value: PDFHexString }>(options.length);
@@ -158,6 +159,7 @@ export default class PDFDropdown extends PDFField {
    * @param options New options that should be available in this dropdown.
    */
   addOptions(options: string | string[]) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', ['string', Array]);
 
     const optionsArr = Array.isArray(options) ? options : [options];
@@ -219,6 +221,7 @@ export default class PDFDropdown extends PDFField {
    * @param merge Whether or not existing selections should be preserved.
    */
   select(options: string | string[], merge = false) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', ['string', Array]);
     assertIs(merge, 'merge', ['boolean']);
 
@@ -262,6 +265,7 @@ export default class PDFDropdown extends PDFField {
    * for more details about what this means.
    */
   clear() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setValues([]);
   }
@@ -287,6 +291,7 @@ export default class PDFDropdown extends PDFField {
    * @param fontSize The font size to be used when rendering text in this field.
    */
   setFontSize(fontSize: number) {
+    this.doc.getForm().prepareForMutation();
     assertPositive(fontSize, 'fontSize');
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
@@ -320,6 +325,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   enableEditing() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Edit, true);
   }
 
@@ -335,6 +341,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   disableEditing() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Edit, false);
   }
 
@@ -363,6 +370,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   enableSorting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Sort, true);
   }
 
@@ -376,6 +384,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   disableSorting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Sort, false);
   }
 
@@ -402,6 +411,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   enableMultiselect() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.MultiSelect, true);
   }
 
@@ -414,6 +424,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   disableMultiselect() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.MultiSelect, false);
   }
 
@@ -442,6 +453,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   enableSpellChecking() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.DoNotSpellCheck, false);
   }
 
@@ -454,6 +466,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   disableSpellChecking() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.DoNotSpellCheck, true);
   }
 
@@ -485,6 +498,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   enableSelectOnClick() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.CommitOnSelChange, true);
   }
 
@@ -498,6 +512,7 @@ export default class PDFDropdown extends PDFField {
    * ```
    */
   disableSelectOnClick() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.CommitOnSelChange, false);
   }
 
@@ -530,6 +545,7 @@ export default class PDFDropdown extends PDFField {
    * @param options The options to be used when adding this dropdown widget.
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
+    this.doc.getForm().prepareForMutation();
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
 
@@ -625,6 +641,7 @@ export default class PDFDropdown extends PDFField {
     font: PDFFont,
     provider?: AppearanceProviderFor<PDFDropdown>,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     assertOrUndefined(provider, 'provider', ['function']);
 

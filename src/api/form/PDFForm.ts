@@ -128,6 +128,19 @@ export default class PDFForm {
     return this.acroForm.dict.has(PDFName.of('XFA'));
   }
 
+  /** @internal Remove unsupported XFA before changing AcroForm state.
+   * Raw dictionary edits bypass this API contract; callers must delete XFA.
+   */
+  prepareForMutation(): void {
+    if (!this.hasXFA()) return;
+    this.doc.context.warn({
+      code: 'xfa-removed',
+      message:
+        'Removing XFA form data as pdf-lib does not support reading or writing XFA',
+    });
+    this.deleteXFA();
+  }
+
   /**
    * Remove the XFA data from this [[PDFForm]] (if any exists). This will
    * force readers to fallback to standard fields if the [[PDFDocument]]
@@ -147,12 +160,6 @@ export default class PDFForm {
    * ```
    */
   deleteXFA(): void {
-    // Not ported from upstream: a `preserveXFA` load option and helpers that
-    // read or rewrite XFA template scripts. Rewriting means editing the
-    // template XML, which the HTML parser we carry cannot round-trip, and
-    // pdf-lib does not keep XFA in step with AcroForm edits. Keeping XFA
-    // through a getForm() that only inspects fields is a real gap, recorded
-    // in notes/form-findings.md.
     const XFA = PDFName.of('XFA');
     const raw = this.acroForm.dict.get(XFA);
     this.acroForm.dict.delete(XFA);
@@ -393,6 +400,7 @@ export default class PDFForm {
    * @returns The new button field.
    */
   createButton(name: string): PDFButton {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
 
     const nameParts = splitFieldName(name);
@@ -438,6 +446,7 @@ export default class PDFForm {
    * @returns The new check box field.
    */
   createCheckBox(name: string): PDFCheckBox {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
 
     const nameParts = splitFieldName(name);
@@ -483,6 +492,7 @@ export default class PDFForm {
    * @returns The new dropdown field.
    */
   createDropdown(name: string): PDFDropdown {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
 
     const nameParts = splitFieldName(name);
@@ -528,6 +538,7 @@ export default class PDFForm {
    * @returns The new option list field.
    */
   createOptionList(name: string): PDFOptionList {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
 
     const nameParts = splitFieldName(name);
@@ -574,6 +585,7 @@ export default class PDFForm {
    * @returns The new radio group field.
    */
   createRadioGroup(name: string): PDFRadioGroup {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
     const nameParts = splitFieldName(name);
 
@@ -623,6 +635,7 @@ export default class PDFForm {
    * @returns The new radio group field.
    */
   createTextField(name: string): PDFTextField {
+    this.prepareForMutation();
     assertIs(name, 'name', ['string']);
     const nameParts = splitFieldName(name);
 
@@ -712,6 +725,17 @@ export default class PDFForm {
       markFieldsAsDirty: true,
     },
   ) {
+    this.prepareForMutation();
+    // Drawing can normalize pages and replace indirect annotation arrays.
+    // Retain those displaced containers as collection roots until all unlinks
+    // are complete, so their old entries cannot keep flattened widgets alive.
+    const displaced: PDFRef[] = [];
+    for (const page of this.doc.getPages()) {
+      const raw = page.node.get(PDFName.Annots);
+      if (raw instanceof PDFRef) displaced.push(raw);
+    }
+    const co = this.acroForm.dict.get(PDFName.of('CO'));
+    if (co) forEachRef(co, (ref) => displaced.push(ref));
     const markDirty = options.markFieldsAsDirty ?? true;
 
     if (options.updateFieldAppearances) {
@@ -759,6 +783,7 @@ export default class PDFForm {
     // /NeedAppearances is no longer relevant since appearances are baked in
     this.acroForm.dict.delete(PDFName.of('CO'));
     this.acroForm.dict.delete(PDFName.of('NeedAppearances'));
+    collectUnreferenced(this.doc.context, displaced);
   }
 
   /**
@@ -772,39 +797,31 @@ export default class PDFForm {
    * ```
    */
   removeField(field: PDFField) {
-    const widgets = field.acroField.getWidgets();
-    const allPages = this.doc.getPages();
-
-    // Collect all widget refs that need to be removed from page Annots
-    const widgetRefs: PDFRef[] = [];
-    for (let i = 0, len = widgets.length; i < len; i++) {
-      const widget = widgets[i]!;
-      const widgetRef = this.doc.context.getObjectRef(widget.dict);
-      if (widgetRef !== undefined) {
-        widgetRefs.push(widgetRef);
-      }
+    this.prepareForMutation();
+    const { context } = this.doc;
+    const removed = new Set<PDFDict>([
+      field.acroField.dict,
+      ...field.acroField.getWidgets().map((widget) => widget.dict),
+    ]);
+    const roots: PDFRef[] = [field.ref];
+    // Empty ancestors are pruned as well, including unregistered parents.
+    let parent = field.acroField.getParent();
+    while (parent && !removed.has(parent.dict)) {
+      const kids = parent.Kids();
+      if (
+        !kids?.asArray().every((entry) => {
+          const dict = context.lookup(entry);
+          return dict instanceof PDFDict && removed.has(dict);
+        })
+      )
+        break;
+      removed.add(parent.dict);
+      roots.push(parent.ref);
+      parent = parent.getParent();
     }
-
-    // Remove widget refs and field ref from ALL pages' Annots arrays
-    // This ensures no orphan refs are left even if findWidgetPage fails
-    for (let i = 0, len = allPages.length; i < len; i++) {
-      const page = allPages[i]!;
-      for (let j = 0, wlen = widgetRefs.length; j < wlen; j++) {
-        page.node.removeAnnot(widgetRefs[j]!);
-      }
-      page.node.removeAnnot(field.ref);
-    }
-
-    this.acroForm.removeField(field.acroField);
-    const fieldKids = field.acroField.normalizedEntries().Kids;
-    const kidsCount = fieldKids.size();
-    for (let childIndex = 0; childIndex < kidsCount; childIndex++) {
-      const child = fieldKids.get(childIndex);
-      if (child instanceof PDFRef) {
-        this.doc.context.delete(child);
-      }
-    }
-    this.doc.context.delete(field.ref);
+    this.unlinkRemovedFormObjects(removed, roots);
+    this.dirtyFields.delete(field.ref);
+    collectUnreferenced(context, roots);
   }
 
   /**
@@ -862,6 +879,7 @@ export default class PDFForm {
    * @param fieldRef The reference to the field that should be marked.
    */
   markFieldAsDirty(fieldRef: PDFRef) {
+    this.prepareForMutation();
     assertOrUndefined(fieldRef, 'fieldRef', [[PDFRef, 'PDFRef']]);
     this.dirtyFields.add(fieldRef);
   }
@@ -898,6 +916,59 @@ export default class PDFForm {
 
   getDefaultFont() {
     return this.defaultFontCache.access();
+  }
+
+  private unlinkRemovedFormObjects(removed: Set<PDFDict>, roots: PDFRef[]) {
+    const { context } = this.doc;
+    for (const dict of removed) forEachRef(dict, (ref) => roots.push(ref));
+    const filter = (owner: PDFDict, key: PDFName) => {
+      const array = owner.lookupMaybe(key, PDFArray);
+      if (!array) return;
+      const kept = array.asArray().filter((entry) => {
+        const dict = context.lookup(entry);
+        if (!(dict instanceof PDFDict && removed.has(dict))) return true;
+        if (entry instanceof PDFRef) roots.push(entry);
+        return false;
+      });
+      if (kept.length === array.size()) return;
+      const raw = owner.get(key);
+      if (raw instanceof PDFRef) roots.push(raw);
+      owner.set(key, context.obj(kept));
+    };
+    const visited = new Set<PDFDict>();
+    const visit = (dict: PDFDict) => {
+      if (visited.has(dict)) return;
+      visited.add(dict);
+      const kids = dict.lookupMaybe(PDFName.of('Kids'), PDFArray);
+      for (const entry of kids?.asArray() ?? []) {
+        const child = context.lookup(entry);
+        if (child instanceof PDFDict) visit(child);
+      }
+      const parent = context.lookup(dict.get(PDFName.of('Parent')));
+      if (parent instanceof PDFDict) visit(parent);
+      if (!removed.has(dict)) filter(dict, PDFName.of('Kids'));
+    };
+    // Direct and unnamed containers in the registered tree count too.
+    for (const entry of this.acroForm.Fields()?.asArray() ?? []) {
+      const dict = context.lookup(entry);
+      if (dict instanceof PDFDict) visit(dict);
+    }
+    for (const dict of removed) visit(dict);
+    filter(this.acroForm.dict, PDFName.of('Fields'));
+    filter(this.acroForm.dict, PDFName.of('CO'));
+    // Visit every field container, including duplicate memberships and parents
+    // outside the registered tree. Other references (actions, OBJR) stay live.
+    for (const [ref, object] of context.enumerateIndirectObjects()) {
+      if (object instanceof PDFDict && removed.has(object)) roots.push(ref);
+      if (
+        object instanceof PDFDict &&
+        !removed.has(object) &&
+        (object.has(PDFName.of('T')) || object.has(PDFName.of('FT')))
+      ) {
+        visit(object);
+      }
+    }
+    for (const page of this.doc.getPages()) filter(page.node, PDFName.Annots);
   }
 
   private findWidgetPage(widget: PDFWidgetAnnotation): PDFPage | undefined {
@@ -1067,6 +1138,7 @@ export default class PDFForm {
       if (raw instanceof PDFRef) roots.push(raw);
       replacements.push([page, kept]);
     }
+    this.prepareForMutation();
     for (const [page, kept] of replacements) {
       page.node.set(PDFName.Annots, kept);
     }
@@ -1119,7 +1191,8 @@ export default class PDFForm {
     refs: Set<PDFObject | undefined>;
   }): void {
     const orphans = this.findUnreachableWidgets(reachable);
-    const toRemove = new Map<PDFPage, PDFRef[]>();
+    const removed = new Set<PDFDict>();
+    const roots: PDFRef[] = [];
 
     for (const { page, entry: annotRef, dict } of orphans) {
       if (!(annotRef instanceof PDFRef)) continue;
@@ -1151,17 +1224,13 @@ export default class PDFForm {
       if (!appearanceRef) continue;
 
       this.flattenWidgetOntoPage(page, widget, appearanceRef);
-      const refs = toRemove.get(page) ?? [];
-      refs.push(annotRef);
-      toRemove.set(page, refs);
+      removed.add(dict);
+      roots.push(annotRef);
     }
-
-    for (const [page, refs] of toRemove) {
-      for (let i = 0, len = refs.length; i < len; i++) {
-        const ref = refs[i]!;
-        page.node.removeAnnot(ref);
-        this.doc.context.delete(ref);
-      }
+    if (removed.size > 0) {
+      this.prepareForMutation();
+      this.unlinkRemovedFormObjects(removed, roots);
+      collectUnreferenced(this.doc.context, roots);
     }
   }
 

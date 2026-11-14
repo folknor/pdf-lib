@@ -44,7 +44,10 @@ import {
   StandardFontEmbedder,
   UnexpectedObjectTypeError,
 } from '../core/index.js';
-import { listOptionalContentGroups } from '../core/interactive/OptionalContent.js';
+import {
+  listOptionalContentGroups,
+  registerCopiedOptionalContentGroups,
+} from '../core/interactive/OptionalContent.js';
 import {
   FACTUR_X_FILE_NAME,
   readFacturXInvoice,
@@ -87,7 +90,7 @@ import {
   toUint8Array,
 } from '../utils/index.js';
 import type { Color } from './colors.js';
-import { detachSavedAttachments } from './detach.js';
+import { collectUnreferenced, detachSavedAttachments } from './detach.js';
 import type Embeddable from './Embeddable.js';
 import {
   EncryptedPDFCopyError,
@@ -456,22 +459,12 @@ export default class PDFDocument {
    * ```
    * Note: Do not use `field.constructor.name` as it breaks after minification.
    *
-   * If the document has XFA data it is removed (see [[PDFForm.deleteXFA]]),
-   * since pdf-lib does not keep XFA in step with AcroForm edits; the change
-   * is written by the next save.
+   * XFA is preserved while inspecting fields. Field mutations remove it
+   * (see [[PDFForm.deleteXFA]]) because AcroForm edits cannot update XFA.
    * @returns The form for this document.
    */
   getForm(): PDFForm {
-    const form = this.formCache.access();
-    if (form.hasXFA()) {
-      this.context.warn({
-        code: 'xfa-removed',
-        message:
-          'Removing XFA form data as pdf-lib does not support reading or writing XFA',
-      });
-      form.deleteXFA();
-    }
-    return form;
+    return this.formCache.access();
   }
 
   /**
@@ -988,6 +981,13 @@ export default class PDFDocument {
         .map(async (page) => copier.copy(page.node)),
     );
 
+    const unlinked = registerCopiedOptionalContentGroups(
+      srcDoc.catalog,
+      this.catalog,
+      copier.getCopiedRefs(),
+    );
+    collectUnreferenced(this.context, unlinked);
+
     const pages = copiedPageNodes.map((copy) =>
       PDFPage.of(copy, this.context.register(copy), this),
     );
@@ -1046,6 +1046,7 @@ export default class PDFDocument {
     // Add root fields to AcroForm if there are any
     if (rootFields.length > 0) {
       const form = this.getForm();
+      form.prepareForMutation();
       const acroForm = form.acroForm;
       for (const fieldRef of rootFields) {
         acroForm.addField(fieldRef);
@@ -2162,8 +2163,8 @@ export default class PDFDocument {
    * The document's optional content groups (layers): the /OCProperties
    * /OCGs entries that are refs to /Type /OCG dictionaries, each once, in
    * order. Empty when the document has no optional content. Groups that
-   * pages reach but /OCGs does not list (for instance on pages brought in by
-   * [[copyPages]], which does not merge /OCProperties) are not included.
+   * pages reach but /OCGs does not list are not included. [[copyPages]]
+   * registers the groups it copies.
    *
    * See [[PDFOptionalContentGroup]] for what their state means: the initial
    * state in the default configuration, not what a viewer renders.

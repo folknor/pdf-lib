@@ -28,6 +28,62 @@ const state = (doc: PDFDocument) =>
   doc.getOptionalContentGroups().map((g) => [g.getName(), g.isOnByDefault()]);
 
 describe('optional content groups', () => {
+  it('registers reached layers once, preserves states and radio groups after reload', async () => {
+    const source = await PDFDocument.create();
+    const a = ocg(source, 'same');
+    const b = ocg(source, 'same');
+    const unused = ocg(source, 'unused');
+    install(source, [a, b, unused], { BaseState: 'OFF', ON: [a], RBGroups: [[a, b, unused]] });
+    const page = source.addPage();
+    page.node.set(PDFName.Resources, source.context.obj({ Properties: { A: a, B: b } }));
+    const destination = await PDFDocument.create();
+    const pages = await destination.copyPages(source, [0, 0]);
+    for (const copy of pages) destination.addPage(copy);
+    expect(state(destination)).toEqual([['same', true], ['same', false]]);
+    const groups = destination.getOptionalContentGroups();
+    const resources = pages[0]!.node.Resources()!;
+    expect(resources.lookup(PDFName.of('Properties'), PDFDict).get(PDFName.of('A'))).toBe(groups[0]!.ref);
+    const reloaded = await PDFDocument.load(await destination.save());
+    expect(state(reloaded)).toEqual([['same', true], ['same', false]]);
+    reloaded.getOptionalContentGroups()[1]!.setOnByDefault(true);
+    expect(state(reloaded)).toEqual([['same', false], ['same', true]]);
+  });
+
+  it('merges by ref with copy-on-write configuration and group arrays', async () => {
+    const source = await PDFDocument.create();
+    const a = ocg(source, 'same');
+    install(source, [a]);
+    source.addPage().node.set(PDFName.of('Annots'), source.context.obj([{ Type: 'Annot', OC: a }]));
+    const destination = await PDFDocument.create();
+    const existing = ocg(destination, 'same');
+    const props = install(destination, [existing], { BaseState: 'OFF', OFF: [existing] });
+    const oldD = props.lookup(PDFName.of('D'), PDFDict);
+    const oldGroups = props.lookup(PDFName.of('OCGs'), PDFArray);
+    props.set(PDFName.of('Configs'), destination.context.obj([oldD]));
+    await destination.copyPages(source, [0]);
+    expect(state(destination)).toEqual([['same', false], ['same', true]]);
+    expect(oldGroups.asArray()).toEqual([existing]);
+    expect(oldD.has(PDFName.of('ON'))).toBe(false);
+    expect(state(source)).toEqual([['same', true]]);
+  });
+
+  it.each(['source', 'destination'])('refuses malformed %s configuration before catalog changes', async (which) => {
+    const source = await PDFDocument.create();
+    const a = ocg(source, 'A');
+    install(source, [a], {});
+    source.addPage().node.set(PDFName.Resources, source.context.obj({ Properties: { A: a } }));
+    const destination = await PDFDocument.create();
+    install(destination, [], {});
+    const malformed = which === 'source' ? source : destination;
+    malformed.catalog.lookup(PDFName.of('OCProperties'), PDFDict)
+      .lookup(PDFName.of('D'), PDFDict).set(PDFName.of('RBGroups'), malformed.context.obj([5]));
+    const before = destination.catalog.get(PDFName.of('OCProperties'));
+    const serialized = before!.toString();
+    await expect(destination.copyPages(source, [0])).rejects.toThrow(/RBGroups/);
+    expect(destination.catalog.get(PDFName.of('OCProperties'))).toBe(before);
+    expect(before!.toString()).toBe(serialized);
+  });
+
   it('resolves an indirect /Type', async () => {
     const doc = await PDFDocument.create();
     const type = doc.context.register(PDFName.of('OCG'));

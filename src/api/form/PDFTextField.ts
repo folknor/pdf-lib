@@ -146,6 +146,7 @@ export default class PDFTextField extends PDFField {
    * @param text The text this field should contain.
    */
   setText(text: string | undefined) {
+    this.doc.getForm().prepareForMutation();
     assertOrUndefined(text, 'text', ['string']);
 
     const maxLength = this.getMaxLength();
@@ -210,6 +211,7 @@ export default class PDFTextField extends PDFField {
    * @param alignment The alignment for this text field.
    */
   setAlignment(alignment: TextAlignment) {
+    this.doc.getForm().prepareForMutation();
     assertIsOneOf(alignment, 'alignment', TextAlignment);
     this.markAsDirty();
     this.acroField.setQuadding(alignment);
@@ -253,6 +255,7 @@ export default class PDFTextField extends PDFField {
    *                  `undefined` to remove the limit.
    */
   setMaxLength(maxLength?: number) {
+    this.doc.getForm().prepareForMutation();
     assertRangeOrUndefined(maxLength, 'maxLength', 0, Number.MAX_SAFE_INTEGER);
 
     this.markAsDirty();
@@ -294,6 +297,7 @@ export default class PDFTextField extends PDFField {
    * @param image The image that should be displayed.
    */
   setImage(image: PDFImage) {
+    this.doc.getForm().prepareForMutation();
     const fieldAlignment = this.getAlignment();
 
     // prettier-ignore
@@ -339,6 +343,7 @@ export default class PDFTextField extends PDFField {
    * @param fontSize The font size to be used when rendering text in this field.
    */
   setFontSize(fontSize: number) {
+    this.doc.getForm().prepareForMutation();
     assertPositive(fontSize, 'fontSize');
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
@@ -416,6 +421,7 @@ export default class PDFTextField extends PDFField {
    * [[PDFTextField.setText]] for more details about what this means.
    */
   enableMultiline() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setFlagTo(AcroTextFlags.Multiline, true);
   }
@@ -431,6 +437,7 @@ export default class PDFTextField extends PDFField {
    * [[PDFTextField.setText]] for more details about what this means.
    */
   disableMultiline() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setFlagTo(AcroTextFlags.Multiline, false);
   }
@@ -468,6 +475,7 @@ export default class PDFTextField extends PDFField {
    * and readers can access to determine the _purpose_ of this field.**
    */
   enablePassword() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.Password, true);
   }
 
@@ -480,6 +488,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   disablePassword() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.Password, false);
   }
 
@@ -507,6 +516,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   enableFileSelection() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.FileSelect, true);
   }
 
@@ -519,6 +529,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   disableFileSelection() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.FileSelect, false);
   }
 
@@ -545,6 +556,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   enableSpellChecking() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.DoNotSpellCheck, false);
   }
 
@@ -557,6 +569,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   disableSpellChecking() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.DoNotSpellCheck, true);
   }
 
@@ -586,6 +599,7 @@ export default class PDFTextField extends PDFField {
    * scroll bar should be shown for multiline fields.
    */
   enableScrolling() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.DoNotScroll, false);
   }
 
@@ -598,6 +612,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   disableScrolling() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.DoNotScroll, true);
   }
 
@@ -652,6 +667,7 @@ export default class PDFTextField extends PDFField {
    * [[PDFTextField.setText]] for more details about what this means.
    */
   enableCombing() {
+    this.doc.getForm().prepareForMutation();
     if (this.getMaxLength() === undefined) {
       this.doc.context.warn({
         code: 'comb-without-max-length',
@@ -681,6 +697,7 @@ export default class PDFTextField extends PDFField {
    * [[PDFTextField.setText]] for more details about what this means.
    */
   disableCombing() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setFlagTo(AcroTextFlags.Comb, false);
   }
@@ -714,6 +731,7 @@ export default class PDFTextField extends PDFField {
    * * http://blog.pdfshareforms.com/pdf-2-0-release-bid-farewell-xfa-forms/
    */
   enableRichFormatting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.RichText, true);
   }
 
@@ -726,6 +744,7 @@ export default class PDFTextField extends PDFField {
    * ```
    */
   disableRichFormatting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroTextFlags.RichText, false);
   }
 
@@ -757,6 +776,7 @@ export default class PDFTextField extends PDFField {
    * @param options The options to be used when adding this text field widget.
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
+    this.doc.getForm().prepareForMutation();
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
 
@@ -852,6 +872,7 @@ export default class PDFTextField extends PDFField {
     font: PDFFont,
     provider?: AppearanceProviderFor<PDFTextField>,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     assertOrUndefined(provider, 'provider', ['function']);
 

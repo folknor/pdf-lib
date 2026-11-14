@@ -165,6 +165,7 @@ export default class PDFField {
    * @throws `FieldAlreadyExistsError` if a sibling field already has this name.
    */
   rename(newPartialName: string): void {
+    this.doc.getForm().prepareForMutation();
     assertIs(newPartialName, 'newPartialName', ['string']);
 
     if (newPartialName.length === 0) {
@@ -306,6 +307,7 @@ export default class PDFField {
    * prefilled by software before being displayed to the user.
    */
   enableReadOnly() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.ReadOnly, true);
   }
 
@@ -318,6 +320,7 @@ export default class PDFField {
    * ```
    */
   disableReadOnly() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.ReadOnly, false);
   }
 
@@ -344,6 +347,7 @@ export default class PDFField {
    * ```
    */
   enableRequired() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.Required, true);
   }
 
@@ -356,6 +360,7 @@ export default class PDFField {
    * ```
    */
   disableRequired() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.Required, false);
   }
 
@@ -383,6 +388,7 @@ export default class PDFField {
    * ```
    */
   enableExporting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.NoExport, false);
   }
 
@@ -395,6 +401,7 @@ export default class PDFField {
    * ```
    */
   disableExporting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroFieldFlags.NoExport, true);
   }
 

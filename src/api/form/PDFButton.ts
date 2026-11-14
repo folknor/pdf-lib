@@ -82,6 +82,7 @@ export default class PDFButton extends PDFField {
    * @param alignment The alignment of the image.
    */
   setImage(image: PDFImage, alignment = ImageAlignment.Center) {
+    this.doc.getForm().prepareForMutation();
     const widgets = this.acroField.getWidgets();
     for (let idx = 0, len = widgets.length; idx < len; idx++) {
       const widget = widgets[idx]!;
@@ -117,6 +118,7 @@ export default class PDFButton extends PDFField {
    * @param fontSize The font size to be used when rendering text in this field.
    */
   setFontSize(fontSize: number) {
+    this.doc.getForm().prepareForMutation();
     assertPositive(fontSize, 'fontSize');
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
@@ -155,6 +157,7 @@ export default class PDFButton extends PDFField {
     page: PDFPage,
     options?: FieldAppearanceOptions,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertOrUndefined(text, 'text', ['string']);
     assertOrUndefined(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
@@ -255,6 +258,7 @@ export default class PDFButton extends PDFField {
     font: PDFFont,
     provider?: AppearanceProviderFor<PDFButton>,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     assertOrUndefined(provider, 'provider', ['function']);
 

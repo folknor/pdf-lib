@@ -93,6 +93,17 @@ class PDFObjectCopier {
               ? this.copyPDFIndirectObject(object)
               : object.clone()) as T;
 
+  /** Source and destination refs for indirect objects already copied. */
+  getCopiedRefs(): Map<PDFRef, PDFRef> {
+    const refs = new Map<PDFRef, PDFRef>();
+    for (const [source, destination] of this.traversedObjects) {
+      if (source instanceof PDFRef && destination instanceof PDFRef) {
+        refs.set(source, destination);
+      }
+    }
+    return refs;
+  }
+
   private copyPDFPage = (originalPage: PDFPageLeaf): PDFPageLeaf => {
     const clonedPage = originalPage.clone();
 

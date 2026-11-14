@@ -228,12 +228,12 @@ describe('PDFForm', () => {
     expect(aps()).toBe(5);
   });
 
-  it('removes XFA entries when it is accessed', async () => {
+  it('preserves XFA entries when it is accessed', async () => {
     const pdfDoc = await PDFDocument.load(xfaPdfBytes);
     const acroForm = pdfDoc.catalog.getOrCreateAcroForm();
     expect(acroForm.dict.has(PDFName.of('XFA'))).toBe(true);
     expect(pdfDoc.getForm()).toBeInstanceOf(PDFForm);
-    expect(acroForm.dict.has(PDFName.of('XFA'))).toBe(false);
+    expect(acroForm.dict.has(PDFName.of('XFA'))).toBe(true);
   });
 
   it('is only created if it is accessed', async () => {
@@ -1840,7 +1840,7 @@ describe('PDFForm', () => {
     it('deleteXFA() removes the fixture XFA objects', async () => {
       const pdfDoc = await PDFDocument.load(xfaPdfBytes);
       const before = pdfDoc.context.enumerateIndirectObjects().length;
-      pdfDoc.getForm();
+      pdfDoc.getForm().deleteXFA();
       expect(pdfDoc.context.enumerateIndirectObjects().length).toBeLessThan(
         before,
       );

@@ -81,6 +81,7 @@ export default class PDFCheckBox extends PDFField {
    * field.
    */
   check() {
+    this.doc.getForm().prepareForMutation();
     const onValue = this.acroField.getOnValue() ?? PDFName.of('Yes');
     this.markAsDirty();
     this.acroField.setValue(onValue);
@@ -103,6 +104,7 @@ export default class PDFCheckBox extends PDFField {
    * for more details about what this means.
    */
   uncheck() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setValue(PDFName.of('Off'));
   }
@@ -147,6 +149,7 @@ export default class PDFCheckBox extends PDFField {
    * @param options The options to be used when adding this check box widget.
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
+    this.doc.getForm().prepareForMutation();
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
 
@@ -237,6 +240,7 @@ export default class PDFCheckBox extends PDFField {
    *                 generating the contents of the appearance streams.
    */
   updateAppearances(provider?: AppearanceProviderFor<PDFCheckBox>) {
+    this.doc.getForm().prepareForMutation();
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();

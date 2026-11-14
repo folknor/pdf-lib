@@ -148,6 +148,7 @@ export default class PDFOptionList extends PDFField {
    * @param options The options that should be available in this option list.
    */
   setOptions(options: string[]) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', [Array]);
 
     this.markAsDirty();
@@ -173,6 +174,7 @@ export default class PDFOptionList extends PDFField {
    * @param options New options that should be available in this option list.
    */
   addOptions(options: string | string[]) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', ['string', Array]);
 
     this.markAsDirty();
@@ -210,6 +212,7 @@ export default class PDFOptionList extends PDFField {
    * @param merge Whether or not existing selections should be preserved.
    */
   select(options: string | string[], merge = false) {
+    this.doc.getForm().prepareForMutation();
     assertIs(options, 'options', ['string', Array]);
     assertIs(merge, 'merge', ['boolean']);
 
@@ -251,6 +254,7 @@ export default class PDFOptionList extends PDFField {
    * [[PDFOptionList.setOptions]] for more details about what this means.
    */
   clear() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setValues([]);
   }
@@ -287,6 +291,7 @@ export default class PDFOptionList extends PDFField {
    * @param fontSize The font size to be used when rendering text in this field.
    */
   setFontSize(fontSize: number) {
+    this.doc.getForm().prepareForMutation();
     assertPositive(fontSize, 'fontSize');
     this.acroField.setFontSize(fontSize);
     this.markAsDirty();
@@ -318,6 +323,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   enableSorting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Sort, true);
   }
 
@@ -331,6 +337,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   disableSorting() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.Sort, false);
   }
 
@@ -357,6 +364,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   enableMultiselect() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.MultiSelect, true);
   }
 
@@ -369,6 +377,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   disableMultiselect() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.MultiSelect, false);
   }
 
@@ -400,6 +409,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   enableSelectOnClick() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.CommitOnSelChange, true);
   }
 
@@ -413,6 +423,7 @@ export default class PDFOptionList extends PDFField {
    * ```
    */
   disableSelectOnClick() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroChoiceFlags.CommitOnSelChange, false);
   }
 
@@ -445,6 +456,7 @@ export default class PDFOptionList extends PDFField {
    * @param options The options to be used when adding this option list widget.
    */
   addToPage(page: PDFPage, options?: FieldAppearanceOptions) {
+    this.doc.getForm().prepareForMutation();
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
 
@@ -540,6 +552,7 @@ export default class PDFOptionList extends PDFField {
     font: PDFFont,
     provider?: AppearanceProviderFor<PDFOptionList>,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertIs(font, 'font', [[PDFFont, 'PDFFont']]);
     assertOrUndefined(provider, 'provider', ['function']);
 

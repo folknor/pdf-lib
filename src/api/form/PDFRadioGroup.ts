@@ -186,6 +186,7 @@ export default class PDFRadioGroup extends PDFField {
    * @param option The option to be selected.
    */
   select(option: string) {
+    this.doc.getForm().prepareForMutation();
     assertIs(option, 'option', ['string']);
 
     const validOptions = this.getOptions();
@@ -223,6 +224,7 @@ export default class PDFRadioGroup extends PDFField {
    * [[PDFRadioGroup.select]] for more details about what this means.
    */
   clear() {
+    this.doc.getForm().prepareForMutation();
     this.markAsDirty();
     this.acroField.setValue(PDFName.of('Off'));
   }
@@ -257,6 +259,7 @@ export default class PDFRadioGroup extends PDFField {
    * > not.
    */
   enableOffToggling() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroButtonFlags.NoToggleToOff, false);
   }
 
@@ -271,6 +274,7 @@ export default class PDFRadioGroup extends PDFField {
    * ```
    */
   disableOffToggling() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroButtonFlags.NoToggleToOff, true);
   }
 
@@ -306,6 +310,7 @@ export default class PDFRadioGroup extends PDFField {
    * radio buttons in the group.
    */
   enableMutualExclusion() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroButtonFlags.RadiosInUnison, false);
   }
 
@@ -322,6 +327,7 @@ export default class PDFRadioGroup extends PDFField {
    * radio buttons in the group.
    */
   disableMutualExclusion() {
+    this.doc.getForm().prepareForMutation();
     this.acroField.setFlagTo(AcroButtonFlags.RadiosInUnison, true);
   }
 
@@ -357,6 +363,7 @@ export default class PDFRadioGroup extends PDFField {
     page: PDFPage,
     options?: FieldAppearanceOptions,
   ) {
+    this.doc.getForm().prepareForMutation();
     assertIs(option, 'option', ['string']);
     assertIs(page, 'page', [[PDFPage, 'PDFPage']]);
     assertFieldAppearanceOptions(options);
@@ -456,6 +463,7 @@ export default class PDFRadioGroup extends PDFField {
    *                 generating the contents of the appearance streams.
    */
   updateAppearances(provider?: AppearanceProviderFor<PDFRadioGroup>) {
+    this.doc.getForm().prepareForMutation();
     assertOrUndefined(provider, 'provider', ['function']);
 
     const widgets = this.acroField.getWidgets();
