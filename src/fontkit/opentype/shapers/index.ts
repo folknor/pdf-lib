@@ -25,12 +25,11 @@ const SHAPERS: Record<string, ShaperClass> = {
 
   // No hebr entry, deliberately. A Hebrew shaper (presentation-form
   // composition when GPOS has no mark feature, plus a patah/qamats + sheva/
-  // hiriq + meteg reorder) was refused: the reorder is only correct after a
-  // combining-class sort of mark runs, which fontkit does not do (without it
-  // the swap fires on one input order only); composition in a shaper class
-  // never runs for fonts with no hebr script record or no layout tables,
-  // although they need it as much as any. Both belong in a
-  // normalisation stage before shaping; see notes/fontkit-findings.md.
+  // hiriq + meteg reorder) was refused: composition in a shaper class never
+  // runs for fonts with no hebr script record or no layout tables, although
+  // they need it as much as any. The canonical stage (CanonicalCompose.ts)
+  // sorts Hebrew points and composes the presentation forms for such fonts;
+  // the meteg swap was refused there too (MarkOrder.ts header).
 
   // No thai or 'lao ' entry, deliberately. Their one table-independent rule,
   // the SARA AM decomposition, is a code-point rewrite in LayoutEngine.layout

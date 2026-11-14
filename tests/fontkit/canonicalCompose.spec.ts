@@ -62,22 +62,103 @@ describe('canonical composition', () => {
     expect(composeCanonical([0x1a20, 0x1a60, 0x1a75], all)).toEqual([0x1a20, 0x1a75, 0x1a60]);
   });
 
-  it('leaves Hebrew and Arabic runs as typed', () => {
+  it('orders Hebrew points by class, holam after dagesh, meteg and rafe', () => {
     const all = () => true;
-    // Hebrew BET + patah (17) + dagesh (21) stays; so does a generic mark on
-    // a Hebrew base, past CGJ.
-    expect(composeCanonical([0x05d1, 0x05bc, 0x05b7], all)).toEqual([0x05d1, 0x05bc, 0x05b7]);
-    expect(composeCanonical([0x05d1, 0x34f, 0x301, 0x323], all)).toEqual([
-      0x05d1, 0x34f, 0x301, 0x323,
+    // Patah (17) before dagesh (21); shin dot (24) after qamats and dagesh.
+    expect(composeCanonical([0x05d1, 0x05bc, 0x05b7], all)).toEqual([0x05d1, 0x05b7, 0x05bc]);
+    expect(composeCanonical([0x05e9, 0x05c1, 0x05bc, 0x05b8], all)).toEqual([
+      0x05e9, 0x05b8, 0x05bc, 0x05c1,
     ]);
-    // Arabic shadda (33) + damma (31), also with no base and on a dotted
-    // circle (the marks are Script=Inherited).
-    expect(composeCanonical([0x0628, 0x0651, 0x064f], all)).toEqual([0x0628, 0x0651, 0x064f]);
-    expect(composeCanonical([0x0651, 0x064f], all)).toEqual([0x0651, 0x064f]);
-    expect(composeCanonical([0x25cc, 0x0651, 0x064f], all)).toEqual([0x25cc, 0x0651, 0x064f]);
-    // Frozen runs compose by the classic rule: U+0315 (232) blocks hamza.
-    const alef = font(0x0627, 0x0315, 0x0654, 0x0623);
-    expect(composeCanonical([0x0627, 0x0315, 0x0654], alef)).toEqual([0x0627, 0x0315, 0x0654]);
+    // Holam (19) after dagesh and meteg, before the shin/sin dots.
+    expect(composeCanonical([0x05d1, 0x05b9, 0x05bc], all)).toEqual([0x05d1, 0x05bc, 0x05b9]);
+    expect(composeCanonical([0x05dc, 0x05b9, 0x05bd], all)).toEqual([0x05dc, 0x05bd, 0x05b9]);
+    expect(composeCanonical([0x05e9, 0x05c2, 0x05b9], all)).toEqual([0x05e9, 0x05b9, 0x05c2]);
+    // A generic mark on a Hebrew base sorts as anywhere else; CGJ bounds.
+    expect(composeCanonical([0x05d1, 0x301, 0x323], all)).toEqual([0x05d1, 0x323, 0x301]);
+    expect(composeCanonical([0x05d1, 0x34f, 0x301, 0x323], all)).toEqual([
+      0x05d1, 0x34f, 0x323, 0x301,
+    ]);
+  });
+
+  it('orders Arabic runs by AMTRA', () => {
+    const all = () => true;
+    // Shadda (33) before fatha (30) and damma (31), with a base, bare, and
+    // on a dotted circle (the marks are Script=Inherited).
+    expect(composeCanonical([0x0628, 0x064e, 0x0651], all)).toEqual([0x0628, 0x0651, 0x064e]);
+    expect(composeCanonical([0x064f, 0x0651], all)).toEqual([0x0651, 0x064f]);
+    expect(composeCanonical([0x25cc, 0x064f, 0x0651], all)).toEqual([0x25cc, 0x0651, 0x064f]);
+    // A leading modifier mark of class 230 goes before the shadda, one of
+    // class 220 before that; superscript alef (35) keeps its class order.
+    expect(composeCanonical([0x0628, 0x0651, 0x0670, 0x0654], all)).toEqual([
+      0x0628, 0x0654, 0x0651, 0x0670,
+    ]);
+    expect(composeCanonical([0x0628, 0x0654, 0x064e, 0x0655], all)).toEqual([
+      0x0628, 0x0655, 0x0654, 0x064e,
+    ]);
+    // An MCM not leading its class stays: MADDAH + HAMZA ABOVE (both 230).
+    expect(composeCanonical([0x0628, 0x064e, 0x0653, 0x0654], all)).toEqual([
+      0x0628, 0x064e, 0x0653, 0x0654,
+    ]);
+    expect(composeCanonical([0x0628, 0x064e, 0x0654, 0x0653], all)).toEqual([
+      0x0628, 0x0654, 0x064e, 0x0653,
+    ]);
+    // CGJ overrides: damma, CGJ, hamza above stays.
+    expect(composeCanonical([0x0628, 0x064f, 0x34f, 0x0654], all)).toEqual([
+      0x0628, 0x064f, 0x34f, 0x0654,
+    ]);
+  });
+
+  it('composes in Arabic runs only directly after the starter', () => {
+    // Hamza above is promoted next to the alef and composes; U+0315 stays.
+    const alef = font(0x0627, 0x0315, 0x0654, 0x0623, 0x0670, 0x0653, 0x0622);
+    expect(composeCanonical([0x0627, 0x0315, 0x0654], alef)).toEqual([0x0623, 0x0315]);
+    // ALEF + superscript alef (35) + maddah (230): maddah never skips it.
+    expect(composeCanonical([0x0627, 0x0670, 0x0653], alef)).toEqual([0x0627, 0x0670, 0x0653]);
+    expect(composeCanonical([0x0627, 0x0653, 0x0670], alef)).toEqual([0x0627, 0x0670, 0x0653]);
+    expect(composeCanonical([0x0627, 0x0653], alef)).toEqual([0x0622]);
+  });
+
+  it('composes Hebrew presentation forms only when asked', () => {
+    const forms = (cps: number[], hasGlyph: (cp: number) => boolean) =>
+      compose(cps, hasGlyph, undefined, { hebrewPresentationForms: true }).codePoints;
+    const bet = font(0x05d1, 0x05bc, 0x05b7, 0xfb31);
+    // BET + patah + dagesh: dagesh commutes past patah onto the bet.
+    expect(forms([0x05d1, 0x05b7, 0x05bc], bet)).toEqual([0xfb31, 0x05b7]);
+    expect(composeCanonical([0x05d1, 0x05b7, 0x05bc], bet)).toEqual([0x05d1, 0x05b7, 0x05bc]);
+    // SHIN + dagesh + shin dot reaches U+FB2C through U+FB49 only.
+    const shin = font(0x05e9, 0x05bc, 0x05c1, 0xfb49, 0xfb2c);
+    expect(forms([0x05e9, 0x05c1, 0x05bc], shin)).toEqual([0xfb2c]);
+    const noFb49 = font(0x05e9, 0x05bc, 0x05c1, 0xfb2c);
+    expect(forms([0x05e9, 0x05bc, 0x05c1], noFb49)).toEqual([0x05e9, 0x05bc, 0x05c1]);
+    // Other exclusions stay excluded.
+    expect(
+      compose([0x915, 0x93c], font(0x915, 0x93c, 0x958), undefined, {
+        hebrewPresentationForms: true,
+      }).codePoints,
+    ).toEqual([0x915, 0x93c]);
+  });
+
+  it('gives canonically equivalent Arabic and Hebrew spellings one layout', () => {
+    const layout = (path: string, cps: number[]) => {
+      const f: any = fontkit.create(fs.readFileSync(path));
+      const run = f.layout(String.fromCodePoint(...cps));
+      return run.glyphs.map((g: any, i: number) => [g.id, run.positions[i].xOffset, run.positions[i].yOffset]);
+    };
+    // Noto Naskh Arabic stacks marks in logical order: shadda then fatha.
+    const naskh = './assets/fonts/noto_naskh_arabic/NotoNaskhArabic[wght].ttf';
+    expect(layout(naskh, [0x0628, 0x064e, 0x0651])).toEqual(layout(naskh, [0x0628, 0x0651, 0x064e]));
+    expect(layout(naskh, [0x0628, 0x064f, 0x0654])).toEqual(layout(naskh, [0x0628, 0x0654, 0x064f]));
+    // Noto Serif Hebrew does not ask for the font's own order either way.
+    const serif = './assets/fonts/noto_serif_hebrew/NotoSerifHebrew[wdth,wght].ttf';
+    expect(layout(serif, [0x05d1, 0x05b9, 0x05bc])).toEqual(layout(serif, [0x05d1, 0x05bc, 0x05b9]));
+  });
+
+  it('uses Hebrew presentation forms only for fonts without mark positioning', () => {
+    const lacks = (path: string) =>
+      (fontkit.create(fs.readFileSync(path)) as any)._layoutEngine.lacksMarkPositioning();
+    expect(lacks('./assets/fonts/noto_serif_hebrew/NotoSerifHebrew[wdth,wght].ttf')).toBe(false);
+    // No GPOS at all.
+    expect(lacks('./assets/fonts/press_start_2p/PressStart2P-Regular.ttf')).toBe(true);
   });
 
   it('leaves a variation-selector cluster unsorted', () => {

@@ -67,6 +67,7 @@ export default class LayoutEngine {
       initial.codePoints,
       hasGlyph,
       initial.clusters,
+      { hebrewPresentationForms: this.lacksMarkPositioning() },
     );
 
     // morx fonts carry their own Thai processing, so AAT is left alone.
@@ -128,6 +129,20 @@ export default class LayoutEngine {
     }
 
     return glyphRun;
+  }
+
+  /**
+   * Whether the font has no mark positioning of its own: no morx and no
+   * GPOS feature tagged `mark` anywhere. Then the Hebrew presentation forms
+   * it maps are used for pointed letters (CanonicalCompose.ts). A heuristic
+   * on the font, not a test of the sequence: a `mark` feature whose lookups
+   * miss some points, or that only a non-default language system reaches,
+   * still counts as positioning.
+   */
+  lacksMarkPositioning(): boolean {
+    if (this.font.morx) return false;
+    const features: { tag: string }[] = this.font.GPOS?.featureList ?? [];
+    return !features.some((feature) => feature.tag === 'mark');
   }
 
   substitute(glyphRun: GlyphRun): void {

@@ -28,21 +28,12 @@ each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 draw their outlines, not their colour images or layers, for the same reason;
 `COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
-## Mark reordering covers neither Hebrew/Arabic nor split vowels
+## Mark reordering does not cover split vowels or Tibetan U
 
-`composeCanonical` now sorts each run of nonzero-class marks by shaping rank
-(`MarkOrder.ts`) before composing, but three parts remain (plan and rulings
-in notes/mark-reorder-design.md):
+`composeCanonical` sorts each run of nonzero-class marks by shaping rank
+(`MarkOrder.ts`; UAX #53 AMTRA in Arabic runs) before composing, but two
+parts remain (plan and rulings in notes/mark-reorder-design.md):
 
-- Hebrew and Arabic runs are frozen as typed. They need their own ranks
-  (Hebrew dagesh and shin/sin dots before the vowels; Arabic shadda first
-  and modifier-mark promotion per UTR #53, whose mark set postdates the
-  Unicode 8 data), the Hebrew patah/qamats + sheva/hiriq + meteg swap on the
-  sorted order, UTR #53's ban on composing across marks, and the Hebrew
-  FB1D-FB4F presentation-form composition for fonts with no GPOS `mark`
-  (those forms are composition exclusions). A `hebr` shaper class (as the
-  cantoo fontkit fork added) was refused: it is unreachable for fonts with
-  no `hebr` script record or no layout tables.
 - The split-vowel decompositions `UniversalShaper` and `IndicShaper` do ad
   hoc run after the stage, so their parts are never sorted (KA + a mapped
   U+0F73 + TSA -PHRU is still a broken cluster), they skip the glyph check,
@@ -51,6 +42,18 @@ in notes/mark-reorder-design.md):
   categories accept only canonical KA E U; ranking U first goes together
   with the specification's positional overrides (I/E/O below, U above) left
   out of `scripts/gen-use-trie.mjs`.
+
+## Canonical composition stops at an unmapped intermediate composite
+
+`composeCanonical` composes pairwise through the decomposition tree, so a
+composite whose recorded decomposition has an intermediate the font does not
+map is never reached: SHIN + dagesh + shin dot becomes U+FB2C only if the
+font also maps U+FB49 (FB2C = FB49 + shin dot), and Latin composites with
+two marks behave the same. Reaching it would mean matching a run against the
+full decompositions of the composites the font maps, keeping the
+blocking rules. Separately, the stage's data is Unicode 8, so Arabic marks
+added later (U+08D3, U+08CA..08CF and the other newer Modifier_Combining_Mark
+members) have class 0 there: they bound runs instead of joining AMTRA.
 
 ## GSUB lookups cross syllable boundaries in the Indic and USE shapers
 

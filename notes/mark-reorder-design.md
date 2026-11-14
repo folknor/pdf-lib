@@ -1,7 +1,7 @@
 # Mark reorder before shaping: design and slice plan
 
-Shared design document for the chain closing "No mark reordering before
-shaping" (notes/fontkit-findings.md). Each link brings this plan up to date;
+Shared design document for the chain closing the mark reordering finding
+in notes/fontkit-findings.md. Each link brings this plan up to date;
 the last link closes the finding and deletes this file.
 
 ## Settled rulings
@@ -31,14 +31,28 @@ the last link closes the finding and deletes this file.
 6. Rank data is hand-authored, stated against Unicode 8 (canonicalData.ts's
    version), each override justified by a test of the order a font or the
    USE grammar consumes. No HarfBuzz table is copied (LLM.md isolation).
-7. Hebrew and Arabic are frozen until slice 2: a run is frozen if a member is
-   in the explicit Hebrew/Arabic mark list in MarkOrder.ts (by code point,
-   since fatha, damma, shadda, hamza are Script=Inherited), or the nearest
-   preceding non-mark (looking past every mark, CGJ included) has Script
-   Hebrew or Arabic. Decided once on the decomposed sequence before
-   composition. Frozen runs keep typed order and the old composition rule
-   (blocked also by a higher class), so their output is unchanged.
-8. Tibetan U keeps its ccc (after the other vowels): with the trie as it is,
+7. No run is frozen. A run is Arabic if the nearest preceding non-mark
+   (looking past every mark, CGJ included) has Script Arabic, or a member is
+   in the Arabic mark list in MarkOrder.ts (by code point: fatha, damma,
+   shadda, hamza are Script=Inherited). Decided once on the decomposed
+   sequence before composition. Arabic runs sort by UAX #53 AMTRA keys
+   (leading class-220 MCMs, leading class-230 MCMs, shadda, then class;
+   stable; "leading" judged on typed order within the class, so MADDAH +
+   HAMZA promotes nothing) and compose only a mark directly after the
+   starter in the output so far. The MCM set is PropList 18.0.0's, cut to
+   the members the Unicode 8 data knows.
+8. Hebrew sorts by class with one override: holam (05B9, 05BA) after
+   dagesh, meteg and rafe, before the shin/sin dots, because DejaVu Sans
+   classes holam and the shin/sin dots as GDEF base glyphs and every mark
+   after them loses its attachment. Dagesh and shin/sin dots before the
+   vowels were refused (DejaVu breaks under them; Noto Sans Hebrew is
+   order-independent; Noto Serif Hebrew only ligates the nonstandard VAV +
+   SHIN DOT), and so was the meteg swap (no consumer, no public source).
+9. The canonical presentation forms U+FB1D..FB4E compose, through mapped
+   intermediates only, when the font has no morx and no GPOS feature tagged
+   `mark` (LayoutEngine.lacksMarkPositioning). A font-level heuristic, not a
+   sequence test: partial mark coverage counts as positioning.
+10. Tibetan U keeps its ccc (after the other vowels): with the trie as it is,
    the USE grammar accepts canonical KA E U and breaks KA U E. Ranking U
    first and the positional overrides are one unit (slice 4).
 
@@ -49,16 +63,12 @@ the last link closes the finding and deletes this file.
    PHINTHU, Telugu length marks before virama, Tibetan TSA -PHRU before AA,
    PADMA GDAN and Tai Tham SAKOT last; Hebrew/Arabic freeze. Size: ~150
    lines of source and tests.
-2. **Hebrew and Arabic.** Lift the freeze. Hebrew: ranks (dagesh, shin/sin
-   dots before the vowels; vowel order) from a public source, the
-   patah/qamats + sheva/hiriq + meteg swap on the sorted order, FB1D-FB4F
-   presentation-form composition for fonts with no GPOS `mark`. Arabic:
-   UTR #53 AMTRA (shadda to run start, MCM promotion; the MCM set postdates
-   Unicode 8, so a hand-listed versioned set or newer UCD), and AMTRA's ban
-   on composition across marks (e.g. ALEF + superscript alef + maddah) in
-   place of rule 4 for Arabic. No Hebrew or Arabic fixture font exists;
-   pure-function tests unless one is fetched. Size: large, ~300 lines plus
-   data.
+2. **Hebrew and Arabic (landed).** Freeze lifted; AMTRA for Arabic runs
+   with adjacency-only composition; Hebrew class order with the holam
+   override; presentation-form composition for fonts without mark
+   positioning (rulings 7, 8, 9). Noto Serif Hebrew and Noto Naskh Arabic
+   fixtures added. The planned dagesh/shin-dot promotion and meteg swap were
+   refused on font evidence. Size: ~200 lines of source and tests.
 3. **Split vowels into the stage.** Move IndicShaper/UniversalShaper
    split-vowel decompositions into the canonical stage so their parts are
    sorted (KA + mapped U+0F73 + TSA -PHRU stays broken until then: II is

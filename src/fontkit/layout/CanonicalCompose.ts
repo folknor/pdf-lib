@@ -13,14 +13,19 @@
 //   sorted by shaping rank (MarkOrder.ts), not by plain class: fonts and the
 //   USE grammar expect some marks out of canonical order. Class-0 code points
 //   (CGJ, Indic matras, a mapped U+0F73) bound runs and keep typed order, so
-//   CGJ is the way to force an order. Runs with Hebrew or Arabic marks or
-//   base are frozen (left as typed) until those scripts get their ranks.
+//   CGJ is the way to force an order. Arabic runs (an Arabic base or
+//   Arabic marks) are ordered by UAX #53 AMTRA instead (MarkOrder.ts).
 // - A combining mark is then composed onto the preceding starter (a non-mark
 //   with combining class 0) when the pair has a primary composite outside
 //   Full_Composition_Exclusion, the font maps that composite, and no class-0
 //   mark is in between (so CGJ blocks), nor any mark of the candidate's own
-//   class: it commutes past the others. Frozen runs keep the classic rule,
-//   blocked also by a higher class. Sorting before composing makes every
+//   class: it commutes past the others. In Arabic runs a mark composes only
+//   directly after the starter, as AMTRA forbids recomposing across marks.
+//   With `hebrewPresentationForms` the canonical Hebrew presentation forms
+//   (U+FB1D..FB4E, composition exclusions) compose too, for fonts that
+//   cannot position the points (see LayoutEngine). A composite is reached
+//   only through mapped intermediates: SHIN + dagesh + shin dot becomes
+//   U+FB2C only when the font also maps U+FB49. Sorting before composing makes every
 //   spelling with the same exposed marks compose alike. Marks with class 0
 //   never compose, and nothing composes onto a mark, which keeps Indic and
 //   USE split vowels apart for the shapers.
@@ -42,13 +47,16 @@ import {
   COMPOSITION_EXCLUSIONS,
   DECOMPOSITIONS,
 } from './canonicalData.js';
-import { isFrozenRun, shapingRank } from './MarkOrder.js';
+import { arabicKeys, isArabicRun, shapingRank } from './MarkOrder.js';
 
 interface Tables {
   decompositions: Map<number, number[]>;
   classes: Map<number, number>;
   compositions: Map<number, Map<number, number>>;
+  hebrewForms: Map<number, Map<number, number>>;
 }
+
+const isHebrewPresentationForm = (cp: number) => cp >= 0xfb1d && cp <= 0xfb4e;
 
 let tables: Tables | undefined;
 
@@ -74,14 +82,21 @@ const load = (): Tables => {
     COMPOSITION_EXCLUSIONS.split(',').map((h) => parseInt(h, 16)),
   );
   const compositions = new Map<number, Map<number, number>>();
+  const hebrewForms = new Map<number, Map<number, number>>();
   for (const [cp, parts] of decompositions) {
-    if (parts.length !== 2 || excluded.has(cp)) continue;
+    if (parts.length !== 2) continue;
+    const table = !excluded.has(cp)
+      ? compositions
+      : isHebrewPresentationForm(cp)
+        ? hebrewForms
+        : null;
+    if (!table) continue;
     const [first, second] = parts as [number, number];
-    let bySecond = compositions.get(first);
-    if (!bySecond) compositions.set(first, (bySecond = new Map()));
+    let bySecond = table.get(first);
+    if (!bySecond) table.set(first, (bySecond = new Map()));
     bySecond.set(second, cp);
   }
-  tables = { decompositions, classes, compositions };
+  tables = { decompositions, classes, compositions, hebrewForms };
   return tables;
 };
 
@@ -103,8 +118,9 @@ export function composeCanonical(
   codePoints: number[],
   hasGlyph: (cp: number) => boolean,
   clusters: number[] = codePoints.map((_, i) => i),
+  { hebrewPresentationForms = false } = {},
 ): { codePoints: number[]; clusters: number[] } {
-  const { decompositions, compositions } = load();
+  const { decompositions, compositions, hebrewForms } = load();
 
   // Clusters holding a variation selector, judged on the typed sequence.
   const protectedAt = new Array<boolean>(codePoints.length).fill(false);
@@ -150,9 +166,9 @@ export function composeCanonical(
   }
 
   // Sort each run of unlocked nonzero-class code points by shaping rank
-  // (MarkOrder.ts), stably, unless the run is frozen. Decided once here, on
-  // the decomposed sequence, before anything composes.
-  const frozen = new Array<boolean>(cps.length).fill(false);
+  // (MarkOrder.ts), stably, or by AMTRA in an Arabic run. Decided once
+  // here, on the decomposed sequence, before anything composes.
+  const arabic = new Array<boolean>(cps.length).fill(false);
   for (let start = 0; start < cps.length; ) {
     if (locked[start] || combiningClass(cps[start]!) === 0) {
       start++;
@@ -166,15 +182,20 @@ export function composeCanonical(
     ) {
       end++;
     }
-    if (isFrozenRun(cps, start, end)) {
-      frozen.fill(true, start, end);
-    } else if (end - start > 1) {
-      const run = [];
-      for (let i = start; i < end; i++) run.push([cps[i]!, cpClusters[i]!]);
-      run.sort(([a], [b]) => shapingRank(a!) - shapingRank(b!));
-      run.forEach(([cp, cluster], k) => {
-        cps[start + k] = cp!;
-        cpClusters[start + k] = cluster!;
+    const isArabic = isArabicRun(cps, start, end);
+    if (isArabic) arabic.fill(true, start, end);
+    if (end - start > 1) {
+      const members = cps.slice(start, end);
+      const keys = isArabic ? arabicKeys(members) : members.map(shapingRank);
+      const run = members.map((cp, k) => ({
+        cp,
+        cluster: cpClusters[start + k]!,
+        key: keys[k]!,
+      }));
+      run.sort((a, b) => a.key - b.key);
+      run.forEach(({ cp, cluster }, k) => {
+        cps[start + k] = cp;
+        cpClusters[start + k] = cluster;
       });
     }
     start = end;
@@ -184,7 +205,6 @@ export function composeCanonical(
   const outClusters: number[] = [];
   let starter = -1; // index in out of the open starter, -1 if none
   let blockedByZero = false;
-  let highestBetween = 0; // highest class left between starter and here
   const classesBetween = new Set<number>();
   for (let i = 0; i < cps.length; i++) {
     const cp = cps[i]!;
@@ -197,11 +217,17 @@ export function composeCanonical(
       continue;
     }
     // A mark reaches the starter if it commutes past every mark left in
-    // between (all nonzero classes other than its own). Frozen runs keep the
-    // classic rule, which also blocks on a higher class.
-    const reaches = frozen[i] ? highestBetween < cls : !classesBetween.has(cls);
+    // between (all nonzero classes other than its own). In an Arabic run it
+    // must follow the starter directly: consumed marks are gone from out,
+    // and any mark left there blocks.
+    const reaches = arabic[i]
+      ? starter === out.length - 1
+      : !classesBetween.has(cls);
     if (mark && cls !== 0 && starter >= 0 && !blockedByZero && reaches) {
-      const composite = compositions.get(out[starter]!)?.get(cp);
+      const base = out[starter]!;
+      const composite =
+        compositions.get(base)?.get(cp) ??
+        (hebrewPresentationForms ? hebrewForms.get(base)?.get(cp) : undefined);
       if (composite !== undefined && hasGlyph(composite)) {
         out[starter] = composite;
         outClusters[starter] = Math.min(outClusters[starter]!, cpClusters[i]!);
@@ -213,12 +239,10 @@ export function composeCanonical(
     if (!mark && cls === 0) {
       starter = out.length - 1;
       blockedByZero = false;
-      highestBetween = 0;
       classesBetween.clear();
     } else if (cls === 0) {
       blockedByZero = true;
     } else {
-      highestBetween = Math.max(highestBetween, cls);
       classesBetween.add(cls);
     }
   }
