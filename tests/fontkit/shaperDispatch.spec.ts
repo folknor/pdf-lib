@@ -106,6 +106,49 @@ describe('USE Tibetan clusters', () => {
     expect(dotted(0x0f40, 0x0f39, 0x0f71)).toBe(false);
   });
 
+  it('shapes U before every other vowel in either typed order', () => {
+    for (const v of [0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80]) {
+      const a = font.layout(String.fromCodePoint(0x0f40, v, 0x0f74));
+      const b = font.layout(String.fromCodePoint(0x0f40, 0x0f74, v));
+      expect(a.codePoints.flat()).not.toContain(0x25cc);
+      expect(a.glyphs.map((g: any) => g.id)).toEqual(b.glyphs.map((g: any) => g.id));
+      expect(a.positions).toEqual(b.positions);
+      expect(a.positions.at(-1).attachedTo).toBe(0);
+      expect(a.text.flat().sort()).toEqual([0x0f40, v, 0x0f74].sort());
+      expect(a.clusters).toEqual(a.glyphs.map(() => 0));
+    }
+    const run = font.layout(String.fromCodePoint(0x0f40, 0x0f7a, 0x0f74));
+    expect(run.glyphs.map((g: any) => g.id)).toEqual([157, 1337]);
+    expect(run.positions.map((p: any) => [p.xAdvance, p.xOffset, p.yOffset]))
+      .toEqual([[704, 0, 0], [0, -599, 0]]);
+  });
+
+  it('stacks repeated vowels without losing occurrences', () => {
+    for (const v of [0x0f74, 0x0f72, 0x0f7a]) {
+      const run = font.layout(String.fromCodePoint(0x0f40, v, v));
+      expect(run.codePoints).toEqual([[0x0f40], [v], [v]]);
+      expect(run.text.flat()).toEqual([0x0f40, v, v]);
+      expect(run.positions.map((p: any) => p.attachedTo)).toEqual([null, 0, 1]);
+      expect(run.positions[2].yOffset).not.toBe(run.positions[1].yOffset);
+    }
+    expect(dotted(0x0f40, 0x0f7a, 0x0f74, 0x0f7a, 0x0f74)).toBe(false);
+  });
+
+  it('places HALANTA after vowels and attaches it to the KA+U ligature', () => {
+    for (const v of [0x0f72, 0x0f74, 0x0f7a, 0x0f7c, 0x0f80]) {
+      const a = font.layout(String.fromCodePoint(0x0f40, 0x0f84, v));
+      const b = font.layout(String.fromCodePoint(0x0f40, v, 0x0f84));
+      expect(a.codePoints.flat()).not.toContain(0x25cc);
+      expect(a.glyphs.map((g: any) => g.id)).toEqual(b.glyphs.map((g: any) => g.id));
+      expect(a.positions).toEqual(b.positions);
+      expect(a.positions.at(-1).attachedTo).toBe(0);
+    }
+    const run = font.layout(String.fromCodePoint(0x0f40, 0x0f84, 0x0f74));
+    expect(run.glyphs.map((g: any) => g.id)).toEqual([157, 1352]);
+    expect([run.positions.at(-1).xOffset, run.positions.at(-1).yOffset])
+      .toEqual([-364, -472]);
+  });
+
   it('keeps mapped II followed by TSA -PHRU out of broken clusters', () => {
     expect(font.hasGlyphForCodePoint(0x0f73)).toBe(true);
     const run = font.layout(String.fromCodePoint(0x0f40, 0x0f73, 0x0f39));

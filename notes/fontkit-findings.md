@@ -28,18 +28,6 @@ each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 draw their outlines, not their colour images or layers, for the same reason;
 `COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
-## Mark reordering leaves Tibetan U in canonical order
-
-`composeCanonical` sorts each run of nonzero-class marks by shaping rank
-(`MarkOrder.ts`; UAX #53 AMTRA in Arabic runs). Indic/USE split vowels now
-expand before that sort, only when unmapped and all parts are mapped;
-variation-selector clusters stay typed. The remaining slice 4 work (plan
-and rulings in notes/mark-reorder-design.md) is Tibetan U: it keeps its class
-(after the other vowels), because the trie's categories accept only canonical
-KA E U. Ranking U first goes together with the specification's positional
-overrides (I/E/O below, U above) left out of `scripts/gen-use-trie.mjs`;
-HALANTA (ccc 9) and repeated vowels still need review in the same slice.
-
 ## Canonical composition stops at an unmapped intermediate composite
 
 `composeCanonical` composes pairwise through the decomposition tree, so a

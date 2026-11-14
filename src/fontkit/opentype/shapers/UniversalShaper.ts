@@ -112,7 +112,11 @@ function setupSyllables(_font: any, glyphs: GlyphInfo[]): void {
     // The old USE grammar expects split II and rejects TSA -PHRU after
     // intact, mapped U+0F73. Keep this single following mark in the preceding
     // standard cluster without decomposing II or changing the typed order.
-    // Revisit this compatibility exception with the slice 4 grammar review.
+    // The Tibetan positional overrides do not change II (still VAbv), so
+    // B VAbv CMAbv still splits in use.ts. Noto Serif Tibetan maps II and
+    // attaches TSA -PHRU to the base when kept here. Retain this exception
+    // until the grammar itself accepts the intact sequence; class-0 II
+    // cannot be crossed by the canonical mark sort.
     const previous = glyphs[from - 1];
     if (
       tags?.[0] === 'broken_cluster' &&

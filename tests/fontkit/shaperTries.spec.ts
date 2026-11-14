@@ -1,3 +1,5 @@
+import StateMachine from '../../src/vendors/dfa/index.js';
+import useData from '../../src/fontkit/opentype/shapers/use.js';
 import { unzlibSync } from 'fflate';
 import trieArabic from '../../src/fontkit/opentype/shapers/trie.js';
 import trieIndic from '../../src/fontkit/opentype/shapers/trieIndic.js';
@@ -40,14 +42,23 @@ describe('fontkit shaper tries', () => {
     expect(trie.get(0x0f71)).toBe(11); // TIBETAN AA: Nukta, CMBlw
     expect(trie.get(0x0f00)).toBe(4); // TIBETAN OM: Consonant, B
     expect(trie.get(0x0f86)).toBe(7); // TIBETAN LCI RTAGS: Tone_Mark, VMAbv
-    // ... and the ones deliberately not taken:
-    expect(trie.get(0x0f72)).toBe(9); // TIBETAN I: VAbv (Unicode's Top)
-    expect(trie.get(0x0f74)).toBe(13); // TIBETAN U: VBlw (Unicode's Bottom)
+    for (const cp of [0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80]) {
+      expect(trie.get(cp)).toBe(13); // I/E/O: VBlw, grammar position
+    }
+    expect(trie.get(0x0f74)).toBe(9); // U: VAbv, grammar position
     expect(trie.get(0x0f90)).toBe(20); // TIBETAN SUBJOINED KA: SUB
     expect(trie.get(0x1b34)).toBe(16); // BALINESE REREKAN: CMAbv
     expect(trie.get(0x1b6b)).toBe(27); // BALINESE MUSICAL TEGEH: SMAbv
     expect(trie.get(0xa9c0)).toBe(14); // JAVANESE PANGKON: H
     expect(trie.get(0x11003)).toBe(18); // BRAHMI JIHVAMULIYA: CS
+  });
+
+  it('still needs the mapped-II / TSA -PHRU compatibility exception', () => {
+    const trie = load(trieUse);
+    const data = JSON.parse(new TextDecoder().decode(unzlibSync(decodeBase64(useData))));
+    const machine = new StateMachine(data);
+    expect(Array.from(machine.match([0x0f40, 0x0f73, 0x0f39].map((cp) => trie.get(cp)))))
+      .toEqual([[0, 1, ['standard_cluster']], [2, 2, ['broken_cluster']]]);
   });
 
   it('trieIndic.ts resolves supplementary code points', () => {

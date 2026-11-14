@@ -140,11 +140,6 @@ const TIBETAN_UISC_OVERRIDE = {
 // - U+0F7F RNAM BCAD -> Consonant_Dead (independent cluster): a following
 //   U+0F35, U+0F37 or U+0FC6 (Syllable_Modifier, FM) would then start a
 //   broken cluster (font-tools issue 19).
-// - The positional overrides U+0F72, U+0F7A-0F7D, U+0F80 -> Bottom and
-//   U+0F74 -> Top: they only swap which order of U plus an above vowel is
-//   accepted, breaking the canonical one (KA E U). They come back only
-//   together with ranking U before the other vowels in MarkOrder.ts.
-
 // --- gen-use.js's own override tables (verbatim, plus the Tibetan entries) --
 const UISC_OVERRIDE = {
   ...TIBETAN_UISC_OVERRIDE,
@@ -159,7 +154,16 @@ const UISC_OVERRIDE = {
   0x1ced: 'Tone_Mark',
 };
 
+// These positions describe grammar order, not where the glyph is drawn.
+// VAbv precedes VBlw: pair this table with U's rank in MarkOrder.ts.
 const UIPC_OVERRIDE = {
+  0x0f72: 'Bottom',
+  0x0f7a: 'Bottom',
+  0x0f7b: 'Bottom',
+  0x0f7c: 'Bottom',
+  0x0f7d: 'Bottom',
+  0x0f80: 'Bottom',
+  0x0f74: 'Top',
   0x1b6c: 'Bottom',
   0x953: 'Not_Applicable',
   0x954: 'Not_Applicable',

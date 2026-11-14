@@ -62,6 +62,24 @@ describe('canonical composition', () => {
     expect(composeCanonical([0x1a20, 0x1a60, 0x1a75], all)).toEqual([0x1a20, 0x1a75, 0x1a60]);
   });
 
+  it('ranks Tibetan U after AA and before other vowels without crossing locks', () => {
+    const all = () => true;
+    for (const v of [0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80]) {
+      for (const marks of [[v, 0x0f74], [0x0f74, v]]) {
+        expect(composeCanonical([0x0f40, ...marks, 0x0f71, 0x0f39], all))
+          .toEqual([0x0f40, 0x0f39, 0x0f71, 0x0f74, v]);
+      }
+      expect(composeCanonical([0x0f40, v, 0x034f, 0x0f74], all))
+        .toEqual([0x0f40, v, 0x034f, 0x0f74]);
+      expect(composeCanonical([0x0f40, v, 0x0f74, 0xfe00], all))
+        .toEqual([0x0f40, v, 0x0f74, 0xfe00]);
+    }
+    expect(composeCanonical([0x0f40, 0x0f7c, 0x0f74, 0x0f7a, 0x0f74], all))
+      .toEqual([0x0f40, 0x0f74, 0x0f74, 0x0f7c, 0x0f7a]);
+    expect(composeCanonical([0x0f40, 0x0f74, 0x0f84], all))
+      .toEqual([0x0f40, 0x0f74, 0x0f84]);
+  });
+
   it('orders Hebrew points by class, holam after dagesh, meteg and rafe', () => {
     const all = () => true;
     // Patah (17) before dagesh (21); shin dot (24) after qamats and dagesh.

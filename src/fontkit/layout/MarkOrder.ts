@@ -35,6 +35,15 @@ const RANK_OVERRIDES = new Map<number, number>([
   // nukta (CMBlw) in the USE trie and TSA -PHRU a CMAbv, and the grammar
   // takes CMAbv before CMBlw.
   [0x0f39, 128],
+  // Tibetan U (132) before I/E/O (130), but after AA (129). The USE
+  // positional overrides in gen-use-trie.mjs classify U as VAbv and the
+  // other vowels as VBlw; the grammar consumes VAbv before VBlw.
+  [0x0f74, 129.5],
+  // Tibetan HALANTA (9) follows the vowels (VBlw in the USE trie).
+  // Before U it terminates the vowel group and breaks U into a new cluster.
+  // Noto Serif Tibetan attaches it after KA+U at (-364, -472); repeated
+  // U/I/E keep stable order and stack through the font's mark attachment.
+  [0x0f84, 131],
   // Tibetan PADMA GDAN (220) and Tai Tham SAKOT (9) last in their run.
   [0x0fc6, 255],
   [0x1a60, 255],
