@@ -336,7 +336,10 @@ describe('PDFDocument', () => {
 
       // Some producers (e.g. iText 2.x) write /CF and each crypt filter as
       // indirect objects instead of inline dictionaries.
-      const encrypted = await PDFDocument.load(await pdfDoc.save(), {
+      // No object streams: a keyless load cannot read their members, so the
+      // Info dictionary must be a top-level object to survive the edit.
+      const original = await pdfDoc.save({ useObjectStreams: false });
+      const encrypted = await PDFDocument.load(original, {
         ignoreEncryption: true,
         updateMetadata: false,
       });

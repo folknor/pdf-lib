@@ -68,7 +68,7 @@ describe('PDFXRefChainReader', () => {
     ]);
     const xref = PDFXRefChainReader.read(bytes, 9);
     expect(xref.entries.get(1)).toEqual({ kind: 'inUse', offset: 9, generation: 0 });
-    expect(xref.entries.get(2)).toEqual({ kind: 'compressed' });
+    expect(xref.entries.get(2)).toEqual({ kind: 'compressed', container: 3, index: 0 });
   });
 
   it('reads a hybrid section as table, then /XRefStm, then /Prev', () => {
@@ -112,10 +112,12 @@ describe('PDFXRefChainReader', () => {
     expect(() =>
       PDFXRefChainReader.read(stream(xrefStream(3, [1, 2], [[1, 9, 0]])), 9),
     ).toThrow(/truncated/);
-    // An unknown entry type.
-    expect(() =>
-      PDFXRefChainReader.read(stream(xrefStream(3, [0, 2], [[0, 0, 255], [3, 9, 0]])), 9),
-    ).toThrow(/entry type 3/);
+    // An entry type ISO 32000-1 7.5.8.3 leaves undefined is a null
+    // reference, not damage.
+    expect(
+      PDFXRefChainReader.read(stream(xrefStream(3, [0, 2], [[0, 0, 255], [3, 9, 0]])), 9)
+        .entries.get(1),
+    ).toEqual({ kind: 'null' });
     // A negative /Index.
     const negative = xrefStream(3, [0, 1], [[0, 0, 255]]);
     expect(() =>

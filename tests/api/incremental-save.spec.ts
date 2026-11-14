@@ -119,10 +119,10 @@ describe('Incremental Save', () => {
       updateMetadata: false,
     });
 
-    // This fixture's final trailer Size is lower than the true max object
-    // number; largestObjectNumber must not collapse to that smaller Size-1.
-    const finalSize = pdfDoc.context.trailerInfo.Size!.asNumber();
-    expect(pdfDoc.context.largestObjectNumber).toBeGreaterThan(finalSize - 1);
+    // The main xref stream (last in the file) has a smaller /Size than the
+    // first-page section, which is the newest along the chain: /Size and
+    // largestObjectNumber come from the newest, not from file order.
+    expect(pdfDoc.context.trailerInfo.Size!.asNumber()).toBe(85335);
     expect(pdfDoc.context.largestObjectNumber).toBe(85334);
 
     // The final XRef stream omits Root/Info/ID; they must be kept from

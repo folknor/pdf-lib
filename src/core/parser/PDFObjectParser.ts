@@ -69,6 +69,12 @@ class PDFObjectParser extends BaseParser {
     this.cryptoFactory = cryptoFactory;
   }
 
+  /** Whether only whitespace and comments remain. */
+  atEnd(): boolean {
+    this.skipWhitespaceAndComments();
+    return this.bytes.done();
+  }
+
   // TODO: Is it possible to reduce duplicate parsing for ref lookaheads?
   parseObject(ref?: PDFRef): PDFObject {
     this.skipWhitespaceAndComments();
@@ -367,9 +373,18 @@ class PDFObjectParser extends BaseParser {
    * target is already in the context. Indirect lengths whose object hasn't
    * been parsed yet (commonly it follows the stream) yield `undefined`.
    */
+  /**
+   * The object an indirect /Length names. A parser that can locate objects
+   * before it has parsed them (PDFParser, loading through the xref) loads it
+   * here, so the length is known before the stream's end is searched for.
+   */
+  protected lookupStreamLength(ref: PDFRef): PDFObject | undefined {
+    return this.context.lookup(ref);
+  }
+
   private resolveStreamLength(Length: PDFObject | undefined) {
     let value: PDFObject | undefined = Length;
-    if (value instanceof PDFRef) value = this.context.lookup(value);
+    if (value instanceof PDFRef) value = this.lookupStreamLength(value);
     if (!(value instanceof PDFNumber)) return;
     const n = value.asNumber();
     return Number.isInteger(n) && n >= 0 ? n : undefined;

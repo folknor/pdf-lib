@@ -23,20 +23,13 @@ path does link earlier free entries in.
 
 A free entry of generation 65535 is never to be reused (ISO 32000-1 7.5.4),
 but neither writer checks a number it emits in use against the file's
-effective xref: a context object under such a number (the parser loads
-every scanned body, freed or not) is written in use. A fix reads the
+effective xref: an object the caller assigns under such a number is written
+in use. (Loading through the xref no longer brings freed bodies into the
+context, but a file the parser has to reconstruct by scanning still can.)
+A fix reads the
 effective xref (`PDFXRefChainReader`) on every increment and refuses that
 write; an ordinary reuse of an earlier free number should likewise carry
 the generation the free entry names.
-
-## The context can hold several generations of one number
-
-The parser assigns every object body it scans, so a file whose history
-deleted `12 0` and reused the number as `12 1` loads with both refs live; it
-never selects the generation its xref names. Any write that emits that
-number then has two in-use candidates; `freeEntries()` refuses such a write
-rather than emit a duplicate xref entry. A fix picks the effective
-generation from the xref at load.
 
 ## The trailer /ID never changes between revisions
 

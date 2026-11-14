@@ -60,6 +60,10 @@ class ByteStream {
     return this.idx >= this.length;
   }
 
+  size(): number {
+    return this.length;
+  }
+
   offset(): number {
     return this.idx;
   }

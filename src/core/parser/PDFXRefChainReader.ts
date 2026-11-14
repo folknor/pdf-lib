@@ -1,3 +1,4 @@
+import { DecodedStreamTooLargeError } from '../errors.js';
 import PDFArray from '../objects/PDFArray.js';
 import type PDFDict from '../objects/PDFDict.js';
 import PDFName from '../objects/PDFName.js';
@@ -16,8 +17,21 @@ import PDFObjectParser from './PDFObjectParser.js';
 export type XRefDisposition =
   | { kind: 'inUse'; offset: number; generation: number }
   | { kind: 'free'; generation: number }
-  /** A type-2 entry: the object lives in an object stream. */
-  | { kind: 'compressed' };
+  /** A type-2 entry: member `index` of object stream `container`. */
+  | { kind: 'compressed'; container: number; index: number }
+  /**
+   * An xref-stream entry of a type ISO 32000-1 7.5.8.3 does not define:
+   * a reference to the null object. It shadows older entries like any other.
+   */
+  | { kind: 'null' };
+
+/** The trailer keys a reader resolves the document with. */
+export interface EffectiveTrailer {
+  Root?: PDFObject;
+  Encrypt?: PDFObject;
+  Info?: PDFObject;
+  ID?: PDFObject;
+}
 
 export interface EffectiveXRef {
   /** /Size of the newest section: every effective entry is below it. */
@@ -25,6 +39,13 @@ export interface EffectiveXRef {
   entries: Map<number, XRefDisposition>;
   /** The highest number whose effective entry is free, or 0. */
   highestFree: number;
+  /**
+   * Each key from the newest section along the chain that has it (a
+   * linearized file's main section, for one, omits /Root).
+   */
+  trailer: EffectiveTrailer;
+  /** Whether any section of the chain is a cross-reference stream. */
+  hasStreamSection: boolean;
 }
 
 export class XRefChainError extends Error {
@@ -39,6 +60,7 @@ const XRefName = PDFName.of('XRef');
 interface Section {
   entries: [number, XRefDisposition][];
   trailer: PDFDict;
+  isStream: boolean;
 }
 
 /**
@@ -53,21 +75,28 @@ interface Section {
  * at or above the newest /Size (readers ignore those; republishing one under
  * a larger /Size would make it resolvable) throws XRefChainError.
  *
- * This is independent of PDFParser, which scans bodies in file order and
- * keeps no xref (see the findings in notes/save-findings.md).
+ * PDFParser loads a document through it (see `PDFParser.loadByXRef`),
+ * passing its own context so the trailer values belong to the document; the
+ * reader parses into that context but never assigns into it. An xref stream
+ * whose /Length is an indirect reference is read by its `endstream` alone:
+ * the chain is not known yet when its sections are parsed.
+ *
+ * A decode-limit failure is not a damaged chain and passes through as is.
  */
 class PDFXRefChainReader extends PDFObjectParser {
   static read = (
     bytes: Uint8Array,
     startXRef: number,
     maxDecodedStreamSize?: number,
+    context?: PDFContext,
   ): EffectiveXRef => {
-    const context = PDFContext.create();
-    context.maxDecodedStreamSize = maxDecodedStreamSize;
+    const into = context ?? PDFContext.create();
+    if (!context) into.maxDecodedStreamSize = maxDecodedStreamSize;
     try {
-      return new PDFXRefChainReader(bytes, context).readChain(startXRef);
+      return new PDFXRefChainReader(bytes, into).readChain(startXRef);
     } catch (e) {
       if (e instanceof XRefChainError) throw e;
+      if (e instanceof DecodedStreamTooLargeError) throw e;
       throw new XRefChainError(e instanceof Error ? e.message : String(e));
     }
   };
@@ -81,10 +110,19 @@ class PDFXRefChainReader extends PDFObjectParser {
     const visited = new Set<number>();
     const supplements = new Set<number>();
     let newestSize: number | undefined;
+    const trailer: EffectiveTrailer = {};
+    let hasStreamSection = false;
 
     const merge = (section: Section) => {
       for (const [num, disposition] of section.entries) {
         if (!entries.has(num)) entries.set(num, disposition);
+      }
+      if (section.isStream) hasStreamSection = true;
+      for (const key of ['Root', 'Encrypt', 'Info', 'ID'] as const) {
+        const value = section.trailer.get(PDFName.of(key));
+        if (trailer[key] === undefined && value !== undefined) {
+          trailer[key] = value;
+        }
       }
     };
 
@@ -128,7 +166,7 @@ class PDFXRefChainReader extends PDFObjectParser {
       if (disposition.kind === 'free' && num > highestFree) highestFree = num;
     }
     entries.delete(0);
-    return { size, entries, highestFree };
+    return { size, entries, highestFree, trailer, hasStreamSection };
   }
 
   private readSection(offset: number): Section {
@@ -175,7 +213,7 @@ class PDFXRefChainReader extends PDFObjectParser {
     this.skipWhitespaceAndComments();
     const trailer = this.parseDict();
     checkSection(entries, trailer, offset);
-    return { entries, trailer };
+    return { entries, trailer, isStream: false };
   }
 
   private readStreamSection(offset: number): Section {
@@ -246,16 +284,18 @@ class PDFXRefChainReader extends PDFObjectParser {
             { kind: 'inUse', offset: field2, generation: field3 },
           ]);
         } else if (type === 2) {
-          entries.push([num, { kind: 'compressed' }]);
+          entries.push([
+            num,
+            { kind: 'compressed', container: field2, index: field3 },
+          ]);
         } else {
-          // ISO 32000-1 7.5.8.3: any other type is a reference to null; a
-          // table has no way to say that, so refuse rather than guess.
-          throw bad(`entry type ${type} for object ${num}`);
+          // ISO 32000-1 7.5.8.3: any other type is a reference to null.
+          entries.push([num, { kind: 'null' }]);
         }
       }
     }
     checkSection(entries, dict, offset);
-    return { entries, trailer: dict };
+    return { entries, trailer: dict, isStream: true };
   }
 }
 
@@ -291,7 +331,9 @@ const checkSection = (
     if (num >= size) throw fail(`exceeds its /Size ${size}`);
     if (seen.has(num)) throw fail('has two entries');
     seen.add(num);
-    if (disposition.kind === 'compressed') continue;
+    if (disposition.kind === 'compressed' || disposition.kind === 'null') {
+      continue;
+    }
     if (disposition.generation > 65535) throw fail('has a bad generation');
     if (disposition.kind === 'inUse' && disposition.offset > 9999999999) {
       throw fail('has an offset too large for a table');

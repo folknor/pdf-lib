@@ -437,8 +437,8 @@ class PDFWriter {
    * rebuilt chain links every free entry. A number listed nowhere is free.
    *
    * Throws when the file's xref chain cannot be read strictly
-   * (PDFXRefChainReader) or when a gap is an object in an object stream: a
-   * table cannot express a type-2 entry.
+   * (PDFXRefChainReader) or when a gap is an object in an object stream or
+   * has an entry of an undefined type: a table can express neither.
    */
   private fillInheritedGaps(xref: PDFCrossRefSection): void {
     const { originalBytes } = this.context.pdfFileDetails;
@@ -465,6 +465,12 @@ class PDFWriter {
       if (entry.kind === 'compressed') {
         throw new Error(
           `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} is inherited from an object stream, which a table cannot list. Save without fillXrefGaps, or with useObjectStreams.`,
+        );
+      }
+      if (entry.kind === 'null') {
+        // Listing it free would make the number reusable; in use, resolvable.
+        throw new Error(
+          `fillXrefGaps cannot fill this increment's xref table: object ${objectNumber} has an xref-stream entry of an undefined type (a null reference), which a table cannot list. Save without fillXrefGaps.`,
         );
       }
       return {
