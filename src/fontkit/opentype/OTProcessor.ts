@@ -10,7 +10,7 @@ const DEFAULT_SCRIPTS: string[] = ['DFLT', 'dflt', 'latn'];
  * match() walks forward from the furthest backtrack glyph, so they are
  * matched reversed. Copies; the decoded table is shared.
  */
-const backtrackOrder = <T>(sequence: ArrayLike<T>): T[] =>
+export const backtrackOrder = <T>(sequence: ArrayLike<T>): T[] =>
   Array.from(sequence).reverse();
 
 export default class OTProcessor {
@@ -240,14 +240,14 @@ export default class OTProcessor {
 
     for (const { feature, lookup } of lookups) {
       this.currentFeature = feature;
-      this.glyphIterator.reset(lookup.flags);
+      // Start one outside the buffer and enter through move(), so the first
+      // glyph visited also honours the lookup flags. Reverse lookups walk
+      // from the logical end to the start.
+      const dir = this.isReverseLookup(lookup) ? -1 : 1;
+      this.glyphIterator.reset(lookup.flags, dir === 1 ? -1 : glyphs.length);
 
-      while (this.glyphIterator.index < glyphs.length) {
-        if (
-          !this.glyphIterator.cur ||
-          !(feature in this.glyphIterator.cur.features)
-        ) {
-          this.glyphIterator.next();
+      while (this.glyphIterator.move(dir)) {
+        if (!(feature in this.glyphIterator.cur!.features)) {
           continue;
         }
 
@@ -257,10 +257,13 @@ export default class OTProcessor {
             break;
           }
         }
-
-        this.glyphIterator.next();
       }
     }
+  }
+
+  /** Whether a lookup is processed end to start. Only GSUB has such a type. */
+  isReverseLookup(_lookup: any): boolean {
+    return false;
   }
 
   applyLookup(_lookup: number, _table: any): boolean {
@@ -278,6 +281,11 @@ export default class OTProcessor {
 
       // Get the lookup and setup flags for subtables
       const lookup = this.table.lookupList.get(lookupRecord.lookupListIndex);
+      // A reverse lookup is not applied when reached from a contextual rule,
+      // matching HarfBuzz; the rest of the record list still runs.
+      if (this.isReverseLookup(lookup)) {
+        continue;
+      }
       this.glyphIterator.reset(lookup.flags, this.glyphIterator.index);
 
       // Apply lookup subtables until one matches

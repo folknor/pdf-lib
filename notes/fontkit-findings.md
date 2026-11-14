@@ -118,6 +118,17 @@ extraction needs care: the PUA glyphs are cmap-mapped to PUA code points, so
 under the current ToUnicode policy (notes/embedder-findings.md) the swapped
 marks would extract as private-use characters.
 
+## Lookup mark filtering sets and alternate choice are ignored
+
+`tables/opentype.ts` decodes a lookup's `useMarkFilteringSet` and
+`markFilteringSet`, but `GlyphIterator` has no notion of them: a lookup that
+should skip every mark outside a GDEF mark glyph set sees all marks instead,
+so contextual and mark lookups in fonts that rely on filtering sets can miss
+or misfire. Fixing it means `OTProcessor.applyLookups` and `applyLookupList`
+passing the set to the iterator and `shouldIgnore` consulting GDEF
+`markGlyphSetsDef`. Separately, GSUB type 3 (`GSUBProcessor`) always picks
+the first alternate; there is no caller-facing way to choose another.
+
 ## sbix fonts without glyf have no usable glyphs
 
 `SBIXGlyph` extends `TTFGlyph`, so its metrics (`_getMetrics` -> `_getCBox`)

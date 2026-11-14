@@ -1,7 +1,19 @@
 import GlyphInfo from './GlyphInfo.js';
-import OTProcessor from './OTProcessor.js';
+import OTProcessor, { backtrackOrder } from './OTProcessor.js';
 
 export default class GSUBProcessor extends OTProcessor {
+  /**
+   * Type 8, directly or behind an Extension (every subtable of an Extension
+   * lookup wraps the same type, so the first decides).
+   */
+  override isReverseLookup(lookup: any): boolean {
+    const type =
+      lookup.lookupType === 7
+        ? lookup.subTables[0]?.lookupType
+        : lookup.lookupType;
+    return type === 8;
+  }
+
   override applyLookup(lookupType: number, table: any): boolean {
     switch (lookupType) {
       case 1: {
@@ -208,6 +220,33 @@ export default class GSUBProcessor extends OTProcessor {
 
       case 7: // Extension Substitution
         return this.applyLookup(table.lookupType, table.extension);
+
+      case 8: {
+        // Reverse Chaining Contextual Single Substitution. applyLookups walks
+        // the run end to start; the coverage arrays keep logical meaning,
+        // backtrack stored closest glyph first as for chaining contexts.
+        if (table.substFormat !== 1) {
+          return false;
+        }
+
+        const index = this.coverageIndex(table.coverage);
+        if (index === -1 || index >= table.glyphCount) {
+          return false;
+        }
+
+        if (
+          this.coverageSequenceMatches(
+            -table.backtrackGlyphCount,
+            backtrackOrder(table.backtrackCoverage),
+          ) &&
+          this.coverageSequenceMatches(1, table.lookaheadCoverage)
+        ) {
+          this.glyphIterator.cur!.id = table.substitute.get(index);
+          return true;
+        }
+
+        return false;
+      }
 
       default:
         throw new Error(`GSUB lookupType ${lookupType} is not supported`);
