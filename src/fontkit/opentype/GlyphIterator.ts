@@ -1,12 +1,20 @@
 import type GlyphInfo from './GlyphInfo.js';
 
-interface GlyphIteratorOptions {
+export interface GlyphIteratorOptions {
   flags?: {
+    rightToLeft?: boolean;
     ignoreMarks?: boolean;
     ignoreBaseGlyphs?: boolean;
     ignoreLigatures?: boolean;
+    useMarkFilteringSet?: boolean;
   };
   markAttachmentType?: number;
+  /**
+   * The lookup's mark filtering set (lookupFlag UseMarkFilteringSet) as a
+   * membership test on the glyph's current id. When present, a mark outside
+   * it is skipped and `markAttachmentType` is not consulted.
+   */
+  markFilter?: (glyphId: number) => boolean;
 }
 
 export default class GlyphIterator {
@@ -14,6 +22,7 @@ export default class GlyphIterator {
   options: GlyphIteratorOptions;
   flags: NonNullable<GlyphIteratorOptions['flags']>;
   markAttachmentType: number;
+  markFilter: ((glyphId: number) => boolean) | undefined;
   index: number;
 
   constructor(glyphs: GlyphInfo[], options?: GlyphIteratorOptions) {
@@ -21,6 +30,7 @@ export default class GlyphIterator {
     this.options = {};
     this.flags = {};
     this.markAttachmentType = 0;
+    this.markFilter = undefined;
     this.index = 0;
     this.reset(options);
   }
@@ -29,6 +39,7 @@ export default class GlyphIterator {
     this.options = options;
     this.flags = options.flags || {};
     this.markAttachmentType = options.markAttachmentType || 0;
+    this.markFilter = options.markFilter;
     this.index = index;
   }
 
@@ -37,13 +48,22 @@ export default class GlyphIterator {
   }
 
   shouldIgnore(glyph: GlyphInfo): boolean {
-    return !!(
+    if (
       (this.flags.ignoreMarks && glyph.isMark) ||
       (this.flags.ignoreBaseGlyphs && glyph.isBase) ||
-      (this.flags.ignoreLigatures && glyph.isLigature) ||
-      (this.markAttachmentType &&
-        glyph.isMark &&
-        glyph.markAttachmentType !== this.markAttachmentType)
+      (this.flags.ignoreLigatures && glyph.isLigature)
+    ) {
+      return true;
+    }
+    if (!glyph.isMark) {
+      return false;
+    }
+    if (this.markFilter) {
+      return !this.markFilter(glyph.id);
+    }
+    return !!(
+      this.markAttachmentType &&
+      glyph.markAttachmentType !== this.markAttachmentType
     );
   }
 

@@ -115,15 +115,17 @@ ToUnicode maps an encoded glyph to the text it was drawn for, so the PUA
 glyphs then extract as the Thai marks, not as the private-use code points
 the cmap maps to them.
 
-## Lookup mark filtering sets are ignored
+## Contextual lookup records are retargeted by rewalking the edited buffer
 
-`tables/opentype.ts` decodes a lookup's `useMarkFilteringSet` and
-`markFilteringSet`, but `GlyphIterator` has no notion of them: a lookup that
-should skip every mark outside a GDEF mark glyph set sees all marks instead,
-so contextual and mark lookups in fonts that rely on filtering sets can miss
-or misfire. Fixing it means `OTProcessor.applyLookups` and `applyLookupList`
-passing the set to the iterator and `shouldIgnore` consulting GDEF
-`markGlyphSetsDef`.
+`OTProcessor.applyLookupList` finds each record's `sequenceIndex` by
+resetting to the rule's start and stepping through the buffer as earlier
+records left it, under the outer lookup's skip rules. The spec defines
+sequence indexes against the input sequence as matched. Once an earlier
+record changes which glyphs the outer rules skip (a substitution moving a
+mark out of the outer mark filtering set or attachment class, or into a
+skipped glyph class) or inserts or deletes glyphs (multiple, ligature), later
+records land on the wrong glyph. Fixing it means recording the matched
+positions in `match` and carrying them through each nested edit.
 
 ## A lookup shared by two features runs once per feature
 

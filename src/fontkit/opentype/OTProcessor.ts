@@ -1,7 +1,7 @@
 import type GlyphPosition from '../layout/GlyphPosition.js';
 import * as Script from '../layout/Script.js';
 import type GlyphInfo from './GlyphInfo.js';
-import GlyphIterator from './GlyphIterator.js';
+import GlyphIterator, { type GlyphIteratorOptions } from './GlyphIterator.js';
 
 const DEFAULT_SCRIPTS: string[] = ['DFLT', 'dflt', 'latn'];
 
@@ -265,7 +265,10 @@ export default class OTProcessor {
       // glyph visited also honours the lookup flags. Reverse lookups walk
       // from the logical end to the start.
       const dir = this.isReverseLookup(lookup) ? -1 : 1;
-      this.glyphIterator.reset(lookup.flags, dir === 1 ? -1 : glyphs.length);
+      this.glyphIterator.reset(
+        this.iteratorOptions(lookup),
+        dir === 1 ? -1 : glyphs.length,
+      );
 
       while (this.glyphIterator.move(dir)) {
         if (!(feature in this.glyphIterator.cur!.features)) {
@@ -280,6 +283,31 @@ export default class OTProcessor {
         }
       }
     }
+  }
+
+  /**
+   * The skip rules a lookup's glyph iterator runs under: its decoded flags
+   * (kept whole, GPOS reads rightToLeft from them), its mark attachment
+   * class, and, with UseMarkFilteringSet, membership in GDEF mark glyph set
+   * `lookup.markFilteringSet`, tested on the glyph's current id. A filtering
+   * lookup whose set cannot be found (no GDEF, GDEF before 1.2, no
+   * MarkGlyphSetsDef, index out of range) is malformed; it is recovered by
+   * treating the set as empty, so every mark is skipped, rather than by
+   * falling back to the mark attachment class.
+   */
+  iteratorOptions(lookup: any): GlyphIteratorOptions {
+    const flags = lookup.flags ?? {};
+    if (!flags.flags?.useMarkFilteringSet) {
+      return flags;
+    }
+    const coverage =
+      this.font?.GDEF?.markGlyphSetsDef?.coverage?.[lookup.markFilteringSet];
+    return {
+      ...flags,
+      markFilter: coverage
+        ? (glyphId: number) => this.coverageIndex(coverage, glyphId) !== -1
+        : () => false,
+    };
   }
 
   /** Whether a lookup is processed end to start. Only GSUB has such a type. */
@@ -307,7 +335,10 @@ export default class OTProcessor {
       if (this.isReverseLookup(lookup)) {
         continue;
       }
-      this.glyphIterator.reset(lookup.flags, this.glyphIterator.index);
+      this.glyphIterator.reset(
+        this.iteratorOptions(lookup),
+        this.glyphIterator.index,
+      );
 
       // Apply lookup subtables until one matches
       for (const table of lookup.subTables) {

@@ -178,7 +178,7 @@ export default class GPOSProcessor extends OTProcessor {
             break;
         }
 
-        if ((this.glyphIterator.flags as any).rightToLeft) {
+        if (this.glyphIterator.flags.rightToLeft) {
           this.glyphIterator.cur!.cursiveAttachment = nextIndex;
           cur.yOffset = entry.y - exit.y;
         } else {
