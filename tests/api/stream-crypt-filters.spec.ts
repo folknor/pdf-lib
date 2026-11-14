@@ -40,7 +40,7 @@ const fixture = async (algorithm: EncryptionAlgorithm): Promise<Fixture> => {
   const plain = context.register(context.stream('ordinary body'));
   const attachment = context.register(context.stream('attachment body'));
   const pageMetadata = context.register(
-    context.stream('page metadata', { Type: 'Metadata', Subtype: 'XML' }),
+    context.stream('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>', { Type: 'Metadata', Subtype: 'XML' }),
   );
   const filespec = context.register(
     context.obj({
@@ -102,7 +102,7 @@ describe('per-stream crypt filter selection on read', () => {
       f.raw.catalog.set(name('Metadata'), metadata);
       const doc = await open(await f.raw.save({ useObjectStreams: false }));
       expect(text(doc, metadata)).toBe(xmp);
-      expect(text(doc, f.pageMetadata)).toBe('page metadata');
+      expect(text(doc, f.pageMetadata)).toBe('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>');
     } finally {
       warn.mockRestore();
     }
@@ -167,7 +167,7 @@ describe('per-stream crypt filter selection on increments', () => {
     expect(text(reopened, f.plain)).toBe('ordinary body');
   });
 
-  it('refuses to make a stream it does not rewrite an embedded file', async () => {
+  it('rewrites an untouched stream when it becomes an embedded file', async () => {
     const { f, bytes } = await effIdentity();
     const doc = await open(bytes, true);
     doc.catalog.set(
@@ -180,9 +180,27 @@ describe('per-stream crypt filter selection on increments', () => {
         }),
       ),
     );
-    await expect(doc.saveIncremental(doc.takeSnapshot())).rejects.toThrow(
-      /which crypt filter applies/,
-    );
+    const first = await doc.commit();
+    expect(text(await open(first), f.plain)).toBe('ordinary body');
+    // Reversing the role after a commit must use the committed plan.
+    doc.context.lookup(doc.catalog.get(name('Spec2')), PDFDict).delete(name('EF'));
+    const second = await doc.commit();
+    expect(text(await open(second), f.plain)).toBe('ordinary body');
+  });
+
+  it('rewrites both streams when catalog metadata is repointed', async () => {
+    const f = await fixture('AES-256');
+    f.encryptDict.set(name('EncryptMetadata'), f.raw.context.obj(false));
+    const xmp = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>';
+    const oldMetadata = f.raw.context.register(f.raw.context.stream(xmp));
+    f.raw.catalog.set(name('Metadata'), oldMetadata);
+    // This stream starts encrypted under /StmF and becomes clear metadata.
+    const doc = await open(await f.raw.save({ useObjectStreams: false }), true);
+    doc.catalog.set(name('Metadata'), f.pageMetadata);
+    const committed = await doc.commit();
+    const reopened = await open(committed);
+    expect(text(reopened, oldMetadata)).toBe(xmp);
+    expect(text(reopened, f.pageMetadata)).toBe(xmp);
   });
 
   it('refuses a new stream naming /Crypt through a reference', async () => {
@@ -200,7 +218,7 @@ describe('per-stream crypt filter selection on increments', () => {
     );
   });
 
-  it('refuses to change an object a /Crypt declaration on disk goes through', async () => {
+  it('rewrites streams depending on an edited on-disk /Crypt declaration', async () => {
     const f = await fixture('AES-128');
     const { context } = f.raw;
     f.encryptDict.set(name('StmF'), name('Identity'));
@@ -212,9 +230,10 @@ describe('per-stream crypt filter selection on increments', () => {
     const doc = await open(await f.raw.save({ useObjectStreams: false }), true);
     expect(text(doc, f.plain)).toBe('ordinary body');
     doc.context.lookup(parms, PDFDict).set(name('Name'), name('Identity'));
-    await expect(doc.saveIncremental(doc.takeSnapshot())).rejects.toThrow(
-      /declares its crypt filter/,
-    );
+    const reopened = await open(await doc.commit());
+    expect(text(reopened, f.plain)).toBe('ordinary body');
+    expect(reopened.context.lookup(f.plain, PDFRawStream).dict.has(name('Filter')))
+      .toBe(false);
   });
 });
 

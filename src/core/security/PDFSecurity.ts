@@ -564,7 +564,7 @@ export interface ObjectEncryptor {
  * Streams an increment does not rewrite keep the encryption they have on
  * disk, so the increment must not change how a reader of the new revision
  * picks their crypt filter. `plans` records how each is encrypted, and
- * `assertUntouchedBy` refuses an increment that would change it.
+ * `assertUntouchedBy` schedules streams whose selection would change for rewriting.
  */
 export class BaselineEncryption implements ObjectEncryptor {
   /**
@@ -602,31 +602,26 @@ export class BaselineEncryption implements ObjectEncryptor {
   }
 
   /**
-   * /Encrypt and what it depends on, plus every object through which a
-   * stream on disk declares its own /Crypt filter: the loaded document no
-   * longer shows those declarations, but readers of the file still follow
-   * them. Guarded conservatively: also when the same increment rewrites
-   * every stream depending on the object.
+   * /Encrypt and every object its immutable encryption setup depends on.
+   * Dependencies of stream /Crypt declarations can change: their streams
+   * are decrypted in memory and will be rewritten without /Crypt.
    */
   get guardedRefs(): readonly PDFRef[] {
-    const refs = [...this.encryptionRefs];
-    for (const plan of this.plans.values()) {
-      if (plan.dependencies) refs.push(...plan.dependencies);
-    }
-    return refs;
+    return this.encryptionRefs;
   }
 
   /**
    * Throws unless an increment can be written: /Encrypt is indirect,
-   * `snapshot` neither rewrites nor deletes the encryption setup or a
-   * /Crypt declaration on disk, and every stream it leaves as it is keeps
-   * the crypt filter it was encrypted with. Prepares the write.
+   * `snapshot` neither rewrites nor deletes the encryption setup. Schedule
+   * decrypted streams whose on-disk crypt selection would change, including
+   * streams depending on an edited /Crypt declaration. Prepares the write.
    */
   assertUntouchedBy(
     context: PDFContext,
     snapshot: {
       shouldSave: (objectNumber: number) => boolean;
       deletedRefs: () => PDFRef[];
+      markRefForSave: (ref: PDFRef) => void;
     },
   ): void {
     if (!this.encryptRef) {
@@ -644,18 +639,33 @@ export class BaselineEncryption implements ObjectEncryptor {
     }
     if (touched) {
       throw new Error(
-        'An incremental update cannot change or delete the encryption dictionary of the file it extends, or an object a stream on disk declares its crypt filter through.',
+        'An incremental update cannot change or delete the encryption dictionary of the file it extends.',
       );
     }
 
+    const deleted = new Set(
+      snapshot.deletedRefs().map((ref) => ref.objectNumber),
+    );
     const roles = computeStreamRoles(context);
     for (const [ref, object] of context.enumerateIndirectObjects()) {
       if (!(object instanceof PDFStream)) continue;
       if (snapshot.shouldSave(ref.objectNumber)) continue;
       const plan = this.plans.get(ref.objectNumber);
-      if (!plan || plan.dependencies) continue;
+      if (!plan) continue;
+      if (plan.dependencies) {
+        if (
+          plan.dependencies.some(
+            (dependency) =>
+              snapshot.shouldSave(dependency.objectNumber) ||
+              deleted.has(dependency.objectNumber),
+          )
+        ) {
+          snapshot.markRefForSave(ref);
+        }
+        continue;
+      }
       const type = object.dict.get(PDFName.Type);
-      if (type === PDFName.of('XRef') || type === PDFName.of('ObjStm')) {
+      if (type === PDFName.of('XRef')) {
         continue;
       }
       const name = selectStreamCrypt(
@@ -666,9 +676,9 @@ export class BaselineEncryption implements ObjectEncryptor {
         undefined,
       );
       if (this.factory.methodOf(name) !== plan.method) {
-        throw new Error(
-          `An incremental update cannot change which crypt filter applies to object ${ref}, which it does not rewrite (document metadata or embedded file references changed).`,
-        );
+        // Loaded bodies have already been decrypted using the old plan.
+        // Re-emit under the new role instead of reinterpreting old ciphertext.
+        snapshot.markRefForSave(ref);
       }
     }
     this.roles = roles;
