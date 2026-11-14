@@ -43,7 +43,7 @@ const getWebCrypto = (): Crypto => {
  *
  * Throws when `globalThis.crypto.getRandomValues` is missing, e.g. older Node
  * or React Native without a polyfill such as `react-native-get-random-values`.
- * Only document encryption needs this; the rest of `pdf-lib` is unaffected.
+ * Document encryption and trailer file IDs use this helper.
  */
 export const getRandomBytes = (byteCount: number): Uint8Array => {
   const webCrypto = getWebCrypto();

@@ -65,8 +65,11 @@ describe('PDFStreamWriter', () => {
       2,
     ).serializeToBuffer();
 
-    expect(buffer.length).toBe(expectedPdfBytes.length);
-    expect(buffer).toEqual(expectedPdfBytes);
+    // The revision ID is new on every write; the remaining bytes stay exact.
+    const text = Buffer.from(buffer).toString('latin1');
+    expect(text).toMatch(/\/ID \[ <[0-9a-f]{32}> <[0-9a-f]{32}> \]/);
+    const withoutID = Buffer.from(text.replace(/\/ID \[[^\]]*\]\n/, ''), 'latin1');
+    expect(new Uint8Array(withoutID)).toEqual(expectedPdfBytes);
   });
 
   it('keeps /Sig and /DocTimeStamp dicts out of object streams', async () => {

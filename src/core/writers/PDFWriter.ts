@@ -10,12 +10,15 @@ import type PDFHeader from '../document/PDFHeader.js';
 import PDFTrailer from '../document/PDFTrailer.js';
 import PDFTrailerDict from '../document/PDFTrailerDict.js';
 import { assertPDFAWrite, isCatalogMetadata } from '../metadata/pdfa.js';
+import PDFArray from '../objects/PDFArray.js';
 import type PDFDict from '../objects/PDFDict.js';
+import PDFHexString from '../objects/PDFHexString.js';
 import PDFName from '../objects/PDFName.js';
 import PDFNumber from '../objects/PDFNumber.js';
 import type PDFObject from '../objects/PDFObject.js';
 import PDFRawStream from '../objects/PDFRawStream.js';
 import PDFRef from '../objects/PDFRef.js';
+import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
 import PDFXRefChainReader, {
   XRefChainError,
@@ -24,6 +27,7 @@ import type {
   BaselineEncryption,
   ObjectEncryptor,
 } from '../security/PDFSecurity.js';
+import { generateFileID } from '../security/PDFSecurity.js';
 import { withoutCryptFilter } from '../security/streamCrypt.js';
 import PDFObjectStream from '../structures/PDFObjectStream.js';
 import CharCodes from '../syntax/CharCodes.js';
@@ -220,6 +224,9 @@ export const writeEncryption = (
   return { encryptor: baseline, Encrypt: baseline.encryptRef, ID: baseline.id };
 };
 
+// Keep an ID-less document's first identifier stable without changing its trailer.
+const firstFileIDs = new WeakMap<PDFContext, PDFHexString>();
+
 class PDFWriter {
   static forContext = (
     context: PDFContext,
@@ -278,6 +285,32 @@ class PDFWriter {
     Encrypt: undefined,
     ID: undefined,
   };
+
+  /** The trailer ID emitted by the last serialization, for commit(). */
+  get emittedID(): PDFObject | undefined {
+    return this.encryption.ID;
+  }
+
+  protected prepareTrailerID(incremental: boolean): void {
+    if (incremental && this.encryption.Encrypt !== undefined) return;
+    const existing = this.context.lookup(this.encryption.ID);
+    const first = existing instanceof PDFArray ? existing.lookup(0) : undefined;
+    let kept: PDFString | PDFHexString;
+    if (first instanceof PDFString || first instanceof PDFHexString) {
+      kept = first;
+    } else {
+      let generated = firstFileIDs.get(this.context);
+      if (!generated) {
+        generated = PDFHexString.fromBytes(generateFileID());
+        firstFileIDs.set(this.context, generated);
+      }
+      kept = generated;
+    }
+    this.encryption.ID = this.context.obj([
+      kept,
+      PDFHexString.fromBytes(generateFileID()),
+    ]);
+  }
 
   protected constructor(
     context: PDFContext,
@@ -425,6 +458,7 @@ class PDFWriter {
   ): Promise<SerializationInfo> {
     this._largestSkippedObjectNum = 0;
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    this.prepareTrailerID(incremental);
     assertPDFAWrite(this.context, {
       encrypted: this.encryption.Encrypt !== undefined,
       objectStreams: false,

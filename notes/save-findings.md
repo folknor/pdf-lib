@@ -33,18 +33,3 @@ this case: the parser recovers those entries one by one and the check
 runs. What remains is a chain the reader rejects outright, which the parser
 still reconstructs whole; closing it needs the reader to keep the
 dispositions of the sections it can read despite damage in another.
-
-## The trailer /ID never changes between revisions
-
-ISO 32000-1 14.4 makes the second `/ID` string a changing identifier, new
-for each revision, with the first kept. The writers never maintain it: a full
-save or an increment writes `trailerInfo.ID` as loaded (or, for an encrypted
-increment, the file's own), `declarePDFA()` adds `[id id]` only when there is
-none, and `PDFSecurity.encrypt()` replaces both strings. PDF/A only requires
-that an `/ID` exist, so this is a general writer gap, not a PDF/A one. A fix
-would pick the revision's second string before either writer captures its
-trailer (`PDFStreamWriter` builds the xref-stream trailer before enumerating
-objects), keep the first, leave encrypted increments alone (the key of R2-R4
-handlers derives from the first string only, but the file's /ID must stay
-that of its encryption), and have `commit()` carry the emitted /ID into the
-next revision.

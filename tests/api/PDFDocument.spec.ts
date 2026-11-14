@@ -469,7 +469,7 @@ describe('PDFDocument', () => {
   });
 
   describe('embedFont() method', () => {
-    it('serializes the same value on every save', async () => {
+    it('serializes the same font content apart from revision IDs', async () => {
       const customFont = fs.readFileSync('assets/fonts/ubuntu/Ubuntu-B.ttf');
       const pdfDoc1 = await PDFDocument.create({ updateMetadata: false });
       const pdfDoc2 = await PDFDocument.create({ updateMetadata: false });
@@ -483,7 +483,9 @@ describe('PDFDocument', () => {
       const savedDoc1 = await pdfDoc1.save();
       const savedDoc2 = await pdfDoc2.save();
 
-      expect(savedDoc1).toEqual(savedDoc2);
+      const withoutID = (bytes: Uint8Array) =>
+        Buffer.from(bytes).toString('latin1').replace(/\/ID \[[^\]]*\]/g, '');
+      expect(withoutID(savedDoc1)).toEqual(withoutID(savedDoc2));
     });
 
     it('ignores postscriptName for a single, non-variable font', async () => {
@@ -1071,7 +1073,7 @@ describe('PDFDocument', () => {
   });
 
   describe('attach() method', () => {
-    it('Saves to the same value after attaching a file', async () => {
+    it('saves the same attachment content apart from revision IDs', async () => {
       const pdfDoc1 = await PDFDocument.create({ updateMetadata: false });
       const pdfDoc2 = await PDFDocument.create({ updateMetadata: false });
 
@@ -1113,7 +1115,9 @@ describe('PDFDocument', () => {
       const savedDoc1 = await pdfDoc1.save();
       const savedDoc2 = await pdfDoc2.save();
 
-      expect(savedDoc1).toEqual(savedDoc2);
+      const withoutID = (bytes: Uint8Array) =>
+        Buffer.from(bytes).toString('latin1').replace(/\/ID \[[^\]]*\]/g, '');
+      expect(withoutID(savedDoc1)).toEqual(withoutID(savedDoc2));
     });
 
     it('maintains lexical sort order for attachment names (Acrobat compatibility)', async () => {

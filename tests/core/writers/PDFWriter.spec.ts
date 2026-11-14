@@ -140,8 +140,11 @@ describe('PDFWriter', () => {
       Infinity,
     ).serializeToBuffer();
 
-    expect(buffer.length).toBe(pdfBytes.length);
-    expect(buffer).toEqual(pdfBytes);
+    // The revision ID is new on every write; the remaining bytes stay exact.
+    const text = Buffer.from(buffer).toString('latin1');
+    expect(text).toMatch(/\/ID \[ <[0-9a-f]{32}> <[0-9a-f]{32}> \]/);
+    const withoutID = Buffer.from(text.replace(/\/ID \[[^\]]*\]\n/, ''), 'latin1');
+    expect(new Uint8Array(withoutID)).toEqual(pdfBytes);
   });
 
   describe('compress option', () => {

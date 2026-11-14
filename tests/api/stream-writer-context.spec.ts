@@ -58,7 +58,7 @@ describe('saving with object streams leaves the document as it was', () => {
     doc.catalog.set(PDFName.of('Keep'), keep);
     const first = await doc.commit({ useObjectStreams: true });
     const firstIncrement = latin1(first.subarray(original.length));
-    const containers = [...firstIncrement.matchAll(/(\d+) 0 obj\s*<<[^>]*\/Type \/(?:ObjStm|XRef)/g)].map(
+    const containers = [...firstIncrement.matchAll(/(\d+) 0 obj\s*<<(?:(?!endobj)[\s\S])*?\/Type \/(?:ObjStm|XRef)/g)].map(
       (m) => m[1],
     );
     expect(containers.length).toBe(2);

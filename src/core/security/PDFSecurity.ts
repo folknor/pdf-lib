@@ -763,7 +763,7 @@ const reachableRefs = (context: PDFContext, root: PDFRef): PDFRef[] => {
  *
  * @returns Uint8Array
  */
-const generateFileID = (): Uint8Array => getRandomBytes(16);
+export const generateFileID = (): Uint8Array => getRandomBytes(16);
 
 /**
  * A fresh initialization vector is drawn per call and prepended to the

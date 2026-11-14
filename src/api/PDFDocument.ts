@@ -2250,6 +2250,7 @@ export default class PDFDocument {
     bytes: Uint8Array<ArrayBuffer>;
     highestObjectNumber: number;
     xrefOffset: number;
+    emittedID: PDFObject | undefined;
   }> {
     if (!this.context.pdfFileDetails.originalBytes) {
       throw new Error(
@@ -2315,6 +2316,7 @@ export default class PDFDocument {
       bytes,
       highestObjectNumber: writer.highestObjectNumber,
       xrefOffset: writer.xrefOffset,
+      emittedID: writer.emittedID,
     };
   }
 
@@ -2379,6 +2381,7 @@ export default class PDFDocument {
       bytes: incrementalBytes,
       highestObjectNumber,
       xrefOffset,
+      emittedID,
     } = await this.writeIncrement(snapshot, options);
     // The increment's object streams and xref stream are not in the context,
     // but their numbers are now taken in the file: a later revision reusing
@@ -2387,6 +2390,7 @@ export default class PDFDocument {
       this.context.largestObjectNumber,
       highestObjectNumber,
     );
+    this.context.trailerInfo.ID = emittedID;
     // The increment is now part of the file the next one extends.
     if (this.context.baselineEncryption instanceof BaselineEncryption) {
       this.context.baselineEncryption.commitEmitted(snapshot);

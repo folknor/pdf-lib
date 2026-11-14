@@ -83,6 +83,7 @@ class PDFStreamWriter extends PDFWriter {
     let nextObjectNumber = this.context.largestObjectNumber;
     const allocateRef = () => PDFRef.of(++nextObjectNumber);
     this.encryption = writeEncryption(this.context, this.snapshot, incremental);
+    this.prepareTrailerID(incremental);
     assertPDFAWrite(this.context, {
       encrypted: this.encryption.Encrypt !== undefined,
       objectStreams: true,
