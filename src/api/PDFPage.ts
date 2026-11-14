@@ -1,4 +1,10 @@
 import {
+  compareVersions,
+  getEffectiveVersion,
+  getIncrementVersion,
+  type PDFVersion,
+} from '../core/document/pdfVersion.js';
+import {
   AnnotationFactory,
   AnnotationTypes,
   type PDFAnnotation,
@@ -73,6 +79,13 @@ import PDFSvg from './PDFSvg.js';
 import { degrees, type Rotation, toDegrees } from './rotations.js';
 import { StandardFonts } from './StandardFonts.js';
 import { drawSvg } from './svg.js';
+
+/** The overprint entries one draw call writes into its graphics state. */
+interface OverprintState {
+  OP?: boolean;
+  op?: boolean;
+  OPM?: 0 | 1;
+}
 
 /**
  * Represents a single page of a [[PDFDocument]].
@@ -1063,6 +1076,13 @@ export default class PDFPage {
       'number',
     ]);
     assertOrUndefined(options.textRise, 'options.textRise', ['number']);
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      options.strokeOverprint,
+      'options.strokeOverprint',
+      options.overprintMode,
+    );
 
     const { oldFont, newFont, newFontKey } = this.setOrEmbedFont(options.font);
     const fontSize = options.size || this.fontSize;
@@ -1082,6 +1102,7 @@ export default class PDFPage {
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     const contentStream = this.getContentStream();
@@ -1169,12 +1190,20 @@ export default class PDFPage {
     assertOrUndefined(options.ySkew, 'options.ySkew', [[Object, 'Rotation']]);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      undefined,
+      '',
+      options.overprintMode,
+    );
 
     const xObjectKey = this.node.getOrCreateXObject('Image', image.ref);
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     const contentStream = this.getContentStream();
@@ -1248,6 +1277,16 @@ export default class PDFPage {
     assertOrUndefined(options.ySkew, 'options.ySkew', [[Object, 'Rotation']]);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+    // The embedded page paints both fills and strokes, so `overprint` sets
+    // both roles. Its content inherits these as defaults and may replace
+    // them with graphics states of its own.
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      options.overprint,
+      'options.overprint',
+      options.overprintMode,
+    );
 
     const xObjectKey = this.node.getOrCreateXObject(
       'EmbeddedPdfPage',
@@ -1257,6 +1296,7 @@ export default class PDFPage {
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     // prettier-ignore
@@ -1360,6 +1400,13 @@ export default class PDFPage {
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
     assertIsOneOfOrUndefined(options.fillRule, 'options.fillRule', FillRule);
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      options.borderOverprint,
+      'options.borderOverprint',
+      options.overprintMode,
+    );
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
@@ -1367,6 +1414,7 @@ export default class PDFPage {
         borderOpacity: options.borderOpacity,
       }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     if (!('color' in options || 'borderColor' in options)) {
@@ -1437,10 +1485,19 @@ export default class PDFPage {
     assertIsOneOfOrUndefined(options.lineCap, 'options.lineCap', LineCapStyle);
     assertRangeOrUndefined(options.opacity, 'opacity.opacity', 0, 1);
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+    // A line is a stroke, so its `overprint` is the stroking flag.
+    const overprint = this.overprintState(
+      undefined,
+      '',
+      options.overprint,
+      'options.overprint',
+      options.overprintMode,
+    );
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { borderOpacity: options.opacity }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     if (!('color' in options)) {
@@ -1528,6 +1585,13 @@ export default class PDFPage {
       1,
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      options.borderOverprint,
+      'options.borderOverprint',
+      options.overprintMode,
+    );
 
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
@@ -1535,6 +1599,7 @@ export default class PDFPage {
         borderOpacity: options.borderOpacity,
       }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     if (!('color' in options || 'borderColor' in options)) {
@@ -1653,12 +1718,20 @@ export default class PDFPage {
       LineCapStyle,
     );
     assertIsOneOfOrUndefined(options.blendMode, 'options.blendMode', BlendMode);
+    const overprint = this.overprintState(
+      options.overprint,
+      'options.overprint',
+      options.borderOverprint,
+      'options.borderOverprint',
+      options.overprintMode,
+    );
     const graphicsStateKey = this.maybeEmbedGraphicsState({
       ...(options.opacity !== undefined && { opacity: options.opacity }),
       ...(options.borderOpacity !== undefined && {
         borderOpacity: options.borderOpacity,
       }),
       ...(options.blendMode !== undefined && { blendMode: options.blendMode }),
+      overprint,
     });
 
     if (!('color' in options || 'borderColor' in options)) {
@@ -1827,17 +1900,80 @@ export default class PDFPage {
     return { type: ColorTypes.Separation, colorSpace, tint };
   }
 
+  /**
+   * Validate a draw call's overprint options and turn them into graphics
+   * state entries. `fill` and `stroke` are the values of whichever options
+   * the calling method maps to non-stroking (`op`) and stroking (`OP`)
+   * painting.
+   *
+   * When either role is given, both flags are written, the unspecified one
+   * as false. Writing `OP` alone would also set `op` (ISO 32000-1 Table 58),
+   * so leaving one out cannot mean "unchanged". `OPM` is `mode` when given,
+   * else 1 when a written flag is true: with mode 0, overprinting a
+   * DeviceCMYK colour still paints its zero components, so `cmyk(0,0,0,1)`
+   * knocks out the process plates beneath it, which is rarely what a caller
+   * asking for overprint means. Mode 0 stays expressible because it is a
+   * distinct result (process plates knocked out, spot plates kept).
+   *
+   * `op` and `OPM` are PDF 1.3. A PDF 1.2 reader would honour `OP` and
+   * ignore `op`, inverting a fill/stroke split, so older documents refuse
+   * rather than writing a state that reads differently there. Called during
+   * validation, before the draw changes anything.
+   */
+  private overprintState(
+    fill: unknown,
+    fillName: string,
+    stroke: unknown,
+    strokeName: string,
+    mode: unknown,
+  ): OverprintState {
+    assertOrUndefined(fill, fillName, ['boolean']);
+    assertOrUndefined(stroke, strokeName, ['boolean']);
+    if (!(mode === undefined || mode === 0 || mode === 1)) {
+      throw new TypeError(
+        `\`options.overprintMode\` must be 0, 1 or undefined, but was actually ${String(mode)}`,
+      );
+    }
+    const anyRole = fill !== undefined || stroke !== undefined;
+    if (!anyRole && mode === undefined) return {};
+
+    const floor: PDFVersion = [1, 3];
+    const context = this.doc.context;
+    if (
+      compareVersions(getEffectiveVersion(context), floor) < 0 ||
+      compareVersions(getIncrementVersion(context), floor) < 0
+    ) {
+      throw new Error(
+        'Overprint options need PDF 1.3 or later (raise the catalog /Version of an older file)',
+      );
+    }
+
+    const state: OverprintState = {};
+    if (anyRole) {
+      state.op = (fill as boolean | undefined) ?? false;
+      state.OP = (stroke as boolean | undefined) ?? false;
+    }
+    const opm =
+      (mode as 0 | 1 | undefined) ?? (state.op || state.OP ? 1 : undefined);
+    if (opm !== undefined) state.OPM = opm;
+    return state;
+  }
+
   private maybeEmbedGraphicsState(options: {
     opacity?: number;
     borderOpacity?: number;
     blendMode?: BlendMode;
+    overprint?: OverprintState;
   }): PDFName | undefined {
-    const { opacity, borderOpacity, blendMode } = options;
+    const { opacity, borderOpacity, blendMode, overprint = {} } = options;
 
     if (
       opacity === undefined &&
       borderOpacity === undefined &&
-      blendMode === undefined
+      blendMode === undefined &&
+      overprint.OP === undefined &&
+      overprint.op === undefined &&
+      overprint.OPM === undefined
     ) {
       return;
     }
@@ -1847,6 +1983,9 @@ export default class PDFPage {
       ca: opacity,
       CA: borderOpacity,
       BM: blendMode,
+      OP: overprint.OP,
+      op: overprint.op,
+      OPM: overprint.OPM,
     });
 
     const key = this.node.newExtGState('GS', graphicsState);

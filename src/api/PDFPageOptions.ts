@@ -25,10 +25,34 @@ export enum BlendMode {
   Exclusion = 'Exclusion',
 }
 
+/** Overprint mode (`OPM`, ISO 32000-1 8.6.7). */
+export type OverprintMode = 0 | 1;
+
 export interface PDFPageDrawTextOptions extends SvgOptions {
   color?: PaintColor;
   opacity?: number;
   blendMode?: BlendMode;
+  /**
+   * Overprint the text fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the text outline drawn with `strokeColor` (`OP`). When any
+   * overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  strokeOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
   font?: PDFFont;
   size?: number;
   rotate?: Rotation;
@@ -78,6 +102,21 @@ export interface PDFPageDrawImageOptions extends SvgOptions {
   ySkew?: Rotation;
   opacity?: number;
   blendMode?: BlendMode;
+  /**
+   * Overprint the image (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawPageOptions {
@@ -92,6 +131,23 @@ export interface PDFPageDrawPageOptions {
   ySkew?: Rotation;
   opacity?: number;
   blendMode?: BlendMode;
+  /**
+   * Overprint the embedded page's fills and strokes (`op` and `OP`). These
+   * are defaults the page's own content inherits and may replace with
+   * graphics states of its own. Mode 1 (see `overprintMode`) conflicts with
+   * PDF/A-2 and later if that content paints in an ICC-based CMYK space.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawSVGOptions extends SvgOptions {
@@ -108,6 +164,27 @@ export interface PDFPageDrawSVGOptions extends SvgOptions {
   borderDashPhase?: number;
   borderLineCap?: LineCapStyle;
   blendMode?: BlendMode;
+  /**
+   * Overprint the fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the border (`OP`) instead of knocking out what lies beneath.
+   * When any overprint option is given, the ones left out are written as
+   * false. Needs PDF 1.3 or later.
+   */
+  borderOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
   fillRule?: FillRule;
 }
 
@@ -121,6 +198,20 @@ export interface PDFPageDrawLineOptions extends SvgOptions {
   dashArray?: number[];
   dashPhase?: number;
   blendMode?: BlendMode;
+  /**
+   * Overprint the line (`OP`) instead of knocking out what lies beneath.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawRectangleOptions extends SvgOptions {
@@ -142,6 +233,27 @@ export interface PDFPageDrawRectangleOptions extends SvgOptions {
   borderDashPhase?: number;
   borderLineCap?: LineCapStyle;
   blendMode?: BlendMode;
+  /**
+   * Overprint the fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the border (`OP`) instead of knocking out what lies beneath.
+   * When any overprint option is given, the ones left out are written as
+   * false. Needs PDF 1.3 or later.
+   */
+  borderOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawSquareOptions extends SvgOptions {
@@ -160,6 +272,27 @@ export interface PDFPageDrawSquareOptions extends SvgOptions {
   borderDashPhase?: number;
   borderLineCap?: LineCapStyle;
   blendMode?: BlendMode;
+  /**
+   * Overprint the fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the border (`OP`) instead of knocking out what lies beneath.
+   * When any overprint option is given, the ones left out are written as
+   * false. Needs PDF 1.3 or later.
+   */
+  borderOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawEllipseOptions extends SvgOptions {
@@ -177,6 +310,27 @@ export interface PDFPageDrawEllipseOptions extends SvgOptions {
   borderDashPhase?: number;
   borderLineCap?: LineCapStyle;
   blendMode?: BlendMode;
+  /**
+   * Overprint the fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the border (`OP`) instead of knocking out what lies beneath.
+   * When any overprint option is given, the ones left out are written as
+   * false. Needs PDF 1.3 or later.
+   */
+  borderOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawCircleOptions extends SvgOptions {
@@ -192,6 +346,27 @@ export interface PDFPageDrawCircleOptions extends SvgOptions {
   borderDashPhase?: number;
   borderLineCap?: LineCapStyle;
   blendMode?: BlendMode;
+  /**
+   * Overprint the fill drawn with `color` (`op`) instead of knocking out what lies beneath. When
+   * any overprint option is given, the ones left out are written as false.
+   * Needs PDF 1.3 or later.
+   */
+  overprint?: boolean;
+  /**
+   * Overprint the border (`OP`) instead of knocking out what lies beneath.
+   * When any overprint option is given, the ones left out are written as
+   * false. Needs PDF 1.3 or later.
+   */
+  borderOverprint?: boolean;
+  /**
+   * Overprint mode (`OPM`). With 1, overprinting a DeviceCMYK colour leaves
+   * the plates of its zero components untouched, so `cmyk(0, 0, 0, 1)` over
+   * a background prints black on top of it; with 0 every process plate is
+   * painted and only spot plates survive. Default: 1 when an overprint
+   * option is true, otherwise unchanged. The zero-component rule does not
+   * apply to images. One mode covers both fill and stroke.
+   */
+  overprintMode?: OverprintMode;
 }
 
 export interface PDFPageDrawSVGElementOptions {
