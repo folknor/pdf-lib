@@ -366,6 +366,7 @@ export default class PDFDocument {
   /** The default word breaks used in PDFPage.drawText */
   defaultWordBreaks: string[] = [' '];
 
+  private saveInProgress = false;
   private fontkit?: Fontkit;
   private pageCount: number | undefined;
   private readonly pageCache: Cache<PDFPage[]>;
@@ -1375,6 +1376,7 @@ export default class PDFDocument {
     name: string,
     options: AttachmentOptions = {},
   ): Promise<void> {
+    this.assertNotSaving();
     assertIs(attachment, 'attachment', ['string', Uint8Array, ArrayBuffer]);
     assertIs(name, 'name', ['string']);
     assertOrUndefined(options.mimeType, 'mimeType', ['string']);
@@ -1553,6 +1555,7 @@ export default class PDFDocument {
    * @param name The name of the attachment, as [[getAttachments]] reports it.
    */
   detach(name: string): void {
+    this.assertNotSaving();
     assertIs(name, 'name', ['string']);
     // Saved first: it is the part that can refuse, and a refusal must leave
     // the pending attachments in place too.
@@ -2068,6 +2071,7 @@ export default class PDFDocument {
     xml: string | Uint8Array | ArrayBuffer,
     options: EmbedFacturXOptions = {},
   ): void {
+    this.assertNotSaving();
     assertIs(xml, 'xml', ['string', Uint8Array, ArrayBuffer]);
     assertOrUndefined(options.conformanceLevel, 'conformanceLevel', ['string']);
     assertIsOneOfOrUndefined(
@@ -2221,6 +2225,12 @@ export default class PDFDocument {
    * @returns Resolves with the bytes of the serialized document.
    */
   async save(options: SaveOptions = {}): Promise<Uint8Array<ArrayBuffer>> {
+    return this.withSaveGuard(() => this.saveDocument(options));
+  }
+
+  private async saveDocument(
+    options: SaveOptions,
+  ): Promise<Uint8Array<ArrayBuffer>> {
     const {
       addDefaultPage = true,
       objectsPerTick = 50,
@@ -2373,7 +2383,9 @@ export default class PDFDocument {
     snapshot: DocumentSnapshot,
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
-    return (await this.writeIncrement(snapshot, options)).bytes;
+    return this.withSaveGuard(
+      async () => (await this.writeIncrement(snapshot, options)).bytes,
+    );
   }
 
   /** saveIncremental(), also reporting the highest object number written. */
@@ -2505,6 +2517,12 @@ export default class PDFDocument {
   async commit(
     options: IncrementalSaveOptions = {},
   ): Promise<Uint8Array<ArrayBuffer>> {
+    return this.withSaveGuard(() => this.commitDocument(options));
+  }
+
+  private async commitDocument(
+    options: IncrementalSaveOptions,
+  ): Promise<Uint8Array<ArrayBuffer>> {
     if (!(this.context.snapshot && this.context.pdfFileDetails.originalBytes)) {
       throw new Error(
         'commit() requires the document to be loaded with forIncrementalUpdate: true',
@@ -2606,9 +2624,27 @@ export default class PDFDocument {
     return;
   }
 
+  private assertNotSaving(): void {
+    if (this.saveInProgress) {
+      throw new Error(
+        'Cannot mutate or save this document while a save is in progress',
+      );
+    }
+  }
+
+  private async withSaveGuard<T>(save: () => Promise<T>): Promise<T> {
+    this.assertNotSaving();
+    this.saveInProgress = true;
+    try {
+      return await save();
+    } finally {
+      this.saveInProgress = false;
+    }
+  }
+
   private async embedAll(embeddables: Embeddable[]): Promise<void> {
-    for (let idx = 0, len = embeddables.length; idx < len; idx++) {
-      await embeddables[idx]!.embed();
+    for (const embeddable of [...embeddables]) {
+      await embeddable.embed();
     }
   }
 
