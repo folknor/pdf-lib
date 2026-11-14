@@ -96,6 +96,6 @@ describe('canonical composition', () => {
     const ubuntu: any = fontkit.create(fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf'));
     // e + COMBINING ACUTE becomes the font's precomposed glyph.
     const run = ubuntu.layout(String.fromCodePoint(0x65, 0x301));
-    expect(run.glyphs.map((g: any) => g.codePoints)).toEqual([[0xe9]]);
+    expect(run.codePoints).toEqual([[0xe9]]);
   });
 });

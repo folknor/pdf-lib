@@ -1,5 +1,4 @@
 import AATLayoutEngine from '../aat/AATLayoutEngine.js';
-import type Glyph from '../glyph/Glyph.js';
 import OTLayoutEngine from '../opentype/OTLayoutEngine.js';
 import { composeCanonical } from './CanonicalCompose.js';
 import type { FeatureValue } from './FeatureValues.js';
@@ -30,8 +29,10 @@ export default class LayoutEngine {
     }
   }
 
+  // Text only: shaping reads the code points of each occurrence, and a glyph
+  // array carries none (glyph objects are shared per id, see Glyph).
   layout(
-    string: string | Glyph[],
+    string: string,
     features?: string[] | Record<string, FeatureValue | undefined> | string,
     script?: string | string[] | null,
     language?: string | null,
@@ -45,62 +46,47 @@ export default class LayoutEngine {
       features = [];
     }
 
-    // Map string to glyphs if needed
-    let glyphs;
-    if (typeof string === 'string') {
-      // Attempt to detect the script from the string if not provided.
-      if (script == null) {
-        script = Script.forString(string);
-      }
-
-      // Pick the canonically equivalent spelling the font can draw
-      // (CanonicalCompose.ts). Runs for every engine, AAT included; the
-      // script above was detected from the typed text.
-      const hasGlyph = (cp: number): boolean =>
-        this.font.hasGlyphForCodePoint(cp);
-      {
-        const typed = Array.from(string, (c) => c.codePointAt(0)!);
-        const chosen = composeCanonical(typed, hasGlyph);
-        if (
-          chosen.length !== typed.length ||
-          chosen.some((cp, i) => cp !== typed[i])
-        ) {
-          string = chosen.map((cp) => String.fromCodePoint(cp)).join('');
-        }
-      }
-
-      // morx fonts carry their own Thai processing, so AAT is left alone.
-      const first = Array.isArray(script) ? script[0] : script;
-      if (
-        (first === 'thai' || first === 'lao ') &&
-        !(this.engine instanceof AATLayoutEngine)
-      ) {
-        const codePoints = Array.from(string, (c) => c.codePointAt(0)!);
-        const rewritten = decomposeSaraAm(codePoints, hasGlyph);
-        if (rewritten.length !== codePoints.length) {
-          string = rewritten.map((cp) => String.fromCodePoint(cp)).join('');
-        }
-      }
-
-      glyphs = this.font.glyphsForString(string);
-    } else {
-      // Attempt to detect the script from the glyph code points if not provided.
-      if (script == null) {
-        const codePoints = [];
-        for (const glyph of string) {
-          codePoints.push(...glyph.codePoints);
-        }
-
-        script = Script.forCodePoints(codePoints);
-      }
-
-      glyphs = string;
+    // Attempt to detect the script from the string if not provided.
+    if (script == null) {
+      script = Script.forString(string);
     }
+
+    // Pick the canonically equivalent spelling the font can draw
+    // (CanonicalCompose.ts). Runs for every engine, AAT included; the
+    // script above was detected from the typed text.
+    const hasGlyph = (cp: number): boolean =>
+      this.font.hasGlyphForCodePoint(cp);
+    {
+      const typed = Array.from(string, (c) => c.codePointAt(0)!);
+      const chosen = composeCanonical(typed, hasGlyph);
+      if (
+        chosen.length !== typed.length ||
+        chosen.some((cp, i) => cp !== typed[i])
+      ) {
+        string = chosen.map((cp) => String.fromCodePoint(cp)).join('');
+      }
+    }
+
+    // morx fonts carry their own Thai processing, so AAT is left alone.
+    const first = Array.isArray(script) ? script[0] : script;
+    if (
+      (first === 'thai' || first === 'lao ') &&
+      !(this.engine instanceof AATLayoutEngine)
+    ) {
+      const codePoints = Array.from(string, (c) => c.codePointAt(0)!);
+      const rewritten = decomposeSaraAm(codePoints, hasGlyph);
+      if (rewritten.length !== codePoints.length) {
+        string = rewritten.map((cp) => String.fromCodePoint(cp)).join('');
+      }
+    }
+
+    const { glyphs, codePoints } = this.font._glyphsForString(string);
 
     // Normalize script to a string
     const scriptStr = Array.isArray(script) ? (script[0] ?? 'zzzz') : script;
     const glyphRun = new GlyphRun(
       glyphs,
+      codePoints,
       features ?? [],
       scriptStr,
       language ?? null,
@@ -122,7 +108,7 @@ export default class LayoutEngine {
     this.substitute(glyphRun);
     this.position(glyphRun);
 
-    this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions!);
+    this.hideDefaultIgnorables(glyphRun);
 
     // Let the layout engine clean up any state it might have
     if (this.engine && 'cleanup' in this.engine && this.engine.cleanup) {
@@ -161,6 +147,7 @@ export default class LayoutEngine {
 
       this.unicodeLayoutEngine.positionGlyphs(
         glyphRun.glyphs,
+        glyphRun.codePoints,
         glyphRun.positions,
       );
     }
@@ -180,10 +167,14 @@ export default class LayoutEngine {
     }
   }
 
-  hideDefaultIgnorables(glyphs: Glyph[], positions: GlyphPosition[]): void {
+  // The occurrence's code points decide, never the glyph's: one glyph can
+  // stand for a default-ignorable and a visible character (U+00AD, U+002D).
+  hideDefaultIgnorables(glyphRun: GlyphRun): void {
+    const { glyphs, codePoints } = glyphRun;
+    const positions = glyphRun.positions!;
     const space = this.font.glyphForCodePoint(0x20);
     for (let i = 0; i < glyphs.length; i++) {
-      const codePoint = glyphs[i]!.codePoints[0];
+      const codePoint = codePoints[i]![0];
       if (codePoint !== undefined && this.isDefaultIgnorable(codePoint)) {
         glyphs[i] = space;
         positions[i]!.xAdvance = 0;

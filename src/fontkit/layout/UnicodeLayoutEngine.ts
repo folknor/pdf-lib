@@ -1,4 +1,7 @@
-import { getCombiningClass } from '../../vendors/unicode-properties/index.js';
+import {
+  getCombiningClass,
+  isMark,
+} from '../../vendors/unicode-properties/index.js';
 import type Glyph from '../glyph/Glyph.js';
 import type GlyphPosition from './GlyphPosition.js';
 
@@ -17,18 +20,30 @@ export default class UnicodeLayoutEngine {
     this.font = font;
   }
 
-  positionGlyphs(glyphs: Glyph[], positions: GlyphPosition[]): GlyphPosition[] {
+  // `codePoints[i]` are the code points occurrence i was shaped from
+  // (GlyphRun.codePoints); marks and ligatures are judged from them.
+  positionGlyphs(
+    glyphs: Glyph[],
+    codePoints: number[][],
+    positions: GlyphPosition[],
+  ): GlyphPosition[] {
     // find each base + mark cluster, and position the marks relative to the base
     let clusterStart = 0;
     let clusterEnd = 0;
     for (let index = 0; index < glyphs.length; index++) {
-      const glyph = glyphs[index]!;
-      if (glyph.isMark) {
+      const cps = codePoints[index]!;
+      if (cps.length > 0 && cps.every(isMark)) {
         // TODO: handle ligatures
         clusterEnd = index;
       } else {
         if (clusterStart !== clusterEnd) {
-          this.positionCluster(glyphs, positions, clusterStart, clusterEnd);
+          this.positionCluster(
+            glyphs,
+            codePoints,
+            positions,
+            clusterStart,
+            clusterEnd,
+          );
         }
 
         clusterStart = clusterEnd = index;
@@ -36,7 +51,13 @@ export default class UnicodeLayoutEngine {
     }
 
     if (clusterStart !== clusterEnd) {
-      this.positionCluster(glyphs, positions, clusterStart, clusterEnd);
+      this.positionCluster(
+        glyphs,
+        codePoints,
+        positions,
+        clusterStart,
+        clusterEnd,
+      );
     }
 
     return positions;
@@ -44,18 +65,19 @@ export default class UnicodeLayoutEngine {
 
   positionCluster(
     glyphs: Glyph[],
+    codePoints: number[][],
     positions: GlyphPosition[],
     clusterStart: number,
     clusterEnd: number,
   ): void {
     const base = glyphs[clusterStart]!;
     const baseBox = base.cbox.copy();
+    const components = codePoints[clusterStart]!.length;
 
     // adjust bounding box for ligature glyphs
-    if (base.codePoints.length > 1) {
+    if (components > 1) {
       // LTR. TODO: RTL support.
-      baseBox.minX +=
-        ((base.codePoints.length - 1) * baseBox.width) / base.codePoints.length;
+      baseBox.minX += ((components - 1) * baseBox.width) / components;
     }
 
     let xOffset = -positions[clusterStart]!.xAdvance;
@@ -68,7 +90,7 @@ export default class UnicodeLayoutEngine {
       const markBox = mark.cbox;
       const position = positions[index]!;
 
-      const combiningClass = this.getCombiningClass(mark.codePoints[0]!);
+      const combiningClass = this.getCombiningClass(codePoints[index]![0]!);
 
       if (combiningClass !== 'Not_Reordered') {
         position.xOffset = position.yOffset = 0;

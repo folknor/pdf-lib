@@ -43,30 +43,32 @@ for inheritance.
 layout did not attach (a font without mark positioning, or an AAT or
 non-OpenType engine, which set no `isMark`/`attachedTo` on positions) takes
 no spacing itself but moves with the pen, so it lands the base's spacing to
-the right of where the font put it. A ligature takes spacing once, not once
-per character it stands for, and word spacing goes to the font's glyph for
-U+0020 rather than to occurrences of U+0020. All three need per-occurrence
-code-point provenance out of `layout()` (cluster of each glyph), the same
-plumbing the ToUnicode entry below needs. Form field layout and `drawSvg`
-apply no character or word spacing at all.
+the right of where the font put it. A ligature takes character spacing once,
+not once per character it stands for, and one standing for several spaces
+takes word spacing once. Word spacing already follows occurrences of U+0020
+(`GlyphRun.codePoints`), not the glyph. The rest needs source clusters out of
+`layout()` - which glyphs came from which typed characters, carried through
+the code-point rewrites and shapers - the same provenance ToUnicode needs to
+spell typed text (below). Form field layout and `drawSvg` apply no character
+or word spacing at all.
 
-## Shaped glyphs outside the cmap get no ToUnicode mapping
+## ToUnicode holds one string per code, in shaping order
 
-`CustomFontEmbedder.embedUnicodeCmap` (full embed) maps only the glyphs the
-font's cmap reaches, so any glyph that only shaping produces - Arabic joining
-forms, ligatures, Noto Sans Thai's small tone marks chosen after the SARA AM
-decomposition - has no explicit ToUnicode entry and may drop out of extracted
-text. Thai is the knowing trade: decomposing SARA AM improves the drawn
-stacking and costs the tone mark in full-embed extraction. Recording the Glyph
-objects `layout()` returns does not fix it: fontkit caches glyphs by id and
-the first construction fixes `codePoints` (`glyphsForWidths` builds every glyph
-with none), so those code points are not the occurrence's; the subset embedder,
-which maps its emitted Glyph objects, has the same weakness. A fix needs
-per-occurrence code-point provenance out of `layout()` (`GlyphInfo.codePoints`
-through the OT writeback), cmap mappings taken from code point -> gid pairs,
-and a contract for one gid with several meanings (best-effort single mapping,
-separate PDF codes per meaning, or `ActualText`); neither restores logical
-order after a reorder by itself.
+ToUnicode maps each glyph a font draws to the text of its first encoded
+occurrence (`CustomFontEmbedder.toUnicodeEntries`). One string per code
+cannot say everything: a glyph drawn for two characters (U+0020 and U+00A0
+in fonts that share it) extracts as whichever was encoded first, a multiple
+substitution that repeats a glyph (a -> x x) extracts the text once per
+copy, and the text is the spelling the font was shaped from in glyph order,
+so where shaping split or moved characters the typed text is not recovered:
+SARA AM (U+0E33) extracts as U+0E4D U+0E32 around the tone mark, a reph or
+pre-base matra extracts where it is drawn, and an RTL run is in visual
+order. Fixing
+it needs per-glyph source clusters (indices into the typed text, mapped
+through `composeCanonical`, `decomposeSaraAm` and the shapers' splits and
+insertions) and then `/ActualText` spans for clusters whose glyph mappings
+do not spell their text, or separate PDF codes per meaning for a subset
+(full embeds keep code = glyph id through `CIDToGIDMap /Identity`).
 
 ## Embedded files that do not come through attach() skip the PDF/A check
 

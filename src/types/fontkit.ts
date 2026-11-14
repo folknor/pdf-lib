@@ -95,11 +95,12 @@ export interface Glyph {
   // Properties
   id: number /** The glyph's id in the font */;
   /**
-   * An array of unicode code points that are represented by this glyph. There
-   * can be multiple code points in the case of ligatures and other glyphs that
-   * represent multiple visual characters.
+   * Not set by the bundled fontkit, whose glyph objects are shared by every
+   * occurrence of an id and so carry no text (use GlyphRun.codePoints).
+   * Other fontkit builds set it from the first spelling that created the
+   * glyph; embedders fall back to it only when a run has no `text`.
    */
-  codePoints: number[];
+  codePoints?: number[];
   path: Path /** Vector Path object representing the glyph */;
   /**
    * The Glyph's bounding box, i.e. the rectangle that encloses the glyph
@@ -188,6 +189,19 @@ export interface GlyphRun {
    * An array of Glyph objects in the run
    */
   glyphs: Glyph[];
+
+  /**
+   * For each glyph, the code points this occurrence was shaped from (after
+   * canonical recomposition, the SARA AM split and shaper decompositions).
+   * Set by the bundled fontkit.
+   */
+  codePoints?: number[][];
+
+  /**
+   * For each glyph, the code points it contributes to extracted text:
+   * `codePoints` without inserted dotted circles. Set by the bundled fontkit.
+   */
+  text?: number[][];
 
   /**
    * An array of GlyphPosition objects for each glyph in the run
@@ -644,11 +658,10 @@ export interface Font {
   // Other Methods
 
   /**
-   * Returns a glyph object for the given glyph id. You can pass the array of
-   * code points this glyph represents for your use later, and it will be
-   * stored in the glyph object.
+   * Returns the glyph object for the given glyph id, shared by every use of
+   * the id.
    */
-  getGlyph(glyphId: number, codePoints?: number[]): Glyph;
+  getGlyph(glyphId: number): Glyph;
 
   /**
    * Returns a Subset object for this font.

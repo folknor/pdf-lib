@@ -49,10 +49,12 @@ class StandardFontEmbedder {
    * Symbol encoding, with the AFM pair kerning applied to each glyph's
    * advance, which is what widthOfTextAtSize measures: a Type1 font shown
    * with `Tj` does not kern by itself, so the kerning is written as `TJ`
-   * adjustments. The glyph named `space` takes word spacing.
+   * adjustments. Each U+0020 takes word spacing (not U+00A0, though WinAnsi
+   * draws it with the same glyph).
    */
   encodeText(text: string): EncodedText {
     const glyphs = this.encodeTextAsGlyphs(text);
+    const characters = Array.from(text);
     const count = glyphs.length;
     const codes = new Array<string>(count);
     const advances = new Array<number>(count);
@@ -62,7 +64,7 @@ class StandardFontEmbedder {
     for (let idx = 0; idx < count; idx++) {
       const left = glyphs[idx]!.name;
       const right = glyphs[idx + 1]?.name;
-      spacing[idx] = left === 'space' ? 'space' : 'base';
+      spacing[idx] = characters[idx] === ' ' ? 'space' : 'base';
       codes[idx] = toHexString(glyphs[idx]!.code);
       widths[idx] = this.widthOfGlyph(left);
       advances[idx] =

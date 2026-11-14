@@ -28,19 +28,6 @@ each glyph, which needs CBLC/CBDT payload decoding that fontkit lacks
 draw their outlines, not their colour images or layers, for the same reason;
 `COLRGlyph` path/cbox/bbox report that base outline, not the layer artwork.
 
-## Shaping depends on which spelling first created a glyph object
-
-`TTFFont.getGlyph` caches glyph objects by id, and the first construction
-fixes their `codePoints` (and so `isMark`). `OTLayoutEngine` seeds shaping
-input from those cached code points, and the Unicode mark fallback
-(`UnicodeLayoutEngine`) and `LayoutEngine.hideDefaultIgnorables` read them,
-so two code points mapping to one glyph id can shape and position
-differently depending on which one was laid out first in the font's
-lifetime. Repeated layout of one string is stable; the history dependence
-is across strings. The fix is the per-occurrence code-point provenance the
-ToUnicode finding (notes/embedder-findings.md) needs: shaping reads the
-occurrence's code points, never the cached glyph's.
-
 ## No mark reordering before shaping
 
 `LayoutEngine.layout` now picks a canonically equivalent spelling the font
@@ -122,10 +109,11 @@ stack of above and below marks. fontkit does not, so legacy Thai fonts draw
 every tone and vowel mark at its default height. Most of those fonts have no
 layout tables at all, so this cannot be an OpenType shaper class (no OT
 engine runs for them); it belongs next to the SARA AM rewrite in
-`LayoutEngine.layout`, as a glyph-level step after cmap mapping. PDF text
-extraction needs care: the PUA glyphs are cmap-mapped to PUA code points, so
-under the current ToUnicode policy (notes/embedder-findings.md) the swapped
-marks would extract as private-use characters.
+`LayoutEngine.layout`, as a glyph-level step after cmap mapping. The swap
+must keep each occurrence's code points (`GlyphRun.codePoints`/`text`):
+ToUnicode maps an encoded glyph to the text it was drawn for, so the PUA
+glyphs then extract as the Thai marks, not as the private-use code points
+the cmap maps to them.
 
 ## Lookup mark filtering sets are ignored
 
@@ -165,3 +153,23 @@ read the glyf table. In an sbix font with no glyf table, layout and width
 measurement fail, and `TTFSubset` refuses such fonts with an error. Fixing it
 means giving `SBIXGlyph` hmtx-based metrics when glyf is absent, as `CBDTGlyph`
 has, after which `TTFSubset._outlineless` can accept it.
+
+## Ligature component counts are code point counts
+
+GSUB ligature substitution (`GSUBProcessor`, the `lastNumComps` bookkeeping)
+and GPOS mark-to-ligature attachment (`GPOSProcessor`, `ligGlyph.codePoints
+.length`) take the number of components a ligature glyph has from the
+length of its `GlyphInfo.codePoints`. That is the number of code points, not
+of glyphs: a base with a variation selector is one glyph with two code
+points, and the second and later pieces of a multiple substitution have
+none, so a ligature built from either picks the wrong component for its
+marks. The count needs to be its own per-occurrence field, set to 1 for a
+glyph from the cmap and carried through substitution.
+
+## codePointsForGlyph misses format 4 mappings whose delta wraps
+
+`CmapProcessor.lookup` takes a format 4 glyph id modulo 65536 (`& 0xffff`
+after adding `idDelta`, decoded as int16); `codePointsForGlyph` compares the
+unwrapped sum, so a segment where code + delta passes 65535 (high code
+points with a positive delta) yields no code points for its glyphs. `stringsForGlyph` reads it; the
+embedders do not.

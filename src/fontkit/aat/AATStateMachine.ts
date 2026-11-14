@@ -1,4 +1,6 @@
-import type Glyph from '../glyph/Glyph.js';
+// Anything with a glyph id: morx passes its own occurrence records.
+type Glyph = { id: number };
+
 import AATLookupTable from './AATLookupTable.js';
 
 const START_OF_TEXT_STATE = 0;
@@ -30,15 +32,11 @@ export default class AATStateMachine {
     this.lookupTable = new AATLookupTable(stateTable.classTable);
   }
 
-  process(
-    glyphs: Glyph[],
+  process<G extends Glyph>(
+    glyphs: G[],
     reverse: boolean,
-    processEntry: (
-      glyph: Glyph | null,
-      entry: StateEntry,
-      index: number,
-    ) => void,
-  ): Glyph[] {
+    processEntry: (glyph: G | null, entry: StateEntry, index: number) => void,
+  ): G[] {
     let currentState = START_OF_TEXT_STATE; // START_OF_LINE_STATE is used for kashida glyph insertions sometimes I think?
     let index = reverse ? glyphs.length - 1 : 0;
     const dir = reverse ? -1 : 1;

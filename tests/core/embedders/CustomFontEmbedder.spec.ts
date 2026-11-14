@@ -20,6 +20,12 @@ import {
 import { compressWidths } from '../../../src/core/embedders/CustomFontEmbedder';
 
 const ubuntuFont = fs.readFileSync('./assets/fonts/ubuntu/Ubuntu-R.ttf');
+const notoSansThai = fs.readFileSync(
+  './assets/fonts/noto_sans_thai/NotoSansThai[wdth,wght].ttf',
+);
+const sourceHanFont = fs.readFileSync(
+  './assets/fonts/source_hans_jp/SourceHanSerifJP-Regular.otf',
+);
 
 describe('CustomFontEmbedder', () => {
   it('can be constructed with CustomFontEmbedder.for(...)', async () => {
@@ -208,8 +214,8 @@ describe('CustomFontEmbedder', () => {
     const embedder = await CustomFontEmbedder.for(fontkit, ubuntuFont);
     const { font } = embedder;
 
-    const { glyphs } = font.layout('Stuff');
-    const ligature = glyphs.find((glyph) => glyph.codePoints.length > 1);
+    const { glyphs, codePoints } = font.layout('Stuff');
+    const ligature = glyphs.find((_, idx) => codePoints![idx]!.length > 1);
     expect(ligature).toBeDefined();
 
     const ref = await embedder.embedIntoContext(context);
@@ -228,6 +234,54 @@ describe('CustomFontEmbedder', () => {
     expect(cmap).not.toMatch(/<[0-9a-f]{4}> <>/i);
     // 'A' (glyph 0x24 in Ubuntu) must survive /W touching every glyph first.
     expect(cmap).toContain('<0024> <0041>');
+  });
+
+  // Noto Sans Thai picks uni0E49.small (glyph 0x31), which no cmap entry
+  // reaches, for the tone mark of น้ำ.
+  it('maps glyphs only shaping reaches to the text they were drawn for', async () => {
+    for (const Embedder of [CustomFontEmbedder, CustomFontSubsetEmbedder]) {
+      const context = PDFContext.create();
+      const embedder = await Embedder.for(fontkit, notoSansThai);
+      const { codes } = embedder.encodeText('น้ำ');
+      const cmap = toUnicodeOf(context, await embedder.embedIntoContext(context));
+      expect(cmap).toContain(`<${codes[2]!.toUpperCase()}> <0E49>`);
+    }
+  });
+
+  it('maps a glyph by the first text encoded with it, not by layout history', async () => {
+    const context = PDFContext.create();
+    const embedder = await CustomFontEmbedder.for(fontkit, sourceHanFont);
+    // Lay out a soft hyphen first: it shares glyph 14 with U+002D.
+    embedder.font.layout('a­b');
+    embedder.encodeText('a-b');
+    const cmap = toUnicodeOf(context, await embedder.embedIntoContext(context));
+    expect(cmap).toContain('<000E> <002D>');
+  });
+
+  it('gives no mapping to a glyph encoded only for hidden text', async () => {
+    for (const Embedder of [CustomFontEmbedder, CustomFontSubsetEmbedder]) {
+      const context = PDFContext.create();
+      const embedder = await Embedder.for(fontkit, ubuntuFont);
+      // A hidden soft hyphen is drawn as the space glyph.
+      const { codes } = embedder.encodeText('a­b');
+      const cmap = toUnicodeOf(context, await embedder.embedIntoContext(context));
+      expect(cmap).not.toContain(`<${codes[1]!.toUpperCase()}>`);
+      expect(cmap).toContain(`<${codes[0]!.toUpperCase()}> <0061>`);
+    }
+  });
+
+  it('gives word spacing to U+0020, not to a no-break space', async () => {
+    const embedder = await CustomFontEmbedder.for(fontkit, sourceHanFont);
+    const encoded = embedder.encodeText('a b c');
+    // Source Han draws both with one glyph.
+    expect(encoded.codes[1]).toBe(encoded.codes[3]);
+    expect(encoded.spacing).toEqual([
+      'base',
+      'space',
+      'base',
+      'base',
+      'base',
+    ]);
   });
 
   it('skips code points whose glyph lookup returns null', async () => {

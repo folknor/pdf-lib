@@ -111,8 +111,10 @@ export default class GSUBProcessor extends OTProcessor {
 
           // Concatenate all of the characters the new ligature will represent
           const characters = curGlyph.codePoints.slice();
+          const text = curGlyph.text.slice();
           for (const matchedIndex of matched) {
             characters.push(...this.glyphs[matchedIndex]!.codePoints);
+            text.push(...this.glyphs[matchedIndex]!.text);
           }
 
           // Create the replacement ligature glyph
@@ -121,6 +123,7 @@ export default class GSUBProcessor extends OTProcessor {
             ligature.glyph,
             characters,
             curGlyph.features,
+            text,
           );
           ligatureGlyph.shaperInfo = curGlyph.shaperInfo;
           ligatureGlyph.isLigated = true;

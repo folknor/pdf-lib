@@ -1,4 +1,3 @@
-import { isMark } from '../../vendors/unicode-properties/index.js';
 import { cacheValue } from '../decorators.js';
 import type BBox from './BBox.js';
 import Path from './Path.js';
@@ -30,26 +29,17 @@ export default class Glyph {
    */
   id: number;
 
-  /**
-   * An array of unicode code points that are represented by this glyph.
-   * There can be multiple code points in the case of ligatures and other glyphs
-   * that represent multiple visual characters.
-   */
-  codePoints: number[];
-
+  // A glyph object is shared by every occurrence of its id (TTFFont caches
+  // one per id), so it carries no text: which code points an occurrence
+  // stands for is per occurrence, and lives on the GlyphRun (`codePoints`,
+  // `text`). Storing them here made shaping and ToUnicode depend on which
+  // spelling first created the object.
   _font: any; // TTFFont - will be typed later
-  isMark: boolean;
-  isLigature: boolean;
   _metrics?: GlyphMetrics;
 
-  constructor(id: number, codePoints: number[], font: any) {
+  constructor(id: number, font: any) {
     this.id = id;
-    this.codePoints = codePoints;
     this._font = font;
-
-    // TODO: get this info from GDEF if available
-    this.isMark = this.codePoints.length > 0 && this.codePoints.every(isMark);
-    this.isLigature = this.codePoints.length > 1;
   }
 
   _getPath(): Path {

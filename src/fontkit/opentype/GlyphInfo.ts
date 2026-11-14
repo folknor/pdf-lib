@@ -4,7 +4,14 @@ import OTProcessor from './OTProcessor.js';
 export default class GlyphInfo {
   _font: any;
   _id!: number;
+  /** The code points this occurrence is shaped as (see GlyphRun.codePoints). */
   codePoints: number[];
+  /**
+   * The code points it contributes to extracted text (GlyphRun.text):
+   * `codePoints` minus what inserted glyphs (dotted circles) brought in.
+   * Every substitution carries it exactly as it carries `codePoints`.
+   */
+  text: number[];
   features: Record<string, boolean>;
   ligatureID: number | null;
   ligatureComponent: number | null;
@@ -24,9 +31,11 @@ export default class GlyphInfo {
     id: number,
     codePoints: number[] = [],
     features?: string[] | Record<string, boolean>,
+    text: number[] = [...codePoints],
   ) {
     this._font = font;
     this.codePoints = codePoints;
+    this.text = text;
     this.id = id;
 
     this.features = {};
@@ -76,6 +85,12 @@ export default class GlyphInfo {
   }
 
   copy(): GlyphInfo {
-    return new GlyphInfo(this._font, this.id, this.codePoints, this.features);
+    return new GlyphInfo(
+      this._font,
+      this.id,
+      [...this.codePoints],
+      this.features,
+      [...this.text],
+    );
   }
 }

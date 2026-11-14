@@ -15,6 +15,25 @@ export default class GlyphRun {
   glyphs: Glyph[];
 
   /**
+   * For each glyph, the code points this occurrence was shaped from: the
+   * spelling the font was shaped with (after canonical composition or
+   * decomposition, the SARA AM split and shaper decompositions), not
+   * necessarily the typed text. A ligature has those of all its
+   * components; the second and later glyphs of a multiple substitution
+   * have none. Inserted dotted circles keep U+25CC here.
+   */
+  codePoints: number[][];
+
+  /**
+   * For each glyph, the code points the occurrence contributes to extracted
+   * text: `codePoints` without the contributions of glyphs the shaper
+   * inserted (dotted circles), which stand for no character. Its order and
+   * spelling are those of `codePoints`, so it is not the typed text where
+   * shaping reordered or split characters.
+   */
+  text: number[][];
+
+  /**
    * An array of GlyphPosition objects for each glyph in the run
    */
   positions: GlyphPosition[] | null;
@@ -46,12 +65,15 @@ export default class GlyphRun {
 
   constructor(
     glyphs: Glyph[],
+    codePoints: number[][],
     features: string[] | Record<string, unknown>,
     script: string,
     language: string | null,
     direction: string | null,
   ) {
     this.glyphs = glyphs;
+    this.codePoints = codePoints;
+    this.text = codePoints.map((cps) => [...cps]);
     this.positions = null;
     this.script = script;
     this.language = language || null;

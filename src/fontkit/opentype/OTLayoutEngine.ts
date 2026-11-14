@@ -34,9 +34,17 @@ export default class OTLayoutEngine {
 
   setup(glyphRun: GlyphRun): void {
     // Map glyphs to GlyphInfo objects so data can be passed between
-    // GSUB and GPOS without mutating the real (shared) Glyph objects.
+    // GSUB and GPOS without mutating the real (shared) Glyph objects. Each
+    // starts from its occurrence's code points, never from the glyph.
     this.glyphInfos = glyphRun.glyphs.map(
-      (glyph) => new GlyphInfo(this.font, glyph.id, [...glyph.codePoints]),
+      (glyph, i) =>
+        new GlyphInfo(
+          this.font,
+          glyph.id,
+          [...glyphRun.codePoints[i]!],
+          undefined,
+          [...glyphRun.text[i]!],
+        ),
     );
 
     // Select a script based on what is available in GSUB/GPOS.
@@ -87,8 +95,10 @@ export default class OTLayoutEngine {
       // decomposed or inserted glyphs, and GPOS and the positions built from
       // glyphRun.glyphs must see the same sequence.
       glyphRun.glyphs = this.glyphInfos.map((glyphInfo) =>
-        this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints),
+        this.font.getGlyph(glyphInfo.id),
       );
+      glyphRun.codePoints = this.glyphInfos.map((info) => [...info.codePoints]);
+      glyphRun.text = this.glyphInfos.map((info) => [...info.text]);
     }
   }
 
@@ -132,6 +142,8 @@ export default class OTLayoutEngine {
     // Reverse the glyphs and positions if the script is right-to-left
     if (rtl && glyphRun.positions) {
       glyphRun.glyphs.reverse();
+      glyphRun.codePoints.reverse();
+      glyphRun.text.reverse();
       glyphRun.positions.reverse();
     }
 

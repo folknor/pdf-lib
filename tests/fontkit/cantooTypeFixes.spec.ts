@@ -118,7 +118,7 @@ describe('COLR layer colours', () => {
   });
 
   it('offsets by the palette base, keeps foreground layers, drops bad indices', () => {
-    const layers = new COLRGlyph(1, [], makeFont([])).layers!;
+    const layers = new COLRGlyph(1, makeFont([])).layers!;
     expect(layers.map((l) => l.color)).toEqual([blue, null]);
   });
 
@@ -137,7 +137,7 @@ describe('COLR layer colours', () => {
         this.color = rgb.join(',');
       },
     };
-    new COLRGlyph(1, [], makeFont(rendered)).render(ctx, 12);
+    new COLRGlyph(1, makeFont(rendered)).render(ctx, 12);
     expect(rendered).toEqual(['10:0,0,255', '11:caller']);
     expect(ctx.color).toBe('caller');
   });

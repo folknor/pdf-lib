@@ -159,7 +159,8 @@ function reorder(font: any, glyphs: GlyphInfo[]): void {
 
     // Insert a dotted circle glyph in broken clusters.
     if (type === 'broken_cluster' && dottedCircle) {
-      const g = new GlyphInfo(font, dottedCircle, [0x25cc]);
+      // Inserted, so it stands for no character in extracted text.
+      const g = new GlyphInfo(font, dottedCircle, [0x25cc], undefined, []);
       g.shaperInfo = info;
 
       // Insert after possible Repha.

@@ -76,10 +76,12 @@ export interface PDFPageDrawTextOptions extends SvgOptions {
    */
   characterSpacing?: number;
   /**
-   * Extra spacing after each space glyph in PDF points (before horizontal
+   * Extra spacing after each space in PDF points (before horizontal
    * scaling), in addition to the normal space width and `characterSpacing`.
-   * It applies to the font's glyph for U+0020, with standard and embedded
-   * fonts alike, so also to any character the font draws with that glyph.
+   * It applies to each U+0020 in the text, with standard and embedded fonts
+   * alike, and not to other characters the font draws with the same glyph
+   * (U+00A0). A font loaded through another fontkit build that reports no
+   * per-glyph code points applies it to the font's glyph for U+0020.
    * It is drawn as glyph positions (`TJ`), not with `Tw`, and `maxWidth`
    * line breaking measures it.
    * Default: 0 (normal word spacing)

@@ -5,12 +5,11 @@ import type {
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
-import { Cache } from '../../utils/index.js';
+import type { ToUnicodeEntry } from './CMap.js';
 import CustomFontEmbedder, {
   asFont,
   encodeSubset,
 } from './CustomFontEmbedder.js';
-import type EncodedText from './EncodedText.js';
 
 /**
  * A note of thanks to the developers of https://github.com/foliojs/pdfkit, as
@@ -51,18 +50,13 @@ class CustomFontSubsetEmbedder extends CustomFontEmbedder {
 
     this.subset = this.font.createSubset();
     this.glyphs = [];
-    // The glyphs ToUnicode maps: .notdef (subset id 0) stands for no
-    // character, whatever code point it was shown for.
-    this.glyphCache = Cache.populatedBy(() =>
-      this.glyphs.filter((glyph, id) => id !== 0 && glyph !== undefined),
-    );
     this.glyphIdMap = new Map();
   }
 
-  override encodeText(text: string): EncodedText {
-    const encoded = super.encodeText(text);
-    this.glyphCache.invalidate();
-    return encoded;
+  // A subset holds only encoded glyphs, so ToUnicode is what encoding
+  // recorded (subset id 0, .notdef, is never mapped).
+  protected override toUnicodeEntries(): ToUnicodeEntry[] {
+    return this.recordedEntries();
   }
 
   // Only encoding adds a glyph to the subset; measuring (positionedLayout)

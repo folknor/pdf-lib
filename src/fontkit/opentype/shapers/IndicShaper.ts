@@ -276,7 +276,8 @@ function initialReordering(font: any, glyphs: GlyphInfo[], plan: any): void {
     }
 
     if (syllableType === 'broken_cluster' && dottedCircle) {
-      const g = new GlyphInfo(font, dottedCircle, [0x25cc]);
+      // Inserted, so it stands for no character in extracted text.
+      const g = new GlyphInfo(font, dottedCircle, [0x25cc], undefined, []);
       g.shaperInfo = new IndicInfo(
         1 << indicCategory(g),
         indicPosition(g),

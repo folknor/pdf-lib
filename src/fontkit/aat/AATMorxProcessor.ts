@@ -1,4 +1,15 @@
-import type Glyph from '../glyph/Glyph.js';
+/**
+ * One glyph occurrence as morx processes it: a glyph id and the code points
+ * the occurrence stands for. morx works on these rather than on the font's
+ * shared Glyph objects, which carry no text (see Glyph).
+ */
+export interface MorxGlyph {
+  id: number;
+  codePoints: number[];
+}
+
+type Glyph = MorxGlyph;
+
 import AATLookupTable from './AATLookupTable.js';
 import AATStateMachine from './AATStateMachine.js';
 
@@ -200,10 +211,10 @@ export default class AATMorxProcessor {
       glyph = this.glyphs[this.markedGlyph]!;
       const gid = lookupTable.lookup(glyph.id);
       if (gid) {
-        this.glyphs[this.markedGlyph] = this.font.getGlyph(
-          gid,
-          glyph.codePoints,
-        );
+        this.glyphs[this.markedGlyph] = {
+          id: gid,
+          codePoints: glyph.codePoints,
+        };
       }
     }
 
@@ -213,7 +224,7 @@ export default class AATMorxProcessor {
       glyph = this.glyphs[index]!;
       const gid2 = lookupTable.lookup(glyph.id);
       if (gid2) {
-        this.glyphs[index] = this.font.getGlyph(gid2, glyph.codePoints);
+        this.glyphs[index] = { id: gid2, codePoints: glyph.codePoints };
       }
     }
 
@@ -257,15 +268,12 @@ export default class AATMorxProcessor {
 
         if (last || store) {
           const ligatureEntry = ligatureList.getItem(ligatureIndex);
-          this.glyphs[componentGlyph] = this.font.getGlyph(
-            ligatureEntry,
-            codePoints,
-          );
+          this.glyphs[componentGlyph] = { id: ligatureEntry, codePoints };
           ligatureGlyphs.push(componentGlyph);
           ligatureIndex = 0;
           codePoints = [];
         } else {
-          this.glyphs[componentGlyph] = this.font.getGlyph(0xffff);
+          this.glyphs[componentGlyph] = { id: 0xffff, codePoints: [] };
         }
       }
 
@@ -287,7 +295,7 @@ export default class AATMorxProcessor {
         const gid = lookupTable.lookup(glyph.id);
         if (gid) {
           // 0 means do nothing
-          glyphs[i] = this.font.getGlyph(gid, glyph.codePoints);
+          glyphs[i] = { id: gid, codePoints: glyph.codePoints };
         }
       }
     }
@@ -304,7 +312,8 @@ export default class AATMorxProcessor {
       const gid = this.subtable.table.insertionActions.getItem(
         insertionActionIndex++,
       );
-      insertions.push(this.font.getGlyph(gid));
+      // Inserted glyphs stand for no character.
+      insertions.push({ id: gid, codePoints: [] });
     }
 
     if (!isBefore) {
@@ -404,7 +413,7 @@ export default class AATMorxProcessor {
         });
 
         // Add glyph to input and glyphs to process.
-        const g = this.font.getGlyph(glyph);
+        const g: Glyph = { id: glyph, codePoints: [] };
         input.push(g);
         glyphs.push(input[input.length - 1]!);
 

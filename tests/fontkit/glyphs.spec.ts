@@ -22,7 +22,7 @@ const firstCompositeGlyph = (font: any) => {
 describe('color and bitmap glyphs', () => {
   it('_getBaseGlyph returns the outline glyph but keeps a cached COLR glyph', () => {
     const font = openUbuntu();
-    const colr = new COLRGlyph(36, [], font);
+    const colr = new COLRGlyph(36, font);
     font._glyphs[36] = colr;
 
     const base = font._getBaseGlyph(36);
@@ -41,7 +41,6 @@ describe('color and bitmap glyphs', () => {
     for (const component of decoded.components) {
       font._glyphs[component.glyphID] = new COLRGlyph(
         component.glyphID,
-        [],
         font,
       );
     }
@@ -54,7 +53,7 @@ describe('color and bitmap glyphs', () => {
       CPAL: {},
       _getBaseGlyph: () => null,
     };
-    const glyph = new COLRGlyph(1, [], fakeFont);
+    const glyph = new COLRGlyph(1, fakeFont);
     expect(glyph.layers).toBeNull();
     expect(glyph.bbox).toEqual(new BBox(0, 0, 0, 0));
     expect(() => glyph.render({ fillColor: () => {} }, 12)).not.toThrow();
@@ -63,13 +62,13 @@ describe('color and bitmap glyphs', () => {
   it('gives COLR glyphs the geometry of their base outline', () => {
     const font = openUbuntu();
     const base = font._getBaseGlyph(36);
-    const colr = new COLRGlyph(36, [], font);
+    const colr = new COLRGlyph(36, font);
     expect(colr.path.toSVG()).toBe(base.path.toSVG());
     expect(colr.path.commands.length).toBeGreaterThan(0);
     expect(colr.cbox).toEqual(base.cbox);
     expect(colr.bbox).toEqual(base.bbox);
 
-    const empty = new COLRGlyph(1, [], { _getBaseGlyph: () => null });
+    const empty = new COLRGlyph(1, { _getBaseGlyph: () => null });
     expect(empty.path.commands).toEqual([]);
     expect(empty.cbox).toEqual(new BBox(0, 0, 0, 0));
   });

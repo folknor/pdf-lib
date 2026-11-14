@@ -75,10 +75,7 @@ export default class WOFF2Font extends TTFFont {
 
   // Override this method to get a glyph and return our
   // custom subclass if there is a glyf table.
-  override _getBaseGlyph(
-    glyph: number,
-    characters: number[] = [],
-  ): Glyph | null {
+  override _getBaseGlyph(glyph: number): Glyph | null {
     // As in TTFFont, a cached COLR/CBDT glyph stays cached, but callers asking
     // for the base glyph get the outline glyph.
     const cached = this._glyphs[glyph];
@@ -90,14 +87,14 @@ export default class WOFF2Font extends TTFFont {
       if (!this._transformedGlyphs) {
         this._transformGlyfTable();
       }
-      const outline = new WOFF2Glyph(glyph, characters, this);
+      const outline = new WOFF2Glyph(glyph, this);
       if (!cached) {
         this._glyphs[glyph] = outline;
       }
       return outline;
     }
 
-    return super._getBaseGlyph(glyph, characters);
+    return super._getBaseGlyph(glyph);
   }
 
   _transformGlyfTable(): void {

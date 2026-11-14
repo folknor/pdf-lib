@@ -155,7 +155,7 @@ export default class EncodedText {
 
 /**
  * What spacing a glyph takes: `base` character spacing, `space` character
- * and word spacing (the font's glyph for U+0020), `none` neither (marks and
+ * and word spacing (an occurrence of U+0020), `none` neither (marks and
  * hidden default-ignorables).
  */
 export type GlyphSpacing = 'base' | 'space' | 'none';

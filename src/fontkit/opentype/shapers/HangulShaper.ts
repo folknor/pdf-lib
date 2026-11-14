@@ -348,6 +348,8 @@ function insertDottedCircle(glyphs: GlyphInfo[], i: number, font: any): number {
 
   if (font.hasGlyphForCodePoint(DOTTED_CIRCLE)) {
     const dottedCircle = getGlyph(font, DOTTED_CIRCLE, glyph.features);
+    // Inserted, so it stands for no character in extracted text.
+    dottedCircle.text = [];
 
     // If the tone mark is zero width, insert the dotted circle before, otherwise after
     const idx = font.glyphForCodePoint(code).advanceWidth === 0 ? i : i + 1;

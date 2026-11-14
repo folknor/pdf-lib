@@ -1,5 +1,3 @@
-import type { Glyph } from '../../types/fontkit.js';
-
 import { toHexString, toHexStringOfMinLength } from '../../utils/index.js';
 import {
   hasSurrogates,
@@ -11,13 +9,22 @@ import {
 /** [fontId, codePoint] */
 type BfChar = [string, string];
 
-/** `glyphs` should be an array of unique glyphs */
-export const createCmap = (glyphs: Glyph[], glyphId: (g?: Glyph) => number) => {
-  const bfChars: BfChar[] = new Array(glyphs.length);
-  for (let idx = 0, len = glyphs.length; idx < len; idx++) {
-    const glyph = glyphs[idx]!;
-    const id = cmapHexFormat(cmapHexString(glyphId(glyph)));
-    const unicode = cmapHexFormat(...glyph.codePoints.map(cmapCodePointFormat));
+/** A ToUnicode entry: a two-byte character code and the text it stands for. */
+export type ToUnicodeEntry = readonly [
+  code: number,
+  codePoints: readonly number[],
+];
+
+/**
+ * `entries` should be sorted by code, one per code, each with at least one
+ * code point (an empty destination is malformed).
+ */
+export const createCmap = (entries: readonly ToUnicodeEntry[]) => {
+  const bfChars: BfChar[] = new Array(entries.length);
+  for (let idx = 0, len = entries.length; idx < len; idx++) {
+    const [code, codePoints] = entries[idx]!;
+    const id = cmapHexFormat(cmapHexString(code));
+    const unicode = cmapHexFormat(...codePoints.map(cmapCodePointFormat));
     bfChars[idx] = [id, unicode];
   }
 

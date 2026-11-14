@@ -1,6 +1,6 @@
 import type GlyphRun from '../layout/GlyphRun.js';
 import * as AATFeatureMap from './AATFeatureMap.js';
-import AATMorxProcessor from './AATMorxProcessor.js';
+import AATMorxProcessor, { type MorxGlyph } from './AATMorxProcessor.js';
 
 export default class AATLayoutEngine {
   font: any;
@@ -16,14 +16,23 @@ export default class AATLayoutEngine {
   substitute(glyphRun: GlyphRun): void {
     // AAT expects the glyphs to be in visual order prior to morx processing,
     // so reverse the glyphs if the script is right-to-left.
+    // Occurrences move as records, so code points stay with their glyphs.
+    const records: MorxGlyph[] = glyphRun.glyphs.map((glyph, i) => ({
+      id: glyph.id,
+      codePoints: [...glyphRun.codePoints[i]!],
+    }));
     if (glyphRun.direction === 'rtl') {
-      glyphRun.glyphs.reverse();
+      records.reverse();
     }
 
-    this.morxProcessor.process(
-      glyphRun.glyphs,
+    const out = this.morxProcessor.process(
+      records,
       AATFeatureMap.mapOTToAAT(glyphRun.features),
     );
+    glyphRun.glyphs = out.map((record) => this.font.getGlyph(record.id));
+    glyphRun.codePoints = out.map((record) => record.codePoints);
+    // morx inserts no placeholder characters, so all of it is text.
+    glyphRun.text = out.map((record) => [...record.codePoints]);
   }
 
   getAvailableFeatures(_script: string, _language?: string): string[] {

@@ -6,17 +6,11 @@ import type {
   Subset,
   TypeFeatures,
 } from '../../types/fontkit.js';
-import {
-  byAscendingId,
-  Cache,
-  mergeUint8Arrays,
-  sortedUniq,
-  toHexStringOfMinLength,
-} from '../../utils/index.js';
+import { mergeUint8Arrays, toHexStringOfMinLength } from '../../utils/index.js';
 import type PDFRef from '../objects/PDFRef.js';
 import PDFString from '../objects/PDFString.js';
 import type PDFContext from '../PDFContext.js';
-import { createCmap } from './CMap.js';
+import { createCmap, type ToUnicodeEntry } from './CMap.js';
 import EncodedText, {
   type GlyphSpacing,
   spacingExtras,
@@ -52,7 +46,11 @@ class CustomFontEmbedder {
   readonly fontFeatures: TypeFeatures | undefined;
 
   protected baseFontName: string;
-  protected glyphCache: Cache<Glyph[]>;
+
+  // ToUnicode state (see embedUnicodeCmap): every code encodeText emitted,
+  // and the text of the first eligible occurrence of each.
+  private readonly encodedCodes = new Set<number>();
+  private readonly firstText = new Map<number, number[]>();
 
   // Track refs to embedded objects to avoid orphans on re-embedding
   protected cidFontDictRef?: PDFRef;
@@ -74,7 +72,6 @@ class CustomFontEmbedder {
     this.fontFeatures = fontFeatures;
 
     this.baseFontName = '';
-    this.glyphCache = Cache.populatedBy(this.allGlyphsInFontSortedById);
   }
 
   /**
@@ -82,7 +79,12 @@ class CustomFontEmbedder {
    * Unicode, but embedded fonts use their own custom encodings)
    */
   encodeText(text: string): EncodedText {
-    const { glyphs, positions } = this.positionedLayout(text);
+    const {
+      glyphs,
+      positions,
+      codePoints,
+      text: glyphText,
+    } = this.positionedLayout(text);
     const { scale } = this;
     const count = glyphs.length;
     const codes = new Array<string>(count);
@@ -93,7 +95,9 @@ class CustomFontEmbedder {
     for (let idx = 0; idx < count; idx++) {
       const glyph = glyphs[idx]!;
       const position = positions[idx]!;
-      codes[idx] = toHexStringOfMinLength(this.codeForGlyph(glyph), 4);
+      const code = this.codeForGlyph(glyph);
+      codes[idx] = toHexStringOfMinLength(code, 4);
+      this.recordText(code, glyphText[idx]!, position);
       advances[idx] = position.xAdvance * scale;
       widths[idx] = this.pdfWidthOf(glyph);
       xOffsets[idx] = position.xOffset * scale;
@@ -105,25 +109,48 @@ class CustomFontEmbedder {
       widths,
       xOffsets,
       yOffsets,
-      this.glyphSpacing(glyphs, positions),
+      this.glyphSpacing(glyphs, positions, codePoints),
       positions.map((position) => position.attachedTo ?? null),
     );
   }
 
-  // Marks and hidden default-ignorables take no spacing; the font's glyph for
-  // U+0020 takes word spacing. That is a property of the glyph, so another
-  // character the font draws with the same glyph (often U+00A0) takes it too.
+  /**
+   * Notes the text one encoded occurrence stands for, for ToUnicode. The
+   * first eligible occurrence of a code wins: one with text, not a hidden
+   * default-ignorable (drawn as the space glyph) and not code 0 (.notdef,
+   * which stands for no character whatever it was shown for). Encoding, not
+   * drawing, is what votes; measuring does not.
+   */
+  private recordText(
+    code: number,
+    text: readonly number[],
+    position: GlyphPosition,
+  ): void {
+    this.encodedCodes.add(code);
+    if (code === 0 || position.hidden || text.length === 0) return;
+    if (!this.firstText.has(code)) this.firstText.set(code, [...text]);
+  }
+
+  // Marks and hidden default-ignorables take no spacing; an occurrence of
+  // U+0020 takes word spacing, so U+00A0 drawn with the same glyph does not.
+  // A fontkit that reports no per-occurrence code points falls back to the
+  // identity of the font's glyph for U+0020.
   private glyphSpacing(
     glyphs: Glyph[],
     positions: GlyphPosition[],
+    codePoints: readonly (readonly number[])[] | undefined,
   ): GlyphSpacing[] {
-    const spaceId = this.font.hasGlyphForCodePoint(0x20)
-      ? this.font.glyphForCodePoint(0x20).id
-      : -1;
+    const spaceId =
+      codePoints === undefined && this.font.hasGlyphForCodePoint(0x20)
+        ? this.font.glyphForCodePoint(0x20).id
+        : -1;
     return glyphs.map((glyph, idx) => {
       const position = positions[idx]!;
       if (position.isMark || position.hidden) return 'none';
-      return glyph.id === spaceId ? 'space' : 'base';
+      const isSpace = codePoints
+        ? codePoints[idx]!.length === 1 && codePoints[idx]![0] === 0x20
+        : glyph.id === spaceId;
+      return isSpace ? 'space' : 'base';
     });
   }
 
@@ -140,7 +167,7 @@ class CustomFontEmbedder {
     size: number,
     spacing: TextSpacing = {},
   ): number {
-    const { glyphs, positions } = this.positionedLayout(text);
+    const { glyphs, positions, codePoints } = this.positionedLayout(text);
     let total = 0;
     for (let idx = 0, len = positions.length; idx < len; idx++) {
       total += positions[idx]!.xAdvance;
@@ -149,7 +176,7 @@ class CustomFontEmbedder {
     const { characterSpacing = 0, wordSpacing = 0 } = spacing;
     if (characterSpacing !== 0 || wordSpacing !== 0) {
       for (const extra of spacingExtras(
-        this.glyphSpacing(glyphs, positions),
+        this.glyphSpacing(glyphs, positions, codePoints),
         characterSpacing,
         wordSpacing,
         size,
@@ -169,6 +196,10 @@ class CustomFontEmbedder {
   protected positionedLayout(text: string): {
     glyphs: Glyph[];
     positions: GlyphPosition[];
+    /** Per-occurrence shaping code points; undefined if the fontkit has none. */
+    codePoints: number[][] | undefined;
+    /** Per-occurrence text for ToUnicode. */
+    text: readonly (readonly number[])[];
   } {
     const run = this.font.layout(text, this.fontFeatures);
     const glyphs = run.glyphs as (Glyph | null | undefined)[];
@@ -196,9 +227,22 @@ class CustomFontEmbedder {
         throw new Error(`Font layout returned a non-finite position at ${idx}`);
       }
     }
+    const { codePoints } = run;
+    // Another fontkit build may report no per-occurrence text; its glyph
+    // objects' codePoints are then the best there is.
+    const occurrenceText =
+      run.text ?? glyphs.map((glyph) => glyph!.codePoints ?? []);
+    if (
+      occurrenceText.length !== glyphs.length ||
+      (codePoints !== undefined && codePoints.length !== glyphs.length)
+    ) {
+      throw new Error('Font layout returned code points for other glyphs');
+    }
     return {
       glyphs: glyphs as Glyph[],
       positions: positions as GlyphPosition[],
+      codePoints,
+      text: occurrenceText,
     };
   }
 
@@ -411,12 +455,34 @@ class CustomFontEmbedder {
     return { ref: this.fontStreamRef, bbox };
   }
 
+  /**
+   * ToUnicode maps each code to one string, while one glyph can stand for
+   * different text in different places, so the map is a lossy projection:
+   * a code encodeText emitted takes the text of its first eligible
+   * occurrence (see recordText) - the spelling it was shaped from, so a
+   * glyph only shaping reaches (ligature, joining form, Thai small tone mark)
+   * is mapped, as its characters rather than as a presentation form the cmap
+   * may also map to it - and a code emitted only without text gets none.
+   * What one string per code cannot say is lost: a second meaning of the
+   * same glyph (U+0020 and U+00A0), and the typed order and spelling where
+   * shaping split or reordered characters (SARA AM, reph).
+   */
+  protected recordedEntries(): ToUnicodeEntry[] {
+    return [...this.firstText].sort(([a], [b]) => a - b);
+  }
+
+  /**
+   * A full embed also maps every glyph never encoded through the cmap, as
+   * before; a glyph encoded only without text stays unmapped.
+   */
+  protected toUnicodeEntries(): ToUnicodeEntry[] {
+    return withCmapFill(this.font, this.recordedEntries(), (code) =>
+      this.encodedCodes.has(code),
+    );
+  }
+
   protected embedUnicodeCmap(context: PDFContext): PDFRef {
-    // A bfchar entry with an empty destination (`<0003> <>`) is malformed.
-    const glyphs = this.glyphCache
-      .access()
-      .filter((glyph) => glyph.codePoints.length > 0);
-    const cmap = createCmap(glyphs, this.glyphId.bind(this));
+    const cmap = createCmap(this.toUnicodeEntries());
     const cmapStream = context.flateStream(cmap);
 
     // Reuse existing ref to avoid orphans on re-embedding
@@ -438,11 +504,6 @@ class CustomFontEmbedder {
    * (ligatures, alternates) still get their real width instead of /DW.
    */
   protected glyphsForWidths(): Glyph[] {
-    // fontkit caches glyph objects by id, and the first creation fixes their
-    // codePoints. getGlyph(id) without code points would leave mapped glyphs
-    // with empty codePoints and drop them from ToUnicode, so create the
-    // characterSet glyphs (with their code points) first.
-    this.glyphCache.access();
     const glyphs: Glyph[] = [];
     for (let id = 0, len = this.font.numGlyphs; id < len; id++) {
       const glyph = this.font.getGlyph(id);
@@ -459,21 +520,31 @@ class CustomFontEmbedder {
       ]),
     );
   }
-
-  private allGlyphsInFontSortedById = (): Glyph[] => {
-    const { characterSet } = this.font;
-    const glyphs: Glyph[] = [];
-    for (let idx = 0, len = characterSet.length; idx < len; idx++) {
-      // fontkit returns null when it cannot build a glyph object for the
-      // code point; the declared return type omits that.
-      const glyph = this.font.glyphForCodePoint(
-        characterSet[idx]!,
-      ) as Glyph | null;
-      if (glyph) glyphs.push(glyph);
-    }
-    return sortedUniq(glyphs.sort(byAscendingId), (g) => g.id);
-  };
 }
+
+/**
+ * The full embed's ToUnicode: the encoded codes as recorded, plus, for every
+ * glyph encodeText never emitted, the lowest code point the cmap maps to it
+ * (code == glyph id). Built from code point -> glyph pairs, so no glyph object's
+ * history enters it.
+ */
+const withCmapFill = (
+  font: Font,
+  recorded: ToUnicodeEntry[],
+  wasEncoded: (code: number) => boolean,
+): ToUnicodeEntry[] => {
+  const entries = new Map<number, readonly number[]>(recorded);
+  const characterSet = [...font.characterSet].sort((a, b) => a - b);
+  for (const codePoint of characterSet) {
+    // fontkit returns null when it cannot build a glyph object for the
+    // code point; the declared return type omits that.
+    const glyph = font.glyphForCodePoint(codePoint) as Glyph | null;
+    if (!glyph || glyph.id === 0) continue;
+    if (wasEncoded(glyph.id) || entries.has(glyph.id)) continue;
+    entries.set(glyph.id, [codePoint]);
+  }
+  return [...entries].sort(([a], [b]) => a - b);
+};
 
 /**
  * Narrow a `fontkit.create()` result to a single face. Font collections

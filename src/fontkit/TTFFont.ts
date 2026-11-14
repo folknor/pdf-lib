@@ -374,7 +374,7 @@ export default class TTFFont {
    * @return {Glyph}
    */
   glyphForCodePoint(codePoint: number): Glyph | null {
-    return this.getGlyph(this._cmapProcessor.lookup(codePoint), [codePoint]);
+    return this.getGlyph(this._cmapProcessor.lookup(codePoint));
   }
 
   /**
@@ -387,7 +387,19 @@ export default class TTFFont {
    * @return {Glyph[]}
    */
   glyphsForString(string: string): (Glyph | null)[] {
+    return this._glyphsForString(string).glyphs;
+  }
+
+  /**
+   * glyphsForString, with the code points each glyph was mapped from
+   * (`[cp]`, or `[base, selector]` for a variation sequence).
+   */
+  _glyphsForString(string: string): {
+    glyphs: (Glyph | null)[];
+    codePoints: number[][];
+  } {
     const glyphs: (Glyph | null)[] = [];
+    const codePoints: number[][] = [];
     const len = string.length;
     let idx = 0;
     let last = -1;
@@ -420,19 +432,19 @@ export default class TTFFont {
 
       if (state === 0 && nextState === 1) {
         // Variation selector following normal codepoint.
-        glyphs.push(
-          this.getGlyph(this._cmapProcessor.lookup(last, code), [last, code]),
-        );
+        glyphs.push(this.getGlyph(this._cmapProcessor.lookup(last, code)));
+        codePoints.push([last, code]);
       } else if (state === 0 && nextState === 0) {
         // Normal codepoint following normal codepoint.
         glyphs.push(this.glyphForCodePoint(last));
+        codePoints.push([last]);
       }
 
       last = code;
       state = nextState;
     }
 
-    return glyphs;
+    return { glyphs, codePoints };
   }
 
   get _layoutEngine() {
@@ -498,7 +510,7 @@ export default class TTFFont {
    * already hold a color or bitmap glyph (COLR, CBDT) for this id; that one is
    * kept in the cache, and a fresh outline glyph is returned instead.
    */
-  _getBaseGlyph(glyph: number, characters: number[] = []): Glyph | null {
+  _getBaseGlyph(glyph: number): Glyph | null {
     const cached = this._glyphs[glyph];
     if (isOutlineGlyph(cached)) {
       return cached;
@@ -506,9 +518,9 @@ export default class TTFFont {
 
     let outline: Glyph | null = null;
     if (this.directory.tables.glyf) {
-      outline = new TTFGlyph(glyph, characters, this);
+      outline = new TTFGlyph(glyph, this);
     } else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
-      outline = new CFFGlyph(glyph, characters, this);
+      outline = new CFFGlyph(glyph, this);
     }
 
     if (outline && !cached) {
@@ -519,23 +531,21 @@ export default class TTFFont {
   }
 
   /**
-   * Returns a glyph object for the given glyph id.
-   * You can pass the array of code points this glyph represents for
-   * your use later, and it will be stored in the glyph object.
+   * Returns the (shared, cached) glyph object for the given glyph id. It
+   * carries no text; see Glyph.
    *
    * @param {number} glyph
-   * @param {number[]} characters
    * @return {Glyph}
    */
   // Null only for a font with no glyph source at all (no glyf, CFF, CFF2,
   // sbix, COLR+CPAL or bitmap tables). Layout and shaper code deliberately
   // does not null-check every getGlyph/glyphForCodePoint result for that case.
-  getGlyph(glyph: number, characters: number[] = []): Glyph | null {
+  getGlyph(glyph: number): Glyph | null {
     if (!this._glyphs[glyph]) {
       if (this.directory.tables.sbix) {
-        this._glyphs[glyph] = new SBIXGlyph(glyph, characters, this);
+        this._glyphs[glyph] = new SBIXGlyph(glyph, this);
       } else if (this.directory.tables.COLR && this.directory.tables.CPAL) {
-        this._glyphs[glyph] = new COLRGlyph(glyph, characters, this);
+        this._glyphs[glyph] = new COLRGlyph(glyph, this);
       } else if (
         (this.directory.tables.CBLC || this.directory.tables.EBLC) &&
         !this.directory.tables.glyf &&
@@ -545,9 +555,9 @@ export default class TTFFont {
         // Bitmap-only fonts have no outlines, so _getBaseGlyph would yield
         // null; a stub glyph still carries the hmtx metrics. Fonts that ship
         // embedded bitmaps next to outlines keep their outline glyphs.
-        this._glyphs[glyph] = new CBDTGlyph(glyph, characters, this);
+        this._glyphs[glyph] = new CBDTGlyph(glyph, this);
       } else {
-        this._getBaseGlyph(glyph, characters);
+        this._getBaseGlyph(glyph);
       }
     }
 
