@@ -8,11 +8,13 @@ import {
   setStrokingGrayscaleColor,
   setStrokingRgbColor,
 } from './operators.js';
+import type PDFSeparation from './PDFSeparation.js';
 
 export enum ColorTypes {
   Grayscale = 'Grayscale',
   RGB = 'RGB',
   CMYK = 'CMYK',
+  Separation = 'Separation',
 }
 
 export interface Grayscale {
@@ -36,6 +38,35 @@ export interface CMYK {
 }
 
 export type Color = Grayscale | RGB | CMYK;
+
+/**
+ * A tint of a spot colourant (a Separation colour space, ISO 32000-1
+ * 8.6.6.4). Made with {@link separation} from a {@link PDFSeparation} that
+ * `PDFDocument.embedSeparation` returned.
+ *
+ * Deliberately not a member of {@link Color}: a Separation is painted by
+ * selecting a colour space from the resources of the content stream, so it is
+ * accepted only where the library owns those resources - the `PDFPage` drawing
+ * methods. Form fields, annotation borders and `/MK` colours are component
+ * arrays with no way to name a colourant, and keep taking `Color`.
+ */
+export interface SeparationColor {
+  type: ColorTypes.Separation;
+  separation: PDFSeparation;
+  /** Amount of colourant in [0, 1]; 0 is no ink. */
+  tint: number;
+}
+
+/** A colour the `PDFPage` drawing methods can paint with. */
+export type PaintColor = Color | SeparationColor;
+
+export const separation = (
+  colorSpace: PDFSeparation,
+  tint: number,
+): SeparationColor => {
+  assertRange(tint, 'tint', 0, 1);
+  return { type: ColorTypes.Separation, separation: colorSpace, tint };
+};
 
 export const grayscale = (gray: number): Grayscale => {
   assertRange(gray, 'gray', 0.0, 1.0);

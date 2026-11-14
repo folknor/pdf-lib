@@ -1,6 +1,6 @@
 import type { AnnotationTypes } from '../core/annotation/AnnotationTypes.js';
 import type { Space, TransformationMatrix } from '../types/index.js';
-import type { Color } from './colors.js';
+import type { Color, PaintColor } from './colors.js';
 import type { FillRule, LineCapStyle, TextRenderingMode } from './operators.js';
 import type PDFFont from './PDFFont.js';
 import type { Rotation } from './rotations.js';
@@ -26,7 +26,7 @@ export enum BlendMode {
 }
 
 export interface PDFPageDrawTextOptions extends SvgOptions {
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
   blendMode?: BlendMode;
   font?: PDFFont;
@@ -40,7 +40,7 @@ export interface PDFPageDrawTextOptions extends SvgOptions {
   maxWidth?: number;
   wordBreaks?: string[];
   strokeWidth?: number;
-  strokeColor?: Color;
+  strokeColor?: PaintColor;
   renderMode?: TextRenderingMode;
   /**
    * Extra spacing between characters in PDF points.
@@ -100,9 +100,9 @@ export interface PDFPageDrawSVGOptions extends SvgOptions {
   scale?: number;
   rotate?: Rotation;
   borderWidth?: number;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
-  borderColor?: Color;
+  borderColor?: PaintColor;
   borderOpacity?: number;
   borderDashArray?: number[];
   borderDashPhase?: number;
@@ -115,7 +115,7 @@ export interface PDFPageDrawLineOptions extends SvgOptions {
   start: { x: number; y: number };
   end: { x: number; y: number };
   thickness?: number;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
   lineCap?: LineCapStyle;
   dashArray?: number[];
@@ -134,9 +134,9 @@ export interface PDFPageDrawRectangleOptions extends SvgOptions {
   xSkew?: Rotation;
   ySkew?: Rotation;
   borderWidth?: number;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
-  borderColor?: Color;
+  borderColor?: PaintColor;
   borderOpacity?: number;
   borderDashArray?: number[];
   borderDashPhase?: number;
@@ -152,9 +152,9 @@ export interface PDFPageDrawSquareOptions extends SvgOptions {
   xSkew?: Rotation;
   ySkew?: Rotation;
   borderWidth?: number;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
-  borderColor?: Color;
+  borderColor?: PaintColor;
   borderOpacity?: number;
   borderDashArray?: number[];
   borderDashPhase?: number;
@@ -168,9 +168,9 @@ export interface PDFPageDrawEllipseOptions extends SvgOptions {
   xScale?: number;
   yScale?: number;
   rotate?: Rotation;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
-  borderColor?: Color;
+  borderColor?: PaintColor;
   borderOpacity?: number;
   borderWidth?: number;
   borderDashArray?: number[];
@@ -183,9 +183,9 @@ export interface PDFPageDrawCircleOptions extends SvgOptions {
   x?: number;
   y?: number;
   size?: number;
-  color?: Color;
+  color?: PaintColor;
   opacity?: number;
-  borderColor?: Color;
+  borderColor?: PaintColor;
   borderOpacity?: number;
   borderWidth?: number;
   borderDashArray?: number[];

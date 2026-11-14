@@ -18,6 +18,7 @@ export { default as PDFJavaScript } from './PDFJavaScript.js';
 export { default as PDFOptionalContentGroup } from './PDFOptionalContentGroup.js';
 export { default as PDFPage } from './PDFPage.js';
 export * from './PDFPageOptions.js';
+export { default as PDFSeparation } from './PDFSeparation.js';
 export { default as PDFSvg } from './PDFSvg.js';
 export * from './rotations.js';
 export * from './StandardFonts.js';

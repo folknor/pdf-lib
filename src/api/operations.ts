@@ -8,6 +8,7 @@ import type { Space, TransformationMatrix } from '../types/index.js';
 import { identityMatrix } from '../types/matrix.js';
 import {
   type Color,
+  ColorTypes,
   rgb,
   setFillingColor,
   setStrokingColor,
@@ -40,11 +41,15 @@ import {
   setCharacterSpacing,
   setCharacterSqueeze,
   setDashPattern,
+  setFillingColorComponents,
+  setFillingColorSpace,
   setFontAndSize,
   setGraphicsState,
   setLineCap,
   setLineHeight,
   setLineWidth,
+  setStrokingColorComponents,
+  setStrokingColorSpace,
   setTextRenderingMode,
   setTextRise,
   setWordSpacing,
@@ -58,8 +63,46 @@ import { degrees, type Rotation, toDegrees, toRadians } from './rotations.js';
 import { combineMatrix, transformationToMatrix } from './svg.js';
 import { svgPathToOperators } from './svgPath.js';
 
+/**
+ * A Separation tint as the operators see it: the colour space is named by its
+ * key in the resources of the stream being drawn into, the way fonts and
+ * XObjects are. `PDFPage` makes these from a `SeparationColor`.
+ */
+export interface SeparationOperand {
+  type: ColorTypes.Separation;
+  colorSpace: string | PDFName;
+  tint: number;
+}
+
+/** A colour the drawing operations can emit. */
+export type ColorOperand = Color | SeparationOperand;
+
+/** Operators setting the non-stroking colour; a Separation selects its space
+ * (`cs`) together with the tint (`scn`), so the two cannot be separated. */
+export const fillingColorOperators = (color: ColorOperand): PDFOperator[] =>
+  color.type === ColorTypes.Separation
+    ? [
+        setFillingColorSpace(color.colorSpace),
+        setFillingColorComponents(color.tint),
+      ]
+    : [setFillingColor(color)];
+
+/** Operators setting the stroking colour (`CS` + `SCN` for a Separation). */
+export const strokingColorOperators = (color: ColorOperand): PDFOperator[] =>
+  color.type === ColorTypes.Separation
+    ? [
+        setStrokingColorSpace(color.colorSpace),
+        setStrokingColorComponents(color.tint),
+      ]
+    : [setStrokingColor(color)];
+
+const maybeFill = (color: ColorOperand | undefined) =>
+  color ? fillingColorOperators(color) : [];
+const maybeStroke = (color: ColorOperand | undefined) =>
+  color ? strokingColorOperators(color) : [];
+
 export interface DrawTextOptions {
-  color: Color;
+  color: ColorOperand;
   font: string | PDFName;
   size: number | PDFNumber;
   rotate: Rotation;
@@ -71,7 +114,7 @@ export interface DrawTextOptions {
   matrix?: TransformationMatrix;
   clipSpaces?: Space[];
   strokeWidth?: number;
-  strokeColor?: Color;
+  strokeColor?: ColorOperand;
   renderMode?: TextRenderingMode;
   /** Character spacing (Tc operator) in PDF points */
   characterSpacing?: number | PDFNumber;
@@ -102,10 +145,10 @@ export const drawText = (
     pushGraphicsState(),
     options.graphicsState && setGraphicsState(options.graphicsState),
     beginText(),
-    setFillingColor(options.color),
+    ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
     options.strokeWidth && setLineWidth(options.strokeWidth),
-    options.strokeColor && setStrokingColor(options.strokeColor),
+    ...maybeStroke(options.strokeColor),
     options.renderMode && setTextRenderingMode(options.renderMode),
     rotateAndSkewTextRadiansAndTranslate(
       toRadians(options.rotate),
@@ -133,7 +176,7 @@ export const drawLinesOfText = (
     ...(options.clipSpaces ? clipSpaces(options.clipSpaces) : []),
     options.matrix && concatTransformationMatrix(...options.matrix),
     beginText(),
-    setFillingColor(options.color),
+    ...fillingColorOperators(options.color),
     setFontAndSize(options.font, options.size),
     setLineHeight(options.lineHeight),
     options.characterSpacing !== undefined &&
@@ -143,7 +186,7 @@ export const drawLinesOfText = (
       setCharacterSqueeze(options.horizontalScaling),
     options.textRise !== undefined && setTextRise(options.textRise),
     options.strokeWidth && setLineWidth(options.strokeWidth),
-    options.strokeColor && setStrokingColor(options.strokeColor),
+    ...maybeStroke(options.strokeColor),
     options.renderMode && setTextRenderingMode(options.renderMode),
     rotateAndSkewTextRadiansAndTranslate(
       toRadians(options.rotate),
@@ -218,7 +261,7 @@ export const drawLine = (options: {
   start: { x: number | PDFNumber; y: number | PDFNumber };
   end: { x: number | PDFNumber; y: number | PDFNumber };
   thickness: number | PDFNumber;
-  color: Color | undefined;
+  color: ColorOperand | undefined;
   dashArray?: (number | PDFNumber)[];
   dashPhase?: number | PDFNumber;
   lineCap?: LineCapStyle;
@@ -231,7 +274,7 @@ export const drawLine = (options: {
     options.graphicsState && setGraphicsState(options.graphicsState),
     ...(options.clipSpaces ? clipSpaces(options.clipSpaces) : []),
     options.matrix && concatTransformationMatrix(...options.matrix),
-    options.color && setStrokingColor(options.color),
+    ...maybeStroke(options.color),
     setLineWidth(options.thickness),
     setDashPattern(options.dashArray ?? [], options.dashPhase ?? 0),
     moveTo(options.start.x, options.start.y),
@@ -249,14 +292,14 @@ export const drawRectangle = (options: {
   y: number | PDFNumber;
   width: number | PDFNumber;
   height: number | PDFNumber;
-  color: Color | undefined;
+  color: ColorOperand | undefined;
   rotate: Rotation;
   xSkew: Rotation;
   ySkew: Rotation;
   rx?: number;
   ry?: number;
   borderWidth: number | PDFNumber;
-  borderColor: Color | undefined;
+  borderColor: ColorOperand | undefined;
   borderLineCap?: LineCapStyle;
   borderDashArray?: (number | PDFNumber)[];
   borderDashPhase?: number | PDFNumber;
@@ -340,8 +383,8 @@ export const drawEllipse = (options: {
   xScale: number | PDFNumber;
   yScale: number | PDFNumber;
   rotate?: Rotation;
-  color: Color | undefined;
-  borderColor: Color | undefined;
+  color: ColorOperand | undefined;
+  borderColor: ColorOperand | undefined;
   borderWidth: number | PDFNumber;
   borderDashArray?: (number | PDFNumber)[];
   borderDashPhase?: number | PDFNumber;
@@ -396,8 +439,8 @@ export const drawSvgPath = (
     y: number | PDFNumber;
     rotate?: Rotation;
     scale: number | PDFNumber | undefined;
-    color: Color | undefined;
-    borderColor: Color | undefined;
+    color: ColorOperand | undefined;
+    borderColor: ColorOperand | undefined;
     borderWidth: number | PDFNumber;
     borderDashArray?: (number | PDFNumber)[];
     borderDashPhase?: number | PDFNumber;
@@ -425,8 +468,8 @@ export const drawSvgPath = (
 
     // SVG path Y axis is opposite pdf-lib's
     options.scale ? scale(options.scale, -options.scale) : scale(1, -1),
-    options.color && setFillingColor(options.color),
-    options.borderColor && setStrokingColor(options.borderColor),
+    ...maybeFill(options.color),
+    ...maybeStroke(options.borderColor),
     options.borderWidth && setLineWidth(options.borderWidth),
     options.borderLineCap && setLineCap(options.borderLineCap),
 
@@ -1025,9 +1068,9 @@ const getDrawingOperator = ({
   borderColor,
   fillRule,
 }: {
-  color: Color | undefined;
+  color: ColorOperand | undefined;
   borderWidth?: number | PDFNumber;
-  borderColor: Color | undefined;
+  borderColor: ColorOperand | undefined;
   fillRule?: FillRule;
 }) => {
   if (color && borderColor && borderWidth !== 0) {

@@ -20,6 +20,22 @@ needs a pending item that can be cancelled, embeds that are shared per item
 rather than repeated, and iteration over a snapshot, or a refusal of
 mutation while a flush is in progress.
 
+## Page resource writes reach dictionaries other pages share
+
+When a page draws, `PDFPageLeaf` adds the font, image, ExtGState or
+Separation colour space to the page's `/Resources` category dictionary.
+`normalize()` copies those dictionaries only when `/Resources` is inherited
+from the page tree. A page whose own `/Resources` is a reference shared with
+other pages (common in generated files, and preserved by `copyPages`), or
+whose `/Font`, `/XObject`, `/ExtGState` or `/ColorSpace` is a shared indirect
+dictionary, gets the new entry written into the shared object, so every
+sharing page gains it. Keys are fresh and the entry is unused by the other
+pages' content, so nothing renders differently; the cost is resources leaking
+across pages (larger `copyPages` output, a surprise for anyone reading one
+page's resources). A fix detaches the resources dictionary and the category
+being written on first write, whatever caused the sharing, rather than only
+for inheritance.
+
 ## Line breaking assumes shaped prefix widths grow monotonically
 
 `widthOfTextAtSize` on a custom font measures the shaped glyphs (what

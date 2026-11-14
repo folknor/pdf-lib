@@ -5,8 +5,10 @@ import {
 } from 'node-html-better-parser';
 import { CipherTransformFactory } from '../core/crypto.js';
 import {
+  compareVersions,
   getEffectiveVersion,
   getIncrementVersion,
+  type PDFVersion,
   planObjectStreamVersion,
   supportsObjectStreams,
 } from '../core/document/pdfVersion.js';
@@ -83,6 +85,7 @@ import {
   range,
   toUint8Array,
 } from '../utils/index.js';
+import type { Color } from './colors.js';
 import { detachSavedAttachments } from './detach.js';
 import type Embeddable from './Embeddable.js';
 import {
@@ -122,6 +125,7 @@ import PDFImage from './PDFImage.js';
 import PDFJavaScript from './PDFJavaScript.js';
 import PDFOptionalContentGroup from './PDFOptionalContentGroup.js';
 import PDFPage from './PDFPage.js';
+import PDFSeparation from './PDFSeparation.js';
 import PDFSvg from './PDFSvg.js';
 import type { StandardFonts } from './StandardFonts.js';
 import { PageSizes } from './sizes.js';
@@ -363,6 +367,8 @@ export default class PDFDocument {
   private readonly embeddedPages: PDFEmbeddedPage[];
   private readonly embeddedFiles: PDFEmbeddedFile[];
   private readonly javaScripts: PDFJavaScript[];
+  /** Colourants made by embedSeparation, by name as given. */
+  private readonly separations: Map<string, PDFSeparation>;
   /** Whether the last saveIncremental wrote a cross-reference stream. */
   private lastIncrementUsedObjectStreams = false;
 
@@ -391,6 +397,7 @@ export default class PDFDocument {
     this.embeddedPages = [];
     this.embeddedFiles = [];
     this.javaScripts = [];
+    this.separations = new Map();
 
     if (!ignoreEncryption && this.isEncrypted) throw new EncryptedPDFError();
 
@@ -1183,6 +1190,56 @@ export default class PDFDocument {
     pdfCopy.defaultWordBreaks = this.defaultWordBreaks;
 
     return pdfCopy;
+  }
+
+  /**
+   * Define a spot colourant (a Separation colour space) for painting on this
+   * document's pages. For example:
+   * ```js
+   * const pantone = pdfDoc.embedSeparation('PANTONE 123 C', cmyk(0, 0.22, 0.83, 0))
+   * page.drawRectangle({ width: 100, height: 50, color: separation(pantone, 0.5) })
+   * ```
+   * One colourant name has one definition: asking again for a name with the
+   * same alternate colour returns the same object, and with a different one
+   * throws, since a name selects a printing plate and PDF/A-2 and later
+   * require every definition of it to agree. That check covers only
+   * colourants made through this method on this document; Separations already
+   * in a loaded file, or brought in by `copyPages` or `embedPdf`, are not
+   * compared against.
+   *
+   * The reserved names `All` (every plate) and `None` (no plate) are
+   * accepted; viewers ignore their alternate colour.
+   *
+   * @param name The colourant name, as text (written as its UTF-8 bytes).
+   * @param alternate The device colour a device without the colourant shows
+   *   at full tint.
+   */
+  embedSeparation(name: string, alternate: Color): PDFSeparation {
+    assertIs(name, 'name', ['string']);
+    assertIs(alternate, 'alternate', [[Object, 'Color']]);
+    const existing = this.separations.get(name);
+    if (existing) {
+      if (existing.hasAlternate(alternate)) return existing;
+      throw new Error(
+        `Colourant "${name}" is already defined with a different alternate colour`,
+      );
+    }
+    // Separation is PDF 1.2, its type 2 tint transform PDF 1.3. Both the
+    // version a full save writes and the one an increment would declare (the
+    // original header, or the catalog /Version) must allow it, since which
+    // save follows is not known here.
+    const floor: PDFVersion = [1, 3];
+    if (
+      compareVersions(getEffectiveVersion(this.context), floor) < 0 ||
+      compareVersions(getIncrementVersion(this.context), floor) < 0
+    ) {
+      throw new Error(
+        'Separation colour spaces need PDF 1.3 or later (raise the catalog /Version of an older file)',
+      );
+    }
+    const space = PDFSeparation.create(this, name, alternate);
+    this.separations.set(name, space);
+    return space;
   }
 
   /**

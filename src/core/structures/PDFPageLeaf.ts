@@ -240,6 +240,23 @@ class PDFPageLeaf extends PDFDict {
     );
   }
 
+  /** Get the key naming `colorSpaceRef` in this page's ColorSpace resources,
+   * adding an entry (and the ColorSpace dict) if there is none. */
+  getOrCreateColorSpace(tag: string, colorSpaceRef: PDFRef): PDFName {
+    const { Resources } = this.normalizedEntries();
+    let ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
+    if (!ColorSpace) {
+      ColorSpace = this.context.obj({});
+      Resources.set(PDFName.ColorSpace, ColorSpace);
+    }
+    for (const [key, value] of ColorSpace.entries()) {
+      if (value === colorSpaceRef) return key;
+    }
+    const key = ColorSpace.uniqueKey(tag);
+    ColorSpace.set(key, colorSpaceRef);
+    return key;
+  }
+
   ascend(visitor: (node: PDFPageTree | PDFPageLeaf) => any): void {
     visitor(this);
     const Parent = this.Parent();
@@ -293,6 +310,14 @@ class PDFPageLeaf extends PDFDict {
         context.obj({})
       : Resources.lookupMaybe(PDFName.ExtGState, PDFDict) || context.obj({});
     Resources.set(PDFName.ExtGState, ExtGState);
+
+    // ColorSpace is cloned like the others when inherited, but not created when
+    // absent: most pages have none, and an empty one would be pure noise.
+    if (isInherited) {
+      const ColorSpace = Resources.lookupMaybe(PDFName.ColorSpace, PDFDict);
+      if (ColorSpace)
+        Resources.set(PDFName.ColorSpace, ColorSpace.clone(context));
+    }
 
     const Annots = this.Annots() || context.obj([]);
     this.set(PDFName.Annots, Annots);

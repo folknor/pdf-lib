@@ -25,7 +25,13 @@ import {
   lineSplit,
   rectanglesAreEqual,
 } from '../utils/index.js';
-import { type Color, colorToComponents, rgb } from './colors.js';
+import {
+  ColorTypes,
+  colorToComponents,
+  type PaintColor,
+  rgb,
+} from './colors.js';
+import type { ColorOperand } from './operations.js';
 import {
   drawEllipse,
   drawImage,
@@ -62,6 +68,7 @@ import {
   type PDFPageDrawSVGOptions,
   type PDFPageDrawTextOptions,
 } from './PDFPageOptions.js';
+import PDFSeparation from './PDFSeparation.js';
 import PDFSvg from './PDFSvg.js';
 import { degrees, type Rotation, toDegrees } from './rotations.js';
 import { StandardFonts } from './StandardFonts.js';
@@ -114,7 +121,7 @@ export default class PDFPage {
   private fontKey: PDFName | undefined;
   private font: PDFFont | undefined;
   private fontSize = 24;
-  private fontColor = rgb(0, 0, 0) as Color;
+  private fontColor: PaintColor = rgb(0, 0, 0);
   private lineHeight = 24;
   private x = 0;
   private y = 0;
@@ -803,7 +810,7 @@ export default class PDFPage {
    * @param fontColor The default font color to be used when drawing text on
    *                  this page.
    */
-  setFontColor(fontColor: Color): void {
+  setFontColor(fontColor: PaintColor): void {
     assertIs(fontColor, 'fontColor', [[Object, 'Color']]);
     this.fontColor = fontColor;
   }
@@ -1080,7 +1087,7 @@ export default class PDFPage {
     const contentStream = this.getContentStream();
     contentStream.push(
       ...drawLinesOfText(encodedLines, {
-        color: options.color ?? this.fontColor,
+        color: this.paint(options.color ?? this.fontColor),
         font: newFontKey,
         size: fontSize,
         rotate: options.rotate ?? degrees(0),
@@ -1097,7 +1104,7 @@ export default class PDFPage {
           clipSpaces: options.clipSpaces,
         }),
         ...(options.strokeColor !== undefined && {
-          strokeColor: options.strokeColor,
+          strokeColor: this.paint(options.strokeColor),
         }),
         ...(options.strokeWidth !== undefined && {
           strokeWidth: options.strokeWidth,
@@ -1373,8 +1380,8 @@ export default class PDFPage {
         y: options.y ?? this.y,
         scale: options.scale,
         rotate: options.rotate ?? degrees(0),
-        color: options.color,
-        borderColor: options.borderColor,
+        color: this.paint(options.color),
+        borderColor: this.paint(options.borderColor),
         borderWidth: options.borderWidth ?? 1,
         ...(options.borderDashArray !== undefined && {
           borderDashArray: options.borderDashArray,
@@ -1446,7 +1453,7 @@ export default class PDFPage {
         start: options.start,
         end: options.end,
         thickness: options.thickness ?? 1,
-        color: options.color,
+        color: this.paint(options.color),
         ...(options.dashArray !== undefined && {
           dashArray: options.dashArray,
         }),
@@ -1545,10 +1552,10 @@ export default class PDFPage {
         xSkew: options.xSkew ?? degrees(0),
         ySkew: options.ySkew ?? degrees(0),
         borderWidth: options.borderWidth ?? 0,
-        color: options.color,
+        color: this.paint(options.color),
         rx: options.rx ?? 0,
         ry: options.ry ?? 0,
-        borderColor: options.borderColor,
+        borderColor: this.paint(options.borderColor),
         ...(options.borderDashArray !== undefined && {
           borderDashArray: options.borderDashArray,
         }),
@@ -1666,8 +1673,8 @@ export default class PDFPage {
         xScale: options.xScale ?? 100,
         yScale: options.yScale ?? 100,
         ...(options.rotate !== undefined && { rotate: options.rotate }),
-        color: options.color,
-        borderColor: options.borderColor,
+        color: this.paint(options.color),
+        borderColor: this.paint(options.borderColor),
         borderWidth: options.borderWidth ?? 0,
         ...(options.borderDashArray !== undefined && {
           borderDashArray: options.borderDashArray,
@@ -1792,6 +1799,32 @@ export default class PDFPage {
     const dict = this.doc.context.obj({});
     const contentStream = PDFContentStream.of(dict, operators);
     return contentStream;
+  }
+
+  /**
+   * Resolve a paint colour against this page: a Separation is registered in
+   * the page's ColorSpace resources and becomes an operand naming its key.
+   * A `SeparationColor` is a document-level value, so the same one can be
+   * used on any page of its own document.
+   */
+  private paint(color: PaintColor): ColorOperand;
+  private paint(color: PaintColor | undefined): ColorOperand | undefined;
+  private paint(color: PaintColor | undefined): ColorOperand | undefined {
+    if (color?.type !== ColorTypes.Separation) return color;
+    const { separation, tint } = color;
+    if (!(separation instanceof PDFSeparation)) {
+      throw new TypeError('A Separation colour needs a PDFSeparation');
+    }
+    if (separation.doc !== this.doc) {
+      throw new Error(
+        `Colourant "${separation.name}" belongs to a different PDFDocument`,
+      );
+    }
+    if (!(typeof tint === 'number' && tint >= 0 && tint <= 1)) {
+      throw new RangeError(`A Separation tint must be in [0, 1]: ${tint}`);
+    }
+    const colorSpace = this.node.getOrCreateColorSpace('CS', separation.ref);
+    return { type: ColorTypes.Separation, colorSpace, tint };
   }
 
   private maybeEmbedGraphicsState(options: {
