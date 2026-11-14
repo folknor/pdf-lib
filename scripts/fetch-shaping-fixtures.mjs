@@ -8,6 +8,8 @@ const ref = '8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5';
 const files = [
   ['ofl/notosanssharada/NotoSansSharada-Regular.ttf', 'noto_sans_sharada/NotoSansSharada-Regular.ttf'],
   ['ofl/notosanssharada/OFL.txt', 'noto_sans_sharada/OFL.txt'],
+  ['ofl/notoseriftibetan/NotoSerifTibetan[wght].ttf', 'noto_serif_tibetan/NotoSerifTibetan[wght].ttf'],
+  ['ofl/notoseriftibetan/OFL.txt', 'noto_serif_tibetan/OFL.txt'],
 ];
 for (const [src, dst] of files) {
   const body = execFileSync(

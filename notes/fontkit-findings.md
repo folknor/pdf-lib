@@ -59,18 +59,37 @@ layout tables at all (no OT engine). The Hebrew compose and reorder belong as
 script exceptions of this stage, together with NFC composition and the
 split-vowel decompositions `UniversalShaper` and `IndicShaper` do ad hoc.
 
-## USE categories lack the USE overrides to Unicode properties
+Tibetan needs it too. U+0F71 (AA) is a nukta (CMBlw) in the USE category
+trie, so AA must precede any vowel sign: canonical order works, but a
+vowel sign typed before AA (KA + I + AA) is a broken cluster. A canonical
+sort would cure that; it would not cure KA + AA + U+0F39 (TSA -PHRU), which
+is already canonical yet B CMBlw CMAbv, a broken cluster in the grammar -
+that needs a USE-specific move of TSA -PHRU before the vowels (font-tools
+issue 22). The specification's Tibetan positional overrides (I/E/O below,
+U above) were left out of `scripts/gen-use-trie.mjs` because they break
+canonical U + E; with a reorder stage in place they can be reconsidered.
 
-`trieUse.ts` is generated (scripts/gen-use-trie.mjs) from the plain Unicode
-Indic syllabic and positional categories. The Universal Shaping Engine
-specifies overrides on top of them, and the grammar in `use.ts` relies on
-them. Tibetan shows it: U+0F71 (AA) is VBlw where USE treats it as a nukta
-(CMBlw), so K + U+0F71 + U+0F72 (canonical order, and the decomposition of
-U+0F73) splits into a standard and a broken cluster and gets a dotted circle;
-the DFA accepts B CMBlw VAbv as one cluster. Fixing it means applying the
-published USE override tables in the generator and regenerating, not
-widening the grammar (which every USE script shares) and not routing `tibt`
-away from USE.
+## The USE data and grammar are fontkit-era
+
+`use.ts` (category list and compiled cluster DFA) is fontkit's, older than
+the current USE specification, and `trieUse.ts` is built from Unicode 12
+with fontkit's hand override tables plus a reviewed Tibetan subset of the
+specification's override files (microsoft/font-tools USE/
+IndicSyllabicCategory-Additional.txt, IndicPositionalCategory-Additional.txt).
+The rest of those overrides cannot be layered on: they are written for the
+current grammar and UCD, and applied to ours they produce a class use.ts
+lacks (Duployan U+1BC9D-1BC9E derive a bare CM), hieroglyph classes, or a
+grammar mismatch (Balinese musical symbols become CM, which the old symbol
+cluster S SM* rejects); Unicode itself has since reclassified characters
+(Batak U+1BF2-1BF3 into Reordering_Killer, a class the grammar lacks). So
+every other USE script still shapes without the specification's overrides,
+the visarga override (U+0F7F independent) is out too (font-tools issue 19: a
+following U+0FC6 then breaks), and Egyptian hieroglyph clusters do not
+exist. The fix is one versioned unit: the current specification grammar
+compiled to a new DFA (no compiler is vendored; the `dfa` package's runtime
+only), the current UCD, and the current override files, regenerated
+together, with `UniversalShaper` taught the new classes (RK, hieroglyph
+classes).
 
 ## Right-to-left is whole-run reversal, not bidi
 

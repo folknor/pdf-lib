@@ -65,3 +65,33 @@ describe('shaper hook dispatch', () => {
     expect(run.glyphs.map((g: any) => g.codePoints)).toEqual([[0x11191], [0x111c2]]);
   });
 });
+
+// Tibetan AA (U+0F71) is a nukta (CMBlw) per the USE specification's
+// overrides, so it precedes the vowel signs as in Unicode canonical order.
+// As a plain VBlw it came after them in the grammar, and KA + AA + I (also
+// the decomposition of U+0F73) split into a broken cluster.
+describe('USE Tibetan clusters', () => {
+  const font: any = fontkit.create(
+    fs.readFileSync('./assets/fonts/noto_serif_tibetan/NotoSerifTibetan[wght].ttf'),
+  );
+  const shape = (...cps: number[]) =>
+    font.layout(String.fromCodePoint(...cps)).glyphs.map((g: any) => g.codePoints);
+  const dotted = (...cps: number[]) =>
+    shape(...cps).some((c: number[]) => c.includes(0x25cc));
+
+  it('keeps AA before a vowel sign in one cluster', () => {
+    expect(shape(0x0f40, 0x0f71, 0x0f72)).toEqual([[0x0f40, 0x0f71], [0x0f72]]);
+    expect(shape(0x0f40, 0x0f73)).toEqual([[0x0f40, 0x0f71], [0x0f72]]);
+    for (const v of [0x0f74, 0x0f7a, 0x0f7c, 0x0f80]) {
+      expect(dotted(0x0f40, 0x0f71, v)).toBe(false);
+    }
+    expect(dotted(0x0f40, 0x0f75)).toBe(false);
+    expect(dotted(0x0f40, 0x0f81)).toBe(false);
+  });
+
+  // Known cost, until a pre-shaping canonical reorder exists: the
+  // non-canonical spelling with the vowel before AA is now broken.
+  it('breaks a vowel sign before AA', () => {
+    expect(dotted(0x0f40, 0x0f72, 0x0f71)).toBe(true);
+  });
+});

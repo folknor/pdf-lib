@@ -19,15 +19,18 @@
 //
 // Run directly to compare a UCD snapshot against use.ts:
 //   node scripts/gen-use-trie.mjs scripts/ucd-cache/9004b7fa6d
+// and with --write to also write trieUse.ts and the trieUse.ts values of
+// tests/fontkit/shaperTries.fixture.json (each code point of the written
+// blob is checked against the builder first):
+//   node scripts/gen-use-trie.mjs scripts/ucd-cache/9004b7fa6d --write
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { unzlibSync } from 'fflate';
+import { unzlibSync, zlibSync } from 'fflate';
 
 const require = createRequire(import.meta.url);
-const UnicodeTrieBuilder = require('unicode-trie/builder');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -106,7 +109,45 @@ const USE_POSITIONS = {
   SM: { Abv: ['Top'], Blw: ['Bottom'] },
 };
 
+// --- Tibetan overrides from the USE specification ---------------------------
+// The USE specification's "Overrides to Unicode categories" are the data
+// files IndicSyllabicCategory-Additional.txt and
+// IndicPositionalCategory-Additional.txt in github.com/microsoft/font-tools
+// (USE/, MIT; read at commit 9dcd14bcc9, Unicode 18). Those files are
+// written against the current USE cluster grammar and the current UCD; the
+// grammar compiled into use.ts is fontkit's older one and this trie is
+// built from Unicode 12, so the files are not applied wholesale. Doing so
+// fails outright (Duployan U+1BC9D-1BC9E Nukta + Overstruck derive a bare CM
+// that use.ts has no column for; hieroglyph classes do not exist) and breaks
+// shaping where the old grammar differs (Balinese musical symbols become CM,
+// which its symbol cluster S SM* does not accept). Only these Tibetan
+// entries are taken, each checked against use.ts's state machine:
+const TIBETAN_UISC_OVERRIDE = {
+  0x0f00: 'Consonant', // SYLLABLE OM
+  0x0f01: 'Consonant',
+  0x0f04: 'Consonant',
+  0x0f05: 'Consonant',
+  0x0f06: 'Consonant',
+  // AA as a nukta (CMBlw) so it precedes any vowel sign in the cluster, as
+  // in Unicode canonical order (ccc 129 before 130/132) and in the
+  // decompositions of U+0F73, U+0F75 and U+0F81 that UniversalShaper makes.
+  // Non-canonical I or U before AA becomes a broken cluster instead.
+  0x0f71: 'Nukta',
+  0x0f86: 'Tone_Mark',
+  0x0f87: 'Tone_Mark',
+};
+// Not taken from the Tibetan block, deliberately:
+// - U+0F7F RNAM BCAD -> Consonant_Dead (independent cluster): a following
+//   U+0F35, U+0F37 or U+0FC6 (Syllable_Modifier, FM) would then start a
+//   broken cluster (font-tools issue 19).
+// - The positional overrides U+0F72, U+0F7A-0F7D, U+0F80 -> Bottom and
+//   U+0F74 -> Top: they only swap which order of U plus an above vowel is
+//   accepted, breaking the canonical one (KA E U). Choosing belongs to a
+//   pre-shaping reorder, which does not exist yet.
+
+// --- gen-use.js's own override tables (verbatim, plus the Tibetan entries) --
 const UISC_OVERRIDE = {
+  ...TIBETAN_UISC_OVERRIDE,
   0x17dd: 'Vowel_Dependent',
   0x1ce2: 'Cantillation_Mark',
   0x1ce3: 'Cantillation_Mark',
@@ -244,6 +285,7 @@ export function buildUseTrie(ucdDir) {
   const symbols = {};
   const order = [];
   const decompositions = {};
+  const UnicodeTrieBuilder = require('unicode-trie/builder');
   const builder = new UnicodeTrieBuilder();
   const decompose = (code) => {
     const out = [];
@@ -289,4 +331,41 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const show = [0x41, 0x0915, 0x0f40, 0x0f71, 0x0f90, 0x1780, 0x17b6, 0x17c6, 0x17d2, 0x1b05, 0x1b34, 0x1b6b, 0xa984, 0xa9c0, 0x11003, 0x11046];
   console.log(show.map((cp) => `U+${cp.toString(16)}=${use.categories[trie.get(cp)]}`).join(' '));
   console.log({ highStart: trie.highStart.toString(16), dataLength: trie.data.length });
+  if (process.argv.includes('--write')) writeUseTrie(trie);
+}
+
+// Serializes in the format read by src/vendors/unicode-properties/
+// UnicodeTrie.ts: base64( zlib( u32le highStart | u32le errorValue |
+// u32le data[] ) ). The blob is decoded again and every code point compared
+// with the builder's lookup before anything is written.
+function writeUseTrie(trie) {
+  const bytes = new Uint8Array(8 + trie.data.length * 4);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(0, trie.highStart >>> 0, true);
+  view.setUint32(4, trie.errorValue >>> 0, true);
+  for (let i = 0; i < trie.data.length; i++) view.setUint32(8 + i * 4, trie.data[i], true);
+  const b64 = Buffer.from(zlibSync(bytes, { level: 9 })).toString('base64');
+
+  const raw = unzlibSync(Buffer.from(b64, 'base64'));
+  const rv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+  const data = new Uint32Array((raw.length - 8) / 4);
+  for (let i = 0; i < data.length; i++) data[i] = rv.getUint32(8 + i * 4, true);
+  const UnicodeTrie = require('unicode-trie');
+  const decoded = new UnicodeTrie({
+    data,
+    highStart: rv.getUint32(0, true),
+    errorValue: rv.getUint32(4, true),
+  });
+  for (let cp = 0; cp <= 0x10ffff; cp++) {
+    if (decoded.get(cp) !== trie.get(cp)) {
+      throw new Error(`re-decoded blob differs at U+${cp.toString(16)}`);
+    }
+  }
+
+  writeFileSync(join(root, 'src/fontkit/opentype/shapers/trieUse.ts'), `export default '${b64}';\n`);
+  const fixturePath = join(root, 'tests/fontkit/shaperTries.fixture.json');
+  const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
+  fixture.values['trieUse.ts'] = fixture.codePoints.map((cp) => trie.get(cp));
+  writeFileSync(fixturePath, `${JSON.stringify(fixture)}\n`);
+  console.log('wrote trieUse.ts and the fixture trieUse.ts values');
 }
