@@ -1,4 +1,4 @@
-import type { EncodedText } from '../../core/index.js';
+import type { EncodedText, TextSpacing } from '../../core/index.js';
 import { cleanText, lineSplit, mergeLines } from '../../utils/index.js';
 import { CombedTextLayoutError } from '../errors.js';
 import type PDFFont from '../PDFFont.js';
@@ -67,11 +67,12 @@ const computeCombedFontSize = (
   font: PDFFont,
   bounds: LayoutBounds,
   cellCount: number,
+  spacing?: TextSpacing,
 ) =>
   computeFontSize(
     (size) =>
       clusters.map((cluster) => ({
-        width: font.widthOfTextAtSize(cluster, size),
+        width: font.widthOfTextAtSize(cluster, size, spacing),
       })),
     (size) => font.heightAtSize(size, { descender: false }),
     // Retain the comb's 25% horizontal padding.
@@ -84,6 +85,7 @@ export interface LayoutTextOptions {
   fontSize: number | undefined;
   font: PDFFont;
   bounds: LayoutBounds;
+  spacing?: TextSpacing | undefined;
 }
 
 export interface MultilineTextLayout {
@@ -98,6 +100,7 @@ const splitOutLines = (
   maxWidth: number,
   font: PDFFont,
   fontSize: number,
+  spacing?: TextSpacing,
 ) => {
   // Semantics: the candidate cut points are the start of every whitespace run
   // (including index 0) and the end of the input. Each candidate is measured
@@ -144,7 +147,11 @@ const splitOutLines = (
   const widthUpTo = (end: number) => {
     let width = widths.get(end);
     if (width === undefined) {
-      width = font.widthOfTextAtSize(input.substring(0, end), fontSize);
+      width = font.widthOfTextAtSize(
+        input.substring(0, end),
+        fontSize,
+        spacing,
+      );
       widths.set(end, width);
     }
     return width;
@@ -180,6 +187,7 @@ const wrapLines = (
   maxWidth: number,
   font: PDFFont,
   fontSize: number,
+  spacing?: TextSpacing,
 ) => {
   const wrapped: { line: string; width: number }[] = [];
   for (const paragraph of lines) {
@@ -190,6 +198,7 @@ const wrapLines = (
         maxWidth,
         font,
         fontSize,
+        spacing,
       );
       wrapped.push({ line, width });
       // Only trim lines that we had to split ourselves. So we won't trim lines
@@ -202,13 +211,13 @@ const wrapLines = (
 
 export const layoutMultilineText = (
   text: string,
-  { alignment, fontSize, font, bounds }: LayoutTextOptions,
+  { alignment, fontSize, font, bounds, spacing }: LayoutTextOptions,
 ): MultilineTextLayout => {
   const lines = lineSplit(cleanText(text));
 
   if (fontSize === undefined || fontSize === 0) {
     fontSize = computeFontSize(
-      (size) => wrapLines(lines, bounds.width, font, size),
+      (size) => wrapLines(lines, bounds.width, font, size, spacing),
       (size, count) => {
         const height = font.heightAtSize(size);
         return (height + height * 0.2) * count;
@@ -232,8 +241,16 @@ export const layoutMultilineText = (
     bounds.width,
     font,
     fontSize,
+    spacing,
   )) {
-    const encoded = font.encodeText(line);
+    const raw = font.encodeText(line);
+    const encoded = spacing
+      ? raw.withSpacing(
+          spacing.characterSpacing ?? 0,
+          spacing.wordSpacing ?? 0,
+          fontSize,
+        )
+      : raw;
 
     // prettier-ignore
     const x =
@@ -273,6 +290,7 @@ export interface LayoutCombedTextOptions {
   font: PDFFont;
   bounds: LayoutBounds;
   cellCount: number;
+  spacing?: TextSpacing | undefined;
 }
 
 export interface CombedTextLayout {
@@ -283,7 +301,7 @@ export interface CombedTextLayout {
 
 export const layoutCombedText = (
   text: string,
-  { fontSize, font, bounds, cellCount }: LayoutCombedTextOptions,
+  { fontSize, font, bounds, cellCount, spacing }: LayoutCombedTextOptions,
 ): CombedTextLayout => {
   const line = mergeLines(cleanText(text));
 
@@ -297,7 +315,13 @@ export const layoutCombedText = (
   }
 
   if (fontSize === undefined || fontSize === 0) {
-    fontSize = computeCombedFontSize(clusters, font, bounds, cellCount);
+    fontSize = computeCombedFontSize(
+      clusters,
+      font,
+      bounds,
+      cellCount,
+      spacing,
+    );
   }
 
   const cellWidth = bounds.width / cellCount;
@@ -316,8 +340,15 @@ export const layoutCombedText = (
   while (cellOffset < cellCount) {
     const char = clusters[cellOffset] ?? '';
 
-    const encoded = font.encodeText(char);
-    const width = font.widthOfTextAtSize(char, fontSize);
+    const raw = font.encodeText(char);
+    const encoded = spacing
+      ? raw.withSpacing(
+          spacing.characterSpacing ?? 0,
+          spacing.wordSpacing ?? 0,
+          fontSize,
+        )
+      : raw;
+    const width = font.widthOfTextAtSize(char, fontSize, spacing);
 
     const cellCenter = bounds.x + (cellWidth * cellOffset + cellWidth / 2);
     const x = cellCenter - width / 2;
@@ -349,6 +380,7 @@ export interface LayoutSinglelineTextOptions {
   fontSize: number | undefined;
   font: PDFFont;
   bounds: LayoutBounds;
+  spacing?: TextSpacing | undefined;
 }
 
 export interface SinglelineTextLayout {
@@ -359,20 +391,27 @@ export interface SinglelineTextLayout {
 
 export const layoutSinglelineText = (
   text: string,
-  { alignment, fontSize, font, bounds }: LayoutSinglelineTextOptions,
+  { alignment, fontSize, font, bounds, spacing }: LayoutSinglelineTextOptions,
 ): SinglelineTextLayout => {
   const line = mergeLines(cleanText(text));
 
   if (fontSize === undefined || fontSize === 0) {
     fontSize = computeFontSize(
-      (size) => [{ width: font.widthOfTextAtSize(line, size) }],
+      (size) => [{ width: font.widthOfTextAtSize(line, size, spacing) }],
       (size) => font.heightAtSize(size, { descender: false }),
       bounds,
     );
   }
 
-  const encoded = font.encodeText(line);
-  const width = font.widthOfTextAtSize(line, fontSize);
+  const raw = font.encodeText(line);
+  const encoded = spacing
+    ? raw.withSpacing(
+        spacing.characterSpacing ?? 0,
+        spacing.wordSpacing ?? 0,
+        fontSize,
+      )
+    : raw;
+  const width = font.widthOfTextAtSize(line, fontSize, spacing);
   const height = font.heightAtSize(fontSize, { descender: false });
 
   // prettier-ignore

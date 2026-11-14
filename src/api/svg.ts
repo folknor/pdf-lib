@@ -52,6 +52,8 @@ type InheritedAttributes = {
   fontStyle: string | undefined;
   fontWeight: string | undefined;
   fontSize: number | undefined;
+  characterSpacing: number | undefined;
+  wordSpacing: number | undefined;
   rotation: Degrees | undefined;
   viewBox: Box;
   blendMode: BlendMode | undefined;
@@ -289,6 +291,10 @@ const runnersToPage = (
     const textWidth = (font || page.getFont()[0]).widthOfTextAtSize(
       text,
       fontSize,
+      {
+        characterSpacing: element.svgAttributes.characterSpacing ?? 0,
+        wordSpacing: element.svgAttributes.wordSpacing ?? 0,
+      },
     );
 
     const textHeight = (font || page.getFont()[0]).heightAtSize(fontSize);
@@ -335,6 +341,8 @@ const runnersToPage = (
       ...(font !== undefined && { font }),
       // TODO: the font size should be correctly scaled too
       size: fontSize,
+      characterSpacing: element.svgAttributes.characterSpacing ?? 0,
+      wordSpacing: element.svgAttributes.wordSpacing ?? 0,
       ...(element.svgAttributes.fill !== undefined && {
         color: element.svgAttributes.fill,
       }),
@@ -691,11 +699,20 @@ const parseAttributes = (
     inherited.height,
   );
 
+  const spacingValue = (name: string, fallback: number | undefined) => {
+    const value = styleOrAttribute(attributes, style, name);
+    return value === 'normal' ? 0 : (parseFloatValue(value) ?? fallback);
+  };
   const newInherited: InheritedAttributes = {
     fontFamily: fontFamilyRaw || inherited.fontFamily,
     fontStyle: fontStyleRaw || inherited.fontStyle,
     fontWeight: fontWeightRaw || inherited.fontWeight,
     fontSize: parseFloatValue(fontSizeRaw) ?? inherited.fontSize,
+    characterSpacing: spacingValue(
+      'letter-spacing',
+      inherited.characterSpacing,
+    ),
+    wordSpacing: spacingValue('word-spacing', inherited.wordSpacing),
     color: currentColor,
     fill: fill.color,
     fillCurrentColor: fill.currentColor,
@@ -1175,6 +1192,8 @@ const parse = (
       fontStyle: undefined,
       fontWeight: undefined,
       fontSize: undefined,
+      characterSpacing: undefined,
+      wordSpacing: undefined,
       rotation: undefined,
       blendMode: undefined,
     },

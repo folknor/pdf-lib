@@ -1606,3 +1606,21 @@ describe('Complex SVG structures', () => {
     expect(text).toContain('cm');
   });
 });
+
+describe('SVG text spacing', () => {
+  it('inherits spacing, applies style overrides and measures anchors with it', async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const draw = vi.spyOn(page, 'drawText');
+    page.drawSvg('<svg width="300" height="100"><g letter-spacing="2" word-spacing="4"><text font-family="test" font-size="12" text-anchor="end" style="letter-spacing: -1">A A</text><text letter-spacing="normal" word-spacing="normal">AB</text></g></svg>', { fonts: { test: font } });
+    expect(draw.mock.calls[0]![1]).toMatchObject({
+      characterSpacing: -1, wordSpacing: 4,
+      x: -font.widthOfTextAtSize('A A', 12, { characterSpacing: -1, wordSpacing: 4 }),
+    });
+    expect(draw.mock.calls[1]![1]).toMatchObject({ characterSpacing: 0, wordSpacing: 0 });
+    const content = getAllContentStreamText(page);
+    expect(content).toContain('TJ');
+    expect(content).not.toMatch(/\sT[cw]\b/);
+  });
+});

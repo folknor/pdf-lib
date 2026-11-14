@@ -5,27 +5,6 @@ API built on them (`attach`, `detach`, `PDFEmbeddedFile`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## Mutating a document while its save is suspended is unguarded
-
-`flush()` awaits each embeddable in turn (`PDFDocument.embedAll`), and an
-embed awaits its embedder before publishing. A `detach()`, `embedFacturX()`,
-`attach()` or second `save()` made during that await is not coordinated
-with it: a suspended attachment that `detach()` or `embedFacturX()` dropped
-from the pending list still publishes itself (or, now that duplicate names
-are refused at embed time, throws out of the save); two overlapping saves
-both embed the same pending item; and `embedAll` reads the live array by
-an index bounded by its starting length, so a splice during the await can
-skip an item or reach past the end. Sequential use is unaffected. A fix
-needs a pending item that can be cancelled, embeds that are shared per item
-rather than repeated, and iteration over a snapshot, or a refusal of
-mutation while a flush is in progress.
-
-## Form field layout and drawSvg apply no character or word spacing
-
-`drawText` takes `characterSpacing`/`wordSpacing` and draws them per source
-cluster (`EncodedText.withSpacing`), but form field appearances
-(`src/api/text/layout.ts`) and `drawSvg` have no spacing options at all.
-
 ## ActualText recovers typed text per cluster, not line order or every reader
 
 `CustomFontEmbedder.encodeText` wraps each source cluster whose glyphs'

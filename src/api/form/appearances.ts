@@ -1,3 +1,5 @@
+import { parseContentStream } from '../../core/content/ContentStreamParser.js';
+import type { TextSpacing } from '../../core/embedders/EncodedText.js';
 import type { PDFOperator, PDFWidgetAnnotation } from '../../core/index.js';
 import { findLastMatch } from '../../utils/index.js';
 import {
@@ -115,6 +117,38 @@ export const normalizeAppearance = <T extends object>(
   return { normal: appearance };
 };
 
+// Read operators rather than matching text inside comments, names or strings.
+const getDefaultSpacing = (field: {
+  getDefaultAppearance(): string | undefined;
+}): TextSpacing | undefined => {
+  const da = field.getDefaultAppearance();
+  if (!da) return undefined;
+  let spacing: TextSpacing | undefined;
+  for (const { operator, operands } of parseContentStream(
+    Uint8Array.from(da, (char) => char.charCodeAt(0)),
+  ).operations) {
+    if (
+      (operator === 'Tc' || operator === 'Tw') &&
+      operands.length === 1 &&
+      typeof operands[0] === 'number'
+    ) {
+      spacing ??= {};
+      spacing[operator === 'Tc' ? 'characterSpacing' : 'wordSpacing'] =
+        operands[0];
+    }
+  }
+  return spacing;
+};
+
+const fieldSpacing = (
+  widget: PDFWidgetAnnotation,
+  field: { getDefaultAppearance(): string | undefined },
+) => {
+  const base = getDefaultSpacing(field);
+  const override = getDefaultSpacing(widget);
+  return base || override ? { ...base, ...override } : undefined;
+};
+
 // Examples:
 //   `/Helv 12 Tf` -> ['/Helv 12 Tf', 'Helv', '12']
 //   `/HeBo 8.00 Tf` -> ['/HeBo 8 Tf', 'HeBo', '8.00']
@@ -159,12 +193,22 @@ const getDefaultColor = (field: {
 };
 
 const updateDefaultAppearance = (
-  field: { setDefaultAppearance(appearance: string): void },
+  field: {
+    setDefaultAppearance(appearance: string): void;
+    getDefaultAppearance(): string | undefined;
+  },
   color: Color,
   font?: PDFFont,
   fontSize: number = 0,
 ) => {
+  const spacing = getDefaultSpacing(field);
   const da = [
+    ...(spacing?.characterSpacing !== undefined
+      ? [`${spacing.characterSpacing} Tc`]
+      : []),
+    ...(spacing?.wordSpacing !== undefined
+      ? [`${spacing.wordSpacing} Tw`]
+      : []),
     setFillingColor(color).toString(),
     setFontAndSize(font?.name ?? 'dummy__noop', fontSize).toString(),
   ].join('\n');
@@ -340,6 +384,7 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
   const fieldColor = getDefaultColor(button.acroField);
   const widgetFontSize = getDefaultFontSize(widget);
   const fieldFontSize = getDefaultFontSize(button.acroField);
+  const spacing = fieldSpacing(widget, button.acroField);
 
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
@@ -368,12 +413,14 @@ export const defaultButtonAppearanceProvider: AppearanceProviderFor<
   };
   const normalLayout = layoutSinglelineText(normalText, {
     alignment: TextAlignment.Center,
+    spacing,
     fontSize: widgetFontSize ?? fieldFontSize,
     font,
     bounds,
   });
   const downLayout = layoutSinglelineText(downText, {
     alignment: TextAlignment.Center,
+    spacing,
     fontSize: widgetFontSize ?? fieldFontSize,
     font,
     bounds,
@@ -428,6 +475,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   const fieldColor = getDefaultColor(textField.acroField);
   const widgetFontSize = getDefaultFontSize(widget);
   const fieldFontSize = getDefaultFontSize(textField.acroField);
+  const spacing = fieldSpacing(widget, textField.acroField);
 
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
@@ -460,6 +508,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   if (textField.isMultiline()) {
     const layout = layoutMultilineText(text, {
       alignment: textField.getAlignment(),
+      spacing,
       fontSize: widgetFontSize ?? fieldFontSize,
       font,
       bounds,
@@ -468,6 +517,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
     fontSize = layout.fontSize;
   } else if (textField.isCombed()) {
     const layout = layoutCombedText(text, {
+      spacing,
       fontSize: widgetFontSize ?? fieldFontSize,
       font,
       bounds,
@@ -478,6 +528,7 @@ export const defaultTextFieldAppearanceProvider: AppearanceProviderFor<
   } else {
     const layout = layoutSinglelineText(text, {
       alignment: textField.getAlignment(),
+      spacing,
       fontSize: widgetFontSize ?? fieldFontSize,
       font,
       bounds,
@@ -522,6 +573,7 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   const fieldColor = getDefaultColor(dropdown.acroField);
   const widgetFontSize = getDefaultFontSize(widget);
   const fieldFontSize = getDefaultFontSize(dropdown.acroField);
+  const spacing = fieldSpacing(widget, dropdown.acroField);
 
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
@@ -550,6 +602,7 @@ export const defaultDropdownAppearanceProvider: AppearanceProviderFor<
   };
   const { line, fontSize } = layoutSinglelineText(text, {
     alignment: TextAlignment.Left,
+    spacing,
     fontSize: widgetFontSize ?? fieldFontSize,
     font,
     bounds,
@@ -591,6 +644,7 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
   const fieldColor = getDefaultColor(optionList.acroField);
   const widgetFontSize = getDefaultFontSize(widget);
   const fieldFontSize = getDefaultFontSize(optionList.acroField);
+  const spacing = fieldSpacing(widget, optionList.acroField);
 
   const rectangle = widget.getRectangle();
   const ap = widget.getAppearanceCharacteristics();
@@ -627,6 +681,7 @@ export const defaultOptionListAppearanceProvider: AppearanceProviderFor<
   };
   const { lines, fontSize, lineHeight } = layoutMultilineText(text, {
     alignment: TextAlignment.Left,
+    spacing,
     fontSize: widgetFontSize ?? fieldFontSize,
     font,
     bounds,
