@@ -47,7 +47,7 @@ export default class GSUBProcessor extends OTProcessor {
           if (sequence.length === 0) {
             // If the sequence length is zero, delete the glyph.
             // The OpenType spec disallows this, but seems like Harfbuzz and Uniscribe allow it.
-            this.glyphs.splice(this.glyphIterator.index, 1);
+            this.replaceGlyph(this.glyphIterator.index, []);
             return true;
           }
 
@@ -73,7 +73,10 @@ export default class GSUBProcessor extends OTProcessor {
               return glyph;
             });
 
-          this.glyphs.splice(this.glyphIterator.index + 1, 0, ...replacement);
+          this.replaceGlyph(this.glyphIterator.index, [
+            curGlyph,
+            ...replacement,
+          ]);
           return true;
         }
 
@@ -109,7 +112,7 @@ export default class GSUBProcessor extends OTProcessor {
 
         for (const ligature of table.ligatureSets.get(index)) {
           const matched = this.sequenceMatchIndices(1, ligature.components);
-          if (!matched || matched === true) {
+          if (!matched) {
             continue;
           }
 
@@ -224,9 +227,12 @@ export default class GSUBProcessor extends OTProcessor {
             }
           }
 
-          // Delete the matched glyphs, and replace the current glyph with the ligature glyph
+          // Delete the matched glyphs, and replace the current glyph with the
+          // ligature glyph. Applied directly by the pass, the ligature
+          // consumes up to its last component.
+          this.consumedTo(lastMatched + 1);
           for (let i = matched.length - 1; i >= 0; i--) {
-            this.glyphs.splice(matched[i]!, 1);
+            this.replaceGlyph(matched[i]!, []);
           }
 
           this.glyphs[this.glyphIterator.index] = ligatureGlyph;

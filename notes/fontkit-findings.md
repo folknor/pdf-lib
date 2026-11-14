@@ -115,18 +115,6 @@ ToUnicode maps an encoded glyph to the text it was drawn for, so the PUA
 glyphs then extract as the Thai marks, not as the private-use code points
 the cmap maps to them.
 
-## Contextual lookup records are retargeted by rewalking the edited buffer
-
-`OTProcessor.applyLookupList` finds each record's `sequenceIndex` by
-resetting to the rule's start and stepping through the buffer as earlier
-records left it, under the outer lookup's skip rules. The spec defines
-sequence indexes against the input sequence as matched. Once an earlier
-record changes which glyphs the outer rules skip (a substitution moving a
-mark out of the outer mark filtering set or attachment class, or into a
-skipped glyph class) or inserts or deletes glyphs (multiple, ligature), later
-records land on the wrong glyph. Fixing it means recording the matched
-positions in `match` and carrying them through each nested edit.
-
 ## A lookup shared by two features runs once per feature
 
 `OTProcessor.lookupsForFeatures` emits one entry per feature and lookup
