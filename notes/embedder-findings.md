@@ -14,14 +14,6 @@ entry, so which same-named attachment a viewer shows is reader-dependent.
 `addJavaScript()` documents its name as "unique per document" but does not
 enforce it, against saved or pending scripts.
 
-## embedFacturX() refuses /Kids attachment trees
-
-`attach()` and `detach()` edit `/Kids` trees through `src/api/nameTree.ts`,
-but `planFacturXAttachment()` (`src/api/facturx.ts`) still refuses any tree
-that is not a flat root, since it plans its own atomic rewrite of the root
-`/Names` array. Moving it onto the shared copy-on-write remover/inserter
-would let it handle `/Kids` trees too.
-
 ## attach() knows nothing of PDF/A
 
 PDF/A-1 forbids embedded files, PDF/A-2 allows only PDF/A files, and PDF/A-3

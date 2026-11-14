@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { checkNameTree, readNameTree } from '../../src/api/nameTree';
 import { XmpPacket } from '../../src/core/metadata/xmp';
 import {
   AFRelationship,
@@ -178,6 +179,97 @@ describe('embedFacturX', () => {
     },
   );
 
+  it.each([false, true])(
+    'inserts or replaces an invoice in a /Kids leaf (replace: %s)',
+    async (replace) => {
+      const doc = await newDoc();
+      await doc.attach(new Uint8Array([1]), 'a.bin');
+      if (replace) doc.embedFacturX(EN16931, { afRelationship: AFRelationship.Data });
+      await doc.attach(new Uint8Array([2]), 'z.bin');
+      await doc.flush();
+      const ctx = doc.context;
+      const names = doc.catalog.lookup(PDFName.of('Names'), PDFDict);
+      const entries = readNameTree(names.lookup(PDFName.of('EmbeddedFiles'), PDFDict));
+      const leaf = (items: typeof entries) => {
+        const array = ctx.register(ctx.obj(items.flatMap(({ key, value }) => [key, value])));
+        const limits = ctx.register(ctx.obj([items[0]!.key, items[items.length - 1]!.key]));
+        const dict = ctx.obj({ Names: array, Limits: limits });
+        return { dict, ref: ctx.register(dict), array, limits };
+      };
+      const left = leaf(entries.slice(0, -1));
+      const right = leaf(entries.slice(-1));
+      const kids = ctx.register(ctx.obj([left.ref, right.ref]));
+      const root = ctx.obj({ Kids: kids });
+      const rootRef = ctx.register(root);
+      names.set(PDFName.of('EmbeddedFiles'), rootRef);
+      const namesRef = ctx.register(names);
+      doc.catalog.set(PDFName.of('Names'), namesRef);
+      const oldInvoice = entries.find(({ key }) => key.decodeText() === 'factur-x.xml')?.value;
+      const oldStream = oldInvoice && ctx.lookup(oldInvoice, PDFDict)
+        .lookup(PDFName.of('EF'), PDFDict).get(PDFName.of('F'));
+      const before = [names, root, left.dict, right.dict].map((obj) => obj.toString());
+
+      doc.embedFacturX(BASIC_WL);
+
+      const updated = doc.catalog.lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      checkNameTree(updated);
+      expect(updated.has(PDFName.of('Kids'))).toBe(true);
+      expect(updated.lookup(PDFName.of('Kids'), PDFArray).get(1)).toBe(right.ref);
+      expect([names, root, left.dict, right.dict].map((obj) => obj.toString())).toEqual(before);
+      for (const ref of [namesRef, rootRef, kids, left.ref, left.array, left.limits]) {
+        expect(ctx.lookup(ref)).toBeUndefined();
+      }
+      expect(ctx.lookup(right.ref)).toBe(right.dict);
+      if (oldInvoice) {
+        expect(ctx.lookup(oldInvoice)).toBeUndefined();
+        expect(ctx.lookup(oldStream)).toBeUndefined();
+      }
+      const saved = await roundTrip(doc);
+      expect(saved.getAttachments().map((a) => a.name).sort()).toEqual([
+        'a.bin', 'factur-x.xml', 'z.bin',
+      ]);
+      const attachment = saved.getAttachments().find((a) => a.name === 'factur-x.xml')!;
+      expect(new TextDecoder().decode(attachment.data)).toBe(BASIC_WL);
+      expect(saved.catalog.lookup(PDFName.of('AF'), PDFArray).size()).toBe(3);
+    },
+  );
+
+  it.each(['limits', 'duplicate', 'non-filespec', 'xrechnung', 'AF'])(
+    'refuses a /Kids tree with invalid %s without changing any objects',
+    async (invalid) => {
+      const doc = await newDoc();
+      const ctx = doc.context;
+      const spec = (name: string) => ctx.register(ctx.obj({
+        Type: 'Filespec', F: PDFHexString.fromText(name),
+      }));
+      const key = (name: string) => PDFHexString.fromText(name);
+      const first = ctx.register(ctx.obj({
+        Names: [key('factur-x.xml'), spec('factur-x.xml')],
+        Limits: [key('factur-x.xml'), key('factur-x.xml')],
+      }));
+      const lastKey = invalid === 'duplicate' ? 'factur-x.xml' : 'z.bin';
+      const lastSpec = invalid === 'non-filespec' ? ctx.register(ctx.obj(42))
+        : spec(invalid === 'xrechnung' ? 'xrechnung.xml' : 'z.bin');
+      const last = ctx.register(ctx.obj({
+        Names: [key(lastKey), lastSpec],
+        Limits: invalid === 'limits' ? [key(lastKey)] : [key(lastKey), key(lastKey)],
+      }));
+      doc.catalog.set(PDFName.of('Names'), ctx.register(ctx.obj({
+        EmbeddedFiles: ctx.register(ctx.obj({ Kids: [first, last] })),
+      })));
+      if (invalid === 'AF') doc.catalog.set(PDFName.of('AF'), ctx.obj(42));
+      const snapshot = () => ctx.enumerateIndirectObjects()
+        .map(([ref, obj]) => [ref.toString(), obj.toString()]);
+      const before = snapshot();
+      const largest = ctx.largestObjectNumber;
+      expect(() => doc.embedFacturX(BASIC_WL)).toThrow();
+      expect(snapshot()).toEqual(before);
+      expect(ctx.largestObjectNumber).toBe(largest);
+      expect(doc.catalog.get(PDFName.of('Metadata'))).toBeUndefined();
+    },
+  );
+
   it('completes an existing fx schema and keeps an existing 3U declaration', async () => {
     const doc = await newDoc();
     doc.declarePDFA({ part: 3, conformance: 'U' });
@@ -255,7 +347,7 @@ describe('embedFacturX', () => {
     expect(doc.getAttachments()).toHaveLength(0);
   });
 
-  it('refuses other PDF/A parts, encryption and /Kids trees, changing nothing', async () => {
+  it('refuses other PDF/A parts and encryption, changing nothing', async () => {
     const pdfa2 = await newDoc();
     pdfa2.declarePDFA({ part: 2, conformance: 'B' });
     expect(() =>
@@ -268,15 +360,7 @@ describe('embedFacturX', () => {
       encrypted.embedFacturX(EN16931, { afRelationship: AFRelationship.Data }),
     ).toThrow(/encrypt/);
 
-    const kids = await newDoc();
-    kids.catalog.set(
-      PDFName.of('Names'),
-      kids.context.obj({ EmbeddedFiles: kids.context.obj({ Kids: [] }) }),
-    );
-    expect(() =>
-      kids.embedFacturX(EN16931, { afRelationship: AFRelationship.Data }),
-    ).toThrow(/Kids/);
-    expect(kids.catalog.get(PDFName.of('Metadata'))).toBeUndefined();
+
   });
 
   it('refuses legacy ZUGFeRD XMP and an xrechnung.xml attachment', async () => {

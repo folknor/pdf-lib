@@ -13,7 +13,12 @@ import {
   type FacturXProfile,
 } from '../core/metadata/facturx.js';
 import { collectUnreferenced } from './detach.js';
-import { isWritableFlatNameTree, sortNameTreeNames } from './nameTree.js';
+import {
+  checkNameTree,
+  insertIntoNameTree,
+  readNameTree,
+  removeFromNameTree,
+} from './nameTree.js';
 
 export interface EmbedFacturXOptions {
   /**
@@ -116,14 +121,7 @@ export const planFacturXAttachment = (
   if (efValue !== undefined && !(efValue instanceof PDFDict)) {
     throw refusal('/EmbeddedFiles is not a dictionary');
   }
-  // attach() and detach() edit /Kids trees through nameTree.ts; the
-  // invoice replacement here is still flat-only by choice, since it plans
-  // its own atomic rewrite of the root /Names array.
-  if (efValue && !isWritableFlatNameTree(efValue)) {
-    throw refusal(
-      'the /EmbeddedFiles name tree has /Kids or a malformed /Names array, which embedFacturX does not rewrite',
-    );
-  }
+  if (efValue) checkNameTree(efValue);
   if (efValue?.has(Limits)) {
     const limits = efValue.lookup(Limits);
     if (
@@ -135,7 +133,6 @@ export const planFacturXAttachment = (
       throw refusal('the /EmbeddedFiles /Limits is malformed');
     }
   }
-  const oldNames = efValue?.lookup(Names);
   const pairs: { key: PDFString | PDFHexString; value: PDFRef }[] = [];
   const seen = new Set<string>();
   const invoices = new Set<PDFRef>();
@@ -155,18 +152,14 @@ export const planFacturXAttachment = (
     }
     if (names.includes(FACTUR_X_FILE_NAME)) invoices.add(ref);
   };
-  if (oldNames instanceof PDFArray) {
-    for (let i = 0; i < oldNames.size(); i += 2) {
-      const key = oldNames.get(i) as PDFString | PDFHexString;
-      const text = key.decodeText();
-      if (seen.has(text)) {
-        throw refusal(`the /EmbeddedFiles name tree has ${text} twice`);
-      }
-      seen.add(text);
-      const value = oldNames.get(i + 1);
-      checkSpec(value, 'the /EmbeddedFiles name tree');
-      pairs.push({ key, value: value as PDFRef });
+  for (const { key, value } of efValue ? readNameTree(efValue) : []) {
+    const text = key.decodeText();
+    if (seen.has(text)) {
+      throw refusal(`the /EmbeddedFiles name tree has ${text} twice`);
     }
+    seen.add(text);
+    checkSpec(value, 'the /EmbeddedFiles name tree');
+    pairs.push({ key, value: value as PDFRef });
   }
   for (const { key, value } of pairs) {
     classify(value, context.lookup(value) as PDFDict, key.decodeText());
@@ -213,22 +206,20 @@ export const planFacturXAttachment = (
     spec.set(PDFName.of('EF'), context.obj({ F: context.register(stream) }));
     const specRef = context.register(spec);
 
-    const names = context.obj([]);
-    for (const { key, value } of pairs) {
-      if (invoices.has(value)) continue;
-      names.push(key);
-      names.push(value);
-    }
-    names.push(PDFHexString.fromText(FACTUR_X_FILE_NAME));
-    names.push(specRef);
-    sortNameTreeNames(names);
-    const ef = efValue ? efValue.clone(context) : context.obj({});
-    ef.set(Names, names);
-    if (ef.has(Limits)) {
-      ef.set(Limits, context.obj([names.get(0), names.get(names.size() - 2)]));
-    }
+    const invoiceKeys = new Set(
+      pairs.filter(({ value }) => invoices.has(value)).map(({ key }) => key),
+    );
+    const removed = efValue
+      ? removeFromNameTree(context, efValue, (key) => invoiceKeys.has(key))
+      : undefined;
+    const inserted = insertIntoNameTree(
+      context,
+      removed?.root ?? efValue ?? context.obj({}),
+      PDFHexString.fromText(FACTUR_X_FILE_NAME),
+      specRef,
+    );
     const namesDict = namesValue ? namesValue.clone(context) : context.obj({});
-    namesDict.set(EmbeddedFiles, ef);
+    namesDict.set(EmbeddedFiles, inserted.root);
     catalog.set(Names, namesDict);
 
     const af = context.obj(afRefs.filter((r) => !invoices.has(r)));
@@ -237,7 +228,11 @@ export const planFacturXAttachment = (
 
     // Replaced indirect containers can otherwise keep an unlinked invoice
     // alive. Collect them too, while preserving any shared container graph.
-    const roots = [...invoices];
+    const roots = [
+      ...invoices,
+      ...(removed?.displaced ?? []),
+      ...inserted.displaced,
+    ];
     for (const value of [
       catalogNames,
       namesValue?.get(EmbeddedFiles),
