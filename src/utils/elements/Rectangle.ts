@@ -58,8 +58,8 @@ export default class Rectangle extends GraphElement {
     const { x, y } = this.getCoords();
     const end = this.getEnd().toCoords();
     const { x: Px, y: Py } = P.toCoords();
-    const Hx = Px < x ? x : Px > end.x ? end.x : Px;
-    const Hy = Py > y ? y : Py < end.y ? end.y : Py;
+    const Hx = Px < x ? x : Math.min(Px, end.x);
+    const Hy = Py > y ? y : Math.max(Py, end.y);
     return new Point({ x: Hx, y: Hy });
   }
 }
