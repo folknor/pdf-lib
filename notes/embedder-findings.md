@@ -5,24 +5,22 @@ API built on them (`attach`, `detach`, `PDFEmbeddedFile`). Each entry stands
 alone; remove it when it is fixed or ruled against (leaving a comment at the
 code site in the second case).
 
-## An attachment can land in /AF but not in the attachments name tree
+## Duplicate names are appended, not refused
 
-`PDFEmbeddedFile.embed()` ignores the result of `addNameTreeEntry()`, which
-refuses an `/EmbeddedFiles` tree with `/Kids` or a malformed `/Names` array.
-The file specification is then still pushed onto the catalog `/AF` and the
-file is marked embedded, so it is in the document but missing from the
-attachments panel and from `getAttachments()`, silently, at save time.
-`attach()` should check the tree when called and throw (as `embedFacturX()`
-does before changing anything), or the tree helper should learn `/Kids`.
+`attach()` and `addJavaScript()` both append a pair whose key equals an
+existing one (the name tree writer in `src/api/nameTree.ts` inserts after
+equal keys). A reader that binary-searches the tree may then find either
+entry, so which same-named attachment a viewer shows is reader-dependent.
+`addJavaScript()` documents its name as "unique per document" but does not
+enforce it, against saved or pending scripts.
 
-## Attachments in a /Kids name tree are invisible
+## embedFacturX() refuses /Kids attachment trees
 
-`getAttachments()` and `detach()` read only the flat `/Names` array of the
-catalog `/EmbeddedFiles` node, so a document whose attachments tree uses
-`/Kids` reports no saved attachments and `detach()` silently removes
-nothing. `getAttachments()` also decodes every attachment, so one
-unreadable stream makes the whole call throw (`detach()` no longer depends
-on it).
+`attach()` and `detach()` edit `/Kids` trees through `src/api/nameTree.ts`,
+but `planFacturXAttachment()` (`src/api/facturx.ts`) still refuses any tree
+that is not a flat root, since it plans its own atomic rewrite of the root
+`/Names` array. Moving it onto the shared copy-on-write remover/inserter
+would let it handle `/Kids` trees too.
 
 ## attach() knows nothing of PDF/A
 

@@ -19,6 +19,7 @@ import {
   PDFNumber,
   PDFPage,
   PDFRawStream,
+  type PDFRef,
   PDFString,
   PrintScaling,
   ReadingDirection,
@@ -908,13 +909,12 @@ describe('PDFDocument', () => {
       expect(names).toEqual(['alpha', 'middle', 'zebra']);
     });
 
-    it('does not add Names alongside an existing Kids JavaScript tree', async () => {
+    it('adds into an existing Kids JavaScript tree, keeping its structure', async () => {
       const pdfDoc = await PDFDocument.create();
-      const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
-      pdfDoc.catalog.set(
-        PDFName.of('Names'),
-        pdfDoc.context.obj({ JavaScript: { Kids: [leafRef] } }),
-      );
+      const ctx = pdfDoc.context;
+      const a = PDFHexString.fromText('a');
+      const leafRef = ctx.register(ctx.obj({ Names: [a, ctx.obj({})], Limits: [a, a] }));
+      pdfDoc.catalog.set(PDFName.of('Names'), ctx.obj({ JavaScript: { Kids: [leafRef] } }));
 
       pdfDoc.addJavaScript('newScript', 'console.println("x");');
       await pdfDoc.flush();
@@ -922,8 +922,20 @@ describe('PDFDocument', () => {
       const Javascript = pdfDoc.catalog
         .lookup(PDFName.of('Names'), PDFDict)
         .lookup(PDFName.of('JavaScript'), PDFDict);
-      expect(Javascript.has(PDFName.of('Kids'))).toBe(true);
       expect(Javascript.has(PDFName.of('Names'))).toBe(false);
+      const leaf = Javascript.lookup(PDFName.of('Kids'), PDFArray).lookup(0, PDFDict);
+      const keys = leaf.lookup(PDFName.of('Names'), PDFArray);
+      expect(keys.lookup(2, PDFHexString).decodeText()).toBe('newScript');
+    });
+
+    it('refuses a JavaScript tree it cannot edit safely, when called', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        pdfDoc.context.obj({ JavaScript: { Kids: [leafRef] } }),
+      );
+      expect(() => pdfDoc.addJavaScript('s', 'x')).toThrow(/empty/);
     });
   });
 
@@ -1186,26 +1198,66 @@ describe('PDFDocument', () => {
       expect(names).toEqual(['1.txt', '10.txt', '2.txt', '3.txt']);
     });
 
-    it('does not add Names alongside an existing Kids EmbeddedFiles tree', async () => {
+    it('adds into a Kids EmbeddedFiles tree, keeping its structure, and survives a reload', async () => {
+      const pdfDoc = await PDFDocument.create();
+      await pdfDoc.attach(new Uint8Array([9]), 'm.txt');
+      await pdfDoc.flush();
+      // Move the flat tree under a Kids root.
+      const ctx = pdfDoc.context;
+      const ef = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      const m = PDFHexString.fromText('m.txt');
+      const leafRef = ctx.register(
+        ctx.obj({ Names: ef.lookup(PDFName.of('Names'), PDFArray), Limits: [m, m] }),
+      );
+      pdfDoc.catalog.set(PDFName.of('Names'), ctx.obj({ EmbeddedFiles: { Kids: [leafRef] } }));
+
+      await pdfDoc.attach(new Uint8Array([1, 2, 3]), 'new.txt');
+      await pdfDoc.attach(new Uint8Array([4]), 'z.txt');
+      const reloaded = await PDFDocument.load(await pdfDoc.save());
+
+      const EmbeddedFiles = reloaded.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      expect(EmbeddedFiles.has(PDFName.of('Kids'))).toBe(true);
+      expect(EmbeddedFiles.has(PDFName.of('Names'))).toBe(false);
+      expect(reloaded.getAttachments().map((a) => [a.name, [...a.data]])).toEqual([
+        ['m.txt', [9]],
+        ['new.txt', [1, 2, 3]],
+        ['z.txt', [4]],
+      ]);
+      expect(reloaded.catalog.lookup(PDFName.of('AF'), PDFArray).size()).toBe(3);
+    });
+
+    it('refuses, when called, an attachments tree or /AF it cannot edit safely', async () => {
       const pdfDoc = await PDFDocument.create();
       const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
       pdfDoc.catalog.set(
         PDFName.of('Names'),
         pdfDoc.context.obj({ EmbeddedFiles: { Kids: [leafRef] } }),
       );
+      await expect(pdfDoc.attach(new Uint8Array([1]), 'a.txt')).rejects.toThrow(/empty/);
 
-      await pdfDoc.attach(new Uint8Array([1, 2, 3]), 'new.txt');
-      await pdfDoc.save();
+      const other = await PDFDocument.create();
+      other.catalog.set(PDFName.of('AF'), other.context.obj({}));
+      await expect(other.attach(new Uint8Array([1]), 'a.txt')).rejects.toThrow(/AF/);
+    });
 
-      const EmbeddedFiles = pdfDoc.catalog
-        .lookup(PDFName.of('Names'), PDFDict)
-        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
-      expect(EmbeddedFiles.has(PDFName.of('Kids'))).toBe(true);
-      expect(EmbeddedFiles.has(PDFName.of('Names'))).toBe(false);
-
-      // File stream is still embedded and listed under AF.
-      const AF = pdfDoc.catalog.lookup(PDFName.of('AF'), PDFArray);
-      expect(AF.size()).toBe(1);
+    it('refuses at save, leaving nothing behind, when the tree broke after attach()', async () => {
+      const pdfDoc = await PDFDocument.create();
+      await pdfDoc.attach(new Uint8Array([1]), 'a.txt');
+      const leafRef = pdfDoc.context.register(pdfDoc.context.obj({ Names: [] }));
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        pdfDoc.context.obj({ EmbeddedFiles: { Kids: [leafRef] } }),
+      );
+      await expect(pdfDoc.save()).rejects.toThrow(/empty/);
+      expect(pdfDoc.catalog.has(PDFName.of('AF'))).toBe(false);
+      const filespecs = pdfDoc.context
+        .enumerateIndirectObjects()
+        .filter(([, o]) => o instanceof PDFDict && o.has(PDFName.of('EF')));
+      expect(filespecs).toHaveLength(0);
     });
   });
 
@@ -1474,7 +1526,7 @@ describe('PDFDocument', () => {
       return { pdfDoc, ef, names, spec, streamOf };
     };
 
-    it('unlinks every /AF occurrence, fixes /Limits and deletes the objects', async () => {
+    it('unlinks every /AF occurrence, drops root /Limits and deletes the objects, copy-on-write', async () => {
       const { pdfDoc, ef, names, spec, streamOf } = await threeAttachments();
       const ctx = pdfDoc.context;
       const c = spec('c.txt');
@@ -1488,11 +1540,18 @@ describe('PDFDocument', () => {
 
       pdfDoc.detach('c.txt');
 
-      expect(names.size()).toBe(4);
-      expect(AF.asArray()).not.toContain(c);
-      expect(AF.size()).toBe(2);
-      const limits = ef.lookup(PDFName.of('Limits'), PDFArray);
-      expect((limits.get(1) as PDFHexString).decodeText()).toBe('b.txt');
+      // The old containers, which another structure may share, are intact.
+      expect(names.size()).toBe(6);
+      expect(AF.size()).toBe(4);
+      const newEf = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict);
+      expect(newEf.lookup(PDFName.of('Names'), PDFArray).size()).toBe(4);
+      // A root may not carry /Limits (ISO 32000-1 7.9.6).
+      expect(newEf.has(PDFName.of('Limits'))).toBe(false);
+      const newAF = pdfDoc.catalog.lookup(PDFName.of('AF'), PDFArray);
+      expect(newAF.asArray()).not.toContain(c);
+      expect(newAF.size()).toBe(2);
       expect(ctx.lookup(c)).toBeUndefined();
       expect(ctx.lookup(stream)).toBeUndefined();
     });
@@ -1547,7 +1606,79 @@ describe('PDFDocument', () => {
       expect(ctx.lookup(a)).toBeUndefined();
       expect(ctx.lookup(efRef)).toBeUndefined();
       expect(ctx.lookup(streamRef)).toBeUndefined();
-      expect(() => pdfDoc.getAttachments()).toThrow();
+      // Listing still works; only reading b.txt's bytes throws.
+      const listed = pdfDoc.getAttachments();
+      expect(listed.map((x) => x.name)).toEqual(['b.txt', 'c.txt']);
+      expect(() => listed[0]!.data).toThrow();
+      expect(listed[1]!.data).toBeInstanceOf(Uint8Array);
+    });
+
+    it('detaches from a Kids tree, pruning emptied leaves and keeping shared nodes', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const ctx = pdfDoc.context;
+      for (const n of ['a.txt', 'b.txt', 'c.txt']) {
+        await pdfDoc.attach(new TextEncoder().encode(n), n);
+      }
+      await pdfDoc.flush();
+      const names = pdfDoc.catalog
+        .lookup(PDFName.of('Names'), PDFDict)
+        .lookup(PDFName.of('EmbeddedFiles'), PDFDict)
+        .lookup(PDFName.of('Names'), PDFArray);
+      const k = (i: number) => names.get(i);
+      const leaf1 = ctx.register(
+        ctx.obj({ Names: [k(0), names.get(1), k(2), names.get(3)], Limits: [k(0), k(2)] }),
+      );
+      const leaf2 = ctx.register(ctx.obj({ Names: [k(4), names.get(5)], Limits: [k(4), k(4)] }));
+      const aRef = names.get(1) as PDFRef;
+      const cRef = names.get(5) as PDFRef;
+      pdfDoc.catalog.set(
+        PDFName.of('Names'),
+        ctx.obj({ EmbeddedFiles: { Kids: [leaf1, leaf2] } }),
+      );
+      // Another structure shares leaf1.
+      const holder = ctx.register(ctx.obj({ Kids: [leaf1] }));
+
+      pdfDoc.detach('c.txt');
+      pdfDoc.detach('a.txt');
+
+      expect(pdfDoc.getAttachments().map((x) => x.name)).toEqual(['b.txt']);
+      expect(ctx.lookup(cRef)).toBeUndefined();
+      expect(ctx.lookup(leaf2)).toBeUndefined();
+      // leaf1 is still another tree's kid: unchanged, and a.txt kept for it.
+      expect(ctx.lookup(leaf1, PDFDict).lookup(PDFName.of('Names'), PDFArray).size()).toBe(4);
+      expect(ctx.lookup(aRef)).toBeInstanceOf(PDFDict);
+      expect(ctx.lookup(holder)).toBeDefined();
+      const AF = pdfDoc.catalog.lookup(PDFName.of('AF'), PDFArray);
+      expect(AF.size()).toBe(1);
+    });
+
+    it('keeps listed data readable after detach deletes an indirect /Filter', async () => {
+      const { pdfDoc, spec, streamOf } = await threeAttachments();
+      const ctx = pdfDoc.context;
+      const s = ctx.lookup(streamOf(spec('a.txt')), PDFRawStream);
+      s.dict.set(PDFName.of('Filter'), ctx.register(PDFName.of('FlateDecode')));
+      const listed = pdfDoc.getAttachments();
+      pdfDoc.detach('a.txt');
+      expect([...listed[0]!.data]).toEqual([1, 2, 3]);
+    });
+
+    it('refuses to detach when /AF is malformed, changing nothing', async () => {
+      const { pdfDoc } = await threeAttachments();
+      pdfDoc.catalog.set(PDFName.of('AF'), pdfDoc.context.obj({}));
+      expect(() => pdfDoc.detach('a.txt')).toThrow(/AF/);
+      expect(pdfDoc.getAttachments()).toHaveLength(3);
+      expect(() => pdfDoc.detach('absent.txt')).not.toThrow();
+    });
+
+    it('refuses to detach from a tree it cannot edit, changing nothing', async () => {
+      const pdfDoc = await PDFDocument.create();
+      const ctx = pdfDoc.context;
+      const a = PDFHexString.fromText('a.txt');
+      const stale = ctx.register(ctx.obj({ Names: [a, ctx.obj({})], Limits: [a, PDFHexString.fromText('b')] }));
+      pdfDoc.catalog.set(PDFName.of('Names'), ctx.obj({ EmbeddedFiles: { Kids: [stale] } }));
+      expect(() => pdfDoc.detach('a.txt')).toThrow(/Limits/);
+      expect(ctx.lookup(stale, PDFDict).lookup(PDFName.of('Names'), PDFArray).size()).toBe(2);
+      expect(() => pdfDoc.detach('absent.txt')).not.toThrow();
     });
   });
 

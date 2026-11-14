@@ -116,9 +116,12 @@ export const planFacturXAttachment = (
   if (efValue !== undefined && !(efValue instanceof PDFDict)) {
     throw refusal('/EmbeddedFiles is not a dictionary');
   }
+  // attach() and detach() edit /Kids trees through nameTree.ts; the
+  // invoice replacement here is still flat-only by choice, since it plans
+  // its own atomic rewrite of the root /Names array.
   if (efValue && !isWritableFlatNameTree(efValue)) {
     throw refusal(
-      'the /EmbeddedFiles name tree has /Kids or a malformed /Names array, which this library does not rewrite',
+      'the /EmbeddedFiles name tree has /Kids or a malformed /Names array, which embedFacturX does not rewrite',
     );
   }
   if (efValue?.has(Limits)) {

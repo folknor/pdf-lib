@@ -2,13 +2,17 @@ import {
   PDFArray,
   type PDFContext,
   PDFDict,
-  PDFHexString,
   PDFName,
   type PDFObject,
   PDFRef,
   PDFStream,
-  PDFString,
 } from '../core/index.js';
+import {
+  checkCatalogAF,
+  type NameTreeKey,
+  readCatalogNameTree,
+  removeFromCatalogNameTree,
+} from './nameTree.js';
 
 /** Calls `visit` for every reference inside `object`'s direct containment. */
 const forEachRef = (object: PDFObject, visit: (ref: PDFRef) => void): void => {
@@ -73,65 +77,58 @@ export const collectUnreferenced = (
   }
 };
 
-const isKey = (o: PDFObject): o is PDFString | PDFHexString =>
-  o instanceof PDFString || o instanceof PDFHexString;
+const EmbeddedFiles = PDFName.of('EmbeddedFiles');
 
 /**
  * Remove every saved attachment named `name` from the catalog: every pair
- * with that key in the flat /EmbeddedFiles /Names array and every catalog
- * /AF occurrence of their file specifications, edited in place so no
- * orphaned copy of a container keeps them alive. An existing /Limits is
- * replaced (it may be shared with another tree), or dropped once the array
- * is empty. Then the objects only those attachments used are deleted;
- * anything another structure still refers to (a file-attachment annotation,
- * a page /AF, a second key for the same specification) is kept.
+ * with that key anywhere in the /EmbeddedFiles name tree, flat or /Kids,
+ * and every catalog /AF occurrence of their file specifications. The tree
+ * and /AF are rebuilt copy-on-write (see `removeFromNameTree`), so a node
+ * or array shared with another structure is not changed. Then the objects
+ * only those attachments and the replaced containers used are deleted;
+ * anything another structure still refers to (a file-attachment
+ * annotation, a page /AF, a second key for the same specification) is
+ * kept.
  *
  * Nothing is decoded, so an unreadable attachment does not stop another
- * being detached. A /Kids name tree is not searched.
+ * being detached. Throws `UnwritableNameTreeError`, changing nothing, when
+ * the name is present but the tree is not strictly well formed.
  */
 export const detachSavedAttachments = (
   context: PDFContext,
   catalog: PDFDict,
   name: string,
 ): void => {
-  const ef = catalog
-    .lookupMaybe(PDFName.of('Names'), PDFDict)
-    ?.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
-  const names = ef?.lookupMaybe(PDFName.of('Names'), PDFArray);
-  if (!ef || !names) return;
-
-  const removed: PDFObject[] = [];
-  for (let i = names.size() - (names.size() % 2) - 2; i >= 0; i -= 2) {
-    const key = names.get(i);
-    if (!isKey(key) || key.decodeText() !== name) continue;
-    removed.push(names.get(i + 1));
-    names.remove(i + 1);
-    names.remove(i);
+  const matches = (key: NameTreeKey) => key.decodeText() === name;
+  // /AF is checked before the tree is published, so a refusal changes
+  // nothing; and only when there is something to detach.
+  if (readCatalogNameTree(catalog, EmbeddedFiles).some((e) => matches(e.key))) {
+    checkCatalogAF(catalog);
   }
-  if (removed.length === 0) return;
+  const edit = removeFromCatalogNameTree(
+    context,
+    catalog,
+    EmbeddedFiles,
+    matches,
+  );
+  if (!edit) return;
+  const { removed, displaced } = edit;
 
-  const Limits = PDFName.of('Limits');
-  if (ef.has(Limits)) {
-    const lastKey = names.size() - (names.size() % 2) - 2;
-    if (lastKey >= 0) {
-      ef.set(Limits, context.obj([names.get(0), names.get(lastKey)]));
-    } else {
-      ef.delete(Limits);
-    }
-  }
-
+  const AF = PDFName.of('AF');
   const removedRefs = removed.filter((v): v is PDFRef => v instanceof PDFRef);
-  const AF = catalog.lookupMaybe(PDFName.of('AF'), PDFArray);
-  if (AF) {
-    for (let i = AF.size() - 1; i >= 0; i--) {
-      const entry = AF.get(i);
-      if (entry instanceof PDFRef && removedRefs.includes(entry)) AF.remove(i);
-    }
+  const oldAF = catalog.lookupMaybe(AF, PDFArray);
+  if (oldAF) {
+    const rawAF = catalog.get(AF);
+    if (rawAF instanceof PDFRef) displaced.push(rawAF);
+    const kept = oldAF
+      .asArray()
+      .filter((e) => !(e instanceof PDFRef && removedRefs.includes(e)));
+    catalog.set(AF, context.obj(kept));
   }
 
   // A direct file specification has no object of its own; what it refers
   // to is collected in its place.
-  const roots: PDFRef[] = [];
+  const roots: PDFRef[] = [...displaced];
   for (const value of removed) forEachRef(value, (r) => roots.push(r));
   collectUnreferenced(context, roots);
 };

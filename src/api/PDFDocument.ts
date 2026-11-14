@@ -97,6 +97,7 @@ import {
   planFacturXAttachment,
 } from './facturx.js';
 import PDFForm from './form/PDFForm.js';
+import { checkCatalogNameTree, readCatalogNameTree } from './nameTree.js';
 import {
   type AttachmentOptions,
   type Base64SaveOptions,
@@ -108,7 +109,7 @@ import {
   type SaveOptions,
   type SetTitleOptions,
 } from './PDFDocumentOptions.js';
-import PDFEmbeddedFile from './PDFEmbeddedFile.js';
+import PDFEmbeddedFile, { checkAttachable } from './PDFEmbeddedFile.js';
 import PDFEmbeddedPage from './PDFEmbeddedPage.js';
 import PDFFont from './PDFFont.js';
 import PDFImage from './PDFImage.js';
@@ -125,7 +126,12 @@ import {
 
 export type BasePDFAttachment = {
   name: string;
-  data: Uint8Array<ArrayBuffer>;
+  /**
+   * The file's bytes. For a saved attachment whose stream could not be
+   * decoded, reading this throws that error (so do spreading, serialising
+   * or deep-comparing such an attachment).
+   */
+  readonly data: Uint8Array<ArrayBuffer>;
   mimeType: string | undefined;
   afRelationship: AFRelationship | undefined;
   description: string | undefined;
@@ -135,7 +141,8 @@ export type BasePDFAttachment = {
 
 export type SavedPDFAttachment = BasePDFAttachment & {
   embeddedFileDict: PDFDict;
-  specRef: PDFRef;
+  /** The file specification's reference; undefined for a direct one. */
+  specRef: PDFRef | undefined;
 };
 
 export type UnsavedPDFAttachment = BasePDFAttachment & {
@@ -1186,6 +1193,8 @@ export default class PDFDocument {
     assertIs(name, 'name', ['string']);
     assertIs(script, 'script', ['string']);
 
+    checkCatalogNameTree(this.catalog, PDFName.of('JavaScript'));
+
     const embedder = JavaScriptEmbedder.for(script, name);
 
     const ref = this.context.nextRef();
@@ -1267,6 +1276,8 @@ export default class PDFDocument {
       AFRelationship,
     );
 
+    checkAttachable(this.catalog);
+
     const bytes = toUint8Array(attachment);
     const embedder = FileEmbedder.for(bytes, name, options);
 
@@ -1275,52 +1286,26 @@ export default class PDFDocument {
     this.embeddedFiles.push(embeddedFile);
   }
 
-  private getRawAttachments() {
-    const Names = this.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
-    if (!Names) return [];
-
-    const EmbeddedFiles = Names.lookupMaybe(
-      PDFName.of('EmbeddedFiles'),
-      PDFDict,
-    );
-    if (!EmbeddedFiles) return [];
-
-    const EFNames = EmbeddedFiles.lookupMaybe(PDFName.of('Names'), PDFArray);
-    if (!EFNames) return [];
-
-    const rawAttachments: {
-      fileName: PDFHexString | PDFString;
-      fileSpec: PDFDict;
-      specRef: PDFRef;
-    }[] = [];
-    for (let idx = 0, len = EFNames.size(); idx < len; idx += 2) {
-      const fileName = EFNames.lookup(idx) as PDFHexString | PDFString;
-      const fileSpec = EFNames.lookupMaybe(idx + 1, PDFDict);
-      if (!fileSpec) continue; // Skip invalid/null entries
-      rawAttachments.push({
-        fileName,
-        fileSpec,
-        specRef: EFNames.get(idx + 1) as PDFRef,
-      });
-    }
-
-    return rawAttachments;
-  }
-
   private getSavedAttachments(): SavedPDFAttachment[] {
-    const rawAttachments = this.getRawAttachments();
-    return rawAttachments.flatMap(({ fileName, fileSpec, specRef }) => {
+    const entries = readCatalogNameTree(
+      this.catalog,
+      PDFName.of('EmbeddedFiles'),
+    );
+    const attachments: SavedPDFAttachment[] = [];
+    for (const { key, value } of entries) {
+      const fileSpec = this.context.lookup(value);
+      if (!(fileSpec instanceof PDFDict)) continue; // Skip invalid/null entries
       const efDict = fileSpec.lookup(PDFName.of('EF'));
-      if (!(efDict instanceof PDFDict)) return [];
+      if (!(efDict instanceof PDFDict)) continue;
 
       const stream = efDict.lookup(PDFName.of('F'));
-      if (!(stream instanceof PDFStream)) return [];
+      if (!(stream instanceof PDFStream)) continue;
 
       const afr = fileSpec.lookup(PDFName.of('AFRelationship'));
       const afRelationship =
         afr instanceof PDFName
           ? afr.toString().slice(1) // Remove leading slash
-          : afr instanceof PDFString
+          : afr instanceof PDFString || afr instanceof PDFHexString
             ? afr.decodeText()
             : undefined;
 
@@ -1330,56 +1315,63 @@ export default class PDFDocument {
       const mimeType =
         subtype instanceof PDFName
           ? subtype.toString().slice(1)
-          : subtype instanceof PDFString
+          : subtype instanceof PDFString || subtype instanceof PDFHexString
             ? subtype.decodeText()
             : undefined;
 
-      const paramsDict = embeddedFileDict.lookupMaybe(
-        PDFName.of('Params'),
-        PDFDict,
-      );
-
-      let creationDate: Date | undefined;
-      let modificationDate: Date | undefined;
-
-      if (paramsDict) {
-        const creationDateRaw = paramsDict.lookup(PDFName.of('CreationDate'));
-        const modDateRaw = paramsDict.lookup(PDFName.of('ModDate'));
-
-        if (creationDateRaw instanceof PDFString) {
-          creationDate = creationDateRaw.decodeDate();
+      const paramsDict = embeddedFileDict.lookup(PDFName.of('Params'));
+      const readDate = (name: string): Date | undefined => {
+        if (!(paramsDict instanceof PDFDict)) return undefined;
+        const raw = paramsDict.lookup(PDFName.of(name));
+        if (!(raw instanceof PDFString || raw instanceof PDFHexString)) {
+          return undefined;
         }
-
-        if (modDateRaw instanceof PDFString) {
-          modificationDate = modDateRaw.decodeDate();
+        try {
+          return raw.decodeDate();
+        } catch {
+          return undefined; // An unreadable date is reported as absent.
         }
-      }
+      };
 
       const descRaw = fileSpec.lookup(PDFName.of('Desc'));
-      let description: string | undefined;
+      const description =
+        descRaw instanceof PDFString || descRaw instanceof PDFHexString
+          ? descRaw.decodeText()
+          : undefined;
 
-      if (descRaw instanceof PDFHexString) {
-        description = descRaw.decodeText();
-      }
-
-      return [
-        {
-          name: fileName.decodeText(),
-          data: decodePDFRawStream(
+      const attachment = {
+        name: key.decodeText(),
+        mimeType: mimeType?.replace(/#([0-9A-Fa-f]{2})/g, (_, hex) =>
+          String.fromCharCode(parseInt(hex, 16)),
+        ),
+        afRelationship: afRelationship as AFRelationship,
+        description,
+        creationDate: readDate('CreationDate'),
+        modificationDate: readDate('ModDate'),
+        embeddedFileDict: efDict,
+        specRef: value instanceof PDFRef ? value : undefined,
+      } as SavedPDFAttachment;
+      // Decoded now, while every object the decoding depends on (an
+      // indirect /Filter or /DecodeParms) still exists: decoding lazily
+      // could silently yield undecoded bytes after a detach() deleted them.
+      // A failure is kept and rethrown by `data`, so one unreadable stream
+      // does not stop the others being listed.
+      try {
+        (attachment as { data: Uint8Array<ArrayBuffer> }).data =
+          decodePDFRawStream(
             stream as PDFRawStream,
-          ).decode() as Uint8Array<ArrayBuffer>,
-          mimeType: mimeType?.replace(/#([0-9A-Fa-f]{2})/g, (_, hex) =>
-            String.fromCharCode(parseInt(hex, 16)),
-          ),
-          afRelationship: afRelationship as AFRelationship,
-          description,
-          creationDate,
-          modificationDate,
-          embeddedFileDict: efDict,
-          specRef,
-        },
-      ];
-    });
+          ).decode() as Uint8Array<ArrayBuffer>;
+      } catch (error) {
+        Object.defineProperty(attachment, 'data', {
+          enumerable: true,
+          get: () => {
+            throw error;
+          },
+        });
+      }
+      attachments.push(attachment);
+    }
+    return attachments;
   }
 
   private getUnsavedAttachments(): UnsavedPDFAttachment[] {
@@ -1402,7 +1394,11 @@ export default class PDFDocument {
   }
 
   /**
-   * Get all attachments that are embedded in this document.
+   * Get all attachments that are embedded in this document: those in the
+   * catalog's attachments name tree (flat or `/Kids`), then those added by
+   * [[attach]] and not yet saved. Every saved attachment is decoded here,
+   * but one that cannot be is still listed: only reading its `data` throws.
+   * Malformed parts of the tree are skipped.
    *
    * @returns Array of attachments with name and data
    */
@@ -1420,7 +1416,9 @@ export default class PDFDocument {
    * structure still refers to (a file-attachment annotation, a page `/AF`,
    * the same file under another name) is kept. Attachments are not decoded,
    * so an unreadable one does not stop another being detached. A `/Kids`
-   * attachments tree is not searched.
+   * attachments tree is searched like a flat one and rebuilt with its
+   * structure kept. If the name is in a tree too malformed to edit safely,
+   * this throws and changes nothing.
    *
    * This does not erase the file's bytes from earlier revisions: after an
    * incremental save they are still in the file's previous revision.
@@ -1429,13 +1427,15 @@ export default class PDFDocument {
    */
   detach(name: string): void {
     assertIs(name, 'name', ['string']);
+    // Saved first: it is the part that can refuse, and a refusal must leave
+    // the pending attachments in place too.
+    detachSavedAttachments(this.context, this.catalog, name);
     for (let i = this.embeddedFiles.length - 1; i >= 0; i--) {
       const file = this.embeddedFiles[i]!;
       if (!file.getAlreadyEmbedded() && file.getEmbedder().fileName === name) {
         this.embeddedFiles.splice(i, 1);
       }
     }
-    detachSavedAttachments(this.context, this.catalog, name);
   }
 
   /**

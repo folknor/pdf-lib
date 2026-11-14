@@ -1,7 +1,8 @@
 import type JavaScriptEmbedder from '../core/embedders/JavaScriptEmbedder.js';
-import { PDFDict, PDFHexString, PDFName, type PDFRef } from '../core/index.js';
+import { PDFHexString, PDFName, type PDFRef } from '../core/index.js';
+import { collectUnreferenced } from './detach.js';
 import type Embeddable from './Embeddable.js';
-import { addNameTreeEntry } from './nameTree.js';
+import { checkCatalogNameTree, insertIntoCatalogNameTree } from './nameTree.js';
 import type PDFDocument from './PDFDocument.js';
 
 /**
@@ -53,27 +54,29 @@ export default class PDFJavaScript implements Embeddable {
   async embed(): Promise<void> {
     if (!this.alreadyEmbedded) {
       const { catalog, context } = this.doc;
+      const JavaScript = PDFName.of('JavaScript');
 
-      const ref = await this.embedder.embedIntoContext(
-        this.doc.context,
-        this.ref,
-      );
-
-      if (!catalog.has(PDFName.of('Names'))) {
-        catalog.set(PDFName.of('Names'), context.obj({}));
+      // Flat or /Kids; a tree this library cannot edit safely throws,
+      // before anything is made, and again after the await (taking back
+      // the action just made), so a refusal leaves nothing behind.
+      checkCatalogNameTree(catalog, JavaScript);
+      const ref = await this.embedder.embedIntoContext(context, this.ref);
+      try {
+        checkCatalogNameTree(catalog, JavaScript);
+      } catch (error) {
+        collectUnreferenced(context, [ref]);
+        throw error;
       }
-      const Names = catalog.lookup(PDFName.of('Names'), PDFDict);
 
-      if (!Names.has(PDFName.of('JavaScript'))) {
-        Names.set(PDFName.of('JavaScript'), context.obj({}));
-      }
-      const Javascript = Names.lookup(PDFName.of('JavaScript'), PDFDict);
-
-      // Flat `/Names` only - leave `/Kids` (and other incompatible) trees alone.
-      addNameTreeEntry(
-        Javascript,
-        PDFHexString.fromText(this.embedder.scriptName),
-        ref,
+      collectUnreferenced(
+        context,
+        insertIntoCatalogNameTree(
+          context,
+          catalog,
+          JavaScript,
+          PDFHexString.fromText(this.embedder.scriptName),
+          ref,
+        ),
       );
 
       this.alreadyEmbedded = true;

@@ -1,14 +1,33 @@
 import type FileEmbedder from '../core/embedders/FileEmbedder.js';
 import {
   PDFArray,
-  PDFDict,
+  type PDFDict,
   PDFHexString,
   PDFName,
-  type PDFRef,
+  PDFRef,
 } from '../core/index.js';
+import { collectUnreferenced } from './detach.js';
 import type Embeddable from './Embeddable.js';
-import { addNameTreeEntry } from './nameTree.js';
+import {
+  checkCatalogAF,
+  checkCatalogNameTree,
+  insertIntoCatalogNameTree,
+} from './nameTree.js';
 import type PDFDocument from './PDFDocument.js';
+
+const EmbeddedFiles = PDFName.of('EmbeddedFiles');
+const AF = PDFName.of('AF');
+
+/**
+ * Throw unless an attachment can be added to `catalog`: its attachments
+ * name tree (absent, flat or /Kids) must be strictly well formed, and its
+ * /AF absent or an array. Called by [[PDFDocument.attach]] and again when
+ * the file is embedded, before anything changes.
+ */
+export const checkAttachable = (catalog: PDFDict): void => {
+  checkCatalogNameTree(catalog, EmbeddedFiles);
+  checkCatalogAF(catalog);
+};
 
 /**
  * Represents a file that has been embedded in a [[PDFDocument]].
@@ -53,52 +72,46 @@ export default class PDFEmbeddedFile implements Embeddable {
    * @returns Resolves when the embedding is complete.
    */
   async embed(): Promise<void> {
-    if (!this.alreadyEmbedded) {
-      const ref = await this.embedder.embedIntoContext(
-        this.doc.context,
-        this.ref,
-      );
+    if (this.alreadyEmbedded) return;
+    const { catalog, context } = this.doc;
+    checkAttachable(catalog);
+    const ref = await this.embedder.embedIntoContext(context, this.ref);
 
-      let Names = this.doc.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
-      if (!Names) {
-        Names = this.doc.context.obj({});
-        this.doc.catalog.set(PDFName.of('Names'), Names);
-      }
-
-      let EmbeddedFiles = Names.lookupMaybe(
-        PDFName.of('EmbeddedFiles'),
-        PDFDict,
-      );
-      if (!EmbeddedFiles) {
-        EmbeddedFiles = this.doc.context.obj({});
-        Names.set(PDFName.of('EmbeddedFiles'), EmbeddedFiles);
-      }
-
-      // PDF spec requires the Names array to be sorted in byte (lexical)
-      // order; readers binary-search it. Flat `/Names` only - `/Kids` (and
-      // other incompatible) trees are left alone rather than corrupted.
-      addNameTreeEntry(
-        EmbeddedFiles,
-        PDFHexString.fromText(this.embedder.fileName),
-        ref,
-      );
-
-      /**
-       * The AF-Tag is needed to achieve PDF-A3 compliance for embedded files
-       *
-       * The following document outlines the uses cases of the associated files (AF) tag.
-       * See:
-       * https://www.pdfa.org/wp-content/uploads/2018/10/PDF20_AN002-AF.pdf
-       */
-
-      if (!this.doc.catalog.has(PDFName.of('AF'))) {
-        this.doc.catalog.set(PDFName.of('AF'), this.doc.context.obj([]));
-      }
-      const AF = this.doc.catalog.lookup(PDFName.of('AF'), PDFArray);
-      AF.push(ref);
-
-      this.alreadyEmbedded = true;
+    // The catalog may have changed during the await; check again, and on
+    // refusal take back the objects just made so nothing is left behind.
+    try {
+      checkAttachable(catalog);
+    } catch (error) {
+      collectUnreferenced(context, [ref]);
+      throw error;
     }
+
+    // The name tree and /AF are rebuilt copy-on-write and published
+    // together, with no await in between.
+    const displaced = insertIntoCatalogNameTree(
+      context,
+      catalog,
+      EmbeddedFiles,
+      PDFHexString.fromText(this.embedder.fileName),
+      ref,
+    );
+
+    /**
+     * The AF-Tag is needed to achieve PDF-A3 compliance for embedded files
+     *
+     * The following document outlines the uses cases of the associated files (AF) tag.
+     * See:
+     * https://www.pdfa.org/wp-content/uploads/2018/10/PDF20_AN002-AF.pdf
+     */
+    const rawAF = catalog.get(AF);
+    if (rawAF instanceof PDFRef) displaced.push(rawAF);
+    const oldAF = catalog.lookupMaybe(AF, PDFArray);
+    const newAF = context.obj(oldAF ? oldAF.asArray() : []) as PDFArray;
+    newAF.push(ref);
+    catalog.set(AF, newAF);
+
+    collectUnreferenced(context, displaced);
+    this.alreadyEmbedded = true;
   }
 
   /**
