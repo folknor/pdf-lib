@@ -1,11 +1,5 @@
 import type { EncodedText } from '../../core/index.js';
-import {
-  charAtIndex,
-  charSplit,
-  cleanText,
-  lineSplit,
-  mergeLines,
-} from '../../utils/index.js';
+import { cleanText, lineSplit, mergeLines } from '../../utils/index.js';
 import { CombedTextLayoutError } from '../errors.js';
 import type PDFFont from '../PDFFont.js';
 import { TextAlignment } from './alignment.js';
@@ -29,70 +23,61 @@ export interface LayoutBounds {
 const MIN_FONT_SIZE = 4;
 const MAX_FONT_SIZE = 500;
 
-// Auto font size: the size is accepted when the lines drawn at it (wrapped
-// by the same splitter the layout draws with, each measured as one shaped
-// string) are all narrower than the box and stack within its height. A word
-// that cannot fit at any size therefore drives the size down rather than
-// overflowing. The search walks up from MIN_FONT_SIZE and stops at the first
-// rejected size, so it finds the end of the first acceptable run, which is
-// the largest acceptable size only if acceptance does not recover at larger
-// sizes (contextual shaping makes no such promise).
-const computeFontSize = (
-  measureLines: (fontSize: number) => { width: number }[],
-  font: PDFFont,
-  bounds: LayoutBounds,
-) => {
-  let fontSize = MIN_FONT_SIZE;
-
-  while (fontSize < MAX_FONT_SIZE) {
-    const lines = measureLines(fontSize);
-
-    // Return if we exceeded the allowed width
-    if (lines.some((line) => !(line.width < bounds.width))) {
-      return fontSize - 1;
+// Keep the first acceptable run of integer sizes, checking both endpoints.
+// If even the minimum fails, explicitly test smaller sizes instead of returning
+// an unchecked overflow. Nonpositive boxes have no fitting positive size.
+const findFontSize = (fits: (size: number) => boolean) => {
+  if (!fits(MIN_FONT_SIZE)) {
+    let size = MIN_FONT_SIZE - 1;
+    while (size > 0) {
+      if (fits(size)) return size;
+      size /= 2;
     }
-    const linesUsed = lines.length;
-
-    const height = font.heightAtSize(fontSize);
-    const lineHeight = height + height * 0.2;
-    const totalHeight = lineHeight * linesUsed;
-
-    // Return if we exceeded the allowed height
-    if (totalHeight > Math.abs(bounds.height)) return fontSize - 1;
-
-    fontSize += 1;
+    throw new Error('Cannot fit text into the supplied bounds');
   }
-
-  return fontSize;
+  for (let size = MIN_FONT_SIZE + 1; size <= MAX_FONT_SIZE; size++) {
+    if (!fits(size)) return size - 1;
+  }
+  return MAX_FONT_SIZE;
 };
 
+const computeFontSize = (
+  measureLines: (fontSize: number) => { width: number }[],
+  heightAtSize: (fontSize: number, lineCount: number) => number,
+  bounds: LayoutBounds,
+  inclusiveWidth = false,
+) => {
+  if (!(bounds.width > 0) || !(bounds.height > 0)) {
+    throw new Error('Cannot auto size text into nonpositive bounds');
+  }
+  return findFontSize((size) => {
+    const lines = measureLines(size);
+    return (
+      lines.every((line) =>
+        inclusiveWidth ? line.width <= bounds.width : line.width < bounds.width,
+      ) && heightAtSize(size, lines.length) <= bounds.height
+    );
+  });
+};
+
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
 const computeCombedFontSize = (
-  line: string,
+  clusters: string[],
   font: PDFFont,
   bounds: LayoutBounds,
   cellCount: number,
-) => {
-  const cellWidth = bounds.width / cellCount;
-  const cellHeight = bounds.height;
-
-  let fontSize = MIN_FONT_SIZE;
-
-  const chars = charSplit(line);
-  while (fontSize < MAX_FONT_SIZE) {
-    for (let idx = 0, len = chars.length; idx < len; idx++) {
-      const c = chars[idx]!;
-      const tooLong = font.widthOfTextAtSize(c, fontSize) > cellWidth * 0.75;
-      if (tooLong) return fontSize - 1;
-    }
-
-    const height = font.heightAtSize(fontSize, { descender: false });
-    if (height > cellHeight) return fontSize - 1;
-
-    fontSize += 1;
-  }
-
-  return fontSize;
-};
+) =>
+  computeFontSize(
+    (size) =>
+      clusters.map((cluster) => ({
+        width: font.widthOfTextAtSize(cluster, size),
+      })),
+    (size) => font.heightAtSize(size, { descender: false }),
+    // Retain the comb's 25% horizontal padding.
+    { ...bounds, width: (bounds.width / cellCount) * 0.75 },
+    true,
+  );
 
 export interface LayoutTextOptions {
   alignment: TextAlignment;
@@ -224,7 +209,10 @@ export const layoutMultilineText = (
   if (fontSize === undefined || fontSize === 0) {
     fontSize = computeFontSize(
       (size) => wrapLines(lines, bounds.width, font, size),
-      font,
+      (size, count) => {
+        const height = font.heightAtSize(size);
+        return (height + height * 0.2) * count;
+      },
       bounds,
     );
   }
@@ -299,12 +287,17 @@ export const layoutCombedText = (
 ): CombedTextLayout => {
   const line = mergeLines(cleanText(text));
 
-  if (line.length > cellCount) {
-    throw new CombedTextLayoutError(line.length, cellCount);
+  const clusters = Array.from(
+    graphemes.segment(line),
+    ({ segment }) => segment,
+  );
+
+  if (clusters.length > cellCount) {
+    throw new CombedTextLayoutError(clusters.length, cellCount);
   }
 
   if (fontSize === undefined || fontSize === 0) {
-    fontSize = computeCombedFontSize(line, font, bounds, cellCount);
+    fontSize = computeCombedFontSize(clusters, font, bounds, cellCount);
   }
 
   const cellWidth = bounds.width / cellCount;
@@ -320,9 +313,8 @@ export const layoutCombedText = (
   let maxY = bounds.y + bounds.height;
 
   let cellOffset = 0;
-  let charOffset = 0;
   while (cellOffset < cellCount) {
-    const [char, charLength] = charAtIndex(line, charOffset);
+    const char = clusters[cellOffset] ?? '';
 
     const encoded = font.encodeText(char);
     const width = font.widthOfTextAtSize(char, fontSize);
@@ -338,7 +330,6 @@ export const layoutCombedText = (
     cells.push({ text: line, encoded, width, height, x, y });
 
     cellOffset += 1;
-    charOffset += charLength;
   }
 
   return {
@@ -375,7 +366,7 @@ export const layoutSinglelineText = (
   if (fontSize === undefined || fontSize === 0) {
     fontSize = computeFontSize(
       (size) => [{ width: font.widthOfTextAtSize(line, size) }],
-      font,
+      (size) => font.heightAtSize(size, { descender: false }),
       bounds,
     );
   }

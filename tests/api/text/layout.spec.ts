@@ -1663,3 +1663,58 @@ describe('auto font size fits the drawn lines', () => {
     );
   });
 });
+
+describe('layout sizing boundaries and grapheme cells', () => {
+  const bounds = { x: 0, y: 0, width: 10000, height: 20 };
+
+  it('uses the single-line drawn height without descender or leading', () => {
+    const result = layoutSinglelineText('Hi', {
+      alignment: TextAlignment.Left, fontSize: undefined, font, bounds,
+    });
+    expect(result.line.height).toBeLessThanOrEqual(bounds.height);
+    expect(font.heightAtSize(result.fontSize + 1, { descender: false }))
+      .toBeGreaterThan(bounds.height);
+  });
+
+  it.each([layoutSinglelineText, layoutMultilineText])('checks small sizes and size 500', (layout) => {
+    const options = { alignment: TextAlignment.Left, fontSize: undefined, font, bounds };
+    const small = layout('Hello', { ...options, bounds: { ...bounds, width: 0.1, height: 0.1 } });
+    expect(small.fontSize).toBeLessThan(3);
+    expect(font.widthOfTextAtSize('Hello', small.fontSize)).toBeLessThan(0.1);
+    const measure = vi.spyOn(font, 'widthOfTextAtSize');
+    const large = layout('Hello', { ...options, bounds: { ...bounds, height: 10000 } });
+    expect(large.fontSize).toBe(500);
+    expect(measure.mock.calls.some(([, size]) => size === 500)).toBe(true);
+    measure.mockRestore();
+  });
+
+  it('rejects size 500 when it is the first overflow', () => {
+    const result = layoutSinglelineText('Hi', {
+      alignment: TextAlignment.Left, fontSize: undefined, font,
+      bounds: { ...bounds, height: font.heightAtSize(499, { descender: false }) },
+    });
+    expect(result.fontSize).toBe(499);
+  });
+
+  it('counts, measures and encodes grapheme clusters, including empty cells', () => {
+    const clusters = ['a\u0301', '😀', '👩‍👩‍👧‍👦', '🇳🇴'];
+    const encoded: string[] = [];
+    const measured: string[] = [];
+    const mockFont = {
+      encodeText: (text: string) => { encoded.push(text); return font.encodeText(''); },
+      widthOfTextAtSize: (text: string, size: number) => { measured.push(text); return text ? size : 0; },
+      heightAtSize: (size: number) => size,
+    } as unknown as PDFFont;
+    const result = layoutCombedText(clusters.join(''), {
+      font: mockFont, fontSize: undefined, cellCount: 5,
+      bounds: { x: 0, y: 0, width: 100, height: 100 },
+    });
+    expect(encoded).toEqual([...clusters, '']);
+    expect(measured.every((text) => text === '' || clusters.includes(text))).toBe(true);
+    expect(result.fontSize).toBe(15);
+    expect(result.cells).toHaveLength(5);
+    expect(() => layoutCombedText(clusters.join(''), {
+      font: mockFont, fontSize: 12, cellCount: 3, bounds,
+    })).toThrow(CombedTextLayoutError);
+  });
+});
