@@ -435,6 +435,10 @@ export default class PDFDocument {
    * })
    * ```
    * Note: Do not use `field.constructor.name` as it breaks after minification.
+   *
+   * If the document has XFA data it is removed (see [[PDFForm.deleteXFA]]),
+   * since pdf-lib does not keep XFA in step with AcroForm edits; the change
+   * is written by the next save.
    * @returns The form for this document.
    */
   getForm(): PDFForm {

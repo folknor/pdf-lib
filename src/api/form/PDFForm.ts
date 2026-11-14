@@ -20,6 +20,7 @@ import {
   PDFWidgetAnnotation,
 } from '../../core/index.js';
 import { assertIs, assertOrUndefined, Cache } from '../../utils/index.js';
+import { collectUnreferenced, forEachRef } from '../detach.js';
 import {
   FieldAlreadyExistsError,
   InvalidFieldNamePartError,
@@ -128,9 +129,16 @@ export default class PDFForm {
   }
 
   /**
-   * Disconnect the XFA data from this [[PDFForm]] (if any exists). This will
+   * Remove the XFA data from this [[PDFForm]] (if any exists). This will
    * force readers to fallback to standard fields if the [[PDFDocument]]
-   * contains any. For example:
+   * contains any.
+   *
+   * The AcroForm /XFA entry and the catalog /NeedsRendering flag are
+   * removed, and the XFA packet objects are deleted unless something else
+   * in the document still refers to them. A dynamic XFA form may have no
+   * usable AcroForm fallback: its pages can be a placeholder shell, and
+   * that is all a viewer shows once the XFA is gone. An incremental save
+   * frees the objects but earlier revisions keep their bytes.
    *
    * For example:
    * ```js
@@ -139,7 +147,21 @@ export default class PDFForm {
    * ```
    */
   deleteXFA(): void {
-    this.acroForm.dict.delete(PDFName.of('XFA'));
+    // Not ported from upstream: a `preserveXFA` load option and helpers that
+    // read or rewrite XFA template scripts. Rewriting means editing the
+    // template XML, which the HTML parser we carry cannot round-trip, and
+    // pdf-lib does not keep XFA in step with AcroForm edits. Keeping XFA
+    // through a getForm() that only inspects fields is a real gap, recorded
+    // in notes/form-findings.md.
+    const XFA = PDFName.of('XFA');
+    const raw = this.acroForm.dict.get(XFA);
+    this.acroForm.dict.delete(XFA);
+    this.doc.catalog.delete(PDFName.of('NeedsRendering'));
+    if (raw === undefined) return;
+    // The raw value is the root, so an indirect packet array goes too.
+    const roots: PDFRef[] = [];
+    forEachRef(raw, (ref) => roots.push(ref));
+    collectUnreferenced(this.doc.context, roots);
   }
 
   /**

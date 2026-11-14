@@ -15,7 +15,10 @@ import {
 } from './nameTree.js';
 
 /** Calls `visit` for every reference inside `object`'s direct containment. */
-const forEachRef = (object: PDFObject, visit: (ref: PDFRef) => void): void => {
+export const forEachRef = (
+  object: PDFObject,
+  visit: (ref: PDFRef) => void,
+): void => {
   if (object instanceof PDFRef) {
     visit(object);
   } else if (object instanceof PDFDict) {

@@ -1638,6 +1638,78 @@ describe('PDFForm', () => {
       expect(form.hasXFA()).toBe(false);
     });
 
+    const xfaDoc = (xfa: (ctx: PDFDocument['context']) => any) => {
+      const doc = PDFDocument.create();
+      return doc.then((pdfDoc) => {
+        const ctx = pdfDoc.context;
+        const acroForm = pdfDoc.catalog.getOrCreateAcroForm();
+        acroForm.dict.set(PDFName.of('XFA'), xfa(ctx));
+        pdfDoc.catalog.set(PDFName.of('NeedsRendering'), ctx.obj(true));
+        return { pdfDoc, ctx, form: PDFForm.of(acroForm, pdfDoc) };
+      });
+    };
+
+    it('deleteXFA() deletes a direct packet array and NeedsRendering', async () => {
+      let template: PDFRef;
+      let datasets: PDFRef;
+      const { pdfDoc, ctx, form } = await xfaDoc((ctx) => {
+        template = ctx.register(ctx.stream('<template/>'));
+        datasets = ctx.register(ctx.stream('<datasets/>'));
+        return ctx.obj(['template', template, 'datasets', datasets]);
+      });
+      form.acroForm.dict.set(PDFName.of('NeedAppearances'), ctx.obj(true));
+      form.deleteXFA();
+      expect(form.hasXFA()).toBe(false);
+      expect(ctx.lookup(template!)).toBeUndefined();
+      expect(ctx.lookup(datasets!)).toBeUndefined();
+      expect(pdfDoc.catalog.has(PDFName.of('NeedsRendering'))).toBe(false);
+      expect(form.acroForm.dict.has(PDFName.of('NeedAppearances'))).toBe(true);
+    });
+
+    it('deleteXFA() deletes an indirect array and a single stream', async () => {
+      let packet: PDFRef;
+      let array: PDFRef;
+      const a = await xfaDoc((ctx) => {
+        packet = ctx.register(ctx.stream('<xdp/>'));
+        array = ctx.register(ctx.obj(['xdp', packet]));
+        return array;
+      });
+      a.form.deleteXFA();
+      expect(a.ctx.lookup(array!)).toBeUndefined();
+      expect(a.ctx.lookup(packet!)).toBeUndefined();
+
+      let stream: PDFRef;
+      const b = await xfaDoc((ctx) => {
+        stream = ctx.register(ctx.stream('<xdp/>'));
+        return stream;
+      });
+      b.form.deleteXFA();
+      expect(b.ctx.lookup(stream!)).toBeUndefined();
+    });
+
+    it('deleteXFA() keeps packets something else refers to', async () => {
+      let shared: PDFRef;
+      let own: PDFRef;
+      const { pdfDoc, ctx, form } = await xfaDoc((ctx) => {
+        shared = ctx.register(ctx.stream('<datasets/>'));
+        own = ctx.register(ctx.stream('<template/>'));
+        return ctx.obj(['template', own, 'datasets', shared]);
+      });
+      pdfDoc.catalog.set(PDFName.of('Keep'), shared!);
+      form.deleteXFA();
+      expect(ctx.lookup(own!)).toBeUndefined();
+      expect(ctx.lookup(shared!)).toBeDefined();
+    });
+
+    it('deleteXFA() removes the fixture XFA objects', async () => {
+      const pdfDoc = await PDFDocument.load(xfaPdfBytes);
+      const before = pdfDoc.context.enumerateIndirectObjects().length;
+      pdfDoc.getForm();
+      expect(pdfDoc.context.enumerateIndirectObjects().length).toBeLessThan(
+        before,
+      );
+    });
+
     it('hasXFA() returns false for documents without XFA data', async () => {
       const pdfDoc = await PDFDocument.create();
       const form = pdfDoc.getForm();
